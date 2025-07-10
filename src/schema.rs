@@ -1,6 +1,19 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    collections (id) {
+        id -> Integer,
+        name -> Text,
+        display_name -> Nullable<Text>,
+        description -> Nullable<Text>,
+        schema_json -> Text,
+        is_system -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+    }
+}
+
+diesel::table! {
     users (id) {
         id -> Integer,
         email -> Text,
@@ -16,3 +29,8 @@ diesel::table! {
         updated_at -> Timestamp,
     }
 }
+
+diesel::allow_tables_to_appear_in_same_query!(
+    collections,
+    users,
+);

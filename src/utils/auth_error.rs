@@ -19,6 +19,8 @@ pub enum AuthError {
     ValidationError(Vec<String>),
     DatabaseError,
     InternalError,
+    NotFound(String),
+    Forbidden(String),
 }
 
 impl fmt::Display for AuthError {
@@ -34,6 +36,8 @@ impl fmt::Display for AuthError {
             AuthError::ValidationError(errors) => write!(f, "Validation error: {}", errors.join(", ")),
             AuthError::DatabaseError => write!(f, "Database error"),
             AuthError::InternalError => write!(f, "Internal server error"),
+            AuthError::NotFound(msg) => write!(f, "Not found: {}", msg),
+            AuthError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
         }
     }
 }
@@ -92,6 +96,16 @@ impl IntoResponse for AuthError {
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "An internal error occurred. Please try again later",
                 "INTERNAL_ERROR"
+            ),
+            AuthError::NotFound(_) => (
+                StatusCode::NOT_FOUND,
+                "Resource not found",
+                "NOT_FOUND"
+            ),
+            AuthError::Forbidden(_) => (
+                StatusCode::FORBIDDEN,
+                "Access forbidden",
+                "FORBIDDEN"
             ),
         };
 

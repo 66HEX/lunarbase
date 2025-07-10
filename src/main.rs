@@ -1,11 +1,18 @@
-use axum::{routing::{get, post}, Router, middleware};
+use axum::{routing::{get, post, put, delete}, Router, middleware};
 use std::net::SocketAddr;
 use tokio::signal;
 use tracing::info;
 
 use ironbase::{Config, AppState};
 use ironbase::database::create_pool;
-use ironbase::handlers::{health_check, register, login, refresh_token, me};
+use ironbase::handlers::{
+    health_check, register, login, refresh_token, me,
+    collections::{
+        create_collection, list_collections, get_collection, update_collection, delete_collection,
+        create_record, list_records, get_record, update_record, delete_record,
+        get_collection_schema, get_collections_stats
+    }
+};
 use ironbase::middleware::{setup_logging, add_middleware, auth_middleware};
 
 #[tokio::main]
@@ -50,11 +57,26 @@ fn create_router(app_state: AppState) -> Router {
         .route("/health", get(health_check))
         .route("/auth/register", post(register))
         .route("/auth/login", post(login))
-        .route("/auth/refresh", post(refresh_token));
+        .route("/auth/refresh", post(refresh_token))
+        // Public collection and record read endpoints
+        .route("/collections", get(list_collections))
+        .route("/collections/{name}", get(get_collection))
+        .route("/collections/{name}/schema", get(get_collection_schema))
+        .route("/collections/{name}/records", get(list_records))
+        .route("/collections/{name}/records", post(create_record))
+        .route("/collections/{name}/records/{id}", get(get_record));
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
         .route("/auth/me", get(me))
+        // Collection management (admin only)
+        .route("/collections", post(create_collection))
+        .route("/collections/{name}", put(update_collection))
+        .route("/collections/{name}", delete(delete_collection))
+        .route("/collections/stats", get(get_collections_stats))
+        // Record management
+        .route("/collections/{name}/records/{id}", put(update_record))
+        .route("/collections/{name}/records/{id}", delete(delete_record))
         .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
 
     // Combine routes
