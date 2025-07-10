@@ -1,12 +1,12 @@
-use axum::{routing::get, Router};
+use axum::{routing::{get, post}, Router, middleware};
 use std::net::SocketAddr;
 use tokio::signal;
 use tracing::info;
 
-use ironbase::{Config, DatabasePool};
+use ironbase::{Config, AppState};
 use ironbase::database::create_pool;
-use ironbase::handlers::health_check;
-use ironbase::middleware::{setup_logging, add_middleware};
+use ironbase::handlers::{health_check, register, login, refresh_token, me};
+use ironbase::middleware::{setup_logging, add_middleware, auth_middleware};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -22,8 +22,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let pool = create_pool(&config.database_url)?;
     info!("Database pool created successfully");
 
+    // Utworzenie application state
+    let app_state = AppState::new(pool, &config.jwt_secret);
+
     // Utworzenie routingu
-    let app = create_router(pool);
+    let app = create_router(app_state);
 
     // Konfiguracja adresu serwera
     let addr = config.server_address().parse::<SocketAddr>()?;
@@ -41,13 +44,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_router(pool: DatabasePool) -> Router {
+fn create_router(app_state: AppState) -> Router {
+    // Public routes (no authentication required)
+    let public_routes = Router::new()
+        .route("/health", get(health_check))
+        .route("/auth/register", post(register))
+        .route("/auth/login", post(login))
+        .route("/auth/refresh", post(refresh_token));
+
+    // Protected routes (authentication required)
+    let protected_routes = Router::new()
+        .route("/auth/me", get(me))
+        .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
+
+    // Combine routes
     let api_routes = Router::new()
-        .route("/health", get(health_check));
+        .merge(public_routes)
+        .merge(protected_routes);
 
     let app = Router::new()
         .nest("/api", api_routes)
-        .with_state(pool);
+        .with_state(app_state);
 
     add_middleware(app)
 }

@@ -1,3 +1,3 @@
-// Modele będą dodane w kolejnych fazach
-// pub mod user;
-// pub mod collection; 
+pub mod user;
+
+pub use user::*; 

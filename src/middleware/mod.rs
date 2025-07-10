@@ -5,6 +5,10 @@ use axum::{
 use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
+pub mod auth;
+
+pub use auth::*;
+
 pub fn setup_logging() {
     tracing_subscriber::registry()
         .with(

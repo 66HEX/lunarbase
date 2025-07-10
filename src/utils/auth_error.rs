@@ -1,0 +1,140 @@
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    Json,
+};
+use serde_json::{json, Value};
+use std::fmt;
+
+/// Production-safe auth errors - never expose sensitive information
+#[derive(Debug)]
+pub enum AuthError {
+    InvalidCredentials,
+    AccountLocked,
+    AccountNotVerified,
+    TokenExpired,
+    TokenInvalid,
+    InsufficientPermissions,
+    RateLimitExceeded,
+    ValidationError(Vec<String>),
+    DatabaseError,
+    InternalError,
+}
+
+impl fmt::Display for AuthError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            AuthError::InvalidCredentials => write!(f, "Invalid credentials"),
+            AuthError::AccountLocked => write!(f, "Account temporarily locked"),
+            AuthError::AccountNotVerified => write!(f, "Account not verified"),
+            AuthError::TokenExpired => write!(f, "Token expired"),
+            AuthError::TokenInvalid => write!(f, "Invalid token"),
+            AuthError::InsufficientPermissions => write!(f, "Insufficient permissions"),
+            AuthError::RateLimitExceeded => write!(f, "Rate limit exceeded"),
+            AuthError::ValidationError(errors) => write!(f, "Validation error: {}", errors.join(", ")),
+            AuthError::DatabaseError => write!(f, "Database error"),
+            AuthError::InternalError => write!(f, "Internal server error"),
+        }
+    }
+}
+
+impl std::error::Error for AuthError {}
+
+impl IntoResponse for AuthError {
+    fn into_response(self) -> Response {
+        let (status, error_message, error_code) = match self {
+            AuthError::InvalidCredentials => (
+                StatusCode::UNAUTHORIZED,
+                "Invalid email or password",
+                "INVALID_CREDENTIALS"
+            ),
+            AuthError::AccountLocked => (
+                StatusCode::FORBIDDEN,
+                "Account temporarily locked due to multiple failed login attempts",
+                "ACCOUNT_LOCKED"
+            ),
+            AuthError::AccountNotVerified => (
+                StatusCode::FORBIDDEN,
+                "Please verify your email address to continue",
+                "ACCOUNT_NOT_VERIFIED"
+            ),
+            AuthError::TokenExpired => (
+                StatusCode::UNAUTHORIZED,
+                "Token has expired",
+                "TOKEN_EXPIRED"
+            ),
+            AuthError::TokenInvalid => (
+                StatusCode::UNAUTHORIZED,
+                "Invalid or malformed token",
+                "TOKEN_INVALID"
+            ),
+            AuthError::InsufficientPermissions => (
+                StatusCode::FORBIDDEN,
+                "You don't have permission to access this resource",
+                "INSUFFICIENT_PERMISSIONS"
+            ),
+            AuthError::RateLimitExceeded => (
+                StatusCode::TOO_MANY_REQUESTS,
+                "Too many requests. Please try again later",
+                "RATE_LIMIT_EXCEEDED"
+            ),
+            AuthError::ValidationError(_) => (
+                StatusCode::BAD_REQUEST,
+                "Validation failed",
+                "VALIDATION_ERROR"
+            ),
+            AuthError::DatabaseError => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "A database error occurred. Please try again later",
+                "DATABASE_ERROR"
+            ),
+            AuthError::InternalError => (
+                StatusCode::INTERNAL_SERVER_ERROR,
+                "An internal error occurred. Please try again later",
+                "INTERNAL_ERROR"
+            ),
+        };
+
+        let body = Json(json!({
+            "error": {
+                "code": error_code,
+                "message": error_message,
+                "timestamp": chrono::Utc::now().to_rfc3339()
+            }
+        }));
+
+        (status, body).into_response()
+    }
+}
+
+// Helper type for consistent API responses
+#[derive(serde::Serialize)]
+pub struct ApiResponse<T> {
+    pub success: bool,
+    pub data: Option<T>,
+    pub error: Option<Value>,
+    pub timestamp: String,
+}
+
+impl<T: serde::Serialize> ApiResponse<T> {
+    pub fn success(data: T) -> Self {
+        Self {
+            success: true,
+            data: Some(data),
+            error: None,
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+
+    pub fn error(error: AuthError) -> Self {
+        Self {
+            success: false,
+            data: None,
+            error: Some(json!({
+                "code": format!("{:?}", error),
+                "message": error.to_string()
+            })),
+            timestamp: chrono::Utc::now().to_rfc3339(),
+        }
+    }
+} 
