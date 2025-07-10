@@ -6,13 +6,15 @@ edition = "2024"
 [dependencies]
 argon2 = "0.5.3"
 axum = { version = "0.8.4", features = ["tokio"] }
-chrono = "0.4.41"
-diesel = { version = "2.2.11", features = ["sqlite"] }
+chrono = { version = "0.4.41", features = ["serde"] }
+diesel = { version = "2.2.11", features = ["r2d2", "sqlite"], default-features = false }
 dotenvy = "0.15.7"
+jsonwebtoken = "9.3.1"
 rand = "0.9.1"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 tokio = { version = "1.46.1", features = ["full"] }
 tower = "0.5.2"
+tower-http = { version = "0.6.6", features = ["cors", "trace"] }
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
