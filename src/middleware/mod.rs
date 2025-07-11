@@ -6,8 +6,10 @@ use tower_http::cors::{Any, CorsLayer};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod auth;
+pub mod permissions;
 
 pub use auth::*;
+pub use permissions::*;
 
 pub fn setup_logging() {
     tracing_subscriber::registry()

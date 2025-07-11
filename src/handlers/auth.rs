@@ -1,5 +1,6 @@
 use axum::{
     extract::{Request, State},
+    http::StatusCode,
     response::Json,
 };
 use diesel::prelude::*;
@@ -18,7 +19,7 @@ use crate::{
 pub async fn register(
     State(app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<Json<ApiResponse<AuthResponse>>, AuthError> {
+) -> Result<(StatusCode, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Rate limiting check
     if !app_state.auth_state.rate_limiter.check_rate_limit("register") {
         return Err(AuthError::RateLimitExceeded);
@@ -91,7 +92,7 @@ pub async fn register(
         expires_in: app_state.auth_state.jwt_service.access_token_duration_seconds(),
     };
 
-    Ok(Json(ApiResponse::success(auth_response)))
+    Ok((StatusCode::CREATED, Json(ApiResponse::success(auth_response))))
 }
 
 /// User login endpoint with timing attack protection and account lockout

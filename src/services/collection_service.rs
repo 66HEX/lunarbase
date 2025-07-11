@@ -377,6 +377,19 @@ impl CollectionService {
             .map_err(|_| AuthError::InternalError)
     }
 
+    pub async fn get_collection_by_id(&self, id: i32) -> Result<CollectionResponse, AuthError> {
+        let mut conn = self.pool.get()
+            .map_err(|_| AuthError::InternalError)?;
+
+        let collection = collections::table
+            .filter(collections::id.eq(id))
+            .first::<Collection>(&mut conn)
+            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+
+        CollectionResponse::from_collection(collection)
+            .map_err(|_| AuthError::InternalError)
+    }
+
     pub async fn list_collections(&self) -> Result<Vec<CollectionResponse>, AuthError> {
         let mut conn = self.pool.get()
             .map_err(|_| AuthError::InternalError)?;

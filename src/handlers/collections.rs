@@ -86,9 +86,39 @@ pub async fn delete_collection(
 // Record management endpoints
 pub async fn create_record(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
-    Json(request): Json<CreateRecordRequest>,
+    Json(mut request): Json<CreateRecordRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<RecordResponse>>), AuthError> {
+    // Convert claims to user for ownership service
+    use crate::schema::users;
+    use diesel::prelude::*;
+    
+    let user_id: i32 = claims.sub.parse()
+        .map_err(|_| AuthError::TokenInvalid)?;
+    
+    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    
+    let user = users::table
+        .filter(users::id.eq(user_id))
+        .first::<crate::models::User>(&mut conn)
+        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+
+    // Get collection for permission checking
+    let collection = state.collection_service.get_collection(&collection_name).await?;
+    
+    // Check collection-level create permission
+    let has_permission = state.permission_service
+        .check_collection_permission(&user, collection.id, crate::models::Permission::Create)
+        .await?;
+
+    if !has_permission {
+        return Err(AuthError::InsufficientPermissions);
+    }
+
+    // Set ownership in record data
+    state.ownership_service.set_record_ownership(&user, &mut request.data)?;
+
     let record = state.collection_service.create_record(&collection_name, request).await?;
     Ok((StatusCode::CREATED, Json(ApiResponse::success(record))))
 }
@@ -119,17 +149,71 @@ pub async fn get_record(
 
 pub async fn update_record(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
     Json(request): Json<UpdateRecordRequest>,
 ) -> Result<Json<ApiResponse<RecordResponse>>, AuthError> {
+    // Convert claims to user for permission checking
+    use crate::schema::users;
+    use diesel::prelude::*;
+    
+    let user_id: i32 = claims.sub.parse()
+        .map_err(|_| AuthError::TokenInvalid)?;
+    
+    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    
+    let user = users::table
+        .filter(users::id.eq(user_id))
+        .first::<crate::models::User>(&mut conn)
+        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+
+    // Get collection for permission checking
+    let collection = state.collection_service.get_collection(&collection_name).await?;
+    
+    // Check collection-level update permission
+    let has_permission = state.permission_service
+        .check_collection_permission(&user, collection.id, crate::models::Permission::Update)
+        .await?;
+
+    if !has_permission {
+        return Err(AuthError::InsufficientPermissions);
+    }
+
     let record = state.collection_service.update_record(&collection_name, record_id, request).await?;
     Ok(Json(ApiResponse::success(record)))
 }
 
 pub async fn delete_record(
     State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
 ) -> Result<StatusCode, AuthError> {
+    // Convert claims to user for permission checking
+    use crate::schema::users;
+    use diesel::prelude::*;
+    
+    let user_id: i32 = claims.sub.parse()
+        .map_err(|_| AuthError::TokenInvalid)?;
+    
+    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    
+    let user = users::table
+        .filter(users::id.eq(user_id))
+        .first::<crate::models::User>(&mut conn)
+        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+
+    // Get collection for permission checking
+    let collection = state.collection_service.get_collection(&collection_name).await?;
+    
+    // Check collection-level delete permission
+    let has_permission = state.permission_service
+        .check_collection_permission(&user, collection.id, crate::models::Permission::Delete)
+        .await?;
+
+    if !has_permission {
+        return Err(AuthError::InsufficientPermissions);
+    }
+
     state.collection_service.delete_record(&collection_name, record_id).await?;
     Ok(StatusCode::NO_CONTENT)
 }

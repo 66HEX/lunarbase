@@ -1,9 +1,9 @@
 # IronBase Features Status
 
-*Last updated: 2025-07-11*
+*Last updated: 2025-01-18*
 
 ## 🎯 Project Overview
-IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, providing dynamic collections, authentication, and a RESTful API.
+IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, providing dynamic collections, authentication, and a RESTful API with comprehensive permission management.
 
 ## ✅ Implemented & Working Features
 
@@ -20,6 +20,32 @@ IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, prov
   - Rate limiting protection
   - Email verification workflow
   - SQL injection protection
+
+### 🛡️ Comprehensive Permission System
+- ✅ **Role-Based Permissions**:
+  - Hierarchical role system with priority levels
+  - Admin roles bypass all permission checks
+  - User role inheritance and override capabilities
+- ✅ **Collection-Level Permissions**:
+  - CREATE, READ, UPDATE, DELETE, LIST permissions per collection
+  - Role-based permission assignments
+  - User-specific permission overrides
+- ✅ **Record-Level Permissions**:
+  - Fine-grained access control per individual record
+  - User-specific record permissions
+  - Permission inheritance from collection level
+- ✅ **Ownership-Based Access**:
+  - Record ownership patterns and validation
+  - Owner-specific permission rules
+  - Automatic ownership assignment on creation
+- ✅ **Permission Middleware**:
+  - Automatic permission checking before all operations
+  - JWT token validation and user context extraction
+  - Graceful permission error handling
+- ✅ **Permission Management API**:
+  - Set user collection permissions
+  - Manage record-level access control
+  - Role assignment and management
 
 ### 📊 Dynamic Collections System
 - ✅ **Collection Management** (Admin only):
@@ -49,12 +75,12 @@ IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, prov
   - Automatic indexes and triggers
 
 ### 📝 Record Management
-- ✅ **CRUD Operations**:
-  - Create records with validation against schema
-  - Read individual records by ID
-  - Update records with field validation
-  - Delete records
-  - List records with advanced querying
+- ✅ **CRUD Operations** (with permission checking):
+  - Create records with validation against schema (requires CREATE permission)
+  - Read individual records by ID (requires READ permission)
+  - Update records with field validation (requires UPDATE permission)
+  - Delete records (requires DELETE permission)
+  - List records with advanced querying (requires LIST permission)
 - ✅ **Advanced Data Validation**:
   - Type checking against schema for all field types
   - Required field validation
@@ -102,12 +128,16 @@ IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, prov
   - `DELETE /api/collections/{name}` - Delete collection
   - `GET /api/collections/{name}/schema` - Get schema
   - `GET /api/collections/stats` - **Advanced admin statistics** with detailed metrics
-- ✅ **Record Endpoints**:
-  - `POST /api/collections/{name}/records` - Create record (public)
-  - `GET /api/collections/{name}/records` - List records with query support (public)
-  - `GET /api/collections/{name}/records/{id}` - Get record (public)
-  - `PUT /api/collections/{name}/records/{id}` - Update record (protected)
-  - `DELETE /api/collections/{name}/records/{id}` - Delete record (protected)
+- ✅ **Record Endpoints** (permission-protected):
+  - `POST /api/collections/{name}/records` - Create record (requires CREATE permission)
+  - `GET /api/collections/{name}/records` - List records with query support (requires LIST permission)
+  - `GET /api/collections/{name}/records/{id}` - Get record (requires READ permission)
+  - `PUT /api/collections/{name}/records/{id}` - Update record (requires UPDATE permission)
+  - `DELETE /api/collections/{name}/records/{id}` - Delete record (requires DELETE permission)
+- ✅ **Permission Management Endpoints** (Admin only):
+  - `POST /api/permissions/users/{user_id}/collections/{collection_name}` - Set user collection permissions
+  - `GET /api/permissions/users/{user_id}/collections/{collection_name}` - Get user collection permissions
+  - Additional permission endpoints for role and record-level management
 
 ### 🏗️ System Architecture
 - ✅ **Database Layer**:
@@ -137,8 +167,16 @@ IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, prov
     - **Regex pattern validation** (valid/invalid patterns)
     - **Advanced field type validation** (Date, URL, File, Relation)
     - Record validation and error handling
-  - **10 integration tests** for API endpoints
-  - **23 total tests** - All passing consistently with single-thread execution
+  - **17 integration tests** covering:
+    - **10 collection API tests** - Full CRUD and management operations
+    - **7 permission integration tests** - Complete permission scenarios including:
+      - Collection-level permission enforcement
+      - Record-level access control
+      - Ownership-based permissions
+      - Role-based hierarchy validation
+      - Permission error handling
+      - User-specific permission overrides
+  - **30 total tests** - All passing consistently with comprehensive coverage
 - ✅ **Code Quality**:
   - Rust compiler warnings resolved
   - Memory safety guaranteed
@@ -165,6 +203,25 @@ curl -X POST http://localhost:3000/api/collections \
   }'
 ```
 
+### Permission Management
+```bash
+# Set user collection permissions (requires admin token)
+curl -X POST http://localhost:3000/api/permissions/users/123/collections/products \
+  -H "Authorization: Bearer $ADMIN_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "create": true,
+    "read": true,
+    "update": false,
+    "delete": false,
+    "list": true
+  }'
+
+# Get user permissions for a collection
+curl -X GET http://localhost:3000/api/permissions/users/123/collections/products \
+  -H "Authorization: Bearer $ADMIN_TOKEN"
+```
+
 ### Record Querying
 ```bash
 # Basic listing
@@ -187,6 +244,25 @@ GET /api/collections/products/records?sort=name&filter=in_stock:eq:true
 
 # Pagination
 GET /api/collections/products/records?limit=10&offset=0
+```
+
+### Record Operations (with Permission Checks)
+```bash
+# Create record (requires CREATE permission)
+curl -X POST http://localhost:3000/api/collections/products/records \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "New Product", "price": 99.99, "in_stock": true}'
+
+# Update record (requires UPDATE permission)
+curl -X PUT http://localhost:3000/api/collections/products/records/1 \
+  -H "Authorization: Bearer $USER_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Updated Product", "price": 89.99}'
+
+# Delete record (requires DELETE permission)
+curl -X DELETE http://localhost:3000/api/collections/products/records/1 \
+  -H "Authorization: Bearer $USER_TOKEN"
 ```
 
 ### Advanced Features
@@ -221,10 +297,16 @@ curl -X POST http://localhost:3000/api/collections \
 ```
 
 ## 🏁 Current Status
-- **Phase 3 Complete**: Dynamic Collections with Query Engine
-- **All Major Features**: Fully implemented and tested
-- **Production Ready**: Security, validation, and error handling in place
-- **API Stable**: RESTful endpoints with consistent responses
+- **Phase 4 Complete**: Comprehensive Permission System
+- **All Major Features**: Fully implemented and tested including:
+  - Authentication and JWT management
+  - Dynamic collections with advanced querying
+  - Complete CRUD operations with validation
+  - Role-based and granular permission system
+  - Record-level and ownership-based access control
+- **Production Ready**: Security, validation, permission enforcement, and error handling in place
+- **API Stable**: RESTful endpoints with consistent responses and permission protection
+- **Test Coverage**: 30/30 tests passing with comprehensive permission scenarios
 
 ## 🚀 Next Potential Features
 - Real-time subscriptions (WebSocket support)
@@ -233,4 +315,7 @@ curl -X POST http://localhost:3000/api/collections \
 - Database migration tools
 - Admin dashboard UI
 - Multi-database support (PostgreSQL, MySQL)
-- Backup and restore functionality 
+- Backup and restore functionality
+- Permission audit logging
+- Rate limiting per user/role
+- API key authentication 

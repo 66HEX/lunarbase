@@ -11,6 +11,19 @@ use ironbase::handlers::{
         create_collection, list_collections, get_collection, update_collection, delete_collection,
         create_record, list_records, get_record, update_record, delete_record,
         get_collection_schema, get_collections_stats
+    },
+    permissions::{
+        create_role, list_roles, get_role, set_collection_permission, 
+        get_collection_permissions, set_user_collection_permission,
+        get_user_collection_permissions, get_user_accessible_collections
+    },
+    record_permissions::{
+        set_record_permission, get_record_permissions, remove_record_permission,
+        list_record_permissions
+    },
+    ownership::{
+        transfer_record_ownership, get_my_owned_records, get_user_owned_records,
+        check_record_ownership, get_ownership_stats
     }
 };
 use ironbase::middleware::{setup_logging, add_middleware, auth_middleware};
@@ -63,7 +76,6 @@ fn create_router(app_state: AppState) -> Router {
         .route("/collections/{name}", get(get_collection))
         .route("/collections/{name}/schema", get(get_collection_schema))
         .route("/collections/{name}/records", get(list_records))
-        .route("/collections/{name}/records", post(create_record))
         .route("/collections/{name}/records/{id}", get(get_record));
 
     // Protected routes (authentication required)
@@ -75,8 +87,29 @@ fn create_router(app_state: AppState) -> Router {
         .route("/collections/{name}", delete(delete_collection))
         .route("/collections/stats", get(get_collections_stats))
         // Record management
+        .route("/collections/{name}/records", post(create_record))
         .route("/collections/{name}/records/{id}", put(update_record))
         .route("/collections/{name}/records/{id}", delete(delete_record))
+        // Permission management (admin only)
+        .route("/permissions/roles", post(create_role))
+        .route("/permissions/roles", get(list_roles))
+        .route("/permissions/roles/{role_name}", get(get_role))
+        .route("/permissions/collections/{name}", post(set_collection_permission))
+        .route("/permissions/collections/{name}", get(get_collection_permissions))
+        .route("/permissions/collections/{name}/users/{user_id}", post(set_user_collection_permission))
+        .route("/permissions/collections/{name}/users/{user_id}", get(get_user_collection_permissions))
+        .route("/permissions/users/{user_id}/collections", get(get_user_accessible_collections))
+        // Record-level permissions
+        .route("/permissions/collections/{name}/records/{record_id}", post(set_record_permission))
+        .route("/permissions/collections/{name}/records/{record_id}/users/{user_id}", get(get_record_permissions))
+        .route("/permissions/collections/{name}/records/{record_id}/users/{user_id}", delete(remove_record_permission))
+        .route("/permissions/collections/{name}/records/{record_id}/users", get(list_record_permissions))
+        // Ownership management
+        .route("/ownership/collections/{name}/records/{record_id}/transfer", post(transfer_record_ownership))
+        .route("/ownership/collections/{name}/my-records", get(get_my_owned_records))
+        .route("/ownership/collections/{name}/users/{user_id}/records", get(get_user_owned_records))
+        .route("/ownership/collections/{name}/records/{record_id}/check", get(check_record_ownership))
+        .route("/ownership/collections/{name}/stats", get(get_ownership_stats))
         .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
 
     // Combine routes

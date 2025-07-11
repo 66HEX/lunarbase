@@ -31,7 +31,6 @@ fn create_test_router() -> Router {
         .route("/collections/{name}", get(get_collection))
         .route("/collections/{name}/schema", get(get_collection_schema))
         .route("/collections/{name}/records", get(list_records))
-        .route("/collections/{name}/records", post(create_record))
         .route("/collections/{name}/records/{record_id}", get(get_record));
 
     // Protected routes (authentication required)
@@ -40,6 +39,7 @@ fn create_test_router() -> Router {
         .route("/collections/{name}", put(update_collection))
         .route("/collections/{name}", delete(delete_collection))
         .route("/collections/stats", get(get_collections_stats))
+        .route("/collections/{name}/records", post(create_record))
         .route("/collections/{name}/records/{record_id}", put(update_record))
         .route("/collections/{name}/records/{record_id}", delete(delete_record))
         .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
@@ -141,7 +141,7 @@ fn create_admin_token() -> String {
     let exp = now + 3600; // 1 hour
 
     let claims = Claims {
-        sub: "admin".to_string(),
+        sub: "2".to_string(), // Use admin user ID (matching permissions tests)
         email: "admin@test.com".to_string(),
         role: "admin".to_string(),
         exp,
@@ -350,6 +350,7 @@ async fn test_create_record_success() {
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
         .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {}", token))
         .body(Body::from(record_payload.to_string()))
         .unwrap();
 
@@ -403,6 +404,7 @@ async fn test_create_record_validation_error() {
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
         .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {}", token))
         .body(Body::from(record_payload.to_string()))
         .unwrap();
 
