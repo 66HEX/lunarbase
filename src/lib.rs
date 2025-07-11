@@ -3,6 +3,7 @@ pub mod database;
 pub mod handlers;
 pub mod middleware;
 pub mod models;
+pub mod query_engine;
 pub mod schema;
 pub mod services;
 pub mod utils;

@@ -12,6 +12,7 @@ diesel = { version = "2.2.11", features = ["chrono", "r2d2", "sqlite"], default-
 dotenvy = "0.15.7"
 jsonwebtoken = "9.3.1"
 rand = "0.8"
+regex = "1.10"
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.140"
 tokio = { version = "1.46.1", features = ["full"] }

@@ -100,6 +100,9 @@ pub async fn list_records(
 ) -> Result<Json<ApiResponse<Vec<RecordResponse>>>, AuthError> {
     let records = state.collection_service.list_records(
         &collection_name, 
+        query.sort,
+        query.filter,
+        None, // search - will be implemented later
         query.limit, 
         query.offset
     ).await?;
@@ -148,6 +151,11 @@ pub struct CollectionStats {
     pub total_collections: i64,
     pub total_records: i64,
     pub collections_by_type: HashMap<String, i64>,
+    pub records_per_collection: HashMap<String, i64>,
+    pub field_types_distribution: HashMap<String, i64>,
+    pub average_records_per_collection: f64,
+    pub largest_collection: Option<String>,
+    pub smallest_collection: Option<String>,
 }
 
 pub async fn get_collections_stats(
@@ -162,11 +170,29 @@ pub async fn get_collections_stats(
     let collections = state.collection_service.list_collections().await?;
     let total_collections = collections.len() as i64;
     
-    // TODO: Add more sophisticated stats calculation
+    let (total_records, records_per_collection, field_types_distribution, average_records_per_collection, largest_collection, smallest_collection) = 
+        state.collection_service.get_collections_stats().await?;
+
+    // Calculate collections by type (could be enhanced further)
+    let mut collections_by_type = HashMap::new();
+    for collection in &collections {
+        let collection_type = if collection.is_system {
+            "system".to_string()
+        } else {
+            "user".to_string()
+        };
+        *collections_by_type.entry(collection_type).or_insert(0) += 1;
+    }
+    
     let stats = CollectionStats {
         total_collections,
-        total_records: 0, // Placeholder - would need separate query
-        collections_by_type: HashMap::new(),
+        total_records,
+        collections_by_type,
+        records_per_collection,
+        field_types_distribution,
+        average_records_per_collection,
+        largest_collection,
+        smallest_collection,
     };
 
     Ok(Json(ApiResponse::success(stats)))
