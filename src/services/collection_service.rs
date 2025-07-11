@@ -696,6 +696,11 @@ impl CollectionService {
             return Err(AuthError::ValidationError(vec!["No fields to update".to_string()]));
         }
 
+        // Get record before update for the event
+        let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
+        let old_record = self.query_record_by_sql(&mut conn, &select_sql, collection_name).ok();
+
+        // Apply the update
         let update_sql = format!(
             "UPDATE {} SET {}, updated_at = CURRENT_TIMESTAMP WHERE id = {}",
             table_name,
@@ -712,14 +717,13 @@ impl CollectionService {
         }
 
         // Get the updated record
-        let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
         let record_response = self.query_record_by_sql(&mut conn, &select_sql, collection_name)?;
         
-        // Emit WebSocket event
+        // Emit WebSocket event with old record data
         let event = crate::models::RecordEvent::Updated {
             record_id: record_response.id.to_string(),
             record: serde_json::to_value(&record_response.data).unwrap_or_default(),
-            old_record: None, // TODO: Could store old record before update
+            old_record: old_record.map(|r| serde_json::to_value(&r.data).unwrap_or_default()),
         };
         self.emit_record_event(collection_name, event, user_id).await;
         
