@@ -335,10 +335,10 @@ impl WebSocketService {
     }
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 pub struct WebSocketStats {
     pub total_connections: usize,
     pub authenticated_connections: usize,
     pub total_subscriptions: usize,
     pub subscriptions_by_collection: HashMap<String, usize>,
-} 
+}

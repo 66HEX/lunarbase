@@ -1,8 +1,8 @@
-# IronBase - Plan implementacji projektu podobnego do PocketBase
+# LunarBase - Plan implementacji projektu podobnego do PocketBase
 
 ## Przegląd projektu
 
-**IronBase** to backend-as-a-service (BaaS) inspirowany PocketBase, zbudowany w Rust z wykorzystaniem Axum, SQLite i Diesel ORM. Projekt ma na celu dostarczenie szybkiego, bezpiecznego i łatwego w użyciu backendu dla aplikacji webowych i mobilnych.
+**LunarBase** to backend-as-a-service (BaaS) inspirowany PocketBase, zbudowany w Rust z wykorzystaniem Axum, SQLite i Diesel ORM. Projekt ma na celu dostarczenie szybkiego, bezpiecznego i łatwego w użyciu backendu dla aplikacji webowych i mobilnych.
 
 ## MVP (Minimum Viable Product)
 
@@ -29,7 +29,7 @@ MVP obejmuje podstawowe funkcjonalności:
 
 **Struktura folderów:**
 ```
-IronBase/
+LunarBase/
 ├── src/
 │   ├── main.rs
 │   ├── lib.rs

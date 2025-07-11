@@ -1,11 +1,12 @@
 use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::schema::{roles, collection_permissions, user_collection_permissions, record_permissions};
 
 // Role model
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = roles)]
 pub struct Role {
     pub id: i32,
@@ -25,7 +26,7 @@ pub struct NewRole {
 }
 
 // Collection permissions model for role-based permissions
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = collection_permissions)]
 pub struct CollectionPermission {
     pub id: i32,
@@ -53,7 +54,7 @@ pub struct NewCollectionPermission {
 }
 
 // User-specific collection permissions (overrides role permissions)
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = user_collection_permissions)]
 pub struct UserCollectionPermission {
     pub id: i32,
@@ -81,7 +82,7 @@ pub struct NewUserCollectionPermission {
 }
 
 // Record-level permissions for fine-grained access control
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = record_permissions)]
 pub struct RecordPermission {
     pub id: i32,
@@ -106,7 +107,7 @@ pub struct NewRecordPermission {
 }
 
 // DTOs for API requests/responses
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateRoleRequest {
     pub name: String,
     pub description: Option<String>,
@@ -153,9 +154,9 @@ pub struct UpdateRoleRequest {
     pub priority: Option<i32>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SetCollectionPermissionRequest {
-    pub role_id: i32,
+    pub role_name: String,
     pub can_create: bool,
     pub can_read: bool,
     pub can_update: bool,
@@ -163,7 +164,7 @@ pub struct SetCollectionPermissionRequest {
     pub can_list: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SetUserCollectionPermissionRequest {
     pub can_create: Option<bool>,
     pub can_read: Option<bool>,
@@ -172,7 +173,7 @@ pub struct SetUserCollectionPermissionRequest {
     pub can_list: Option<bool>,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct SetRecordPermissionRequest {
     pub record_id: i32,
     pub user_id: i32,
@@ -252,4 +253,4 @@ impl std::fmt::Display for Permission {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(f, "{}", self.as_str())
     }
-} 
+}

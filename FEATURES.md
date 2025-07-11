@@ -1,9 +1,9 @@
-# IronBase Features Status
+# LunarBase Features Status
 
 *Last updated: 2025-07-11*
 
 ## 🎯 Project Overview
-IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, providing dynamic collections, authentication, and a RESTful API with comprehensive permission management and real-time WebSocket subscriptions.
+LunarBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, providing dynamic collections, authentication, and a RESTful API with comprehensive permission management and real-time WebSocket subscriptions.
 
 ## ✅ Implemented & Working Features
 
@@ -404,3 +404,7 @@ ws://localhost:3000/api/ws
 - Permission audit logging
 - Rate limiting per user/role
 - API key authentication 
+
+
+
+cargo test -- --test-threads=1

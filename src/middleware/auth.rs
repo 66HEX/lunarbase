@@ -9,6 +9,8 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::utils::{AuthError, JwtService, Claims};
+use diesel::r2d2::{ConnectionManager, Pool};
+use diesel::SqliteConnection;
 
 /// Rate limiting storage (in production, use Redis)
 #[derive(Clone)]
@@ -54,10 +56,10 @@ pub struct AuthState {
 }
 
 impl AuthState {
-    pub fn new(jwt_secret: &str) -> Self {
+    pub fn new(jwt_secret: &str, pool: Pool<ConnectionManager<SqliteConnection>>) -> Self {
         Self {
-            jwt_service: Arc::new(JwtService::new(jwt_secret)),
-            rate_limiter: RateLimiter::new(100, 3600), // 100 requests per hour
+            jwt_service: Arc::new(JwtService::new(jwt_secret, pool)),
+            rate_limiter: RateLimiter::new(1000, 300), // 1000 requests per 5 minutes
         }
     }
 }
@@ -99,8 +101,8 @@ pub async fn auth_middleware(
         return Err(AuthError::RateLimitExceeded);
     }
 
-    // Validate token
-    let claims = auth_state.jwt_service.validate_access_token(token)?;
+    // Validate token with blacklist check
+    let claims = auth_state.jwt_service.validate_access_token_with_blacklist(token)?;
 
     // Inject claims into request extensions for downstream handlers
     request.extensions_mut().insert(claims);
@@ -122,7 +124,7 @@ pub async fn optional_auth_middleware(
     {
         // Try to extract and validate token
         if let Ok(token) = JwtService::extract_token_from_header(auth_header) {
-            if let Ok(claims) = auth_state.jwt_service.validate_access_token(token) {
+            if let Ok(claims) = auth_state.jwt_service.validate_access_token_with_blacklist(token) {
                 request.extensions_mut().insert(claims);
             }
         }
@@ -134,4 +136,4 @@ pub async fn optional_auth_middleware(
 /// Check if user has required role
 pub fn check_user_role(claims: &Claims, required_role: &str) -> bool {
     claims.role == required_role || claims.role == "admin"
-} 
+}

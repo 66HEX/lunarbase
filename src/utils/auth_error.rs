@@ -14,9 +14,11 @@ pub enum AuthError {
     AccountNotVerified,
     TokenExpired,
     TokenInvalid,
+    TokenMissing,
     InsufficientPermissions,
     RateLimitExceeded,
     ValidationError(Vec<String>),
+    BadRequest(String),
     DatabaseError,
     InternalError,
     NotFound(String),
@@ -31,9 +33,11 @@ impl fmt::Display for AuthError {
             AuthError::AccountNotVerified => write!(f, "Account not verified"),
             AuthError::TokenExpired => write!(f, "Token expired"),
             AuthError::TokenInvalid => write!(f, "Invalid token"),
+            AuthError::TokenMissing => write!(f, "Token missing"),
             AuthError::InsufficientPermissions => write!(f, "Insufficient permissions"),
             AuthError::RateLimitExceeded => write!(f, "Rate limit exceeded"),
             AuthError::ValidationError(errors) => write!(f, "Validation error: {}", errors.join(", ")),
+            AuthError::BadRequest(msg) => write!(f, "Bad request: {}", msg),
             AuthError::DatabaseError => write!(f, "Database error"),
             AuthError::InternalError => write!(f, "Internal server error"),
             AuthError::NotFound(msg) => write!(f, "Not found: {}", msg),
@@ -72,6 +76,11 @@ impl IntoResponse for AuthError {
                 "Invalid or malformed token",
                 "TOKEN_INVALID"
             ),
+            AuthError::TokenMissing => (
+                StatusCode::UNAUTHORIZED,
+                "Authorization token is missing",
+                "TOKEN_MISSING"
+            ),
             AuthError::InsufficientPermissions => (
                 StatusCode::FORBIDDEN,
                 "You don't have permission to access this resource",
@@ -86,6 +95,11 @@ impl IntoResponse for AuthError {
                 StatusCode::BAD_REQUEST,
                 "Validation failed",
                 "VALIDATION_ERROR"
+            ),
+            AuthError::BadRequest(_) => (
+                StatusCode::BAD_REQUEST,
+                "Bad request",
+                "BAD_REQUEST"
             ),
             AuthError::DatabaseError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
@@ -151,4 +165,4 @@ impl<T: serde::Serialize> ApiResponse<T> {
             timestamp: chrono::Utc::now().to_rfc3339(),
         }
     }
-} 
+}

@@ -1,105 +1,113 @@
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use chrono::NaiveDateTime;
 use crate::schema::collections;
 use serde_json::Value;
 
-#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable)]
+#[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, ToSchema)]
 #[diesel(table_name = collections)]
 pub struct Collection {
+    #[schema(example = 1)]
     pub id: i32,
+    #[schema(example = "users")]
     pub name: String,
+    #[schema(example = "User Collection")]
     pub display_name: Option<String>,
+    #[schema(example = "Collection for storing user data")]
     pub description: Option<String>,
+    #[serde(skip_serializing)]
     pub schema_json: String,
+    #[schema(example = false)]
     pub is_system: bool,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, Insertable)]
-#[diesel(table_name = collections)]
-pub struct NewCollection {
-    pub name: String,
-    pub display_name: Option<String>,
-    pub description: Option<String>,
-    pub schema_json: String,
-    pub is_system: Option<bool>,
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize, AsChangeset)]
-#[diesel(table_name = collections)]
-pub struct UpdateCollection {
-    pub display_name: Option<String>,
-    pub description: Option<String>,
-    pub schema_json: Option<String>,
-}
-
-
-
-// DTOs for API requests/responses
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CreateCollectionRequest {
+    #[schema(example = "products", min_length = 1, max_length = 50)]
     pub name: String,
+    #[schema(example = "Product Collection")]
     pub display_name: Option<String>,
+    #[schema(example = "Collection for storing product data")]
     pub description: Option<String>,
     pub schema: CollectionSchema,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct UpdateCollectionRequest {
+    #[schema(example = "updated_products")]
+    pub name: Option<String>,
+    #[schema(example = "Updated Product Collection")]
     pub display_name: Option<String>,
+    #[schema(example = "Updated description for product collection")]
     pub description: Option<String>,
     pub schema: Option<CollectionSchema>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CollectionResponse {
+    #[schema(example = 1)]
     pub id: i32,
+    #[schema(example = "products")]
     pub name: String,
+    #[schema(example = "Product Collection")]
     pub display_name: Option<String>,
+    #[schema(example = "Collection for storing product data")]
     pub description: Option<String>,
     pub schema: CollectionSchema,
+    #[schema(example = false)]
     pub is_system: bool,
+    #[schema(example = "2024-01-01 12:00:00")]
     pub created_at: String,
+    #[schema(example = "2024-01-01 12:00:00")]
     pub updated_at: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CreateRecordRequest {
-    pub data: Value, // JSON data for the record
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct UpdateRecordRequest {
-    pub data: Value, // JSON data for the record
-}
-
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct RecordResponse {
-    pub id: String,
-    pub collection_id: String,
+    #[schema(example = json!({"name": "Product 1", "price": 99.99}))]
     pub data: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct UpdateRecordRequest {
+    #[schema(example = json!({"name": "Updated Product", "price": 149.99}))]
+    pub data: Value,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct RecordResponse {
+    #[schema(example = "1")]
+    pub id: String,
+    #[schema(example = "products")]
+    pub collection_id: String,
+    #[schema(example = json!({"name": "Product 1", "price": 99.99}))]
+    pub data: Value,
+    #[schema(example = "2024-01-01 12:00:00")]
     pub created_at: String,
+    #[schema(example = "2024-01-01 12:00:00")]
     pub updated_at: String,
 }
 
-// Schema definition for collection fields
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct CollectionSchema {
     pub fields: Vec<FieldDefinition>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct FieldDefinition {
+    #[schema(example = "name")]
     pub name: String,
     pub field_type: FieldType,
+    #[schema(example = true)]
     pub required: bool,
     pub default_value: Option<Value>,
     pub validation: Option<ValidationRules>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 #[serde(rename_all = "lowercase")]
 pub enum FieldType {
     Text,
@@ -110,17 +118,23 @@ pub enum FieldType {
     Url,
     Json,
     File,
-    Relation, // For references to other collections
+    Relation,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
 pub struct ValidationRules {
+    #[schema(example = 1)]
     pub min_length: Option<usize>,
+    #[schema(example = 100)]
     pub max_length: Option<usize>,
+    #[schema(example = 0.0)]
     pub min_value: Option<f64>,
+    #[schema(example = 1000.0)]
     pub max_value: Option<f64>,
-    pub pattern: Option<String>, // Regex pattern
-    pub enum_values: Option<Vec<String>>, // For enum fields
+    #[schema(example = "^[a-zA-Z0-9]+$")]
+    pub pattern: Option<String>,
+    #[schema(example = json!(["option1", "option2"]))]
+    pub enum_values: Option<Vec<String>>,
 }
 
 // Helper methods for Collection
@@ -145,6 +159,27 @@ impl CollectionResponse {
             updated_at: collection.updated_at.format("%Y-%m-%d %H:%M:%S").to_string(),
         })
     }
+}
+
+// Insert model
+#[derive(Debug, Insertable)]
+#[diesel(table_name = collections)]
+pub struct NewCollection {
+    pub name: String,
+    pub display_name: Option<String>,
+    pub description: Option<String>,
+    pub schema_json: String,
+    pub is_system: bool,
+}
+
+// Update model
+#[derive(Debug, AsChangeset)]
+#[diesel(table_name = collections)]
+pub struct UpdateCollection {
+    pub name: Option<String>,
+    pub display_name: Option<String>,
+    pub description: Option<String>,
+    pub schema_json: Option<String>,
 }
 
  

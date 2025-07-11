@@ -5,6 +5,8 @@ use axum::{
 };
 use serde::Deserialize;
 use serde_json::{json, Value};
+use utoipa::ToSchema;
+use crate::utils::ErrorResponse;
 
 use crate::{
     models::User,
@@ -28,18 +30,37 @@ async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthE
         .map_err(|_| AuthError::NotFound("User not found".to_string()))
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct TransferOwnershipRequest {
     pub new_owner_id: i32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct GetOwnedRecordsQuery {
     pub limit: Option<i64>,
     pub offset: Option<i64>,
 }
 
-// Transfer ownership of a record
+/// Transfer ownership of a record
+#[utoipa::path(
+    post,
+    path = "/collections/{collection_name}/records/{record_id}/ownership/transfer",
+    tag = "Ownership",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID")
+    ),
+    request_body = TransferOwnershipRequest,
+    responses(
+        (status = 200, description = "Ownership transferred successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn transfer_record_ownership(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -71,7 +92,25 @@ pub async fn transfer_record_ownership(
     }))))
 }
 
-// Get records owned by the current user
+/// Get records owned by the current user
+#[utoipa::path(
+    get,
+    path = "/collections/{collection_name}/ownership/my-records",
+    tag = "Ownership",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("limit" = Option<i64>, Query, description = "Maximum number of records to return"),
+        ("offset" = Option<i64>, Query, description = "Number of records to skip")
+    ),
+    responses(
+        (status = 200, description = "Owned records retrieved successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Collection not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_my_owned_records(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -102,7 +141,27 @@ pub async fn get_my_owned_records(
     }))))
 }
 
-// Get records owned by a specific user (admin only)
+/// Get records owned by a specific user (admin only)
+#[utoipa::path(
+    get,
+    path = "/collections/{collection_name}/ownership/users/{user_id}/records",
+    tag = "Ownership",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("user_id" = i32, Path, description = "User ID"),
+        ("limit" = Option<i64>, Query, description = "Maximum number of records to return"),
+        ("offset" = Option<i64>, Query, description = "Number of records to skip")
+    ),
+    responses(
+        (status = 200, description = "User owned records retrieved successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions - Admin only", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_user_owned_records(
     State(state): State<AppState>,
     Extension(requesting_claims): Extension<Claims>,
@@ -146,7 +205,24 @@ pub async fn get_user_owned_records(
     }))))
 }
 
-// Check if current user owns a specific record
+/// Check if current user owns a specific record
+#[utoipa::path(
+    get,
+    path = "/collections/{collection_name}/records/{record_id}/ownership",
+    tag = "Ownership",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID")
+    ),
+    responses(
+        (status = 200, description = "Ownership status retrieved successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn check_record_ownership(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -198,6 +274,24 @@ pub async fn set_record_ownership_on_create(
 }
 
 // Get ownership statistics for admin
+/// Get ownership statistics for a collection
+#[utoipa::path(
+    get,
+    path = "/collections/{collection_name}/ownership/stats",
+    tag = "Ownership",
+    params(
+        ("collection_name" = String, Path, description = "Collection name")
+    ),
+    responses(
+        (status = 200, description = "Ownership statistics retrieved successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions - Admin only", body = ErrorResponse),
+        (status = 404, description = "Collection not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_ownership_stats(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -267,4 +361,4 @@ pub async fn get_ownership_stats(
         "ownership_percentage": ownership_percentage,
         "timestamp": chrono::Utc::now().to_rfc3339()
     }))))
-} 
+}
