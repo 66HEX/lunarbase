@@ -1,0 +1,135 @@
+---
+title: Badge
+description: A versatile badge component for labels, status indicators, and tags with multiple variants, sizes and dark mode support
+---
+
+import { Badge } from '@/app/components/ui/badge';
+import { 
+  DefaultBadgeDemo,
+  SecondaryBadgeDemo,
+  VariantsDemo,
+  SizesDemo,
+  CustomStylingDemo
+} from '@/app/components/ui/badge/badge-demos';
+import { DocsTabs, DocsTab } from "@/app/components/ui/docs-tab"
+
+## Installation
+
+Install the Badge component using the nocta-ui CLI:
+
+```bash lineNumbers title="Terminal"
+npx nocta-ui add badge
+```
+
+Then import the component:
+
+```tsx lineNumbers title="Import"
+import { Badge } from '@/components/ui/badge';
+```
+
+## Basic Usage
+
+### Default Badge
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <DefaultBadgeDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Default Badge"
+    <Badge>Default</Badge>
+    ```
+  </DocsTab>
+</DocsTabs>
+
+### Secondary Badge
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <SecondaryBadgeDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Secondary Badge"
+    <Badge variant="secondary">Secondary</Badge>
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## Variants
+
+The Badge component supports six variants: `default`, `secondary`, `destructive`, `success`, `warning`, and `outline`.
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <VariantsDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Badge Variants"
+    <Badge variant="default">Default</Badge>
+    <Badge variant="secondary">Secondary</Badge>
+    <Badge variant="destructive">Destructive</Badge>
+    <Badge variant="success">Success</Badge>
+    <Badge variant="warning">Warning</Badge>
+    <Badge variant="outline">Outline</Badge>
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## Sizes
+
+Three size options are available: `sm`, `md`, and `lg`. The default size is `md`.
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <SizesDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Badge Sizes"
+    <Badge size="sm">Small</Badge>
+    <Badge size="md">Medium</Badge>
+    <Badge size="lg">Large</Badge>
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## Customization
+
+### Custom Styling
+
+The Badge component accepts a `className` prop for custom styling:
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <CustomStylingDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Custom Styling"
+      <Badge
+        className="bg-linear-to-r dark:from-purple-500 dark:to-pink-500 from-purple-500 to-pink-500 text-nocta-50 dark:text-nocta-50">
+          Gradient
+      </Badge>
+      <Badge 
+        variant="secondary" 
+        className="bg-blue-500 dark:bg-blue-500/50 text-nocta-50 dark:text-nocta-50 shadow-lg">
+          Custom Color
+      </Badge>
+      <Badge
+        className="rounded-sm">
+          Square
+      </Badge>
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## API Reference
+
+### Badge Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `children` | `React.ReactNode` | - | The content of the badge |
+| `variant` | `'default' \| 'secondary' \| 'destructive' \| 'success' \| 'warning' \| 'outline'` | `'default'` | The visual style variant |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | The size of the badge |
+| `className` | `string` | `''` | Additional CSS classes to apply |
+
+The Badge component also accepts all standard HTML span element props through the `...props` spread operator. 

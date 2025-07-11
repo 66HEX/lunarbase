@@ -1,9 +1,9 @@
 # IronBase Features Status
 
-*Last updated: 2025-01-18*
+*Last updated: 2025-07-11*
 
 ## 🎯 Project Overview
-IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, providing dynamic collections, authentication, and a RESTful API with comprehensive permission management.
+IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, providing dynamic collections, authentication, and a RESTful API with comprehensive permission management and real-time WebSocket subscriptions.
 
 ## ✅ Implemented & Working Features
 
@@ -139,6 +139,37 @@ IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, prov
   - `GET /api/permissions/users/{user_id}/collections/{collection_name}` - Get user collection permissions
   - Additional permission endpoints for role and record-level management
 
+### 🔌 Real-Time WebSocket Subscriptions
+- ✅ **WebSocket Connection Management**:
+  - `/api/ws` endpoint for WebSocket upgrade (optional authentication)
+  - Connection statistics tracking and monitoring
+  - Memory-safe connection handling with Arc-based async patterns
+  - Graceful connection cleanup and resource management
+- ✅ **Subscription Types**:
+  - **Collection subscriptions** - Listen to all events in a collection
+  - **Record subscriptions** - Monitor specific records by ID
+  - **Query subscriptions** - Filter events based on custom criteria (future extension)
+- ✅ **Real-Time Event Broadcasting**:
+  - **Record Created** - New record insertion events
+  - **Record Updated** - Record modification events with field changes
+  - **Record Deleted** - Record deletion events
+  - Automatic event emission on all CRUD operations
+- ✅ **Permission Integration**:
+  - WebSocket subscriptions respect existing permission system
+  - Collection-level permission checks for subscriptions
+  - User context validation for authenticated connections
+  - Anonymous connections supported with limited access
+- ✅ **Production Features**:
+  - Connection statistics for admin monitoring
+  - Ping/Pong heartbeat mechanism
+  - JSON message serialization with proper error handling
+  - Event filtering based on user permissions
+  - Admin-only statistics endpoint (`/api/ws/stats`)
+- ✅ **WebSocket API Endpoints**:
+  - `GET /api/ws` - WebSocket upgrade endpoint (optional auth)
+  - `GET /api/ws/status` - Public WebSocket service status
+  - `GET /api/ws/stats` - Admin-only connection statistics
+
 ### 🏗️ System Architecture
 - ✅ **Database Layer**:
   - SQLite with Diesel ORM
@@ -167,7 +198,7 @@ IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, prov
     - **Regex pattern validation** (valid/invalid patterns)
     - **Advanced field type validation** (Date, URL, File, Relation)
     - Record validation and error handling
-  - **17 integration tests** covering:
+  - **24 integration tests** covering:
     - **10 collection API tests** - Full CRUD and management operations
     - **7 permission integration tests** - Complete permission scenarios including:
       - Collection-level permission enforcement
@@ -176,12 +207,20 @@ IronBase is a Rust-based backend-as-a-service (BaaS) similar to PocketBase, prov
       - Role-based hierarchy validation
       - Permission error handling
       - User-specific permission overrides
-  - **30 total tests** - All passing consistently with comprehensive coverage
+    - **7 WebSocket integration tests** - Real-time functionality including:
+      - WebSocket connection statistics and monitoring
+      - Admin authentication requirements for stats
+      - Message serialization and deserialization
+      - Event creation and routing system
+      - Subscription filtering and permission validation
+      - Record-specific subscription handling
+      - Production-ready error handling
+  - **37 total tests** - All passing consistently with comprehensive coverage
 - ✅ **Code Quality**:
   - Rust compiler warnings resolved
   - Memory safety guaranteed
   - Type safety with strong typing
-  - Modern dependencies: regex crate for pattern validation
+  - Modern dependencies: regex crate for pattern validation, WebSocket libraries
 
 ## 📋 Usage Examples
 
@@ -296,6 +335,52 @@ curl -X POST http://localhost:3000/api/collections \
   }'
 ```
 
+### WebSocket Real-Time Subscriptions
+```bash
+# Check WebSocket service status
+curl http://localhost:3000/api/ws/status
+
+# Get WebSocket connection statistics (admin only)
+curl -H "Authorization: Bearer $ADMIN_TOKEN" \
+  http://localhost:3000/api/ws/stats
+
+# WebSocket connection URL
+ws://localhost:3000/api/ws
+
+# Example WebSocket messages:
+
+# Subscribe to collection events
+{
+  "type": "Subscribe",
+  "data": {
+    "subscription_type": "Collection",
+    "collection_name": "products"
+  }
+}
+
+# Subscribe to specific record events
+{
+  "type": "Subscribe", 
+  "data": {
+    "subscription_type": "Record",
+    "collection_name": "products",
+    "record_id": "123"
+  }
+}
+
+# Example received events:
+{
+  "type": "Event",
+  "data": {
+    "event_type": "Created",
+    "collection_name": "products", 
+    "record_id": "456",
+    "data": {"title": "New Product", "price": 99.99},
+    "user_id": "user123"
+  }
+}
+```
+
 ## 🏁 Current Status
 - **Phase 4 Complete**: Comprehensive Permission System
 - **All Major Features**: Fully implemented and tested including:
@@ -304,12 +389,12 @@ curl -X POST http://localhost:3000/api/collections \
   - Complete CRUD operations with validation
   - Role-based and granular permission system
   - Record-level and ownership-based access control
-- **Production Ready**: Security, validation, permission enforcement, and error handling in place
-- **API Stable**: RESTful endpoints with consistent responses and permission protection
-- **Test Coverage**: 30/30 tests passing with comprehensive permission scenarios
+  - **Real-time WebSocket subscriptions with permission integration**
+- **Production Ready**: Security, validation, permission enforcement, real-time events, and error handling in place
+- **API Stable**: RESTful endpoints with consistent responses, permission protection, and WebSocket support
+- **Test Coverage**: 37/37 tests passing with comprehensive permission and WebSocket scenarios
 
 ## 🚀 Next Potential Features
-- Real-time subscriptions (WebSocket support)
 - File upload and storage management
 - Advanced search with full-text indexing
 - Database migration tools

@@ -24,6 +24,9 @@ use ironbase::handlers::{
     ownership::{
         transfer_record_ownership, get_my_owned_records, get_user_owned_records,
         check_record_ownership, get_ownership_stats
+    },
+    websocket::{
+        websocket_handler, websocket_stats, websocket_status
     }
 };
 use ironbase::middleware::{setup_logging, add_middleware, auth_middleware};
@@ -76,7 +79,10 @@ fn create_router(app_state: AppState) -> Router {
         .route("/collections/{name}", get(get_collection))
         .route("/collections/{name}/schema", get(get_collection_schema))
         .route("/collections/{name}/records", get(list_records))
-        .route("/collections/{name}/records/{id}", get(get_record));
+        .route("/collections/{name}/records/{id}", get(get_record))
+        // WebSocket endpoints
+        .route("/ws", get(websocket_handler))
+        .route("/ws/status", get(websocket_status));
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
@@ -110,6 +116,8 @@ fn create_router(app_state: AppState) -> Router {
         .route("/ownership/collections/{name}/users/{user_id}/records", get(get_user_owned_records))
         .route("/ownership/collections/{name}/records/{record_id}/check", get(check_record_ownership))
         .route("/ownership/collections/{name}/stats", get(get_ownership_stats))
+        // WebSocket admin endpoints
+        .route("/ws/stats", get(websocket_stats))
         .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
 
     // Combine routes

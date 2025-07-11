@@ -119,7 +119,7 @@ pub async fn create_record(
     // Set ownership in record data
     state.ownership_service.set_record_ownership(&user, &mut request.data)?;
 
-    let record = state.collection_service.create_record(&collection_name, request).await?;
+    let record = state.collection_service.create_record_with_events(&collection_name, request, Some(user_id)).await?;
     Ok((StatusCode::CREATED, Json(ApiResponse::success(record))))
 }
 
@@ -179,7 +179,7 @@ pub async fn update_record(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    let record = state.collection_service.update_record(&collection_name, record_id, request).await?;
+    let record = state.collection_service.update_record_with_events(&collection_name, record_id, request, Some(user_id)).await?;
     Ok(Json(ApiResponse::success(record)))
 }
 
@@ -214,7 +214,7 @@ pub async fn delete_record(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    state.collection_service.delete_record(&collection_name, record_id).await?;
+    state.collection_service.delete_record_with_events(&collection_name, record_id, Some(user_id)).await?;
     Ok(StatusCode::NO_CONTENT)
 }
 

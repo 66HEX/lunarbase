@@ -1,0 +1,307 @@
+---
+title: Slider
+description: A customizable range slider component with variants, orientations, and accessibility support for value selection
+---
+
+import { Slider } from '@/app/components/ui/slider';
+import { 
+  BasicSliderDemo,
+  PrimarySliderDemo,
+  SecondarySliderDemo,
+  VariantsDemo,
+  SizesDemo,
+  WithValueDemo,
+  CustomRangeDemo,
+  DisabledDemo,
+  StepDemo,
+  VerticalDemo,
+  PriceRangeDemo
+} from '@/app/components/ui/slider/slider-demos';
+import { DocsTabs, DocsTab } from "@/app/components/ui/docs-tab"
+
+## Installation
+
+Install the Slider component using the nocta-ui CLI:
+
+```bash lineNumbers title="Terminal"
+npx nocta-ui add slider
+```
+
+Then import the component:
+
+```tsx lineNumbers title="Import"
+import { Slider } from '@/components/ui/slider';
+```
+
+## Basic Usage
+
+### Default Slider
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <BasicSliderDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Default Slider"
+    const [value, setValue] = useState(50);
+
+    return (
+      <Slider 
+        value={value} 
+        onChange={setValue}
+        aria-label="Basic slider"
+      />
+    );
+    ```
+  </DocsTab>
+</DocsTabs>
+
+### Primary Slider
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <PrimarySliderDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Primary Slider"
+    <Slider 
+      variant="primary"
+      value={value} 
+      onChange={setValue}
+    />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+### Secondary Slider
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <SecondarySliderDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Secondary Slider"
+    <Slider 
+      variant="secondary"
+      value={value} 
+      onChange={setValue}
+    />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## Variants
+
+The Slider component supports three variants: `default`, `primary`, and `secondary`.
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <VariantsDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Slider Variants"
+    <Slider variant="default" value={value} onChange={setValue} />
+    <Slider variant="primary" value={value} onChange={setValue} />
+    <Slider variant="secondary" value={value} onChange={setValue} />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## Sizes
+
+Three size options are available: `sm`, `md`, and `lg`. The default size is `md`.
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <SizesDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Slider Sizes"
+    <Slider size="sm" value={value} onChange={setValue} />
+    <Slider size="md" value={value} onChange={setValue} />
+    <Slider size="lg" value={value} onChange={setValue} />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## Features
+
+### Show Value
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <WithValueDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Show Value"
+    <Slider 
+      value={value} 
+      onChange={setValue}
+      showValue
+      variant="primary"
+    />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+### Custom Range & Formatting
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <CustomRangeDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Custom Range & Formatting"
+    // Temperature slider
+    <Slider 
+      min={16}
+      max={30}
+      step={0.5}
+      value={temperature} 
+      onChange={setTemperature}
+      showValue
+      formatValue={(val) => `${val}°C`}
+      variant="primary"
+    />
+
+    // Volume slider  
+    <Slider 
+      min={0}
+      max={10}
+      value={volume} 
+      onChange={setVolume}
+      showValue
+      variant="secondary"
+    />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+### Step Values
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <StepDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Step Values"
+    <Slider 
+      min={0}
+      max={100}
+      step={5}
+      value={value} 
+      onChange={setValue}
+      showValue
+      variant="primary"
+    />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+### Vertical Orientation
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <VerticalDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Vertical Orientation"
+    <Slider 
+      orientation="vertical"
+      value={value} 
+      onChange={setValue}
+      variant="primary"
+      className="h-48"
+    />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## States
+
+### Disabled State
+
+<DocsTabs defaultValue="preview">
+  <DocsTab value="preview" lineNumbers title="Preview">
+    <DisabledDemo />
+  </DocsTab>
+  <DocsTab value="code" lineNumbers title="Code">
+    ```tsx lineNumbers title="Disabled State"
+    <Slider 
+      value={60}
+      disabled
+    />
+    ```
+  </DocsTab>
+</DocsTabs>
+
+## Controlled vs Uncontrolled
+
+### Controlled Slider
+```tsx
+const [value, setValue] = useState(50);
+
+return (
+  <Slider 
+    value={value} 
+    onChange={setValue}
+  />
+);
+```
+
+### Uncontrolled Slider
+```tsx
+return (
+  <Slider 
+    defaultValue={50}
+    onChange={(value) => console.log('Value changed:', value)}
+  />
+);
+```
+
+## Keyboard Navigation
+
+The Slider component supports full keyboard navigation:
+
+- **Arrow Left/Down**: Decrease value by step
+- **Arrow Right/Up**: Increase value by step
+- **Home**: Jump to minimum value
+- **End**: Jump to maximum value
+- **Page Down**: Decrease by 10 × step
+- **Page Up**: Increase by 10 × step
+
+## Accessibility
+
+The Slider component includes comprehensive accessibility features:
+
+- `role="slider"` for screen readers
+- `aria-valuemin`, `aria-valuemax`, `aria-valuenow` for value communication
+- `aria-orientation` for orientation awareness
+- `aria-label` and `aria-labelledby` support
+- Full keyboard navigation
+- Focus management with visible focus rings
+
+## Props
+
+| Prop | Type | Default | Description |
+|------|------|---------|-------------|
+| `value` | `number` | — | Controlled value |
+| `defaultValue` | `number` | `0` | Default value for uncontrolled usage |
+| `min` | `number` | `0` | Minimum value |
+| `max` | `number` | `100` | Maximum value |
+| `step` | `number` | `1` | Step increment |
+| `disabled` | `boolean` | `false` | Disable the slider |
+| `size` | `'sm' \| 'md' \| 'lg'` | `'md'` | Slider size |
+| `variant` | `'default' \| 'primary' \| 'secondary'` | `'default'` | Slider style variant |
+| `orientation` | `'horizontal' \| 'vertical'` | `'horizontal'` | Slider orientation |
+| `showValue` | `boolean` | `false` | Show current value |
+| `formatValue` | `(value: number) => string` | `(value) => value.toString()` | Custom value formatter |
+| `onChange` | `(value: number) => void` | — | Value change handler |
+| `onValueCommit` | `(value: number) => void` | — | Called when value is committed |
+| `className` | `string` | `''` | Additional CSS classes |
+| `trackClassName` | `string` | `''` | Track element CSS classes |
+| `thumbClassName` | `string` | `''` | Thumb element CSS classes |
+| `aria-label` | `string` | — | Accessibility label |
+| `aria-labelledby` | `string` | — | ID of labeling element |
+
+The Slider component also accepts all standard HTML div attributes. 

@@ -15,11 +15,35 @@ type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 #[derive(Clone)]
 pub struct CollectionService {
     pub pool: DbPool,
+    pub websocket_service: Option<std::sync::Arc<crate::services::WebSocketService>>,
 }
 
 impl CollectionService {
     pub fn new(pool: DbPool) -> Self {
-        Self { pool }
+        Self { 
+            pool,
+            websocket_service: None,
+        }
+    }
+
+    pub fn with_websocket_service(mut self, websocket_service: std::sync::Arc<crate::services::WebSocketService>) -> Self {
+        self.websocket_service = Some(websocket_service);
+        self
+    }
+
+    // Helper method to emit WebSocket events
+    async fn emit_record_event(&self, collection_name: &str, event: crate::models::RecordEvent, user_id: Option<i32>) {
+        if let Some(ws_service) = &self.websocket_service {
+            let pending_event = crate::models::PendingEvent {
+                collection_name: collection_name.to_string(),
+                event,
+                user_id,
+            };
+            
+            if let Err(e) = ws_service.broadcast_event(pending_event).await {
+                tracing::warn!("Failed to broadcast WebSocket event: {}", e);
+            }
+        }
     }
 
     // DDL Operations for dynamic tables
@@ -481,6 +505,10 @@ impl CollectionService {
 
     // Record management methods using dynamic tables
     pub async fn create_record(&self, collection_name: &str, request: CreateRecordRequest) -> Result<RecordResponse, AuthError> {
+        self.create_record_with_events(collection_name, request, None).await
+    }
+
+    pub async fn create_record_with_events(&self, collection_name: &str, request: CreateRecordRequest, user_id: Option<i32>) -> Result<RecordResponse, AuthError> {
         let mut conn = self.pool.get()
             .map_err(|_| AuthError::InternalError)?;
 
@@ -522,7 +550,16 @@ impl CollectionService {
 
         // Get the inserted record
         let select_sql = format!("SELECT * FROM {} ORDER BY id DESC LIMIT 1", table_name);
-        self.query_record_by_sql(&mut conn, &select_sql, collection_name)
+        let record_response = self.query_record_by_sql(&mut conn, &select_sql, collection_name)?;
+        
+        // Emit WebSocket event
+        let event = crate::models::RecordEvent::Created {
+            record_id: record_response.id.to_string(),
+            record: serde_json::to_value(&record_response.data).unwrap_or_default(),
+        };
+        self.emit_record_event(collection_name, event, user_id).await;
+        
+        Ok(record_response)
     }
 
     pub async fn get_record(&self, collection_name: &str, record_id: i32) -> Result<RecordResponse, AuthError> {
@@ -625,6 +662,10 @@ impl CollectionService {
     }
 
     pub async fn update_record(&self, collection_name: &str, record_id: i32, request: UpdateRecordRequest) -> Result<RecordResponse, AuthError> {
+        self.update_record_with_events(collection_name, record_id, request, None).await
+    }
+
+    pub async fn update_record_with_events(&self, collection_name: &str, record_id: i32, request: UpdateRecordRequest, user_id: Option<i32>) -> Result<RecordResponse, AuthError> {
         let mut conn = self.pool.get()
             .map_err(|_| AuthError::InternalError)?;
 
@@ -672,10 +713,24 @@ impl CollectionService {
 
         // Get the updated record
         let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
-        self.query_record_by_sql(&mut conn, &select_sql, collection_name)
+        let record_response = self.query_record_by_sql(&mut conn, &select_sql, collection_name)?;
+        
+        // Emit WebSocket event
+        let event = crate::models::RecordEvent::Updated {
+            record_id: record_response.id.to_string(),
+            record: serde_json::to_value(&record_response.data).unwrap_or_default(),
+            old_record: None, // TODO: Could store old record before update
+        };
+        self.emit_record_event(collection_name, event, user_id).await;
+        
+        Ok(record_response)
     }
 
     pub async fn delete_record(&self, collection_name: &str, record_id: i32) -> Result<(), AuthError> {
+        self.delete_record_with_events(collection_name, record_id, None).await
+    }
+
+    pub async fn delete_record_with_events(&self, collection_name: &str, record_id: i32, user_id: Option<i32>) -> Result<(), AuthError> {
         let mut conn = self.pool.get()
             .map_err(|_| AuthError::InternalError)?;
 
@@ -686,6 +741,11 @@ impl CollectionService {
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
         let table_name = self.get_records_table_name(collection_name);
+        
+        // Get record before deletion for the event
+        let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
+        let old_record = self.query_record_by_sql(&mut conn, &select_sql, collection_name).ok();
+        
         let delete_sql = format!("DELETE FROM {} WHERE id = {}", table_name, record_id);
 
         let deleted_rows = diesel::sql_query(&delete_sql)
@@ -695,6 +755,13 @@ impl CollectionService {
         if deleted_rows == 0 {
             return Err(AuthError::NotFound("Record not found".to_string()));
         }
+
+        // Emit WebSocket event
+        let event = crate::models::RecordEvent::Deleted {
+            record_id: record_id.to_string(),
+            old_record: old_record.map(|r| serde_json::to_value(&r.data).unwrap_or_default()),
+        };
+        self.emit_record_event(collection_name, event, user_id).await;
 
         Ok(())
     }
