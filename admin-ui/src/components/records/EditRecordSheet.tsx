@@ -17,7 +17,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Form,
 	FormControl,
-	FormDescription,
 	FormField,
 	FormLabel,
 	FormMessage,
@@ -297,11 +296,6 @@ export function EditRecordSheet({
 						/>
 					)}
 				</FormControl>
-				{field.default_value && (
-					<FormDescription>
-						Default: {String(field.default_value)}
-					</FormDescription>
-				)}
 				<FormMessage />
 			</FormField>
 		);
