@@ -363,48 +363,43 @@ export default function RecordComponent() {
 									<div className="font-medium">{record.id}</div>
 								),
 							},
-							...(collection?.schema.fields.slice(1, 4).map((field) => ({
-								key: field.name,
-								title: field.name,
+							{
+								key: "data",
+								title: "Data",
 								render: (_value: unknown, record: ApiRecord, _index: number) => (
-									<div>
-										<div
-											className="max-w-32 truncate"
-											title={formatFieldValue(record.data[field.name])}
-										>
-											{formatFieldValue(record.data[field.name])}
-										</div>
-										<span className="text-xs text-nocta-500 dark:text-nocta-500">
-											({field.field_type})
-										</span>
+									<div className="flex gap-4">
+										{Object.entries(record.data)
+											.slice(1, 3)
+											.map(([key, value]) => (
+												<div key={key} className="text-sm">
+													<span className="font-medium text-nocta-700 dark:text-nocta-300">
+														{key}:
+													</span>{" "}
+													<span className="text-nocta-600 dark:text-nocta-400 truncate">
+														{formatFieldValue(value)}
+													</span>
+												</div>
+											))}
+										{Object.keys(record.data).length > 3 && (
+											<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
+												+{Object.keys(record.data).length - 3} more fields
+											</div>
+										)}
 									</div>
 								),
-							})) || []),
-							...(collection?.schema.fields &&
-							collection.schema.fields.length > 4
-								? [
-										{
-											key: "more_fields",
-											title: "More Fields",
-											render: (
-														_value: unknown,
-														_record: ApiRecord,
-														_index: number,
-													) => (
-												<div className="text-xs text-nocta-500 dark:text-nocta-500">
-													+{(collection.schema?.fields?.length || 0) - 4} more
-												</div>
-											),
-										},
-									]
-								: []),
+							},
 							{
 								key: "created_at",
 								title: "Created",
 								className: "w-32",
 								render: (_value: unknown, record: ApiRecord, _index: number) => (
-									<div className="text-sm text-nocta-600 dark:text-nocta-400">
-										{new Date(record.created_at).toLocaleDateString()}
+									<div className="text-sm">
+										<div className="text-nocta-900 dark:text-nocta-100">
+											{new Date(record.created_at).toLocaleDateString()}
+										</div>
+										<div className="text-nocta-500 dark:text-nocta-500">
+											{new Date(record.created_at).toLocaleTimeString()}
+										</div>
 									</div>
 								),
 							},
