@@ -1,15 +1,13 @@
-use axum::{
-    http::{header, Method},
-    Router,
-};
-use tower_http::cors::{Any, CorsLayer};
+use axum::Router;
+use tower_http::cors::{CorsLayer, Any};
+use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod auth;
-pub mod permissions;
+pub mod metrics;
 
 pub use auth::*;
-pub use permissions::*;
+pub use metrics::*;
 
 pub fn setup_logging() {
     tracing_subscriber::registry()
@@ -24,12 +22,19 @@ pub fn setup_logging() {
 pub fn setup_cors() -> CorsLayer {
     CorsLayer::new()
         .allow_origin(Any)
-        .allow_methods([Method::GET, Method::POST, Method::PUT, Method::DELETE])
-        .allow_headers([header::CONTENT_TYPE, header::AUTHORIZATION])
+        .allow_methods([axum::http::Method::GET, axum::http::Method::POST, axum::http::Method::PUT, axum::http::Method::DELETE])
+        .allow_headers([axum::http::header::CONTENT_TYPE, axum::http::header::AUTHORIZATION])
 }
 
-pub fn add_middleware(router: Router) -> Router {
-    router
-        .layer(tower_http::trace::TraceLayer::new_for_http())
+pub fn add_middleware(app: Router) -> Router {
+    let mut router = app
         .layer(setup_cors())
-} 
+        .layer(TraceLayer::new_for_http());
+    
+    // Skip metrics layer in test environment to avoid global recorder conflicts
+    if !cfg!(test) {
+        router = router.layer(setup_metrics_layer());
+    }
+    
+    router
+}

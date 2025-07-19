@@ -36,6 +36,9 @@ use lunarbase::handlers::{
     },
     admin::{
         serve_admin_assets
+    },
+    metrics::{
+        get_metrics, get_metrics_summary
     }
 };
 use lunarbase::middleware::{setup_logging, add_middleware, auth_middleware};
@@ -55,7 +58,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Database pool created successfully");
 
     // Application state creation
-    let app_state = AppState::new(pool, &config.jwt_secret);
+    let app_state = AppState::new(pool, &config.jwt_secret)?;
 
     // Automatic admin creation from environment variables
     if let Err(e) = app_state.admin_service.ensure_admin_exists(&config).await {
@@ -73,7 +76,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let listener = tokio::net::TcpListener::bind(addr).await?;
     info!("Server started successfully");
     
-    axum::serve(listener, app)
+    axum::serve(listener, app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await?;
 
@@ -90,6 +93,9 @@ fn create_router(app_state: AppState) -> Router {
         .route("/auth/register-admin", post(register_admin))
         .route("/auth/login", post(login))
         .route("/auth/refresh", post(refresh_token))
+        // Metrics endpoints
+        .route("/metrics", get(get_metrics))
+        .route("/metrics/summary", get(get_metrics_summary))
         // Public collection and record read endpoints
         .route("/collections", get(list_collections))
         .route("/collections/{name}", get(get_collection))

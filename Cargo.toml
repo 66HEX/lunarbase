@@ -27,6 +27,8 @@ utoipa-redoc = { version = "4.0", features = ["axum"] }
 utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "chrono"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 sysinfo = "0.36.0"
+prometheus = "0.14.0"
+axum-prometheus = "0.8.0"
 
 [dev-dependencies]
 tower = { version = "0.5.2", features = ["util"] }

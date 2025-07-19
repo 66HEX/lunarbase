@@ -93,6 +93,10 @@ pub mod utils;
         
         // Health check
         handlers::health::health_check,
+        
+        // Metrics endpoints
+        handlers::metrics::get_metrics,
+        handlers::metrics::get_metrics_summary,
     ),
     components(
         schemas(
@@ -198,6 +202,7 @@ use std::sync::Arc;
 pub struct AppState {
     pub db_pool: DatabasePool,
     pub auth_state: middleware::AuthState,
+    pub metrics_state: middleware::MetricsState,
     pub collection_service: CollectionService,
     pub permission_service: PermissionService,
     pub ownership_service: OwnershipService,
@@ -206,23 +211,25 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(db_pool: DatabasePool, jwt_secret: &str) -> Self {
+    pub fn new(db_pool: DatabasePool, jwt_secret: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let permission_service = PermissionService::new(db_pool.clone());
         let ownership_service = OwnershipService::new(db_pool.clone());
         let admin_service = AdminService::new(db_pool.clone());
+        let metrics_state = middleware::MetricsState::new()?;
         let websocket_service = Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
         let collection_service = CollectionService::new(db_pool.clone())
             .with_websocket_service(websocket_service.clone())
             .with_permission_service(permission_service.clone());
         
-        Self {
+        Ok(Self {
             db_pool: db_pool.clone(),
             auth_state: middleware::AuthState::new(jwt_secret, db_pool.clone()),
+            metrics_state,
             collection_service,
             permission_service,
             ownership_service,
             admin_service,
             websocket_service: (*websocket_service).clone(),
-        }
+        })
     }
 }

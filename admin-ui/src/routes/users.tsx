@@ -214,7 +214,7 @@ export default function UsersComponent() {
 			key: "user",
 			title: "User",
 			render: (_, user) => (
-				<div className="flex items-center gap-3 w-48">
+				<div className="flex items-center gap-3 w-60">
 					<Avatar
 						className="w-8 h-8"
 						size="sm"

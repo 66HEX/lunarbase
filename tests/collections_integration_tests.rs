@@ -14,7 +14,7 @@ use lunarbase::database::create_pool;
 use lunarbase::handlers::collections::*;
 use lunarbase::handlers::auth::*;
 use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
-use lunarbase::middleware::{add_middleware, auth_middleware};
+use lunarbase::middleware:: auth_middleware;
 use axum::middleware;
 
 fn create_test_router() -> Router {
@@ -24,7 +24,7 @@ fn create_test_router() -> Router {
     // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
-    let app_state = AppState::new(db_pool, &test_jwt_secret);
+    let app_state = AppState::new(db_pool, &test_jwt_secret).expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
@@ -56,7 +56,8 @@ fn create_test_router() -> Router {
         .nest("/api", api_routes)
         .with_state(app_state);
 
-    add_middleware(router)
+    // Skip middleware in tests to avoid Prometheus global recorder conflicts
+    router
 }
 
 fn create_test_schema() -> CollectionSchema {
