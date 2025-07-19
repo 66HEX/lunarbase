@@ -1,9 +1,11 @@
-use axum::Router;
+use axum::{middleware, extract::State, response::Response, http::Request};
 use axum_prometheus::PrometheusMetricLayer;
 use prometheus::{Encoder, TextEncoder, Registry, Counter, Histogram, Gauge, HistogramOpts};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 use std::collections::HashMap;
+use std::time::Instant;
+use crate::AppState;
 
 #[derive(Clone)]
 pub struct MetricsState {
@@ -61,6 +63,12 @@ impl MetricsState {
         })
     }
     
+    /// Update database connections metric based on pool state
+    pub fn update_database_connections(&self, pool: &crate::database::DatabasePool) {
+        let state = pool.state();
+        self.database_connections.set(state.connections as f64);
+    }
+    
     pub async fn get_metrics(&self) -> Result<String, Box<dyn std::error::Error>> {
         let encoder = TextEncoder::new();
         let metric_families = self.registry.gather();
@@ -93,14 +101,23 @@ pub fn setup_metrics_layer() -> PrometheusMetricLayer<'static> {
     prometheus_layer
 }
 
-pub fn add_metrics_middleware(router: Router, _metrics_state: MetricsState) -> Router {
-    // Skip metrics middleware in test environment to avoid global recorder conflicts
-    if cfg!(test) {
-        return router;
-    }
+// Custom metrics middleware that increments our own counters
+pub async fn metrics_middleware(
+    State(app_state): State<AppState>,
+    request: Request<axum::body::Body>,
+    next: middleware::Next,
+) -> Response {
+    let start = Instant::now();
     
-    let (prometheus_layer, _) = PrometheusMetricLayer::pair();
+    // Increment request counter
+    app_state.metrics_state.request_counter.inc();
     
-    router
-        .layer(prometheus_layer)
+    // Process the request
+    let response = next.run(request).await;
+    
+    // Record request duration
+    let duration = start.elapsed().as_secs_f64();
+    app_state.metrics_state.request_duration.observe(duration);
+    
+    response
 }

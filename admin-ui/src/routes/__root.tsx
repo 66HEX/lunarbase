@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-router";
 import {
 	Activity,
+	BarChart3,
 	Database,
 	FileText,
 	LayoutDashboard,
@@ -28,6 +29,7 @@ const navigation = [
 	{ name: "Records", href: "/records", icon: FileText },
 	{ name: "Permissions", href: "/permissions", icon: Shield },
 	{ name: "WebSocket", href: "/websocket", icon: Activity },
+	{ name: "Metrics", href: "/metrics", icon: BarChart3 },
 	{ name: "Settings", href: "/settings", icon: Settings },
 ];
 

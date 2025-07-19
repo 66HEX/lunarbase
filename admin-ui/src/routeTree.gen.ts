@@ -13,6 +13,7 @@ import { Route as WebsocketRouteImport } from './routes/websocket'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as PermissionsRouteImport } from './routes/permissions'
+import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as CollectionsRouteImport } from './routes/collections'
@@ -38,6 +39,11 @@ const SettingsRoute = SettingsRouteImport.update({
 const PermissionsRoute = PermissionsRouteImport.update({
   id: '/permissions',
   path: '/permissions',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetricsRoute = MetricsRouteImport.update({
+  id: '/metrics',
+  path: '/metrics',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -76,6 +82,7 @@ export interface FileRoutesByFullPath {
   '/collections': typeof CollectionsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/metrics': typeof MetricsRoute
   '/permissions': typeof PermissionsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -88,6 +95,7 @@ export interface FileRoutesByTo {
   '/collections': typeof CollectionsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/metrics': typeof MetricsRoute
   '/permissions': typeof PermissionsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -101,6 +109,7 @@ export interface FileRoutesById {
   '/collections': typeof CollectionsRoute
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
+  '/metrics': typeof MetricsRoute
   '/permissions': typeof PermissionsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
@@ -115,6 +124,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/dashboard'
     | '/login'
+    | '/metrics'
     | '/permissions'
     | '/settings'
     | '/users'
@@ -127,6 +137,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/dashboard'
     | '/login'
+    | '/metrics'
     | '/permissions'
     | '/settings'
     | '/users'
@@ -139,6 +150,7 @@ export interface FileRouteTypes {
     | '/collections'
     | '/dashboard'
     | '/login'
+    | '/metrics'
     | '/permissions'
     | '/settings'
     | '/users'
@@ -152,6 +164,7 @@ export interface RootRouteChildren {
   CollectionsRoute: typeof CollectionsRoute
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
+  MetricsRoute: typeof MetricsRoute
   PermissionsRoute: typeof PermissionsRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
@@ -188,6 +201,13 @@ declare module '@tanstack/react-router' {
       path: '/permissions'
       fullPath: '/permissions'
       preLoaderRoute: typeof PermissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metrics': {
+      id: '/metrics'
+      path: '/metrics'
+      fullPath: '/metrics'
+      preLoaderRoute: typeof MetricsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -240,6 +260,7 @@ const rootRouteChildren: RootRouteChildren = {
   CollectionsRoute: CollectionsRoute,
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
+  MetricsRoute: MetricsRoute,
   PermissionsRoute: PermissionsRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,

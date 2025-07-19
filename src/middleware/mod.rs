@@ -1,7 +1,8 @@
-use axum::Router;
+use axum::{Router, middleware};
 use tower_http::cors::{CorsLayer, Any};
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
+use crate::AppState;
 
 pub mod auth;
 pub mod metrics;
@@ -26,14 +27,16 @@ pub fn setup_cors() -> CorsLayer {
         .allow_headers([axum::http::header::CONTENT_TYPE, axum::http::header::AUTHORIZATION])
 }
 
-pub fn add_middleware(app: Router) -> Router {
+pub fn add_middleware(app: Router, app_state: AppState) -> Router {
     let mut router = app
         .layer(setup_cors())
         .layer(TraceLayer::new_for_http());
     
     // Skip metrics layer in test environment to avoid global recorder conflicts
     if !cfg!(test) {
-        router = router.layer(setup_metrics_layer());
+        router = router
+            .layer(setup_metrics_layer())
+            .layer(middleware::from_fn_with_state(app_state.clone(), metrics_middleware));
     }
     
     router

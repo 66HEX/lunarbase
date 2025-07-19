@@ -165,10 +165,13 @@ fn create_router(app_state: AppState) -> Router {
         .nest("/api", api_routes)
         .merge(swagger_router)
         .nest_service("/admin", serve_admin_assets())
-        .with_state(app_state);
+        // Add metrics endpoints at root level for Prometheus scraping
+        .route("/metrics", get(get_metrics))
+        .route("/metrics/summary", get(get_metrics_summary))
+        .with_state(app_state.clone());
 
     // Middleware application
-    add_middleware(app)
+    add_middleware(app, app_state)
 }
 
 async fn shutdown_signal() {

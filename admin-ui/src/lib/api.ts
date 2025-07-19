@@ -582,3 +582,32 @@ export const healthApi = {
 	getSimpleHealth: (): Promise<{ status: string; timestamp: string }> =>
 		apiRequest<{ status: string; timestamp: string }>("/health/simple"),
 };
+
+// Metrics API
+export const metricsApi = {
+	getMetrics: async (): Promise<string> => {
+		const response = await fetch(`${API_BASE_URL}/metrics`, {
+			headers: {
+				'Authorization': `Bearer ${getAuthToken()}`,
+			},
+		});
+		if (!response.ok) {
+			throw new Error(`HTTP error! status: ${response.status}`);
+		}
+		return await response.text();
+	},
+	getSummary: async (): Promise<{
+		http_requests_total: number;
+		active_websocket_connections: number;
+		database_connections_active: number;
+		timestamp: string;
+	}> => {
+		const response = await apiRequest<{
+			http_requests_total: number;
+			active_websocket_connections: number;
+			database_connections_active: number;
+			timestamp: string;
+		}>("/metrics/summary");
+		return response;
+	},
+};

@@ -21,6 +21,9 @@ use crate::AppState;
 pub async fn get_metrics(
     State(app_state): State<AppState>,
 ) -> Result<String, StatusCode> {
+    // Update database connections metric before returning metrics
+    app_state.metrics_state.update_database_connections(&app_state.db_pool);
+    
     app_state.metrics_state.get_metrics().await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
@@ -38,6 +41,9 @@ pub async fn get_metrics(
 pub async fn get_metrics_summary(
     State(app_state): State<AppState>,
 ) -> Result<axum::Json<serde_json::Value>, StatusCode> {
+    // Update database connections metric before returning summary
+    app_state.metrics_state.update_database_connections(&app_state.db_pool);
+    
     // Get current metric values for dashboard display
     let request_count = app_state.metrics_state.request_counter.get();
     let active_connections = app_state.metrics_state.active_connections.get();
