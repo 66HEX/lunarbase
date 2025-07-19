@@ -4,6 +4,7 @@ use axum::{
     response::Json,
 };
 use serde::Deserialize;
+use crate::utils::ErrorResponse;
 
 use crate::{
     AppState,
@@ -20,6 +21,20 @@ pub struct WebSocketQuery {
 }
 
 /// Handle WebSocket connection upgrade
+/// WebSocket connection handler
+#[utoipa::path(
+    get,
+    path = "/ws",
+    tag = "WebSocket",
+    responses(
+        (status = 101, description = "WebSocket connection established"),
+        (status = 400, description = "Bad request - WebSocket upgrade failed", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn websocket_handler(
     ws: WebSocketUpgrade,
     State(app_state): State<AppState>,
@@ -59,6 +74,20 @@ pub async fn websocket_handler(
 }
 
 /// Get WebSocket connection statistics (Admin only)
+/// Get WebSocket connection statistics
+#[utoipa::path(
+    get,
+    path = "/ws/stats",
+    tag = "WebSocket",
+    responses(
+        (status = 200, description = "WebSocket statistics retrieved successfully", body = ApiResponse<WebSocketStats>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions - Admin only", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn websocket_stats(
     State(app_state): State<AppState>,
     request: Request,
@@ -93,6 +122,19 @@ pub async fn websocket_stats(
 }
 
 /// Get WebSocket connection count (public endpoint)
+/// Get WebSocket service status
+#[utoipa::path(
+    get,
+    path = "/ws/status",
+    tag = "WebSocket",
+    responses(
+        (status = 200, description = "WebSocket status retrieved successfully", body = ApiResponse<WebSocketStatus>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn websocket_status(
     State(app_state): State<AppState>,
 ) -> Result<Json<ApiResponse<WebSocketStatus>>, AuthError> {
@@ -108,9 +150,9 @@ pub async fn websocket_status(
     Ok(Json(ApiResponse::success(status)))
 }
 
-#[derive(Debug, serde::Serialize)]
+#[derive(Debug, serde::Serialize, utoipa::ToSchema)]
 pub struct WebSocketStatus {
     pub connections: usize,
     pub subscriptions: usize,
     pub status: String,
-} 
+}

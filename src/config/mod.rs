@@ -6,6 +6,10 @@ pub struct Config {
     pub server_host: String,
     pub server_port: u16,
     pub jwt_secret: String,
+    // Admin configuration
+    pub admin_email: Option<String>,
+    pub admin_password: Option<String>,
+    pub admin_username: Option<String>,
 }
 
 impl Config {
@@ -22,6 +26,10 @@ impl Config {
                 .parse()?,
             jwt_secret: std::env::var("JWT_SECRET")
                 .unwrap_or_else(|_| "your-secret-key".to_string()),
+            // Admin configuration - all optional
+            admin_email: std::env::var("LUNARBASE_ADMIN_EMAIL").ok(),
+            admin_password: std::env::var("LUNARBASE_ADMIN_PASSWORD").ok(),
+            admin_username: std::env::var("LUNARBASE_ADMIN_USERNAME").ok(),
         };
         
         Ok(config)
@@ -29,5 +37,12 @@ impl Config {
     
     pub fn server_address(&self) -> String {
         format!("{}:{}", self.server_host, self.server_port)
+    }
+
+    /// Check if admin configuration is complete
+    pub fn has_admin_config(&self) -> bool {
+        self.admin_email.is_some() && 
+        self.admin_password.is_some() && 
+        self.admin_username.is_some()
     }
 } 

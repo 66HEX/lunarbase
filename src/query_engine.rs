@@ -298,8 +298,26 @@ impl QueryEngine {
             FilterOperator::Gte => Ok((format!("{} >= ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
             FilterOperator::Lt => Ok((format!("{} < ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
             FilterOperator::Lte => Ok((format!("{} <= ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
-            FilterOperator::Like => Ok((format!("{} LIKE ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
-            FilterOperator::NotLike => Ok((format!("{} NOT LIKE ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
+            FilterOperator::Like => {
+                let value_str = self.filter_value_to_string(&filter.value);
+                // Automatically add wildcards for partial matching if not already present
+                let like_value = if value_str.starts_with('%') || value_str.ends_with('%') {
+                    value_str
+                } else {
+                    format!("%{}%", value_str)
+                };
+                Ok((format!("{} LIKE ?", escaped_field), vec![like_value]))
+            },
+            FilterOperator::NotLike => {
+                let value_str = self.filter_value_to_string(&filter.value);
+                // Automatically add wildcards for partial matching if not already present
+                let like_value = if value_str.starts_with('%') || value_str.ends_with('%') {
+                    value_str
+                } else {
+                    format!("%{}%", value_str)
+                };
+                Ok((format!("{} NOT LIKE ?", escaped_field), vec![like_value]))
+            },
             FilterOperator::IsNull => Ok((format!("{} IS NULL", escaped_field), vec![])),
             FilterOperator::IsNotNull => Ok((format!("{} IS NOT NULL", escaped_field), vec![])),
             FilterOperator::In => {
@@ -500,4 +518,4 @@ mod tests {
         assert!(sql.contains("OFFSET 5"));
         assert_eq!(params.len(), 2); // Two filter values
     }
-} 
+}

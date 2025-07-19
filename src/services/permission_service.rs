@@ -65,6 +65,35 @@ impl PermissionService {
             .map_err(|_| AuthError::NotFound("Role not found".to_string()))
     }
 
+    pub async fn get_role_collection_permission(
+        &self,
+        role_name: &str,
+        collection_id: i32,
+    ) -> Result<Option<CollectionPermission>, AuthError> {
+        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+
+        // Get role by name
+        let role = roles::table
+            .filter(roles::name.eq(role_name))
+            .first::<Role>(&mut conn)
+            .optional()
+            .map_err(|_| AuthError::InternalError)?;
+
+        if let Some(role) = role {
+            // Get collection permission for this role
+            let permission = collection_permissions::table
+                .filter(collection_permissions::collection_id.eq(collection_id))
+                .filter(collection_permissions::role_id.eq(role.id))
+                .first::<CollectionPermission>(&mut conn)
+                .optional()
+                .map_err(|_| AuthError::InternalError)?;
+
+            Ok(permission)
+        } else {
+            Err(AuthError::NotFound("Role not found".to_string()))
+        }
+    }
+
     pub async fn list_roles(&self) -> Result<Vec<Role>, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
@@ -377,6 +406,37 @@ impl PermissionService {
         Ok(accessible_collections)
     }
 
+    // Delete all permissions for a collection
+    pub async fn delete_collection_permissions(&self, collection_id: i32) -> Result<(), AuthError> {
+        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+
+        // Delete all role-based collection permissions
+        diesel::delete(
+            collection_permissions::table
+                .filter(collection_permissions::collection_id.eq(collection_id))
+        )
+        .execute(&mut conn)
+        .map_err(|_| AuthError::InternalError)?;
+
+        // Delete all user-specific collection permissions
+        diesel::delete(
+            user_collection_permissions::table
+                .filter(user_collection_permissions::collection_id.eq(collection_id))
+        )
+        .execute(&mut conn)
+        .map_err(|_| AuthError::InternalError)?;
+
+        // Delete all record permissions for this collection
+        diesel::delete(
+            record_permissions::table
+                .filter(record_permissions::collection_id.eq(collection_id))
+        )
+        .execute(&mut conn)
+        .map_err(|_| AuthError::InternalError)?;
+
+        Ok(())
+    }
+
     // Record-level permission management
     pub async fn set_record_permission(
         &self,
@@ -545,4 +605,4 @@ impl PermissionService {
         // Fall back to normal record permission check
         self.check_record_permission(user, collection_id, record_id, permission).await
     }
-} 
+}

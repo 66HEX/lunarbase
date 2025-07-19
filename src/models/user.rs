@@ -1,6 +1,7 @@
 use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use argon2::password_hash::SaltString;
 use rand::{rngs::OsRng, RngCore};
@@ -8,19 +9,29 @@ use rand::{rngs::OsRng, RngCore};
 use crate::schema::users;
 
 // Database model
-#[derive(Debug, Queryable, Selectable, Identifiable)]
+#[derive(Debug, Queryable, Selectable, Identifiable, Serialize, ToSchema)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
+    #[schema(example = 1)]
     pub id: i32,
+    #[schema(example = "user@example.com")]
     pub email: String,
+    #[serde(skip_serializing)]
     pub password_hash: String,
+    #[schema(example = "john_doe")]
     pub username: String,
+    #[schema(example = true)]
     pub is_verified: bool,
+    #[schema(example = true)]
     pub is_active: bool,
+    #[schema(example = "user")]
     pub role: String,
+    #[serde(skip_serializing)]
     pub failed_login_attempts: i32,
+    #[serde(skip_serializing)]
     pub locked_until: Option<NaiveDateTime>,
+    #[serde(skip_serializing)]
     pub last_login_at: Option<NaiveDateTime>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
@@ -52,35 +63,52 @@ pub struct NewUser {
 }
 
 // Request DTOs
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct RegisterRequest {
+    #[schema(example = "user@example.com")]
     pub email: String,
+    #[schema(example = "SecurePassword123!", min_length = 8)]
     pub password: String,
+    #[schema(example = "john_doe", min_length = 3, max_length = 30)]
     pub username: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct LoginRequest {
+    #[schema(example = "user@example.com")]
     pub email: String,
+    #[schema(example = "SecurePassword123!")]
     pub password: String,
 }
 
-// Response DTOs (never include sensitive data)
-#[derive(Debug, Serialize)]
+// Response DTOs
+#[derive(Debug, Serialize, ToSchema)]
 pub struct UserResponse {
+    #[schema(example = 1)]
     pub id: i32,
+    #[schema(example = "user@example.com")]
     pub email: String,
+    #[schema(example = "john_doe")]
     pub username: String,
+    #[schema(example = true)]
     pub is_verified: bool,
+    #[schema(example = true)]
+    pub is_active: bool,
+    #[schema(example = "user")]
     pub role: String,
+    pub last_login_at: Option<DateTime<Utc>>,
+    pub locked_until: Option<DateTime<Utc>>,
     pub created_at: DateTime<Utc>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, ToSchema)]
 pub struct AuthResponse {
     pub user: UserResponse,
+    #[schema(example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
     pub access_token: String,
+    #[schema(example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
     pub refresh_token: String,
+    #[schema(example = 3600)]
     pub expires_in: i64,
 }
 
@@ -108,7 +136,10 @@ impl User {
             email: self.email.clone(),
             username: self.username.clone(),
             is_verified: self.is_verified,
+            is_active: self.is_active,
             role: self.role.clone(),
+            last_login_at: self.last_login_at.map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
+            locked_until: self.locked_until.map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
             created_at: DateTime::from_naive_utc_and_offset(self.created_at, Utc),
         }
     }
@@ -139,6 +170,32 @@ impl NewUser {
             password_hash,
             username,
             role: "user".to_string(),
+        })
+    }
+
+    /// Create new user with custom role and secure password hashing
+    pub fn new_with_role(email: String, password: &str, username: String, role: String) -> Result<Self, String> {
+        // Generate cryptographically secure random salt
+        let mut salt_bytes = [0u8; 32];
+        OsRng.fill_bytes(&mut salt_bytes);
+        
+        let salt = SaltString::encode_b64(&salt_bytes)
+            .map_err(|e| format!("Salt generation failed: {}", e))?;
+        
+        let argon2 = Argon2::new(
+            argon2::Algorithm::Argon2id,
+            argon2::Version::V0x13,
+            argon2::Params::new(65536, 4, 2, None).unwrap(),
+        );
+        let password_hash = argon2.hash_password(password.as_bytes(), &salt)
+            .map_err(|e| format!("Password hashing failed: {}", e))?
+            .to_string();
+
+        Ok(NewUser {
+            email,
+            password_hash,
+            username,
+            role,
         })
     }
 }
@@ -216,4 +273,4 @@ impl LoginRequest {
             Err(errors)
         }
     }
-} 
+}

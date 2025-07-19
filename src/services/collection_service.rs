@@ -4,11 +4,12 @@ use serde_json::{Value, Map};
 use crate::models::{
     Collection, NewCollection, UpdateCollection, CollectionSchema, FieldDefinition, FieldType,
     CreateCollectionRequest, UpdateCollectionRequest, CreateRecordRequest, UpdateRecordRequest,
-    CollectionResponse, RecordResponse
+    CollectionResponse, RecordResponse, Role, SetCollectionPermissionRequest
 };
-use crate::schema::collections;
+use crate::schema::{collections, roles};
 use crate::utils::AuthError;
 use crate::query_engine::QueryEngine;
+use crate::services::PermissionService;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -16,6 +17,7 @@ type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 pub struct CollectionService {
     pub pool: DbPool,
     pub websocket_service: Option<std::sync::Arc<crate::services::WebSocketService>>,
+    pub permission_service: Option<PermissionService>,
 }
 
 impl CollectionService {
@@ -23,11 +25,17 @@ impl CollectionService {
         Self { 
             pool,
             websocket_service: None,
+            permission_service: None,
         }
     }
 
     pub fn with_websocket_service(mut self, websocket_service: std::sync::Arc<crate::services::WebSocketService>) -> Self {
         self.websocket_service = Some(websocket_service);
+        self
+    }
+
+    pub fn with_permission_service(mut self, permission_service: PermissionService) -> Self {
+        self.permission_service = Some(permission_service);
         self
     }
 
@@ -71,6 +79,11 @@ impl CollectionService {
         sql.push_str("    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\n");
 
         for field in &schema.fields {
+            // Skip 'id' field since it's already added as PRIMARY KEY
+            if field.name.to_lowercase() == "id" {
+                continue;
+            }
+            
             let field_type = self.map_field_type_to_sql(&field.field_type);
             let not_null = if field.required { " NOT NULL" } else { "" };
             
@@ -114,18 +127,30 @@ impl CollectionService {
     }
 
     fn create_records_table(&self, conn: &mut SqliteConnection, collection_name: &str, schema: &CollectionSchema) -> Result<(), AuthError> {
+        tracing::debug!("Generating CREATE TABLE SQL for collection: {}", collection_name);
         let create_sql = self.generate_create_table_sql(collection_name, schema);
+        tracing::debug!("Generated SQL: {}", create_sql);
         
+        tracing::debug!("Executing CREATE TABLE statement");
         diesel::sql_query(&create_sql)
             .execute(conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to create records table: {:?}", e);
+                AuthError::InternalError
+            })?;
+        tracing::debug!("Records table created successfully");
 
         // Create indexes
         let table_name = self.get_records_table_name(collection_name);
         let index_sql = format!("CREATE INDEX idx_{}_created_at ON {} (created_at)", table_name, table_name);
+        tracing::debug!("Creating index with SQL: {}", index_sql);
         diesel::sql_query(&index_sql)
             .execute(conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to create index: {:?}", e);
+                AuthError::InternalError
+            })?;
+        tracing::debug!("Index created successfully");
 
         // Create update trigger
         let trigger_sql = format!(
@@ -136,9 +161,14 @@ impl CollectionService {
              END",
             table_name, table_name, table_name
         );
+        tracing::debug!("Creating trigger with SQL: {}", trigger_sql);
         diesel::sql_query(&trigger_sql)
             .execute(conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to create trigger: {:?}", e);
+                AuthError::InternalError
+            })?;
+        tracing::debug!("Trigger created successfully");
 
         Ok(())
     }
@@ -164,6 +194,70 @@ impl CollectionService {
             .execute(conn)
             .map_err(|_| AuthError::InternalError)?;
 
+        Ok(())
+    }
+
+    // Create default permissions for a collection
+    async fn create_default_permissions(&self, collection_id: i32) -> Result<(), AuthError> {
+        if let Some(permission_service) = &self.permission_service {
+            let mut conn = self.pool.get()
+                .map_err(|_| AuthError::InternalError)?;
+
+            // Get all roles from the database
+            let roles = roles::table
+                .load::<Role>(&mut conn)
+                .map_err(|_| AuthError::InternalError)?;
+
+            // Define default permissions for each role
+            for role in roles {
+                let permissions = match role.name.as_str() {
+                    "admin" => SetCollectionPermissionRequest {
+                        role_name: role.name.clone(),
+                        can_create: true,
+                        can_read: true,
+                        can_update: true,
+                        can_delete: true,
+                        can_list: true,
+                    },
+                    "user" => SetCollectionPermissionRequest {
+                        role_name: role.name.clone(),
+                        can_create: true,
+                        can_read: true,
+                        can_update: true,
+                        can_delete: false,
+                        can_list: true,
+                    },
+                    "guest" => SetCollectionPermissionRequest {
+                        role_name: role.name.clone(),
+                        can_create: false,
+                        can_read: true,
+                        can_update: false,
+                        can_delete: false,
+                        can_list: true,
+                    },
+                    _ => {
+                        // For any other roles, give minimal permissions
+                        SetCollectionPermissionRequest {
+                            role_name: role.name.clone(),
+                            can_create: false,
+                            can_read: true,
+                            can_update: false,
+                            can_delete: false,
+                            can_list: true,
+                        }
+                    }
+                };
+
+                // Create the permission using PermissionService
+                if let Err(e) = permission_service.set_collection_permission(
+                    collection_id,
+                    role.id,
+                    &permissions,
+                ).await {
+                    tracing::warn!("Failed to create default permission for role {}: {:?}", role.name, e);
+                }
+            }
+        }
         Ok(())
     }
 
@@ -339,53 +433,100 @@ impl CollectionService {
 
     // Collection management methods
     pub async fn create_collection(&self, request: CreateCollectionRequest) -> Result<CollectionResponse, AuthError> {
+        tracing::debug!("Starting create_collection for: {}", request.name);
+        
         let mut conn = self.pool.get()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to get database connection: {:?}", e);
+                AuthError::InternalError
+            })?;
+
+        tracing::debug!("Got database connection successfully");
 
         // Validate collection name
+        tracing::debug!("Validating collection name: {}", request.name);
         self.validate_collection_name(&request.name)?;
+        tracing::debug!("Collection name validation passed");
 
         // Check if collection with this name already exists
+        tracing::debug!("Checking if collection already exists");
         let existing = collections::table
             .filter(collections::name.eq(&request.name))
             .first::<Collection>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to check existing collection: {:?}", e);
+                AuthError::InternalError
+            })?;
 
         if existing.is_some() {
+            tracing::debug!("Collection already exists");
             return Err(AuthError::ValidationError(vec!["Collection with this name already exists".to_string()]));
         }
+        tracing::debug!("Collection does not exist, proceeding");
 
         // Validate schema
+        tracing::debug!("Validating schema");
         self.validate_schema(&request.schema)?;
+        tracing::debug!("Schema validation passed");
 
+        tracing::debug!("Serializing schema to JSON");
         let schema_json = serde_json::to_string(&request.schema)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to serialize schema: {:?}", e);
+                AuthError::InternalError
+            })?;
+        tracing::debug!("Schema serialized successfully");
 
         let new_collection = NewCollection {
             name: request.name.clone(),
             display_name: request.display_name,
             description: request.description,
             schema_json,
-            is_system: Some(false),
+            is_system: false,
         };
 
         // Insert collection metadata
+        tracing::debug!("Inserting collection metadata");
         diesel::insert_into(collections::table)
             .values(&new_collection)
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to insert collection metadata: {:?}", e);
+                AuthError::InternalError
+            })?;
+        tracing::debug!("Collection metadata inserted successfully");
 
         // Create dedicated records table
+        tracing::debug!("Creating records table for collection: {}", request.name);
         self.create_records_table(&mut conn, &request.name, &request.schema)?;
+        tracing::debug!("Records table created successfully");
 
+        tracing::debug!("Fetching created collection");
         let collection = collections::table
             .filter(collections::name.eq(&new_collection.name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|e| {
+                tracing::error!("Failed to fetch created collection: {:?}", e);
+                AuthError::InternalError
+            })?;
+        tracing::debug!("Collection fetched successfully");
 
-        CollectionResponse::from_collection(collection)
-            .map_err(|_| AuthError::InternalError)
+        tracing::debug!("Creating default permissions for collection");
+        if let Err(e) = self.create_default_permissions(collection.id).await {
+            tracing::warn!("Failed to create default permissions for collection {}: {:?}", collection.name, e);
+        } else {
+            tracing::debug!("Default permissions created successfully");
+        }
+
+        tracing::debug!("Converting collection to response");
+        let response = CollectionResponse::from_collection(collection)
+            .map_err(|e| {
+                tracing::error!("Failed to convert collection to response: {:?}", e);
+                AuthError::InternalError
+            })?;
+        tracing::debug!("Collection creation completed successfully");
+        Ok(response)
     }
 
     pub async fn get_collection(&self, name: &str) -> Result<CollectionResponse, AuthError> {
@@ -449,7 +590,38 @@ impl CollectionService {
             return Err(AuthError::Forbidden("Cannot modify system collections".to_string()));
         }
 
+        // If name is being changed, validate it and rename the records table
+        if let Some(ref new_name) = request.name {
+            if new_name != &collection.name {
+                // Validate new name
+                if !new_name.chars().all(|c| c.is_alphanumeric() || c == '_') || new_name.is_empty() {
+                    return Err(AuthError::BadRequest("Collection name must contain only alphanumeric characters and underscores".to_string()));
+                }
+                
+                // Check if new name already exists
+                let existing = collections::table
+                    .filter(collections::name.eq(new_name))
+                    .first::<Collection>(&mut conn)
+                    .optional()
+                    .map_err(|_| AuthError::InternalError)?;
+                    
+                if existing.is_some() {
+                    return Err(AuthError::BadRequest("Collection with this name already exists".to_string()));
+                }
+                
+                // Rename the records table
+                let old_table_name = self.get_records_table_name(&collection.name);
+                let new_table_name = self.get_records_table_name(new_name);
+                
+                let rename_sql = format!("ALTER TABLE {} RENAME TO {}", old_table_name, new_table_name);
+                diesel::sql_query(&rename_sql)
+                    .execute(&mut conn)
+                    .map_err(|_| AuthError::InternalError)?;
+            }
+        }
+
         let mut update = UpdateCollection {
+            name: request.name,
             display_name: request.display_name,
             description: request.description,
             schema_json: None,
@@ -492,7 +664,16 @@ impl CollectionService {
             return Err(AuthError::Forbidden("Cannot delete system collections".to_string()));
         }
 
-        // Drop records table first
+        // Delete all permissions for this collection first
+        if let Some(permission_service) = &self.permission_service {
+            if let Err(e) = permission_service.delete_collection_permissions(collection.id).await {
+                tracing::warn!("Failed to delete permissions for collection {}: {:?}", name, e);
+            } else {
+                tracing::info!("Successfully deleted permissions for collection: {}", name);
+            }
+        }
+
+        // Drop records table
         self.drop_records_table(&mut conn, name)?;
 
         // Delete collection metadata
@@ -869,10 +1050,18 @@ impl CollectionService {
         }
 
         let mut field_names = std::collections::HashSet::new();
+        // Reserved field names that conflict with system columns (id is now allowed and will be skipped)
+        let reserved_field_names = ["created_at", "updated_at"];
+        
         for field in &schema.fields {
             // Check for duplicate field names
             if !field_names.insert(&field.name) {
                 return Err(AuthError::ValidationError(vec![format!("Duplicate field name: {}", field.name)]));
+            }
+
+            // Check for reserved field names
+            if reserved_field_names.contains(&field.name.as_str()) {
+                return Err(AuthError::ValidationError(vec![format!("Field name '{}' is reserved and cannot be used", field.name)]));
             }
 
             // Validate field name
@@ -894,6 +1083,11 @@ impl CollectionService {
         if let Some(data_obj) = data.as_object() {
             // Validate each field in the schema
             for field in &schema.fields {
+                // Skip 'id' field as it's auto-generated by the database
+                if field.name == "id" {
+                    continue;
+                }
+                
                 let field_value = data_obj.get(&field.name);
 
                 // Check required fields
@@ -1510,4 +1704,4 @@ mod tests {
             }
         }
     }
-} 
+}

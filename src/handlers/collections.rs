@@ -5,6 +5,7 @@ use axum::{
     Extension,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 use std::collections::HashMap;
 use crate::{
     AppState,
@@ -12,19 +13,58 @@ use crate::{
         CreateCollectionRequest, UpdateCollectionRequest, CreateRecordRequest, 
         UpdateRecordRequest, CollectionResponse, RecordResponse
     },
-    utils::{AuthError, ApiResponse, Claims},
+    utils::{AuthError, ApiResponse, Claims, ErrorResponse},
 };
 
-// Query parameters for listing records
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, ToSchema)]
 pub struct ListRecordsQuery {
+    #[schema(example = 10, minimum = 1, maximum = 100)]
     pub limit: Option<i64>,
+    #[schema(example = 0, minimum = 0)]
     pub offset: Option<i64>,
+    #[schema(example = "created_at:desc")]
     pub sort: Option<String>,
+    #[schema(example = "name:eq:Product")]
     pub filter: Option<String>,
 }
 
-// Collection management endpoints
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PaginatedRecordsResponse {
+    pub records: Vec<RecordWithCollection>,
+    pub pagination: PaginationMeta,
+}
+
+#[derive(Debug, Serialize, ToSchema, Clone)]
+pub struct RecordWithCollection {
+    #[serde(flatten)]
+    pub record: RecordResponse,
+    pub collection_name: String,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct PaginationMeta {
+    pub current_page: i64,
+    pub page_size: i64,
+    pub total_count: i64,
+    pub total_pages: i64,
+}
+
+/// Create a new collection
+#[utoipa::path(
+    post,
+    path = "/collections",
+    tag = "Collections",
+    request_body = CreateCollectionRequest,
+    security(
+        ("bearer_auth" = [])
+    ),
+    responses(
+        (status = 201, description = "Collection created successfully", body = ApiResponse<CollectionResponse>),
+        (status = 400, description = "Validation error", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse)
+    )
+)]
 pub async fn create_collection(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
@@ -39,6 +79,15 @@ pub async fn create_collection(
     Ok((StatusCode::CREATED, Json(ApiResponse::success(collection))))
 }
 
+/// List all collections
+#[utoipa::path(
+    get,
+    path = "/collections",
+    tag = "Collections",
+    responses(
+        (status = 200, description = "Collections retrieved successfully", body = ApiResponse<Vec<CollectionResponse>>)
+    )
+)]
 pub async fn list_collections(
     State(state): State<AppState>,
 ) -> Result<Json<ApiResponse<Vec<CollectionResponse>>>, AuthError> {
@@ -46,6 +95,19 @@ pub async fn list_collections(
     Ok(Json(ApiResponse::success(collections)))
 }
 
+/// Get collection by name
+#[utoipa::path(
+    get,
+    path = "/collections/{name}",
+    tag = "Collections",
+    params(
+        ("name" = String, Path, description = "Collection name")
+    ),
+    responses(
+        (status = 200, description = "Collection retrieved successfully", body = ApiResponse<CollectionResponse>),
+        (status = 404, description = "Collection not found", body = ErrorResponse)
+    )
+)]
 pub async fn get_collection(
     State(state): State<AppState>,
     Path(name): Path<String>,
@@ -54,6 +116,24 @@ pub async fn get_collection(
     Ok(Json(ApiResponse::success(collection)))
 }
 
+/// Update collection
+#[utoipa::path(
+    put,
+    path = "/api/collections/{name}",
+    params(
+        ("name" = String, Path, description = "Collection name")
+    ),
+    request_body = UpdateCollectionRequest,
+    responses(
+        (status = 200, description = "Collection updated successfully", body = ApiResponse<CollectionResponse>),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Insufficient permissions"),
+        (status = 404, description = "Collection not found")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn update_collection(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
@@ -69,6 +149,23 @@ pub async fn update_collection(
     Ok(Json(ApiResponse::success(collection)))
 }
 
+/// Delete collection
+#[utoipa::path(
+    delete,
+    path = "/api/collections/{name}",
+    params(
+        ("name" = String, Path, description = "Collection name")
+    ),
+    responses(
+        (status = 204, description = "Collection deleted successfully"),
+        (status = 401, description = "Unauthorized"),
+        (status = 403, description = "Insufficient permissions"),
+        (status = 404, description = "Collection not found")
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn delete_collection(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
@@ -84,6 +181,24 @@ pub async fn delete_collection(
 }
 
 // Record management endpoints
+#[utoipa::path(
+    post,
+    path = "/collections/{collection_name}/records",
+    tag = "Records",
+    params(
+        ("collection_name" = String, Path, description = "Collection name")
+    ),
+    request_body = CreateRecordRequest,
+    responses(
+        (status = 201, description = "Record created successfully", body = ApiResponse<RecordResponse>),
+        (status = 400, description = "Validation error", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Collection not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn create_record(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -123,6 +238,22 @@ pub async fn create_record(
     Ok((StatusCode::CREATED, Json(ApiResponse::success(record))))
 }
 
+#[utoipa::path(
+    get,
+    path = "/collections/{collection_name}/records",
+    tag = "Records",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("limit" = Option<i64>, Query, description = "Limit number of records"),
+        ("offset" = Option<i64>, Query, description = "Offset for pagination"),
+        ("sort" = Option<String>, Query, description = "Sort field"),
+        ("filter" = Option<String>, Query, description = "Filter expression")
+    ),
+    responses(
+        (status = 200, description = "Records retrieved successfully", body = ApiResponse<Vec<RecordResponse>>),
+        (status = 404, description = "Collection not found", body = ErrorResponse)
+    )
+)]
 pub async fn list_records(
     State(state): State<AppState>,
     Path(collection_name): Path<String>,
@@ -139,6 +270,150 @@ pub async fn list_records(
     Ok(Json(ApiResponse::success(records)))
 }
 
+/// List all records across all collections with pagination
+#[utoipa::path(
+    get,
+    path = "/records",
+    tag = "Records",
+    params(
+        ("limit" = Option<i64>, Query, description = "Limit number of records (max 100)"),
+        ("offset" = Option<i64>, Query, description = "Offset for pagination"),
+        ("sort" = Option<String>, Query, description = "Sort field"),
+        ("filter" = Option<String>, Query, description = "Filter expression")
+    ),
+    responses(
+        (status = 200, description = "Records retrieved successfully", body = ApiResponse<PaginatedRecordsResponse>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn list_all_records(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Query(query): Query<ListRecordsQuery>,
+) -> Result<Json<ApiResponse<PaginatedRecordsResponse>>, AuthError> {
+    // Convert claims to user for permission checking
+    use crate::schema::users;
+    use diesel::prelude::*;
+    
+    let user_id: i32 = claims.sub.parse()
+        .map_err(|_| AuthError::TokenInvalid)?;
+    
+    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    
+    let user = users::table
+        .filter(users::id.eq(user_id))
+        .first::<crate::models::User>(&mut conn)
+        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+
+    // Set default limit to 20, max 100
+    let limit = query.limit.unwrap_or(20).min(100);
+    let offset = query.offset.unwrap_or(0);
+
+    // Get all collections
+    let collections = state.collection_service.list_collections().await?;
+    
+    let mut all_records = Vec::new();
+    
+    // Collect records from all collections where user has LIST permission
+    for collection in collections {
+        // Check if user has LIST permission for this collection
+        let has_permission = state.permission_service
+            .check_collection_permission(&user, collection.id, crate::models::Permission::List)
+            .await.unwrap_or(false);
+            
+        if has_permission {
+            // Get records from this collection
+            let records = state.collection_service.list_records(
+                &collection.name,
+                None, // sort will be applied globally
+                query.filter.clone(),
+                None, // search
+                None, // no limit per collection
+                None  // no offset per collection
+            ).await.unwrap_or_default();
+            
+            // Add collection name to each record
+            for record in records {
+                all_records.push(RecordWithCollection {
+                    record,
+                    collection_name: collection.name.clone(),
+                });
+            }
+        }
+    }
+    
+    let total_count = all_records.len() as i64;
+    
+    // Apply global sorting
+    if let Some(sort_str) = &query.sort {
+        if sort_str.starts_with('-') {
+            let field = &sort_str[1..];
+            match field {
+                "created_at" => all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at)),
+                "updated_at" => all_records.sort_by(|a, b| b.record.updated_at.cmp(&a.record.updated_at)),
+                "id" => all_records.sort_by(|a, b| b.record.id.cmp(&a.record.id)),
+                "collection_name" => all_records.sort_by(|a, b| b.collection_name.cmp(&a.collection_name)),
+                _ => all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at)),
+            }
+        } else {
+            match sort_str.as_str() {
+                "created_at" => all_records.sort_by(|a, b| a.record.created_at.cmp(&b.record.created_at)),
+                "updated_at" => all_records.sort_by(|a, b| a.record.updated_at.cmp(&b.record.updated_at)),
+                "id" => all_records.sort_by(|a, b| a.record.id.cmp(&b.record.id)),
+                "collection_name" => all_records.sort_by(|a, b| a.collection_name.cmp(&b.collection_name)),
+                _ => all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at)),
+            }
+        }
+    } else {
+        // Default sort by created_at desc
+        all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at));
+    }
+    
+    // Apply pagination
+    let start_index = offset as usize;
+    let end_index = (start_index + limit as usize).min(all_records.len());
+    let paginated_records = if start_index < all_records.len() {
+        all_records[start_index..end_index].to_vec()
+    } else {
+        Vec::new()
+    };
+    
+    // Calculate pagination metadata
+    let current_page = (offset / limit) + 1;
+    let total_pages = (total_count + limit - 1) / limit; // Ceiling division
+    
+    let pagination_meta = PaginationMeta {
+        current_page,
+        page_size: limit,
+        total_count,
+        total_pages,
+    };
+    
+    let response = PaginatedRecordsResponse {
+        records: paginated_records,
+        pagination: pagination_meta,
+    };
+    
+    Ok(Json(ApiResponse::success(response)))
+}
+
+#[utoipa::path(
+    get,
+    path = "/collections/{collection_name}/records/{record_id}",
+    tag = "Records",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID")
+    ),
+    responses(
+        (status = 200, description = "Record retrieved successfully", body = ApiResponse<RecordResponse>),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    )
+)]
 pub async fn get_record(
     State(state): State<AppState>,
     Path((collection_name, record_id)): Path<(String, i32)>,
@@ -147,6 +422,25 @@ pub async fn get_record(
     Ok(Json(ApiResponse::success(record)))
 }
 
+#[utoipa::path(
+    put,
+    path = "/collections/{collection_name}/records/{record_id}",
+    tag = "Records",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID")
+    ),
+    request_body = UpdateRecordRequest,
+    responses(
+        (status = 200, description = "Record updated successfully", body = ApiResponse<RecordResponse>),
+        (status = 400, description = "Validation error", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn update_record(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -183,6 +477,23 @@ pub async fn update_record(
     Ok(Json(ApiResponse::success(record)))
 }
 
+#[utoipa::path(
+    delete,
+    path = "/collections/{collection_name}/records/{record_id}",
+    tag = "Records",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID")
+    ),
+    responses(
+        (status = 204, description = "Record deleted successfully"),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn delete_record(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -219,6 +530,18 @@ pub async fn delete_record(
 }
 
 // Helper endpoint to get collection schema
+#[utoipa::path(
+    get,
+    path = "/collections/{name}/schema",
+    tag = "Collections",
+    params(
+        ("name" = String, Path, description = "Collection name")
+    ),
+    responses(
+        (status = 200, description = "Collection schema retrieved successfully", body = ApiResponse<serde_json::Value>),
+        (status = 404, description = "Collection not found", body = ErrorResponse)
+    )
+)]
 pub async fn get_collection_schema(
     State(state): State<AppState>,
     Path(name): Path<String>,
@@ -230,7 +553,7 @@ pub async fn get_collection_schema(
 }
 
 // Statistics endpoint for admin
-#[derive(Serialize)]
+#[derive(Serialize, ToSchema)]
 pub struct CollectionStats {
     pub total_collections: i64,
     pub total_records: i64,
@@ -242,6 +565,18 @@ pub struct CollectionStats {
     pub smallest_collection: Option<String>,
 }
 
+#[utoipa::path(
+    get,
+    path = "/collections/stats",
+    tag = "Collections",
+    responses(
+        (status = 200, description = "Collection statistics retrieved successfully", body = ApiResponse<CollectionStats>),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_collections_stats(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
@@ -280,4 +615,4 @@ pub async fn get_collections_stats(
     };
 
     Ok(Json(ApiResponse::success(stats)))
-} 
+}

@@ -4,6 +4,7 @@ use axum::{
     Extension,
 };
 use serde_json::{json, Value};
+use crate::utils::ErrorResponse;
 
 use crate::{
     models::{
@@ -30,6 +31,25 @@ async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthE
 }
 
 // Set record-specific permissions
+/// Set permissions for a specific record
+#[utoipa::path(
+    post,
+    path = "/permissions/records/{record_id}",
+    tag = "Record Permissions",
+    params(
+        ("record_id" = String, Path, description = "Record ID")
+    ),
+    request_body = SetRecordPermissionRequest,
+    responses(
+        (status = 200, description = "Record permission set successfully", body = ApiResponse<RecordPermission>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn set_record_permission(
     State(state): State<AppState>,
     Extension(admin_claims): Extension<Claims>,
@@ -64,6 +84,24 @@ pub async fn set_record_permission(
 }
 
 // Get record permissions for a specific user
+/// Get permissions for a specific record
+#[utoipa::path(
+    get,
+    path = "/permissions/records/{record_id}",
+    tag = "Record Permissions",
+    params(
+        ("record_id" = String, Path, description = "Record ID")
+    ),
+    responses(
+        (status = 200, description = "Record permissions retrieved successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn get_record_permissions(
     State(state): State<AppState>,
     Extension(requesting_claims): Extension<Claims>,
@@ -135,7 +173,80 @@ pub async fn get_record_permissions(
     }))))
 }
 
+/// Get record permissions for a specific user
+#[utoipa::path(
+    get,
+    path = "/permissions/collections/{collection_name}/records/{record_id}/users/{user_id}",
+    tag = "Record Permissions",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID"),
+        ("user_id" = i32, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "User record permissions retrieved successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Record or user not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn get_user_record_permissions(
+    State(state): State<AppState>,
+    Extension(admin_claims): Extension<Claims>,
+    Path((collection_name, record_id)): Path<(String, i32)>,
+    Json(permission_request): Json<SetRecordPermissionRequest>,
+) -> Result<Json<ApiResponse<RecordPermission>>, AuthError> {
+    // Only admins can set record permissions
+    if admin_claims.role != "admin" {
+        return Err(AuthError::InsufficientPermissions);
+    }
+
+    // Get collection
+    let collection = state
+        .collection_service
+        .get_collection(&collection_name)
+        .await
+        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+
+    // Verify record exists
+    let _record = state
+        .collection_service
+        .get_record(&collection_name, record_id)
+        .await
+        .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
+
+    let permission = state
+        .permission_service
+        .set_record_permission(collection.id, &permission_request)
+        .await?;
+
+    Ok(Json(ApiResponse::success(permission)))
+}
+
 // Remove record permissions (revoke specific access)
+/// Remove permissions for a specific record
+#[utoipa::path(
+    delete,
+    path = "/permissions/collections/{collection_name}/records/{record_id}/users/{user_id}",
+    tag = "Record Permissions",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID"),
+        ("user_id" = i32, Path, description = "User ID")
+    ),
+    responses(
+        (status = 200, description = "Record permission removed successfully", body = ApiResponse<String>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn remove_record_permission(
     State(state): State<AppState>,
     Extension(admin_claims): Extension<Claims>,
@@ -174,6 +285,24 @@ pub async fn remove_record_permission(
 }
 
 // List all users with specific record permissions
+/// List all record permissions for a collection
+#[utoipa::path(
+    get,
+    path = "/permissions/collections/{collection_name}/records",
+    tag = "Record Permissions",
+    params(
+        ("collection_name" = String, Path, description = "Collection name")
+    ),
+    responses(
+        (status = 200, description = "Record permissions listed successfully", body = ApiResponse<Vec<RecordPermission>>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse),
+        (status = 404, description = "Collection not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn list_record_permissions(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -211,7 +340,24 @@ pub async fn list_record_permissions(
     }))))
 }
 
-// Check ownership of a record (utility endpoint)
+/// Check ownership permissions for a specific record
+#[utoipa::path(
+    get,
+    path = "/permissions/collections/{collection_name}/records/{record_id}/ownership",
+    tag = "Record Permissions",
+    params(
+        ("collection_name" = String, Path, description = "Collection name"),
+        ("record_id" = i32, Path, description = "Record ID")
+    ),
+    responses(
+        (status = 200, description = "Record ownership permissions checked successfully", body = ApiResponse<Value>),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 404, description = "Record not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
 pub async fn check_record_ownership_permissions(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
@@ -246,4 +392,4 @@ pub async fn check_record_ownership_permissions(
         "is_owner": is_owner,
         "can_access_as_owner": is_owner
     }))))
-} 
+}
