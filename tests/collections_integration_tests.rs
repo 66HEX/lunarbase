@@ -9,11 +9,12 @@ use tower::ServiceExt;
 use http_body_util::BodyExt;
 use uuid;
 
-use ironbase::{AppState, Config};
-use ironbase::database::create_pool;
-use ironbase::handlers::collections::*;
-use ironbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
-use ironbase::middleware::{add_middleware, auth_middleware};
+use lunarbase::{AppState, Config};
+use lunarbase::database::create_pool;
+use lunarbase::handlers::collections::*;
+use lunarbase::handlers::auth::*;
+use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
+use lunarbase::middleware::{add_middleware, auth_middleware};
 use axum::middleware;
 
 fn create_test_router() -> Router {
@@ -31,7 +32,9 @@ fn create_test_router() -> Router {
         .route("/collections/{name}", get(get_collection))
         .route("/collections/{name}/schema", get(get_collection_schema))
         .route("/collections/{name}/records", get(list_records))
-        .route("/collections/{name}/records/{record_id}", get(get_record));
+        .route("/collections/{name}/records/{record_id}", get(get_record))
+        .route("/auth/register", post(register))
+        .route("/auth/login", post(login));
 
     // Protected routes (authentication required)
     let protected_routes = Router::new()
@@ -129,9 +132,78 @@ fn unique_collection_name(prefix: &str) -> String {
 }
 
 // Helper function to create admin JWT token for testing
-fn create_admin_token() -> String {
+async fn create_admin_token(app: &Router) -> (i32, String) {
+    create_test_user(app, "admin").await
+}
+
+// Helper function to create test user and return (user_id, token)
+async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
+    use serde_json::Value;
+    use tower::ServiceExt;
+    use http_body_util::BodyExt;
+    
+    let unique_username = format!("test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_email = format!("{}@test.com", unique_username);
+    
+    let register_payload = json!({
+        "username": unique_username,
+        "email": unique_email,
+        "password": "TestPassword123!"
+    });
+
+    let register_request = Request::builder()
+        .uri("/api/auth/register")
+        .method("POST")
+        .header("content-type", "application/json")
+        .body(Body::from(register_payload.to_string()))
+        .unwrap();
+
+    let register_response = app.clone().oneshot(register_request).await.unwrap();
+    
+    // Debug: Print response details if not CREATED
+    let status = register_response.status();
+    if status != StatusCode::CREATED {
+        println!("Expected CREATED (201), got: {:?}", status);
+        let body = register_response.into_body().collect().await.unwrap().to_bytes();
+        let body_str = String::from_utf8(body.to_vec()).unwrap();
+        println!("Response body: {}", body_str);
+        panic!("Register failed with status: {:?}", status);
+    }
+    
+    assert_eq!(status, StatusCode::CREATED);
+
+    let body = register_response.into_body().collect().await.unwrap().to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    let json_response: Value = serde_json::from_str(&body_str).unwrap();
+    
+    // Extract user_id from data.user.id
+    let user_id: i32 = json_response["data"]["user"]["id"].as_i64().unwrap() as i32;
+
+    // If role is not "user", update the user's role in the database
+    if role != "user" {
+        use diesel::prelude::*;
+        use lunarbase::schema::users;
+        use lunarbase::Config;
+        use lunarbase::database::create_pool;
+        
+        let config = Config::from_env().expect("Failed to load config");
+        let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
+        let mut conn = db_pool.get().expect("Failed to get database connection");
+        
+        diesel::update(users::table.filter(users::id.eq(user_id)))
+            .set(users::role.eq(role))
+            .execute(&mut conn)
+            .expect("Failed to update user role");
+    }
+
+    let token = create_token_for_user(user_id, &unique_email, role);
+    (user_id, token)
+}
+
+// Helper function to create JWT token for specific user
+fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     use jsonwebtoken::{encode, Header, EncodingKey};
-    use ironbase::utils::Claims;
+    use lunarbase::utils::Claims;
     use std::time::{SystemTime, UNIX_EPOCH};
 
     let now = SystemTime::now()
@@ -141,15 +213,15 @@ fn create_admin_token() -> String {
     let exp = now + 3600; // 1 hour
 
     let claims = Claims {
-        sub: "2".to_string(), // Use admin user ID (matching permissions tests)
-        email: "admin@test.com".to_string(),
-        role: "admin".to_string(),
+        sub: user_id.to_string(),
+        email: email.to_string(),
+        role: role.to_string(),
         exp,
         iat: now,
         jti: uuid::Uuid::new_v4().to_string(),
     };
 
-    let jwt_secret = std::env::var("JWT_SECRET").unwrap_or_else(|_| "test_secret".to_string());
+    let jwt_secret = "test_secret".to_string();
     encode(&Header::default(), &claims, &EncodingKey::from_secret(jwt_secret.as_ref()))
         .expect("Failed to create test token")
 }
@@ -209,7 +281,7 @@ async fn test_create_collection_without_auth() {
 #[tokio::test]
 async fn test_create_collection_with_admin_auth() {
     let app = create_test_router();
-    let token = create_admin_token();
+    let (_admin_id, token) = create_admin_token(&app).await;
 
     let schema = create_test_schema();
     let unique_name = unique_collection_name("admin_test");
@@ -241,7 +313,7 @@ async fn test_create_collection_with_admin_auth() {
 #[tokio::test]
 async fn test_create_collection_invalid_name() {
     let app = create_test_router();
-    let token = create_admin_token();
+    let (_admin_id, token) = create_admin_token(&app).await;
 
     let schema = create_test_schema();
     let payload = json!({
@@ -267,7 +339,7 @@ async fn test_create_collection_invalid_name() {
 async fn test_create_and_get_collection() {
     let app1 = create_test_router();
     let app2 = create_test_router();
-    let token = create_admin_token();
+    let (_admin_id, token) = create_admin_token(&app1).await;
 
     let schema = create_test_schema();
     let unique_name = unique_collection_name("get_test");
@@ -312,7 +384,7 @@ async fn test_create_and_get_collection() {
 async fn test_create_record_success() {
     let app1 = create_test_router();
     let app2 = create_test_router();
-    let token = create_admin_token();
+    let (_admin_id, token) = create_admin_token(&app1).await;
 
     // First create a collection
     let schema = create_test_schema();
@@ -370,7 +442,7 @@ async fn test_create_record_success() {
 async fn test_create_record_validation_error() {
     let app1 = create_test_router();
     let app2 = create_test_router();
-    let token = create_admin_token();
+    let (_admin_id, token) = create_admin_token(&app1).await;
 
     // Create collection
     let schema = create_test_schema();
@@ -416,7 +488,7 @@ async fn test_create_record_validation_error() {
 async fn test_list_records_public() {
     let app1 = create_test_router();
     let app2 = create_test_router();
-    let token = create_admin_token();
+    let (_admin_id, token) = create_admin_token(&app1).await;
 
     // Create collection
     let schema = create_test_schema();
@@ -461,7 +533,7 @@ async fn test_list_records_public() {
 async fn test_get_collection_schema() {
     let app1 = create_test_router();
     let app2 = create_test_router();
-    let token = create_admin_token();
+    let (_admin_id, token) = create_admin_token(&app1).await;
 
     // Create collection
     let schema = create_test_schema();
@@ -500,4 +572,4 @@ async fn test_get_collection_schema() {
     
     assert!(json_response["data"]["fields"].is_array());
     assert_eq!(json_response["data"]["fields"].as_array().unwrap().len(), 5);
-} 
+}
