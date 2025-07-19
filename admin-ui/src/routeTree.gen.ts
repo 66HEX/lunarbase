@@ -8,266 +8,266 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as WebsocketRouteImport } from './routes/websocket'
-import { Route as UsersRouteImport } from './routes/users'
-import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as PermissionsRouteImport } from './routes/permissions'
-import { Route as MetricsRouteImport } from './routes/metrics'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as DashboardRouteImport } from './routes/dashboard'
-import { Route as CollectionsRouteImport } from './routes/collections'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as RecordsIndexRouteImport } from './routes/records/index'
-import { Route as RecordsCollectionRouteImport } from './routes/records/$collection'
+import { Route as rootRouteImport } from "./routes/__root";
+import { Route as WebsocketRouteImport } from "./routes/websocket";
+import { Route as UsersRouteImport } from "./routes/users";
+import { Route as SettingsRouteImport } from "./routes/settings";
+import { Route as PermissionsRouteImport } from "./routes/permissions";
+import { Route as MetricsRouteImport } from "./routes/metrics";
+import { Route as LoginRouteImport } from "./routes/login";
+import { Route as DashboardRouteImport } from "./routes/dashboard";
+import { Route as CollectionsRouteImport } from "./routes/collections";
+import { Route as IndexRouteImport } from "./routes/index";
+import { Route as RecordsIndexRouteImport } from "./routes/records/index";
+import { Route as RecordsCollectionRouteImport } from "./routes/records/$collection";
 
 const WebsocketRoute = WebsocketRouteImport.update({
-  id: '/websocket',
-  path: '/websocket',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/websocket",
+	path: "/websocket",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const UsersRoute = UsersRouteImport.update({
-  id: '/users',
-  path: '/users',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/users",
+	path: "/users",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const SettingsRoute = SettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/settings",
+	path: "/settings",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const PermissionsRoute = PermissionsRouteImport.update({
-  id: '/permissions',
-  path: '/permissions',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/permissions",
+	path: "/permissions",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const MetricsRoute = MetricsRouteImport.update({
-  id: '/metrics',
-  path: '/metrics',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/metrics",
+	path: "/metrics",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const LoginRoute = LoginRouteImport.update({
-  id: '/login',
-  path: '/login',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/login",
+	path: "/login",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const DashboardRoute = DashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/dashboard",
+	path: "/dashboard",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const CollectionsRoute = CollectionsRouteImport.update({
-  id: '/collections',
-  path: '/collections',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/collections",
+	path: "/collections",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/",
+	path: "/",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const RecordsIndexRoute = RecordsIndexRouteImport.update({
-  id: '/records/',
-  path: '/records/',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/records/",
+	path: "/records/",
+	getParentRoute: () => rootRouteImport,
+} as any);
 const RecordsCollectionRoute = RecordsCollectionRouteImport.update({
-  id: '/records/$collection',
-  path: '/records/$collection',
-  getParentRoute: () => rootRouteImport,
-} as any)
+	id: "/records/$collection",
+	path: "/records/$collection",
+	getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/collections': typeof CollectionsRoute
-  '/dashboard': typeof DashboardRoute
-  '/login': typeof LoginRoute
-  '/metrics': typeof MetricsRoute
-  '/permissions': typeof PermissionsRoute
-  '/settings': typeof SettingsRoute
-  '/users': typeof UsersRoute
-  '/websocket': typeof WebsocketRoute
-  '/records/$collection': typeof RecordsCollectionRoute
-  '/records': typeof RecordsIndexRoute
+	"/": typeof IndexRoute;
+	"/collections": typeof CollectionsRoute;
+	"/dashboard": typeof DashboardRoute;
+	"/login": typeof LoginRoute;
+	"/metrics": typeof MetricsRoute;
+	"/permissions": typeof PermissionsRoute;
+	"/settings": typeof SettingsRoute;
+	"/users": typeof UsersRoute;
+	"/websocket": typeof WebsocketRoute;
+	"/records/$collection": typeof RecordsCollectionRoute;
+	"/records": typeof RecordsIndexRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/collections': typeof CollectionsRoute
-  '/dashboard': typeof DashboardRoute
-  '/login': typeof LoginRoute
-  '/metrics': typeof MetricsRoute
-  '/permissions': typeof PermissionsRoute
-  '/settings': typeof SettingsRoute
-  '/users': typeof UsersRoute
-  '/websocket': typeof WebsocketRoute
-  '/records/$collection': typeof RecordsCollectionRoute
-  '/records': typeof RecordsIndexRoute
+	"/": typeof IndexRoute;
+	"/collections": typeof CollectionsRoute;
+	"/dashboard": typeof DashboardRoute;
+	"/login": typeof LoginRoute;
+	"/metrics": typeof MetricsRoute;
+	"/permissions": typeof PermissionsRoute;
+	"/settings": typeof SettingsRoute;
+	"/users": typeof UsersRoute;
+	"/websocket": typeof WebsocketRoute;
+	"/records/$collection": typeof RecordsCollectionRoute;
+	"/records": typeof RecordsIndexRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/collections': typeof CollectionsRoute
-  '/dashboard': typeof DashboardRoute
-  '/login': typeof LoginRoute
-  '/metrics': typeof MetricsRoute
-  '/permissions': typeof PermissionsRoute
-  '/settings': typeof SettingsRoute
-  '/users': typeof UsersRoute
-  '/websocket': typeof WebsocketRoute
-  '/records/$collection': typeof RecordsCollectionRoute
-  '/records/': typeof RecordsIndexRoute
+	__root__: typeof rootRouteImport;
+	"/": typeof IndexRoute;
+	"/collections": typeof CollectionsRoute;
+	"/dashboard": typeof DashboardRoute;
+	"/login": typeof LoginRoute;
+	"/metrics": typeof MetricsRoute;
+	"/permissions": typeof PermissionsRoute;
+	"/settings": typeof SettingsRoute;
+	"/users": typeof UsersRoute;
+	"/websocket": typeof WebsocketRoute;
+	"/records/$collection": typeof RecordsCollectionRoute;
+	"/records/": typeof RecordsIndexRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths:
-    | '/'
-    | '/collections'
-    | '/dashboard'
-    | '/login'
-    | '/metrics'
-    | '/permissions'
-    | '/settings'
-    | '/users'
-    | '/websocket'
-    | '/records/$collection'
-    | '/records'
-  fileRoutesByTo: FileRoutesByTo
-  to:
-    | '/'
-    | '/collections'
-    | '/dashboard'
-    | '/login'
-    | '/metrics'
-    | '/permissions'
-    | '/settings'
-    | '/users'
-    | '/websocket'
-    | '/records/$collection'
-    | '/records'
-  id:
-    | '__root__'
-    | '/'
-    | '/collections'
-    | '/dashboard'
-    | '/login'
-    | '/metrics'
-    | '/permissions'
-    | '/settings'
-    | '/users'
-    | '/websocket'
-    | '/records/$collection'
-    | '/records/'
-  fileRoutesById: FileRoutesById
+	fileRoutesByFullPath: FileRoutesByFullPath;
+	fullPaths:
+		| "/"
+		| "/collections"
+		| "/dashboard"
+		| "/login"
+		| "/metrics"
+		| "/permissions"
+		| "/settings"
+		| "/users"
+		| "/websocket"
+		| "/records/$collection"
+		| "/records";
+	fileRoutesByTo: FileRoutesByTo;
+	to:
+		| "/"
+		| "/collections"
+		| "/dashboard"
+		| "/login"
+		| "/metrics"
+		| "/permissions"
+		| "/settings"
+		| "/users"
+		| "/websocket"
+		| "/records/$collection"
+		| "/records";
+	id:
+		| "__root__"
+		| "/"
+		| "/collections"
+		| "/dashboard"
+		| "/login"
+		| "/metrics"
+		| "/permissions"
+		| "/settings"
+		| "/users"
+		| "/websocket"
+		| "/records/$collection"
+		| "/records/";
+	fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  CollectionsRoute: typeof CollectionsRoute
-  DashboardRoute: typeof DashboardRoute
-  LoginRoute: typeof LoginRoute
-  MetricsRoute: typeof MetricsRoute
-  PermissionsRoute: typeof PermissionsRoute
-  SettingsRoute: typeof SettingsRoute
-  UsersRoute: typeof UsersRoute
-  WebsocketRoute: typeof WebsocketRoute
-  RecordsCollectionRoute: typeof RecordsCollectionRoute
-  RecordsIndexRoute: typeof RecordsIndexRoute
+	IndexRoute: typeof IndexRoute;
+	CollectionsRoute: typeof CollectionsRoute;
+	DashboardRoute: typeof DashboardRoute;
+	LoginRoute: typeof LoginRoute;
+	MetricsRoute: typeof MetricsRoute;
+	PermissionsRoute: typeof PermissionsRoute;
+	SettingsRoute: typeof SettingsRoute;
+	UsersRoute: typeof UsersRoute;
+	WebsocketRoute: typeof WebsocketRoute;
+	RecordsCollectionRoute: typeof RecordsCollectionRoute;
+	RecordsIndexRoute: typeof RecordsIndexRoute;
 }
 
-declare module '@tanstack/react-router' {
-  interface FileRoutesByPath {
-    '/websocket': {
-      id: '/websocket'
-      path: '/websocket'
-      fullPath: '/websocket'
-      preLoaderRoute: typeof WebsocketRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/users': {
-      id: '/users'
-      path: '/users'
-      fullPath: '/users'
-      preLoaderRoute: typeof UsersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/settings': {
-      id: '/settings'
-      path: '/settings'
-      fullPath: '/settings'
-      preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/permissions': {
-      id: '/permissions'
-      path: '/permissions'
-      fullPath: '/permissions'
-      preLoaderRoute: typeof PermissionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/metrics': {
-      id: '/metrics'
-      path: '/metrics'
-      fullPath: '/metrics'
-      preLoaderRoute: typeof MetricsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/dashboard': {
-      id: '/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof DashboardRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/collections': {
-      id: '/collections'
-      path: '/collections'
-      fullPath: '/collections'
-      preLoaderRoute: typeof CollectionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/records/': {
-      id: '/records/'
-      path: '/records'
-      fullPath: '/records'
-      preLoaderRoute: typeof RecordsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/records/$collection': {
-      id: '/records/$collection'
-      path: '/records/$collection'
-      fullPath: '/records/$collection'
-      preLoaderRoute: typeof RecordsCollectionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-  }
+declare module "@tanstack/react-router" {
+	interface FileRoutesByPath {
+		"/websocket": {
+			id: "/websocket";
+			path: "/websocket";
+			fullPath: "/websocket";
+			preLoaderRoute: typeof WebsocketRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/users": {
+			id: "/users";
+			path: "/users";
+			fullPath: "/users";
+			preLoaderRoute: typeof UsersRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/settings": {
+			id: "/settings";
+			path: "/settings";
+			fullPath: "/settings";
+			preLoaderRoute: typeof SettingsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/permissions": {
+			id: "/permissions";
+			path: "/permissions";
+			fullPath: "/permissions";
+			preLoaderRoute: typeof PermissionsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/metrics": {
+			id: "/metrics";
+			path: "/metrics";
+			fullPath: "/metrics";
+			preLoaderRoute: typeof MetricsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/login": {
+			id: "/login";
+			path: "/login";
+			fullPath: "/login";
+			preLoaderRoute: typeof LoginRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/dashboard": {
+			id: "/dashboard";
+			path: "/dashboard";
+			fullPath: "/dashboard";
+			preLoaderRoute: typeof DashboardRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/collections": {
+			id: "/collections";
+			path: "/collections";
+			fullPath: "/collections";
+			preLoaderRoute: typeof CollectionsRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/": {
+			id: "/";
+			path: "/";
+			fullPath: "/";
+			preLoaderRoute: typeof IndexRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/records/": {
+			id: "/records/";
+			path: "/records";
+			fullPath: "/records";
+			preLoaderRoute: typeof RecordsIndexRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+		"/records/$collection": {
+			id: "/records/$collection";
+			path: "/records/$collection";
+			fullPath: "/records/$collection";
+			preLoaderRoute: typeof RecordsCollectionRouteImport;
+			parentRoute: typeof rootRouteImport;
+		};
+	}
 }
 
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  CollectionsRoute: CollectionsRoute,
-  DashboardRoute: DashboardRoute,
-  LoginRoute: LoginRoute,
-  MetricsRoute: MetricsRoute,
-  PermissionsRoute: PermissionsRoute,
-  SettingsRoute: SettingsRoute,
-  UsersRoute: UsersRoute,
-  WebsocketRoute: WebsocketRoute,
-  RecordsCollectionRoute: RecordsCollectionRoute,
-  RecordsIndexRoute: RecordsIndexRoute,
-}
+	IndexRoute: IndexRoute,
+	CollectionsRoute: CollectionsRoute,
+	DashboardRoute: DashboardRoute,
+	LoginRoute: LoginRoute,
+	MetricsRoute: MetricsRoute,
+	PermissionsRoute: PermissionsRoute,
+	SettingsRoute: SettingsRoute,
+	UsersRoute: UsersRoute,
+	WebsocketRoute: WebsocketRoute,
+	RecordsCollectionRoute: RecordsCollectionRoute,
+	RecordsIndexRoute: RecordsIndexRoute,
+};
 export const routeTree = rootRouteImport
-  ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+	._addFileChildren(rootRouteChildren)
+	._addFileTypes<FileRouteTypes>();

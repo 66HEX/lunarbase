@@ -1,29 +1,26 @@
+use crate::utils::ErrorResponse;
 use axum::{
+    Extension,
     extract::{Path, State},
     response::Json,
-    Extension,
 };
-use serde_json::{json, Value};
-use crate::utils::ErrorResponse;
+use serde_json::{Value, json};
 
 use crate::{
-    models::{
-        User, RecordPermission, SetRecordPermissionRequest,
-    },
-    utils::{AuthError, ApiResponse, Claims},
     AppState,
+    models::{RecordPermission, SetRecordPermissionRequest, User},
+    utils::{ApiResponse, AuthError, Claims},
 };
 
 // Helper function to convert Claims to User for permission checks
 async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
     use crate::schema::users;
     use diesel::prelude::*;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     users::table
         .filter(users::id.eq(user_id))
         .first::<User>(&mut conn)
@@ -107,7 +104,9 @@ pub async fn get_record_permissions(
     Extension(requesting_claims): Extension<Claims>,
     Path((collection_name, record_id, user_id)): Path<(String, i32, i32)>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    let requesting_user_id: i32 = requesting_claims.sub.parse()
+    let requesting_user_id: i32 = requesting_claims
+        .sub
+        .parse()
         .map_err(|_| AuthError::TokenInvalid)?;
 
     // Users can only view their own record permissions, admins can view anyone's
@@ -137,7 +136,7 @@ pub async fn get_record_permissions(
         use crate::schema::users;
         use diesel::prelude::*;
         let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-        
+
         users::table
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
@@ -147,17 +146,32 @@ pub async fn get_record_permissions(
     // Check each permission type
     let can_read = state
         .permission_service
-        .check_record_permission(&target_user, collection.id, record_id, crate::models::Permission::Read)
+        .check_record_permission(
+            &target_user,
+            collection.id,
+            record_id,
+            crate::models::Permission::Read,
+        )
         .await?;
 
     let can_update = state
         .permission_service
-        .check_record_permission(&target_user, collection.id, record_id, crate::models::Permission::Update)
+        .check_record_permission(
+            &target_user,
+            collection.id,
+            record_id,
+            crate::models::Permission::Update,
+        )
         .await?;
 
     let can_delete = state
         .permission_service
-        .check_record_permission(&target_user, collection.id, record_id, crate::models::Permission::Delete)
+        .check_record_permission(
+            &target_user,
+            collection.id,
+            record_id,
+            crate::models::Permission::Delete,
+        )
         .await?;
 
     Ok(Json(ApiResponse::success(json!({

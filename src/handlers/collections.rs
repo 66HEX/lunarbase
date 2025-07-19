@@ -1,20 +1,20 @@
-use axum::{
-    extract::{Path, Query, State},
-    http::StatusCode,
-    response::Json,
-    Extension,
-};
-use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-use std::collections::HashMap;
 use crate::{
     AppState,
     models::{
-        CreateCollectionRequest, UpdateCollectionRequest, CreateRecordRequest, 
-        UpdateRecordRequest, CollectionResponse, RecordResponse
+        CollectionResponse, CreateCollectionRequest, CreateRecordRequest, RecordResponse,
+        UpdateCollectionRequest, UpdateRecordRequest,
     },
-    utils::{AuthError, ApiResponse, Claims, ErrorResponse},
+    utils::{ApiResponse, AuthError, Claims, ErrorResponse},
 };
+use axum::{
+    Extension,
+    extract::{Path, Query, State},
+    http::StatusCode,
+    response::Json,
+};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ListRecordsQuery {
@@ -145,7 +145,10 @@ pub async fn update_collection(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    let collection = state.collection_service.update_collection(&name, request).await?;
+    let collection = state
+        .collection_service
+        .update_collection(&name, request)
+        .await?;
     Ok(Json(ApiResponse::success(collection)))
 }
 
@@ -208,22 +211,25 @@ pub async fn create_record(
     // Convert claims to user for ownership service
     use crate::schema::users;
     use diesel::prelude::*;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     let user = users::table
         .filter(users::id.eq(user_id))
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
     // Get collection for permission checking
-    let collection = state.collection_service.get_collection(&collection_name).await?;
-    
+    let collection = state
+        .collection_service
+        .get_collection(&collection_name)
+        .await?;
+
     // Check collection-level create permission
-    let has_permission = state.permission_service
+    let has_permission = state
+        .permission_service
         .check_collection_permission(&user, collection.id, crate::models::Permission::Create)
         .await?;
 
@@ -232,9 +238,14 @@ pub async fn create_record(
     }
 
     // Set ownership in record data
-    state.ownership_service.set_record_ownership(&user, &mut request.data)?;
+    state
+        .ownership_service
+        .set_record_ownership(&user, &mut request.data)?;
 
-    let record = state.collection_service.create_record_with_events(&collection_name, request, Some(user_id)).await?;
+    let record = state
+        .collection_service
+        .create_record_with_events(&collection_name, request, Some(user_id))
+        .await?;
     Ok((StatusCode::CREATED, Json(ApiResponse::success(record))))
 }
 
@@ -259,14 +270,17 @@ pub async fn list_records(
     Path(collection_name): Path<String>,
     Query(query): Query<ListRecordsQuery>,
 ) -> Result<Json<ApiResponse<Vec<RecordResponse>>>, AuthError> {
-    let records = state.collection_service.list_records(
-        &collection_name, 
-        query.sort,
-        query.filter,
-        None, // search - will be implemented later
-        query.limit, 
-        query.offset
-    ).await?;
+    let records = state
+        .collection_service
+        .list_records(
+            &collection_name,
+            query.sort,
+            query.filter,
+            None, // search - will be implemented later
+            query.limit,
+            query.offset,
+        )
+        .await?;
     Ok(Json(ApiResponse::success(records)))
 }
 
@@ -298,12 +312,11 @@ pub async fn list_all_records(
     // Convert claims to user for permission checking
     use crate::schema::users;
     use diesel::prelude::*;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     let user = users::table
         .filter(users::id.eq(user_id))
         .first::<crate::models::User>(&mut conn)
@@ -315,27 +328,33 @@ pub async fn list_all_records(
 
     // Get all collections
     let collections = state.collection_service.list_collections().await?;
-    
+
     let mut all_records = Vec::new();
-    
+
     // Collect records from all collections where user has LIST permission
     for collection in collections {
         // Check if user has LIST permission for this collection
-        let has_permission = state.permission_service
+        let has_permission = state
+            .permission_service
             .check_collection_permission(&user, collection.id, crate::models::Permission::List)
-            .await.unwrap_or(false);
-            
+            .await
+            .unwrap_or(false);
+
         if has_permission {
             // Get records from this collection
-            let records = state.collection_service.list_records(
-                &collection.name,
-                None, // sort will be applied globally
-                query.filter.clone(),
-                None, // search
-                None, // no limit per collection
-                None  // no offset per collection
-            ).await.unwrap_or_default();
-            
+            let records = state
+                .collection_service
+                .list_records(
+                    &collection.name,
+                    None, // sort will be applied globally
+                    query.filter.clone(),
+                    None, // search
+                    None, // no limit per collection
+                    None, // no offset per collection
+                )
+                .await
+                .unwrap_or_default();
+
             // Add collection name to each record
             for record in records {
                 all_records.push(RecordWithCollection {
@@ -345,26 +364,38 @@ pub async fn list_all_records(
             }
         }
     }
-    
+
     let total_count = all_records.len() as i64;
-    
+
     // Apply global sorting
     if let Some(sort_str) = &query.sort {
         if sort_str.starts_with('-') {
             let field = &sort_str[1..];
             match field {
-                "created_at" => all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at)),
-                "updated_at" => all_records.sort_by(|a, b| b.record.updated_at.cmp(&a.record.updated_at)),
+                "created_at" => {
+                    all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at))
+                }
+                "updated_at" => {
+                    all_records.sort_by(|a, b| b.record.updated_at.cmp(&a.record.updated_at))
+                }
                 "id" => all_records.sort_by(|a, b| b.record.id.cmp(&a.record.id)),
-                "collection_name" => all_records.sort_by(|a, b| b.collection_name.cmp(&a.collection_name)),
+                "collection_name" => {
+                    all_records.sort_by(|a, b| b.collection_name.cmp(&a.collection_name))
+                }
                 _ => all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at)),
             }
         } else {
             match sort_str.as_str() {
-                "created_at" => all_records.sort_by(|a, b| a.record.created_at.cmp(&b.record.created_at)),
-                "updated_at" => all_records.sort_by(|a, b| a.record.updated_at.cmp(&b.record.updated_at)),
+                "created_at" => {
+                    all_records.sort_by(|a, b| a.record.created_at.cmp(&b.record.created_at))
+                }
+                "updated_at" => {
+                    all_records.sort_by(|a, b| a.record.updated_at.cmp(&b.record.updated_at))
+                }
                 "id" => all_records.sort_by(|a, b| a.record.id.cmp(&b.record.id)),
-                "collection_name" => all_records.sort_by(|a, b| a.collection_name.cmp(&b.collection_name)),
+                "collection_name" => {
+                    all_records.sort_by(|a, b| a.collection_name.cmp(&b.collection_name))
+                }
                 _ => all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at)),
             }
         }
@@ -372,7 +403,7 @@ pub async fn list_all_records(
         // Default sort by created_at desc
         all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at));
     }
-    
+
     // Apply pagination
     let start_index = offset as usize;
     let end_index = (start_index + limit as usize).min(all_records.len());
@@ -381,23 +412,23 @@ pub async fn list_all_records(
     } else {
         Vec::new()
     };
-    
+
     // Calculate pagination metadata
     let current_page = (offset / limit) + 1;
     let total_pages = (total_count + limit - 1) / limit; // Ceiling division
-    
+
     let pagination_meta = PaginationMeta {
         current_page,
         page_size: limit,
         total_count,
         total_pages,
     };
-    
+
     let response = PaginatedRecordsResponse {
         records: paginated_records,
         pagination: pagination_meta,
     };
-    
+
     Ok(Json(ApiResponse::success(response)))
 }
 
@@ -418,7 +449,10 @@ pub async fn get_record(
     State(state): State<AppState>,
     Path((collection_name, record_id)): Path<(String, i32)>,
 ) -> Result<Json<ApiResponse<RecordResponse>>, AuthError> {
-    let record = state.collection_service.get_record(&collection_name, record_id).await?;
+    let record = state
+        .collection_service
+        .get_record(&collection_name, record_id)
+        .await?;
     Ok(Json(ApiResponse::success(record)))
 }
 
@@ -450,22 +484,25 @@ pub async fn update_record(
     // Convert claims to user for permission checking
     use crate::schema::users;
     use diesel::prelude::*;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     let user = users::table
         .filter(users::id.eq(user_id))
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
     // Get collection for permission checking
-    let collection = state.collection_service.get_collection(&collection_name).await?;
-    
+    let collection = state
+        .collection_service
+        .get_collection(&collection_name)
+        .await?;
+
     // Check collection-level update permission
-    let has_permission = state.permission_service
+    let has_permission = state
+        .permission_service
         .check_collection_permission(&user, collection.id, crate::models::Permission::Update)
         .await?;
 
@@ -473,7 +510,10 @@ pub async fn update_record(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    let record = state.collection_service.update_record_with_events(&collection_name, record_id, request, Some(user_id)).await?;
+    let record = state
+        .collection_service
+        .update_record_with_events(&collection_name, record_id, request, Some(user_id))
+        .await?;
     Ok(Json(ApiResponse::success(record)))
 }
 
@@ -502,22 +542,25 @@ pub async fn delete_record(
     // Convert claims to user for permission checking
     use crate::schema::users;
     use diesel::prelude::*;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     let user = users::table
         .filter(users::id.eq(user_id))
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
     // Get collection for permission checking
-    let collection = state.collection_service.get_collection(&collection_name).await?;
-    
+    let collection = state
+        .collection_service
+        .get_collection(&collection_name)
+        .await?;
+
     // Check collection-level delete permission
-    let has_permission = state.permission_service
+    let has_permission = state
+        .permission_service
         .check_collection_permission(&user, collection.id, crate::models::Permission::Delete)
         .await?;
 
@@ -525,7 +568,10 @@ pub async fn delete_record(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    state.collection_service.delete_record_with_events(&collection_name, record_id, Some(user_id)).await?;
+    state
+        .collection_service
+        .delete_record_with_events(&collection_name, record_id, Some(user_id))
+        .await?;
     Ok(StatusCode::NO_CONTENT)
 }
 
@@ -547,8 +593,8 @@ pub async fn get_collection_schema(
     Path(name): Path<String>,
 ) -> Result<Json<ApiResponse<serde_json::Value>>, AuthError> {
     let collection = state.collection_service.get_collection(&name).await?;
-    let schema_json = serde_json::to_value(collection.schema)
-        .map_err(|_| AuthError::InternalError)?;
+    let schema_json =
+        serde_json::to_value(collection.schema).map_err(|_| AuthError::InternalError)?;
     Ok(Json(ApiResponse::success(schema_json)))
 }
 
@@ -588,9 +634,15 @@ pub async fn get_collections_stats(
 
     let collections = state.collection_service.list_collections().await?;
     let total_collections = collections.len() as i64;
-    
-    let (total_records, records_per_collection, field_types_distribution, average_records_per_collection, largest_collection, smallest_collection) = 
-        state.collection_service.get_collections_stats().await?;
+
+    let (
+        total_records,
+        records_per_collection,
+        field_types_distribution,
+        average_records_per_collection,
+        largest_collection,
+        smallest_collection,
+    ) = state.collection_service.get_collections_stats().await?;
 
     // Calculate collections by type (could be enhanced further)
     let mut collections_by_type = HashMap::new();
@@ -602,7 +654,7 @@ pub async fn get_collections_stats(
         };
         *collections_by_type.entry(collection_type).or_insert(0) += 1;
     }
-    
+
     let stats = CollectionStats {
         total_collections,
         total_records,

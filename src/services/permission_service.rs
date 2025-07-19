@@ -2,12 +2,13 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 
 use crate::models::{
-    Role, NewRole, CollectionPermission, NewCollectionPermission,
-    UserCollectionPermission, NewUserCollectionPermission,
-    RecordPermission, NewRecordPermission, PermissionResult, Permission,
-    User
+    CollectionPermission, NewCollectionPermission, NewRecordPermission, NewRole,
+    NewUserCollectionPermission, Permission, PermissionResult, RecordPermission, Role, User,
+    UserCollectionPermission,
 };
-use crate::schema::{roles, collection_permissions, user_collection_permissions, record_permissions, collections};
+use crate::schema::{
+    collection_permissions, collections, record_permissions, roles, user_collection_permissions,
+};
 use crate::utils::AuthError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
@@ -23,7 +24,10 @@ impl PermissionService {
     }
 
     // Role management
-    pub async fn create_role(&self, role_request: &crate::models::CreateRoleRequest) -> Result<Role, AuthError> {
+    pub async fn create_role(
+        &self,
+        role_request: &crate::models::CreateRoleRequest,
+    ) -> Result<Role, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
         // Check if role already exists
@@ -34,9 +38,10 @@ impl PermissionService {
             .map_err(|_| AuthError::InternalError)?;
 
         if existing_role.is_some() {
-            return Err(AuthError::ValidationError(vec![
-                format!("Role '{}' already exists", role_request.name)
-            ]));
+            return Err(AuthError::ValidationError(vec![format!(
+                "Role '{}' already exists",
+                role_request.name
+            )]));
         }
 
         let new_role = NewRole {
@@ -231,7 +236,9 @@ impl PermissionService {
             return Ok(true);
         }
 
-        let permissions = self.get_user_collection_permissions(user, collection_id).await?;
+        let permissions = self
+            .get_user_collection_permissions(user, collection_id)
+            .await?;
         Ok(permissions.has_permission(permission.as_str()))
     }
 
@@ -340,11 +347,15 @@ impl PermissionService {
         }
 
         // Fall back to collection-level permissions
-        self.check_collection_permission(user, collection_id, permission).await
+        self.check_collection_permission(user, collection_id, permission)
+            .await
     }
 
     // Utility methods
-    pub async fn get_user_accessible_collections(&self, user: &User) -> Result<Vec<i32>, AuthError> {
+    pub async fn get_user_accessible_collections(
+        &self,
+        user: &User,
+    ) -> Result<Vec<i32>, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
         // Admin can access all collections
@@ -370,11 +381,12 @@ impl PermissionService {
             let role_collections: Vec<i32> = collection_permissions::table
                 .filter(collection_permissions::role_id.eq(role.id))
                 .filter(
-                    collection_permissions::can_read.eq(true)
+                    collection_permissions::can_read
+                        .eq(true)
                         .or(collection_permissions::can_list.eq(true))
                         .or(collection_permissions::can_create.eq(true))
                         .or(collection_permissions::can_update.eq(true))
-                        .or(collection_permissions::can_delete.eq(true))
+                        .or(collection_permissions::can_delete.eq(true)),
                 )
                 .select(collection_permissions::collection_id)
                 .load(&mut conn)
@@ -387,11 +399,12 @@ impl PermissionService {
         let user_collections: Vec<i32> = user_collection_permissions::table
             .filter(user_collection_permissions::user_id.eq(user.id))
             .filter(
-                user_collection_permissions::can_read.eq(Some(true))
+                user_collection_permissions::can_read
+                    .eq(Some(true))
                     .or(user_collection_permissions::can_list.eq(Some(true)))
                     .or(user_collection_permissions::can_create.eq(Some(true)))
                     .or(user_collection_permissions::can_update.eq(Some(true)))
-                    .or(user_collection_permissions::can_delete.eq(Some(true)))
+                    .or(user_collection_permissions::can_delete.eq(Some(true))),
             )
             .select(user_collection_permissions::collection_id)
             .load(&mut conn)
@@ -413,7 +426,7 @@ impl PermissionService {
         // Delete all role-based collection permissions
         diesel::delete(
             collection_permissions::table
-                .filter(collection_permissions::collection_id.eq(collection_id))
+                .filter(collection_permissions::collection_id.eq(collection_id)),
         )
         .execute(&mut conn)
         .map_err(|_| AuthError::InternalError)?;
@@ -421,15 +434,14 @@ impl PermissionService {
         // Delete all user-specific collection permissions
         diesel::delete(
             user_collection_permissions::table
-                .filter(user_collection_permissions::collection_id.eq(collection_id))
+                .filter(user_collection_permissions::collection_id.eq(collection_id)),
         )
         .execute(&mut conn)
         .map_err(|_| AuthError::InternalError)?;
 
         // Delete all record permissions for this collection
         diesel::delete(
-            record_permissions::table
-                .filter(record_permissions::collection_id.eq(collection_id))
+            record_permissions::table.filter(record_permissions::collection_id.eq(collection_id)),
         )
         .execute(&mut conn)
         .map_err(|_| AuthError::InternalError)?;
@@ -504,7 +516,7 @@ impl PermissionService {
             record_permissions::table
                 .filter(record_permissions::record_id.eq(record_id))
                 .filter(record_permissions::collection_id.eq(collection_id))
-                .filter(record_permissions::user_id.eq(user_id))
+                .filter(record_permissions::user_id.eq(user_id)),
         )
         .execute(&mut conn)
         .map_err(|_| AuthError::InternalError)?;
@@ -588,7 +600,7 @@ impl PermissionService {
 
         // Check if user owns the record
         let is_owner = self.check_record_ownership(user, record).await?;
-        
+
         // Record owners automatically have read and update permissions
         if is_owner {
             match permission {
@@ -603,6 +615,7 @@ impl PermissionService {
         }
 
         // Fall back to normal record permission check
-        self.check_record_permission(user, collection_id, record_id, permission).await
+        self.check_record_permission(user, collection_id, record_id, permission)
+            .await
     }
 }

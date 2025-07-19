@@ -1,6 +1,6 @@
-use serde::{Deserialize, Serialize};
-use crate::utils::AuthError;
 use crate::models::CollectionSchema;
+use crate::utils::AuthError;
+use serde::{Deserialize, Serialize};
 
 /// Query parser for handling filtering, sorting and search operations
 #[derive(Debug, Clone)]
@@ -37,18 +37,18 @@ pub struct FilterCondition {
 /// Supported filter operators
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FilterOperator {
-    Eq,         // Equal
-    Ne,         // Not equal
-    Gt,         // Greater than
-    Gte,        // Greater than or equal
-    Lt,         // Less than
-    Lte,        // Less than or equal
-    Like,       // SQL LIKE pattern
-    NotLike,    // SQL NOT LIKE pattern
-    In,         // In array of values
-    NotIn,      // Not in array of values
-    IsNull,     // IS NULL
-    IsNotNull,  // IS NOT NULL
+    Eq,        // Equal
+    Ne,        // Not equal
+    Gt,        // Greater than
+    Gte,       // Greater than or equal
+    Lt,        // Less than
+    Lte,       // Less than or equal
+    Like,      // SQL LIKE pattern
+    NotLike,   // SQL NOT LIKE pattern
+    In,        // In array of values
+    NotIn,     // Not in array of values
+    IsNull,    // IS NULL
+    IsNotNull, // IS NOT NULL
 }
 
 /// Filter value types
@@ -65,10 +65,10 @@ impl QueryEngine {
     /// Create a new QueryEngine from query parameters
     pub fn new(
         sort: Option<String>,
-        filter: Option<String>, 
+        filter: Option<String>,
         search: Option<String>,
         limit: Option<i64>,
-        offset: Option<i64>
+        offset: Option<i64>,
     ) -> Result<Self, AuthError> {
         let mut query_engine = QueryEngine {
             sort: Vec::new(),
@@ -94,7 +94,7 @@ impl QueryEngine {
     /// Parse sort string format: "field1,-field2,field3" (- prefix for DESC)
     fn parse_sort(sort_str: &str) -> Result<Vec<SortField>, AuthError> {
         let mut sort_fields = Vec::new();
-        
+
         for field_str in sort_str.split(',') {
             let field_str = field_str.trim();
             if field_str.is_empty() {
@@ -109,9 +109,10 @@ impl QueryEngine {
 
             // Validate field name (alphanumeric and underscore only)
             if !Self::is_valid_field_name(field) {
-                return Err(AuthError::ValidationError(vec![
-                    format!("Invalid field name for sorting: {}", field)
-                ]));
+                return Err(AuthError::ValidationError(vec![format!(
+                    "Invalid field name for sorting: {}",
+                    field
+                )]));
             }
 
             sort_fields.push(SortField {
@@ -126,7 +127,7 @@ impl QueryEngine {
     /// Parse filter string format: "field1:eq:value1,field2:gt:123,field3:like:pattern"
     fn parse_filters(filter_str: &str) -> Result<Vec<FilterCondition>, AuthError> {
         let mut filters = Vec::new();
-        
+
         for filter_part in filter_str.split(',') {
             let filter_part = filter_part.trim();
             if filter_part.is_empty() {
@@ -135,20 +136,26 @@ impl QueryEngine {
 
             let parts: Vec<&str> = filter_part.split(':').collect();
             if parts.len() < 2 {
-                return Err(AuthError::ValidationError(vec![
-                    format!("Invalid filter format: {}", filter_part)
-                ]));
+                return Err(AuthError::ValidationError(vec![format!(
+                    "Invalid filter format: {}",
+                    filter_part
+                )]));
             }
 
             let field = parts[0];
             let operator_str = parts[1];
-            let value_str = if parts.len() > 2 { parts[2..].join(":") } else { String::new() };
+            let value_str = if parts.len() > 2 {
+                parts[2..].join(":")
+            } else {
+                String::new()
+            };
 
             // Validate field name
             if !Self::is_valid_field_name(field) {
-                return Err(AuthError::ValidationError(vec![
-                    format!("Invalid field name for filtering: {}", field)
-                ]));
+                return Err(AuthError::ValidationError(vec![format!(
+                    "Invalid field name for filtering: {}",
+                    field
+                )]));
             }
 
             // Parse operator
@@ -182,18 +189,20 @@ impl QueryEngine {
             "notin" => Ok(FilterOperator::NotIn),
             "isnull" => Ok(FilterOperator::IsNull),
             "isnotnull" => Ok(FilterOperator::IsNotNull),
-            _ => Err(AuthError::ValidationError(vec![
-                format!("Unsupported filter operator: {}", op_str)
-            ])),
+            _ => Err(AuthError::ValidationError(vec![format!(
+                "Unsupported filter operator: {}",
+                op_str
+            )])),
         }
     }
 
     /// Parse filter value based on operator
-    fn parse_filter_value(value_str: &str, operator: &FilterOperator) -> Result<FilterValue, AuthError> {
+    fn parse_filter_value(
+        value_str: &str,
+        operator: &FilterOperator,
+    ) -> Result<FilterValue, AuthError> {
         match operator {
-            FilterOperator::IsNull | FilterOperator::IsNotNull => {
-                Ok(FilterValue::Null)
-            },
+            FilterOperator::IsNull | FilterOperator::IsNotNull => Ok(FilterValue::Null),
             FilterOperator::In | FilterOperator::NotIn => {
                 // Parse comma-separated array: "value1,value2,value3"
                 let values: Vec<String> = value_str
@@ -202,7 +211,7 @@ impl QueryEngine {
                     .filter(|s| !s.is_empty())
                     .collect();
                 Ok(FilterValue::Array(values))
-            },
+            }
             _ => {
                 // Try to parse as different types
                 if value_str.is_empty() {
@@ -227,9 +236,11 @@ impl QueryEngine {
 
     /// Validate field name (alphanumeric, underscore, dots for nested fields)
     fn is_valid_field_name(field: &str) -> bool {
-        !field.is_empty() && 
-        field.len() <= 100 && 
-        field.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '.')
+        !field.is_empty()
+            && field.len() <= 100
+            && field
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
     }
 
     /// Build SQL ORDER BY clause from sort fields
@@ -239,13 +250,14 @@ impl QueryEngine {
         }
 
         let mut order_parts = Vec::new();
-        
+
         for sort_field in &self.sort {
             // Validate field exists in schema (or is a system field)
             if !self.is_valid_sort_field(&sort_field.field, schema) {
-                return Err(AuthError::ValidationError(vec![
-                    format!("Field '{}' does not exist or cannot be sorted", sort_field.field)
-                ]));
+                return Err(AuthError::ValidationError(vec![format!(
+                    "Field '{}' does not exist or cannot be sorted",
+                    sort_field.field
+                )]));
             }
 
             let direction = match sort_field.direction {
@@ -262,7 +274,10 @@ impl QueryEngine {
     }
 
     /// Build SQL WHERE clause from filter conditions
-    pub fn build_where_clause(&self, schema: &CollectionSchema) -> Result<(String, Vec<String>), AuthError> {
+    pub fn build_where_clause(
+        &self,
+        schema: &CollectionSchema,
+    ) -> Result<(String, Vec<String>), AuthError> {
         if self.filters.is_empty() {
             return Ok(("".to_string(), vec![]));
         }
@@ -273,9 +288,10 @@ impl QueryEngine {
         for filter in &self.filters {
             // Validate field exists in schema (or is a system field)
             if !self.is_valid_filter_field(&filter.field, schema) {
-                return Err(AuthError::ValidationError(vec![
-                    format!("Field '{}' does not exist or cannot be filtered", filter.field)
-                ]));
+                return Err(AuthError::ValidationError(vec![format!(
+                    "Field '{}' does not exist or cannot be filtered",
+                    filter.field
+                )]));
             }
 
             let (condition_sql, mut condition_params) = self.build_filter_condition(filter)?;
@@ -288,16 +304,37 @@ impl QueryEngine {
     }
 
     /// Build individual filter condition
-    fn build_filter_condition(&self, filter: &FilterCondition) -> Result<(String, Vec<String>), AuthError> {
+    fn build_filter_condition(
+        &self,
+        filter: &FilterCondition,
+    ) -> Result<(String, Vec<String>), AuthError> {
         let escaped_field = self.escape_field_name(&filter.field);
-        
+
         match &filter.operator {
-            FilterOperator::Eq => Ok((format!("{} = ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
-            FilterOperator::Ne => Ok((format!("{} != ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
-            FilterOperator::Gt => Ok((format!("{} > ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
-            FilterOperator::Gte => Ok((format!("{} >= ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
-            FilterOperator::Lt => Ok((format!("{} < ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
-            FilterOperator::Lte => Ok((format!("{} <= ?", escaped_field), vec![self.filter_value_to_string(&filter.value)])),
+            FilterOperator::Eq => Ok((
+                format!("{} = ?", escaped_field),
+                vec![self.filter_value_to_string(&filter.value)],
+            )),
+            FilterOperator::Ne => Ok((
+                format!("{} != ?", escaped_field),
+                vec![self.filter_value_to_string(&filter.value)],
+            )),
+            FilterOperator::Gt => Ok((
+                format!("{} > ?", escaped_field),
+                vec![self.filter_value_to_string(&filter.value)],
+            )),
+            FilterOperator::Gte => Ok((
+                format!("{} >= ?", escaped_field),
+                vec![self.filter_value_to_string(&filter.value)],
+            )),
+            FilterOperator::Lt => Ok((
+                format!("{} < ?", escaped_field),
+                vec![self.filter_value_to_string(&filter.value)],
+            )),
+            FilterOperator::Lte => Ok((
+                format!("{} <= ?", escaped_field),
+                vec![self.filter_value_to_string(&filter.value)],
+            )),
             FilterOperator::Like => {
                 let value_str = self.filter_value_to_string(&filter.value);
                 // Automatically add wildcards for partial matching if not already present
@@ -307,7 +344,7 @@ impl QueryEngine {
                     format!("%{}%", value_str)
                 };
                 Ok((format!("{} LIKE ?", escaped_field), vec![like_value]))
-            },
+            }
             FilterOperator::NotLike => {
                 let value_str = self.filter_value_to_string(&filter.value);
                 // Automatically add wildcards for partial matching if not already present
@@ -317,7 +354,7 @@ impl QueryEngine {
                     format!("%{}%", value_str)
                 };
                 Ok((format!("{} NOT LIKE ?", escaped_field), vec![like_value]))
-            },
+            }
             FilterOperator::IsNull => Ok((format!("{} IS NULL", escaped_field), vec![])),
             FilterOperator::IsNotNull => Ok((format!("{} IS NOT NULL", escaped_field), vec![])),
             FilterOperator::In => {
@@ -326,18 +363,25 @@ impl QueryEngine {
                     let params = values.iter().map(|v| v.clone()).collect();
                     Ok((format!("{} IN ({})", escaped_field, placeholders), params))
                 } else {
-                    Err(AuthError::ValidationError(vec!["IN operator requires array value".to_string()]))
+                    Err(AuthError::ValidationError(vec![
+                        "IN operator requires array value".to_string(),
+                    ]))
                 }
-            },
+            }
             FilterOperator::NotIn => {
                 if let FilterValue::Array(values) = &filter.value {
                     let placeholders = vec!["?"; values.len()].join(", ");
                     let params = values.iter().map(|v| v.clone()).collect();
-                    Ok((format!("{} NOT IN ({})", escaped_field, placeholders), params))
+                    Ok((
+                        format!("{} NOT IN ({})", escaped_field, placeholders),
+                        params,
+                    ))
                 } else {
-                    Err(AuthError::ValidationError(vec!["NOT IN operator requires array value".to_string()]))
+                    Err(AuthError::ValidationError(vec![
+                        "NOT IN operator requires array value".to_string(),
+                    ]))
                 }
-            },
+            }
         }
     }
 
@@ -346,7 +390,13 @@ impl QueryEngine {
         match value {
             FilterValue::String(s) => s.clone(),
             FilterValue::Number(n) => n.to_string(),
-            FilterValue::Boolean(b) => if *b { "1".to_string() } else { "0".to_string() },
+            FilterValue::Boolean(b) => {
+                if *b {
+                    "1".to_string()
+                } else {
+                    "0".to_string()
+                }
+            }
             FilterValue::Null => "NULL".to_string(),
             FilterValue::Array(_) => "".to_string(), // Should not be called for arrays
         }
@@ -381,7 +431,11 @@ impl QueryEngine {
     }
 
     /// Build complete SQL query with WHERE, ORDER BY, LIMIT, OFFSET
-    pub fn build_complete_query(&self, table_name: &str, schema: &CollectionSchema) -> Result<(String, Vec<String>), AuthError> {
+    pub fn build_complete_query(
+        &self,
+        table_name: &str,
+        schema: &CollectionSchema,
+    ) -> Result<(String, Vec<String>), AuthError> {
         let escaped_table_name = self.escape_field_name(table_name);
         let mut sql = format!("SELECT id FROM {}", escaped_table_name);
         let mut parameters = Vec::new();
@@ -416,7 +470,7 @@ impl QueryEngine {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::models::{FieldDefinition, CollectionSchema, FieldType};
+    use crate::models::{CollectionSchema, FieldDefinition, FieldType};
 
     fn create_test_schema() -> CollectionSchema {
         CollectionSchema {
@@ -429,7 +483,7 @@ mod tests {
                     validation: None,
                 },
                 FieldDefinition {
-                    name: "age".to_string(), 
+                    name: "age".to_string(),
                     field_type: FieldType::Number,
                     required: false,
                     default_value: None,
@@ -449,7 +503,7 @@ mod tests {
     #[test]
     fn test_parse_sort() {
         let sort_fields = QueryEngine::parse_sort("name,-age,created_at").unwrap();
-        
+
         assert_eq!(sort_fields.len(), 3);
         assert_eq!(sort_fields[0].field, "name");
         assert!(matches!(sort_fields[0].direction, SortDirection::Asc));
@@ -462,17 +516,17 @@ mod tests {
     #[test]
     fn test_parse_filters() {
         let filters = QueryEngine::parse_filters("name:eq:John,age:gt:18,active:eq:true").unwrap();
-        
+
         assert_eq!(filters.len(), 3);
-        
+
         assert_eq!(filters[0].field, "name");
         assert!(matches!(filters[0].operator, FilterOperator::Eq));
         assert!(matches!(filters[0].value, FilterValue::String(_)));
-        
+
         assert_eq!(filters[1].field, "age");
         assert!(matches!(filters[1].operator, FilterOperator::Gt));
         assert!(matches!(filters[1].value, FilterValue::Number(_)));
-        
+
         assert_eq!(filters[2].field, "active");
         assert!(matches!(filters[2].operator, FilterOperator::Eq));
         assert!(matches!(filters[2].value, FilterValue::Boolean(_)));
@@ -485,15 +539,18 @@ mod tests {
             None, // no filter
             None, // no search
             None, // no limit
-            None  // no offset
-        ).unwrap();
+            None, // no offset
+        )
+        .unwrap();
 
         let schema = create_test_schema();
-        let (sql, params) = query_engine.build_complete_query("records_products", &schema).unwrap();
+        let (sql, params) = query_engine
+            .build_complete_query("records_products", &schema)
+            .unwrap();
 
         println!("Generated SQL: {}", sql);
         println!("Parameters: {:?}", params);
-        
+
         assert!(sql.contains("SELECT id FROM"));
         assert!(sql.contains("ORDER BY"));
         assert_eq!(params.len(), 0);
@@ -506,11 +563,14 @@ mod tests {
             Some("active:eq:true,age:gt:18".to_string()),
             None,
             Some(10),
-            Some(5)
-        ).unwrap();
+            Some(5),
+        )
+        .unwrap();
 
         let schema = create_test_schema();
-        let (sql, params) = query_engine.build_complete_query("records_test", &schema).unwrap();
+        let (sql, params) = query_engine
+            .build_complete_query("records_test", &schema)
+            .unwrap();
 
         assert!(sql.contains("WHERE"));
         assert!(sql.contains("ORDER BY"));

@@ -3,7 +3,9 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
 
-use crate::schema::{roles, collection_permissions, user_collection_permissions, record_permissions};
+use crate::schema::{
+    collection_permissions, record_permissions, roles, user_collection_permissions,
+};
 
 // Role model
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
@@ -193,7 +195,13 @@ pub struct PermissionResult {
 }
 
 impl PermissionResult {
-    pub fn new(can_create: bool, can_read: bool, can_update: bool, can_delete: bool, can_list: bool) -> Self {
+    pub fn new(
+        can_create: bool,
+        can_read: bool,
+        can_update: bool,
+        can_delete: bool,
+        can_list: bool,
+    ) -> Self {
         Self {
             can_create,
             can_read,

@@ -1,11 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { MetricsSummary, RawMetricsViewer } from "@/components/metrics";
 
-export const Route = createFileRoute("/metrics")(
-	{
-		component: MetricsComponent,
-	},
-);
+export const Route = createFileRoute("/metrics")({
+	component: MetricsComponent,
+});
 
 function MetricsComponent() {
 	return (

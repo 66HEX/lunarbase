@@ -15,12 +15,10 @@ pub struct Config {
 impl Config {
     pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
         dotenvy::dotenv().ok();
-        
+
         let config = Config {
-            database_url: std::env::var("DATABASE_URL")
-                .unwrap_or_else(|_| "db.sqlite".to_string()),
-            server_host: std::env::var("SERVER_HOST")
-                .unwrap_or_else(|_| "127.0.0.1".to_string()),
+            database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| "db.sqlite".to_string()),
+            server_host: std::env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
             server_port: std::env::var("SERVER_PORT")
                 .unwrap_or_else(|_| "3000".to_string())
                 .parse()?,
@@ -31,18 +29,16 @@ impl Config {
             admin_password: std::env::var("LUNARBASE_ADMIN_PASSWORD").ok(),
             admin_username: std::env::var("LUNARBASE_ADMIN_USERNAME").ok(),
         };
-        
+
         Ok(config)
     }
-    
+
     pub fn server_address(&self) -> String {
         format!("{}:{}", self.server_host, self.server_port)
     }
 
     /// Check if admin configuration is complete
     pub fn has_admin_config(&self) -> bool {
-        self.admin_email.is_some() && 
-        self.admin_password.is_some() && 
-        self.admin_username.is_some()
+        self.admin_email.is_some() && self.admin_password.is_some() && self.admin_username.is_some()
     }
-} 
+}

@@ -1,9 +1,9 @@
+use crate::schema::collections;
+use chrono::NaiveDateTime;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use utoipa::ToSchema;
-use chrono::NaiveDateTime;
-use crate::schema::collections;
 use serde_json::Value;
+use utoipa::ToSchema;
 
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, ToSchema)]
 #[diesel(table_name = collections)]
@@ -147,7 +147,7 @@ impl Collection {
 impl CollectionResponse {
     pub fn from_collection(collection: Collection) -> Result<Self, serde_json::Error> {
         let schema: CollectionSchema = serde_json::from_str(&collection.schema_json)?;
-        
+
         Ok(CollectionResponse {
             id: collection.id,
             name: collection.name,
@@ -155,8 +155,14 @@ impl CollectionResponse {
             description: collection.description,
             schema,
             is_system: collection.is_system,
-            created_at: collection.created_at.format("%Y-%m-%d %H:%M:%S").to_string(),
-            updated_at: collection.updated_at.format("%Y-%m-%d %H:%M:%S").to_string(),
+            created_at: collection
+                .created_at
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string(),
+            updated_at: collection
+                .updated_at
+                .format("%Y-%m-%d %H:%M:%S")
+                .to_string(),
         })
     }
 }
@@ -181,5 +187,3 @@ pub struct UpdateCollection {
     pub description: Option<String>,
     pub schema_json: Option<String>,
 }
-
- 

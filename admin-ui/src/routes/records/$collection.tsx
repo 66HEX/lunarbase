@@ -4,11 +4,7 @@ import {
 	useNavigate,
 	useParams,
 } from "@tanstack/react-router";
-import {
-	ArrowLeft,
-	Edit3,
-	Trash2,
-} from "lucide-react";
+import { ArrowLeft, Edit3, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -110,8 +106,6 @@ export default function RecordComponent() {
 			document.removeEventListener("visibilitychange", handleVisibilityChange);
 	}, [collectionName, refetch]);
 
-
-
 	const fetchCollection = async () => {
 		if (!collectionName) return;
 
@@ -133,14 +127,10 @@ export default function RecordComponent() {
 		}
 	};
 
-
-
 	const handleEditRecord = (record: Record) => {
 		setEditingRecord(record);
 		setIsEditSheetOpen(true);
 	};
-
-
 
 	const handleCreateRecord = async (data: RecordData) => {
 		if (!collectionName) return;
@@ -232,8 +222,6 @@ export default function RecordComponent() {
 		}
 	};
 
-
-
 	const handleDeleteRecord = async (recordId: number) => {
 		setRecordToDelete(recordId);
 		setDeleteDialogOpen(true);
@@ -277,10 +265,6 @@ export default function RecordComponent() {
 			setRecordToDelete(null);
 		}
 	};
-
-
-
-
 
 	const handleSearchChange = (value: string) => {
 		setLocalSearchTerm(value);
@@ -359,14 +343,20 @@ export default function RecordComponent() {
 								key: "id",
 								title: "ID",
 								className: "w-16",
-								render: (_value: unknown, record: ApiRecord, _index: number) => (
-									<div className="font-medium">{record.id}</div>
-								),
+								render: (
+									_value: unknown,
+									record: ApiRecord,
+									_index: number,
+								) => <div className="font-medium">{record.id}</div>,
 							},
 							{
 								key: "data",
 								title: "Data",
-								render: (_value: unknown, record: ApiRecord, _index: number) => (
+								render: (
+									_value: unknown,
+									record: ApiRecord,
+									_index: number,
+								) => (
 									<div className="flex gap-4">
 										{Object.entries(record.data)
 											.slice(1, 3)
@@ -392,7 +382,11 @@ export default function RecordComponent() {
 								key: "created_at",
 								title: "Created",
 								className: "w-32",
-								render: (_value: unknown, record: ApiRecord, _index: number) => (
+								render: (
+									_value: unknown,
+									record: ApiRecord,
+									_index: number,
+								) => (
 									<div className="text-sm">
 										<div className="text-nocta-900 dark:text-nocta-100">
 											{new Date(record.created_at).toLocaleDateString()}
@@ -408,7 +402,11 @@ export default function RecordComponent() {
 								title: "Actions",
 								className: "w-24",
 								align: "left",
-								render: (_value: unknown, record: ApiRecord, _index: number) => (
+								render: (
+									_value: unknown,
+									record: ApiRecord,
+									_index: number,
+								) => (
 									<div className="flex items-center gap-1">
 										<Button
 											variant="ghost"

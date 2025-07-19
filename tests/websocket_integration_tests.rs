@@ -1,24 +1,24 @@
 use axum::{
     Router,
-    routing::{get, post},
     http::StatusCode,
+    routing::{get, post},
 };
 use serde_json::json;
 use tower::ServiceExt;
 use uuid;
 
-use lunarbase::{AppState, Config};
+use axum::middleware;
 use lunarbase::database::create_pool;
-use lunarbase::handlers::{health_check, register, login, refresh_token, me};
 use lunarbase::handlers::collections::*;
 use lunarbase::handlers::websocket::*;
+use lunarbase::handlers::{health_check, login, me, refresh_token, register};
 use lunarbase::middleware::auth_middleware;
-use axum::middleware;
+use lunarbase::{AppState, Config};
 
 fn create_test_router() -> Router {
     // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
-    
+
     // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
@@ -38,16 +38,15 @@ fn create_test_router() -> Router {
     let protected_routes = Router::new()
         .route("/auth/me", get(me))
         .route("/ws/stats", get(websocket_stats))
-        .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
+        .layer(middleware::from_fn_with_state(
+            app_state.auth_state.clone(),
+            auth_middleware,
+        ));
 
     // Combine routes
-    let api_routes = Router::new()
-        .merge(public_routes)
-        .merge(protected_routes);
+    let api_routes = Router::new().merge(public_routes).merge(protected_routes);
 
-    let router = Router::new()
-        .nest("/api", api_routes)
-        .with_state(app_state);
+    let router = Router::new().nest("/api", api_routes).with_state(app_state);
 
     // Skip middleware in tests to avoid Prometheus global recorder conflicts
     router
@@ -62,10 +61,13 @@ async fn create_admin_token(app: &Router) -> (i32, String) {
 async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
     use serde_json::Value;
     use tower::ServiceExt;
-    
-    let unique_username = format!("test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+
+    let unique_username = format!(
+        "test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     let unique_email = format!("{}@test.com", unique_username);
-    
+
     let register_payload = json!({
         "username": unique_username,
         "email": unique_email,
@@ -80,27 +82,29 @@ async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
         .unwrap();
 
     let register_response = app.clone().oneshot(register_request).await.unwrap();
-    
+
     assert_eq!(register_response.status(), StatusCode::CREATED);
 
-    let body = axum::body::to_bytes(register_response.into_body(), usize::MAX).await.unwrap();
+    let body = axum::body::to_bytes(register_response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     // Extract user_id from data.user.id
     let user_id: i32 = json_response["data"]["user"]["id"].as_i64().unwrap() as i32;
 
     // If role is not "user", update the user's role in the database
     if role != "user" {
         use diesel::prelude::*;
-        use lunarbase::schema::users;
         use lunarbase::Config;
         use lunarbase::database::create_pool;
-        
+        use lunarbase::schema::users;
+
         let config = Config::from_env().expect("Failed to load config");
         let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
         let mut conn = db_pool.get().expect("Failed to get database connection");
-        
+
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(users::role.eq(role))
             .execute(&mut conn)
@@ -113,7 +117,7 @@ async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
 
 // Helper function to create JWT token for specific user
 fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
-    use jsonwebtoken::{encode, Header, EncodingKey};
+    use jsonwebtoken::{EncodingKey, Header, encode};
     use lunarbase::utils::Claims;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -133,10 +137,13 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     };
 
     let jwt_secret = "test_secret".to_string();
-    encode(&Header::default(), &claims, &EncodingKey::from_secret(jwt_secret.as_ref()))
-        .expect("Failed to create test token")
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(jwt_secret.as_ref()),
+    )
+    .expect("Failed to create test token")
 }
-
 
 #[tokio::test]
 async fn test_websocket_connection_stats() {
@@ -154,14 +161,19 @@ async fn test_websocket_connection_stats() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    
+
     assert!(json_response["success"].as_bool().unwrap());
     assert_eq!(json_response["data"]["connections"].as_u64().unwrap(), 0);
     assert_eq!(json_response["data"]["subscriptions"].as_u64().unwrap(), 0);
-    assert_eq!(json_response["data"]["status"].as_str().unwrap(), "operational");
+    assert_eq!(
+        json_response["data"]["status"].as_str().unwrap(),
+        "operational"
+    );
 }
 
 #[tokio::test]
@@ -202,10 +214,12 @@ async fn test_websocket_admin_stats_with_auth() {
         .unwrap();
 
     assert_eq!(response.status(), StatusCode::OK);
-    
-    let body = axum::body::to_bytes(response.into_body(), usize::MAX).await.unwrap();
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
     let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
-    
+
     assert!(json_response["success"].as_bool().unwrap());
     assert!(json_response["data"]["total_connections"].is_number());
     assert!(json_response["data"]["authenticated_connections"].is_number());
@@ -215,9 +229,7 @@ async fn test_websocket_admin_stats_with_auth() {
 
 #[tokio::test]
 async fn test_websocket_models_serialization() {
-    use lunarbase::models::{
-        WebSocketMessage, SubscriptionRequest, SubscriptionType
-    };
+    use lunarbase::models::{SubscriptionRequest, SubscriptionType, WebSocketMessage};
 
     // Test WebSocket message serialization
     let subscription_request = SubscriptionRequest {
@@ -242,7 +254,7 @@ async fn test_websocket_models_serialization() {
 
 #[tokio::test]
 async fn test_record_event_creation() {
-    use lunarbase::models::{RecordEvent, PendingEvent};
+    use lunarbase::models::{PendingEvent, RecordEvent};
     use serde_json::json;
 
     // Test record event creation
@@ -267,11 +279,9 @@ async fn test_record_event_creation() {
     }
 }
 
-#[tokio::test] 
+#[tokio::test]
 async fn test_subscription_data_matching() {
-    use lunarbase::models::{
-        SubscriptionData, SubscriptionType, PendingEvent, RecordEvent
-    };
+    use lunarbase::models::{PendingEvent, RecordEvent, SubscriptionData, SubscriptionType};
     use serde_json::json;
 
     // Create subscription for a specific collection
@@ -308,15 +318,15 @@ async fn test_subscription_data_matching() {
 
 #[tokio::test]
 async fn test_record_specific_subscription() {
-    use lunarbase::models::{
-        SubscriptionData, SubscriptionType, PendingEvent, RecordEvent
-    };
+    use lunarbase::models::{PendingEvent, RecordEvent, SubscriptionData, SubscriptionType};
     use serde_json::json;
 
     // Create subscription for a specific record
     let subscription = SubscriptionData::new(
         "articles".to_string(),
-        SubscriptionType::Record { record_id: "123".to_string() },
+        SubscriptionType::Record {
+            record_id: "123".to_string(),
+        },
         None,
         Some(1),
     );

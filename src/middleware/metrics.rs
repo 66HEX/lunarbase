@@ -1,11 +1,11 @@
-use axum::{middleware, extract::State, response::Response, http::Request};
-use axum_prometheus::PrometheusMetricLayer;
-use prometheus::{Encoder, TextEncoder, Registry, Counter, Histogram, Gauge, HistogramOpts};
-use std::sync::Arc;
-use tokio::sync::RwLock;
-use std::collections::HashMap;
-use std::time::Instant;
 use crate::AppState;
+use axum::{extract::State, http::Request, middleware, response::Response};
+use axum_prometheus::PrometheusMetricLayer;
+use prometheus::{Counter, Encoder, Gauge, Histogram, HistogramOpts, Registry, TextEncoder};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::Instant;
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct MetricsState {
@@ -20,30 +20,25 @@ pub struct MetricsState {
 impl MetricsState {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         let registry = Arc::new(Registry::new());
-        
+
         // Create standard metrics
-        let request_counter = Counter::new(
-            "http_requests_total",
-            "Total number of HTTP requests"
-        )?;
-        
-        let request_duration = Histogram::with_opts(
-            HistogramOpts::new(
-                "http_request_duration_seconds",
-                "HTTP request duration in seconds"
-            )
-        )?;
-        
+        let request_counter = Counter::new("http_requests_total", "Total number of HTTP requests")?;
+
+        let request_duration = Histogram::with_opts(HistogramOpts::new(
+            "http_request_duration_seconds",
+            "HTTP request duration in seconds",
+        ))?;
+
         let active_connections = Gauge::new(
             "websocket_active_connections",
-            "Number of active WebSocket connections"
+            "Number of active WebSocket connections",
         )?;
-        
+
         let database_connections = Gauge::new(
             "database_connections_active",
-            "Number of active database connections"
+            "Number of active database connections",
         )?;
-        
+
         // Register metrics only if not in test environment
         // In tests, we skip registration to avoid global recorder conflicts
         if !cfg!(test) {
@@ -52,7 +47,7 @@ impl MetricsState {
             registry.register(Box::new(active_connections.clone()))?;
             registry.register(Box::new(database_connections.clone()))?;
         }
-        
+
         Ok(MetricsState {
             registry,
             request_counter,
@@ -62,13 +57,13 @@ impl MetricsState {
             custom_metrics: Arc::new(RwLock::new(HashMap::new())),
         })
     }
-    
+
     /// Update database connections metric based on pool state
     pub fn update_database_connections(&self, pool: &crate::database::DatabasePool) {
         let state = pool.state();
         self.database_connections.set(state.connections as f64);
     }
-    
+
     pub async fn get_metrics(&self) -> Result<String, Box<dyn std::error::Error>> {
         let encoder = TextEncoder::new();
         let metric_families = self.registry.gather();
@@ -76,20 +71,24 @@ impl MetricsState {
         encoder.encode(&metric_families, &mut buffer)?;
         Ok(String::from_utf8(buffer)?)
     }
-    
-    pub async fn increment_custom_metric(&self, name: &str, help: &str) -> Result<(), Box<dyn std::error::Error>> {
+
+    pub async fn increment_custom_metric(
+        &self,
+        name: &str,
+        help: &str,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut metrics = self.custom_metrics.write().await;
-        
+
         if !metrics.contains_key(name) {
             let counter = Counter::new(name, help)?;
             self.registry.register(Box::new(counter.clone()))?;
             metrics.insert(name.to_string(), counter);
         }
-        
+
         if let Some(counter) = metrics.get(name) {
             counter.inc();
         }
-        
+
         Ok(())
     }
 }
@@ -108,16 +107,16 @@ pub async fn metrics_middleware(
     next: middleware::Next,
 ) -> Response {
     let start = Instant::now();
-    
+
     // Increment request counter
     app_state.metrics_state.request_counter.inc();
-    
+
     // Process the request
     let response = next.run(request).await;
-    
+
     // Record request duration
     let duration = start.elapsed().as_secs_f64();
     app_state.metrics_state.request_duration.observe(duration);
-    
+
     response
 }

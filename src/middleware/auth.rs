@@ -8,9 +8,9 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use crate::utils::{AuthError, JwtService, Claims};
-use diesel::r2d2::{ConnectionManager, Pool};
+use crate::utils::{AuthError, Claims, JwtService};
 use diesel::SqliteConnection;
+use diesel::r2d2::{ConnectionManager, Pool};
 
 /// Rate limiting storage (in production, use Redis)
 #[derive(Clone)]
@@ -32,13 +32,15 @@ impl RateLimiter {
     pub fn check_rate_limit(&self, identifier: &str) -> bool {
         let mut requests = self.requests.lock().unwrap();
         let now = Instant::now();
-        
+
         // Clean old requests
         let window_start = now - self.window;
-        
-        let user_requests = requests.entry(identifier.to_string()).or_insert_with(Vec::new);
+
+        let user_requests = requests
+            .entry(identifier.to_string())
+            .or_insert_with(Vec::new);
         user_requests.retain(|&timestamp| timestamp > window_start);
-        
+
         if user_requests.len() >= self.max_requests {
             false
         } else {
@@ -102,7 +104,9 @@ pub async fn auth_middleware(
     }
 
     // Validate token with blacklist check
-    let claims = auth_state.jwt_service.validate_access_token_with_blacklist(token)?;
+    let claims = auth_state
+        .jwt_service
+        .validate_access_token_with_blacklist(token)?;
 
     // Inject claims into request extensions for downstream handlers
     request.extensions_mut().insert(claims);
@@ -124,7 +128,10 @@ pub async fn optional_auth_middleware(
     {
         // Try to extract and validate token
         if let Ok(token) = JwtService::extract_token_from_header(auth_header) {
-            if let Ok(claims) = auth_state.jwt_service.validate_access_token_with_blacklist(token) {
+            if let Ok(claims) = auth_state
+                .jwt_service
+                .validate_access_token_with_blacklist(token)
+            {
                 request.extensions_mut().insert(claims);
             }
         }

@@ -50,9 +50,10 @@ export function RawMetricsViewer() {
 	const filteredMetrics = rawMetrics
 		? rawMetrics
 				.split("\n")
-				.filter((line) =>
-					searchTerm === "" ||
-					line.toLowerCase().includes(searchTerm.toLowerCase())
+				.filter(
+					(line) =>
+						searchTerm === "" ||
+						line.toLowerCase().includes(searchTerm.toLowerCase()),
 				)
 				.join("\n")
 		: "";
@@ -95,16 +96,16 @@ export function RawMetricsViewer() {
 			<CardHeader>
 				<div className="flex items-center justify-between">
 					<CardTitle>Raw Prometheus Metrics</CardTitle>
-						<div className="flex items-center space-x-2">
-							<div className="relative flex-1">
+					<div className="flex items-center space-x-2">
+						<div className="relative flex-1">
 							<Input
 								placeholder="Search metrics..."
 								value={searchTerm}
 								onChange={(e) => setSearchTerm(e.target.value)}
 								className="pl-10"
 								leftIcon={
-								<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
-							}
+									<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
+								}
 							/>
 						</div>
 						<Button

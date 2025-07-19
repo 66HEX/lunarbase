@@ -15,12 +15,7 @@ import type React from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import {
-	Form,
-	FormControl,
-	FormField,
-	FormLabel,
-} from "@/components/ui/form";
+import { Form, FormControl, FormField, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
 	Sheet,
@@ -35,11 +30,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
-import type {
-	Collection,
-	FieldDefinition,
-	RecordData,
-} from "@/types/api";
+import type { Collection, FieldDefinition, RecordData } from "@/types/api";
 
 const fieldTypeIcons = {
 	text: Type,
@@ -320,8 +311,7 @@ export function CreateRecordSheet({
 					</SheetTitle>
 					<SheetDescription>
 						Add a new record to{" "}
-						<span className="font-medium">{collection?.name}</span>{" "}
-						collection
+						<span className="font-medium">{collection?.name}</span> collection
 					</SheetDescription>
 				</SheetHeader>
 
@@ -329,21 +319,20 @@ export function CreateRecordSheet({
 					<Form onSubmit={handleSubmit}>
 						<div className="space-y-6">
 							{collection &&
-							collection.schema?.fields?.filter(
-								(field) => field.name !== "id",
-							).length === 0 ? (
+							collection.schema?.fields?.filter((field) => field.name !== "id")
+								.length === 0 ? (
 								<div className="text-center py-8">
 									<Database className="w-12 h-12 mx-auto text-nocta-400 mb-4" />
 									<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
 										No fields to fill
 									</h3>
 									<p className="text-nocta-600 dark:text-nocta-400 mb-4">
-										This collection only has an auto-generated ID field.
-										No additional data is required.
+										This collection only has an auto-generated ID field. No
+										additional data is required.
 									</p>
 									<p className="text-sm text-nocta-500 dark:text-nocta-500">
-										You can still create a record, or add more fields to
-										this collection first.
+										You can still create a record, or add more fields to this
+										collection first.
 									</p>
 								</div>
 							) : (
@@ -357,11 +346,7 @@ export function CreateRecordSheet({
 					<SheetClose asChild>
 						<Button variant="ghost">Cancel</Button>
 					</SheetClose>
-					<Button
-						type="submit"
-						disabled={submitting}
-						onClick={handleSubmit}
-					>
+					<Button type="submit" disabled={submitting} onClick={handleSubmit}>
 						{submitting ? (
 							<>
 								<Spinner size="sm" className="mr-2" />

@@ -2,7 +2,7 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use serde_json::Value;
 
-use crate::models::{User, RecordResponse, Permission};
+use crate::models::{Permission, RecordResponse, User};
 use crate::utils::AuthError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
@@ -18,7 +18,11 @@ impl OwnershipService {
     }
 
     /// Automatically set ownership when creating a record
-    pub fn set_record_ownership(&self, user: &User, record_data: &mut Value) -> Result<(), AuthError> {
+    pub fn set_record_ownership(
+        &self,
+        user: &User,
+        record_data: &mut Value,
+    ) -> Result<(), AuthError> {
         // Automatically add user_id field if not present
         if !record_data.as_object().unwrap().contains_key("user_id") {
             if let Some(obj) = record_data.as_object_mut() {
@@ -111,7 +115,11 @@ impl OwnershipService {
     }
 
     /// Get ownership-based permissions for a user on a record
-    pub fn get_ownership_permissions(&self, user: &User, record: &RecordResponse) -> Result<OwnershipPermissions, AuthError> {
+    pub fn get_ownership_permissions(
+        &self,
+        user: &User,
+        record: &RecordResponse,
+    ) -> Result<OwnershipPermissions, AuthError> {
         let is_owner = self.check_ownership(user, record)?;
 
         if is_owner {
@@ -159,36 +167,37 @@ impl OwnershipService {
 
         // Update record ownership fields in the dynamic table
         let table_name = format!("records_{}", collection_name);
-        
+
         // Try to update user_id field if it exists
         let update_user_id_sql = format!(
             "UPDATE {} SET user_id = {} WHERE id = {}",
             table_name, new_owner_id, record_id
         );
-        
-        // Try to update owner_id field if it exists  
+
+        // Try to update owner_id field if it exists
         let update_owner_id_sql = format!(
             "UPDATE {} SET owner_id = {} WHERE id = {}",
             table_name, new_owner_id, record_id
         );
 
         // Execute updates - at least one should succeed if ownership fields exist
-        let user_id_result = diesel::sql_query(&update_user_id_sql)
-            .execute(&mut conn);
-        
-        let owner_id_result = diesel::sql_query(&update_owner_id_sql)
-            .execute(&mut conn);
+        let user_id_result = diesel::sql_query(&update_user_id_sql).execute(&mut conn);
+
+        let owner_id_result = diesel::sql_query(&update_owner_id_sql).execute(&mut conn);
 
         // If both fail, the record might not have ownership fields
         if user_id_result.is_err() && owner_id_result.is_err() {
             return Err(AuthError::ValidationError(vec![
-                "Record does not have ownership fields (user_id or owner_id)".to_string()
+                "Record does not have ownership fields (user_id or owner_id)".to_string(),
             ]));
         }
 
         tracing::info!(
             "Ownership transferred successfully: collection={}, record_id={}, from_user={}, to_user={}",
-            collection_name, record_id, current_user.id, new_owner_id
+            collection_name,
+            record_id,
+            current_user.id,
+            new_owner_id
         );
 
         Ok(())
@@ -294,7 +303,9 @@ impl OwnershipService {
 
         tracing::info!(
             "Found {} owned records for user {} in collection {}",
-            owned_record_ids.len(), user.id, collection_name
+            owned_record_ids.len(),
+            user.id,
+            collection_name
         );
 
         Ok(owned_record_ids)
@@ -315,7 +326,8 @@ impl OwnershipService {
         match diesel::sql_query(query).load::<RecordId>(conn) {
             Ok(results) => Ok(results.into_iter().map(|r| r.id).collect()),
             Err(diesel::result::Error::DatabaseError(
-                diesel::result::DatabaseErrorKind::Unknown, _
+                diesel::result::DatabaseErrorKind::Unknown,
+                _,
             )) => {
                 // Column doesn't exist, which is fine - return empty results
                 Ok(vec![])
@@ -325,7 +337,11 @@ impl OwnershipService {
     }
 
     /// Create ownership rules for collections
-    pub fn create_ownership_rule(&self, collection_name: &str, ownership_field: &str) -> Result<OwnershipRule, AuthError> {
+    pub fn create_ownership_rule(
+        &self,
+        collection_name: &str,
+        ownership_field: &str,
+    ) -> Result<OwnershipRule, AuthError> {
         Ok(OwnershipRule {
             collection_name: collection_name.to_string(),
             ownership_field: ownership_field.to_string(),
@@ -380,4 +396,4 @@ impl OwnershipRule {
         self.auto_assign_on_create = false;
         self
     }
-} 
+}

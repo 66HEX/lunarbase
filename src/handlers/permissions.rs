@@ -1,32 +1,30 @@
-use axum::{
-    extract::{Path, State, Query},
-    response::Json,
-    Extension,
-};
-use serde_json::{json, Value};
-use std::collections::HashMap;
 use crate::utils::ErrorResponse;
+use axum::{
+    Extension,
+    extract::{Path, Query, State},
+    response::Json,
+};
+use serde_json::{Value, json};
+use std::collections::HashMap;
 
 use crate::{
-    models::{
-        User, Role, CollectionPermission, UserCollectionPermission,
-        CreateRoleRequest, SetCollectionPermissionRequest,
-        SetUserCollectionPermissionRequest,
-    },
-    utils::{AuthError, ApiResponse, Claims},
     AppState,
+    models::{
+        CollectionPermission, CreateRoleRequest, Role, SetCollectionPermissionRequest,
+        SetUserCollectionPermissionRequest, User, UserCollectionPermission,
+    },
+    utils::{ApiResponse, AuthError, Claims},
 };
 
 // Helper function to convert Claims to User for permission checks
 async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
     use crate::schema::users;
     use diesel::prelude::*;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     users::table
         .filter(users::id.eq(user_id))
         .first::<User>(&mut conn)
@@ -61,12 +59,11 @@ pub async fn create_role(
     }
 
     // Validate role request
-    role_request.validate().map_err(AuthError::ValidationError)?;
+    role_request
+        .validate()
+        .map_err(AuthError::ValidationError)?;
 
-    let role = state
-        .permission_service
-        .create_role(&role_request)
-        .await?;
+    let role = state.permission_service.create_role(&role_request).await?;
 
     Ok(Json(ApiResponse::success(role)))
 }
@@ -94,10 +91,7 @@ pub async fn list_roles(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    let roles = state
-        .permission_service
-        .list_roles()
-        .await?;
+    let roles = state.permission_service.list_roles().await?;
 
     Ok(Json(ApiResponse::success(roles)))
 }
@@ -394,7 +388,9 @@ pub async fn get_user_collection_permissions(
     Extension(requesting_claims): Extension<Claims>,
     Path((user_id, collection_name)): Path<(i32, String)>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    let requesting_user_id: i32 = requesting_claims.sub.parse()
+    let requesting_user_id: i32 = requesting_claims
+        .sub
+        .parse()
         .map_err(|_| AuthError::TokenInvalid)?;
 
     // Users can only view their own permissions, admins can view anyone's
@@ -420,7 +416,7 @@ pub async fn get_user_collection_permissions(
         use crate::schema::users;
         use diesel::prelude::*;
         let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-        
+
         users::table
             .filter(users::id.eq(user_id))
             .first::<User>(&mut conn)
@@ -474,7 +470,11 @@ pub async fn get_user_accessible_collections(
     // Get collection details for accessible collections
     let mut accessible_collections = Vec::new();
     for collection_id in accessible_collection_ids {
-        if let Ok(collection) = state.collection_service.get_collection_by_id(collection_id).await {
+        if let Ok(collection) = state
+            .collection_service
+            .get_collection_by_id(collection_id)
+            .await
+        {
             let permissions = state
                 .permission_service
                 .get_user_collection_permissions(&user, collection_id)
@@ -548,7 +548,11 @@ pub async fn check_permission(
         "update" => crate::models::Permission::Update,
         "delete" => crate::models::Permission::Delete,
         "list" => crate::models::Permission::List,
-        _ => return Err(AuthError::ValidationError(vec!["Invalid permission type".to_string()])),
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid permission type".to_string(),
+            ]));
+        }
     };
 
     let has_permission = state

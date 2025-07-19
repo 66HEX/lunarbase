@@ -588,7 +588,7 @@ export const metricsApi = {
 	getMetrics: async (): Promise<string> => {
 		const response = await fetch(`${API_BASE_URL}/metrics`, {
 			headers: {
-				'Authorization': `Bearer ${getAuthToken()}`,
+				Authorization: `Bearer ${getAuthToken()}`,
 			},
 		});
 		if (!response.ok) {

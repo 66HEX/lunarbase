@@ -9,8 +9,8 @@ pub enum WebSocketMessage {
     Subscribe(SubscriptionRequest),
     Unsubscribe(UnsubscribeRequest),
     Ping,
-    
-    // Server -> Client messages  
+
+    // Server -> Client messages
     SubscriptionConfirmed(SubscriptionConfirmed),
     SubscriptionError(SubscriptionError),
     Event(EventMessage),
@@ -147,16 +147,23 @@ impl SubscriptionData {
 
         match &self.subscription_type {
             SubscriptionType::Collection => true,
-            SubscriptionType::Record { record_id } => {
-                match &event.event {
-                    RecordEvent::Created { record_id: event_record_id, .. } |
-                    RecordEvent::Updated { record_id: event_record_id, .. } |
-                    RecordEvent::Deleted { record_id: event_record_id, .. } => {
-                        record_id == event_record_id
-                    }
+            SubscriptionType::Record { record_id } => match &event.event {
+                RecordEvent::Created {
+                    record_id: event_record_id,
+                    ..
                 }
-            }
-            SubscriptionType::Query { filters: subscription_filters } => {
+                | RecordEvent::Updated {
+                    record_id: event_record_id,
+                    ..
+                }
+                | RecordEvent::Deleted {
+                    record_id: event_record_id,
+                    ..
+                } => record_id == event_record_id,
+            },
+            SubscriptionType::Query {
+                filters: subscription_filters,
+            } => {
                 // Check if the event data matches the subscription filters
                 self.matches_filters(&event.event, subscription_filters)
             }
@@ -190,7 +197,12 @@ impl SubscriptionData {
 
     // Check if a specific field matches a filter expression
     // Filter format: "operator:value" (e.g., "eq:active", "gt:100", "like:test%")
-    fn check_field_filter(&self, record_data: &serde_json::Value, field_name: &str, filter_expr: &str) -> bool {
+    fn check_field_filter(
+        &self,
+        record_data: &serde_json::Value,
+        field_name: &str,
+        filter_expr: &str,
+    ) -> bool {
         let field_value = match record_data.get(field_name) {
             Some(value) => value,
             None => return false, // Field doesn't exist in record
@@ -233,9 +245,9 @@ impl SubscriptionData {
                     false
                 }
             }
-            serde_json::Value::Bool(b) => {
-                filter_value.parse::<bool>().map_or(false, |filter_bool| *b == filter_bool)
-            }
+            serde_json::Value::Bool(b) => filter_value
+                .parse::<bool>()
+                .map_or(false, |filter_bool| *b == filter_bool),
             _ => false,
         }
     }
@@ -318,9 +330,9 @@ impl SubscriptionData {
             serde_json::Value::String(s) => values.contains(&s.as_str()),
             serde_json::Value::Number(n) => {
                 if let Some(num_val) = n.as_f64() {
-                    values.iter().any(|v| {
-                        v.parse::<f64>().map_or(false, |parsed| parsed == num_val)
-                    })
+                    values
+                        .iter()
+                        .any(|v| v.parse::<f64>().map_or(false, |parsed| parsed == num_val))
                 } else {
                     false
                 }

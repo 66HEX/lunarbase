@@ -1,11 +1,11 @@
-pub mod user;
+pub mod blacklisted_token;
 pub mod collection;
 pub mod permissions;
+pub mod user;
 pub mod websocket;
-pub mod blacklisted_token;
 
-pub use user::*;
+pub use blacklisted_token::*;
 pub use collection::*;
 pub use permissions::*;
+pub use user::*;
 pub use websocket::*;
-pub use blacklisted_token::*;

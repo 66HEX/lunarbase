@@ -1,16 +1,16 @@
+use crate::utils::ErrorResponse;
 use axum::{
-    extract::{ws::WebSocketUpgrade, State, Request, Query},
-    response::Response,
+    extract::{Query, Request, State, ws::WebSocketUpgrade},
     response::Json,
+    response::Response,
 };
 use serde::Deserialize;
-use crate::utils::ErrorResponse;
 
 use crate::{
     AppState,
     middleware::extract_user_claims,
-    utils::{AuthError, ApiResponse},
     services::WebSocketStats,
+    utils::{ApiResponse, AuthError},
 };
 
 /// Query parameters for WebSocket connection
@@ -49,9 +49,13 @@ pub async fn websocket_handler(
             "authorization",
             format!("Bearer {}", token).parse().unwrap(),
         );
-        
+
         // Extract user claims from token
-        match app_state.auth_state.jwt_service.validate_access_token(&token) {
+        match app_state
+            .auth_state
+            .jwt_service
+            .validate_access_token(&token)
+        {
             Ok(claims) => Some(claims.sub.parse::<i32>().unwrap_or_default()),
             Err(_) => {
                 // Invalid token - allow anonymous connection
@@ -68,9 +72,7 @@ pub async fn websocket_handler(
 
     // Upgrade to WebSocket and handle connection
     let websocket_service = std::sync::Arc::new(app_state.websocket_service.clone());
-    Ok(ws.on_upgrade(move |socket| {
-        websocket_service.clone().handle_connection(socket, user_id)
-    }))
+    Ok(ws.on_upgrade(move |socket| websocket_service.clone().handle_connection(socket, user_id)))
 }
 
 /// Get WebSocket connection statistics (Admin only)
@@ -94,17 +96,19 @@ pub async fn websocket_stats(
 ) -> Result<Json<ApiResponse<WebSocketStats>>, AuthError> {
     // Extract and verify user claims
     let claims = extract_user_claims(&request)?;
-    
-    // Get user from database to check admin status
-    use diesel::prelude::*;
-    use crate::schema::users;
-    use crate::models::User;
 
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+    // Get user from database to check admin status
+    use crate::models::User;
+    use crate::schema::users;
+    use diesel::prelude::*;
+
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let user: User = users::table
         .find(user_id)
         .first(&mut conn)
@@ -117,7 +121,7 @@ pub async fn websocket_stats(
 
     // Get WebSocket statistics
     let stats = app_state.websocket_service.get_stats().await;
-    
+
     Ok(Json(ApiResponse::success(stats)))
 }
 
@@ -140,13 +144,13 @@ pub async fn websocket_status(
 ) -> Result<Json<ApiResponse<WebSocketStatus>>, AuthError> {
     let connection_count = app_state.websocket_service.connection_count().await;
     let subscription_count = app_state.websocket_service.subscription_count().await;
-    
+
     let status = WebSocketStatus {
         connections: connection_count,
         subscriptions: subscription_count,
         status: "operational".to_string(),
     };
-    
+
     Ok(Json(ApiResponse::success(status)))
 }
 

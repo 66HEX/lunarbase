@@ -1,11 +1,11 @@
-use axum::{response::Json, http::StatusCode, extract::State};
-use serde_json::{json, Value};
 use crate::AppState;
+use axum::{extract::State, http::StatusCode, response::Json};
 use diesel::prelude::*;
-use utoipa::ToSchema;
-use std::time::SystemTime;
+use serde_json::{Value, json};
 use std::sync::OnceLock;
+use std::time::SystemTime;
 use sysinfo::System;
+use utoipa::ToSchema;
 
 static APP_START_TIME: OnceLock<SystemTime> = OnceLock::new();
 
@@ -59,17 +59,25 @@ pub async fn health_check(
 ) -> Result<(StatusCode, Json<Value>), StatusCode> {
     // Initialize app start time if not already set
     APP_START_TIME.get_or_init(|| SystemTime::now());
-    
+
     // Check database health
     let database_health = check_database_health(&state).await;
     let memory_info = get_memory_info();
     let system_info = get_system_info();
-    
+
     let is_healthy = database_health.status == "healthy";
-    let status_code = if is_healthy { StatusCode::OK } else { StatusCode::SERVICE_UNAVAILABLE };
-    
+    let status_code = if is_healthy {
+        StatusCode::OK
+    } else {
+        StatusCode::SERVICE_UNAVAILABLE
+    };
+
     let response = HealthResponse {
-        status: if is_healthy { "healthy".to_string() } else { "unhealthy".to_string() },
+        status: if is_healthy {
+            "healthy".to_string()
+        } else {
+            "unhealthy".to_string()
+        },
         message: "LunarBase health check".to_string(),
         timestamp: chrono::Utc::now().to_rfc3339(),
         version: env!("CARGO_PKG_VERSION").to_string(),
@@ -78,7 +86,7 @@ pub async fn health_check(
         memory: memory_info,
         system: system_info,
     };
-    
+
     Ok((status_code, Json(serde_json::to_value(response).unwrap())))
 }
 
@@ -95,10 +103,10 @@ pub async fn health_check(
 pub async fn public_health_check() -> Result<(StatusCode, Json<Value>), StatusCode> {
     // Initialize app start time if not already set
     APP_START_TIME.get_or_init(|| SystemTime::now());
-    
+
     let memory_info = get_memory_info();
     let system_info = get_system_info();
-    
+
     let response = json!({
         "status": "healthy",
         "message": "LunarBase is running",
@@ -116,7 +124,7 @@ pub async fn public_health_check() -> Result<(StatusCode, Json<Value>), StatusCo
             "disk_usage_percentage": system_info.disk_usage_percentage
         }
     });
-    
+
     Ok((StatusCode::OK, Json(response)))
 }
 
@@ -135,7 +143,7 @@ pub async fn simple_health_check() -> Result<(StatusCode, Json<Value>), StatusCo
         "status": "ok",
         "timestamp": chrono::Utc::now().to_rfc3339()
     });
-    
+
     Ok((StatusCode::OK, Json(response)))
 }
 
@@ -146,56 +154,57 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
             match diesel::sql_query("SELECT 1").execute(&mut conn) {
                 Ok(_) => {
                     // Get collection count
-                    let collections_count = match diesel::sql_query(
-                        "SELECT COUNT(*) as count FROM collections"
-                    ).load::<CountResult>(&mut conn) {
-                        Ok(results) => results.first().map(|r| r.count).unwrap_or(0),
-                        Err(_) => 0,
-                    };
-                    
+                    let collections_count =
+                        match diesel::sql_query("SELECT COUNT(*) as count FROM collections")
+                            .load::<CountResult>(&mut conn)
+                        {
+                            Ok(results) => results.first().map(|r| r.count).unwrap_or(0),
+                            Err(_) => 0,
+                        };
+
                     // Estimate total records (this is approximate)
                     let total_records = estimate_total_records(&mut conn);
-                    
+
                     DatabaseHealth {
                         status: "healthy".to_string(),
                         connection_pool_size: 10, // From your pool configuration
-                        active_connections: 1, // Simplified for now
+                        active_connections: 1,    // Simplified for now
                         total_collections: collections_count,
                         total_records,
                     }
-                },
+                }
                 Err(_) => DatabaseHealth {
                     status: "unhealthy".to_string(),
                     connection_pool_size: 10,
                     active_connections: 0,
                     total_collections: 0,
                     total_records: 0,
-                }
+                },
             }
-        },
+        }
         Err(_) => DatabaseHealth {
             status: "connection_failed".to_string(),
             connection_pool_size: 10,
             active_connections: 0,
             total_collections: 0,
             total_records: 0,
-        }
+        },
     }
 }
 
 fn get_memory_info() -> MemoryInfo {
     let mut sys = System::new_all();
     sys.refresh_memory();
-    
+
     let total_mb = sys.total_memory() as f64 / (1024.0 * 1024.0);
     let used_mb = sys.used_memory() as f64 / (1024.0 * 1024.0);
-    
+
     let usage_percentage = if total_mb > 0.0 {
         (used_mb / total_mb) * 100.0
     } else {
         0.0
     };
-    
+
     MemoryInfo {
         used_mb,
         total_mb,
@@ -207,7 +216,7 @@ fn get_system_info() -> SystemInfo {
     let cpu_usage = get_cpu_usage();
     let load_average = get_load_average();
     let disk_usage_percentage = get_disk_usage();
-    
+
     SystemInfo {
         cpu_usage,
         load_average,
@@ -232,27 +241,27 @@ fn estimate_total_records(conn: &mut diesel::SqliteConnection) -> i64 {
     match diesel::sql_query(collections_query).load::<CollectionName>(conn) {
         Ok(collections) => {
             let mut total_records = 0i64;
-            
+
             // For each collection, count records in its data table
             for collection in collections {
                 let table_name = format!("collection_{}_data", collection.name);
                 let count_query = format!("SELECT COUNT(*) as count FROM {}", table_name);
-                
+
                 match diesel::sql_query(&count_query).load::<CountResult>(conn) {
                     Ok(results) => {
                         if let Some(result) = results.first() {
                             total_records += result.count;
                         }
-                    },
+                    }
                     Err(_) => {
                         // Table might not exist or be accessible, skip silently
                         continue;
                     }
                 }
             }
-            
+
             total_records
-        },
+        }
         Err(_) => 0,
     }
 }
@@ -260,17 +269,17 @@ fn estimate_total_records(conn: &mut diesel::SqliteConnection) -> i64 {
 fn get_cpu_usage() -> f64 {
     let mut sys = System::new_all();
     sys.refresh_cpu_all();
-    
+
     // Wait a bit to get accurate CPU usage
     std::thread::sleep(std::time::Duration::from_millis(200));
     sys.refresh_cpu_all();
-    
+
     // Calculate average CPU usage across all cores
     let cpus = sys.cpus();
     if cpus.is_empty() {
         return 0.0;
     }
-    
+
     let total_usage: f32 = cpus.iter().map(|cpu| cpu.cpu_usage()).sum();
     (total_usage / cpus.len() as f32) as f64
 }
@@ -278,29 +287,29 @@ fn get_cpu_usage() -> f64 {
 fn get_load_average() -> f64 {
     if cfg!(target_os = "linux") || cfg!(target_os = "macos") {
         match std::fs::read_to_string("/proc/loadavg") {
-            Ok(content) => {
-                content.split_whitespace()
-                    .next()
-                    .and_then(|s| s.parse::<f64>().ok())
-                    .unwrap_or(0.0)
-            },
+            Ok(content) => content
+                .split_whitespace()
+                .next()
+                .and_then(|s| s.parse::<f64>().ok())
+                .unwrap_or(0.0),
             Err(_) => {
                 // Fallback for macOS
                 match std::process::Command::new("uptime").output() {
                     Ok(output) => {
                         let output_str = String::from_utf8_lossy(&output.stdout);
                         if let Some(load_part) = output_str.split("load averages:").nth(1) {
-                            load_part.split_whitespace()
+                            load_part
+                                .split_whitespace()
                                 .next()
                                 .and_then(|s| s.parse::<f64>().ok())
                                 .unwrap_or(0.0)
                         } else {
                             0.0
                         }
-                    },
+                    }
                     Err(_) => 0.0,
                 }
-            },
+            }
         }
     } else {
         0.0
@@ -311,18 +320,20 @@ fn get_disk_usage() -> f64 {
     match std::process::Command::new("df").args(["-h", "."]).output() {
         Ok(output) => {
             let output_str = String::from_utf8_lossy(&output.stdout);
-            for line in output_str.lines().skip(1) { // Skip header
+            for line in output_str.lines().skip(1) {
+                // Skip header
                 let parts: Vec<&str> = line.split_whitespace().collect();
                 if parts.len() >= 5 {
                     if let Some(usage_str) = parts.get(4) {
-                        return usage_str.trim_end_matches('%')
+                        return usage_str
+                            .trim_end_matches('%')
                             .parse::<f64>()
                             .unwrap_or(0.0);
                     }
                 }
             }
             0.0
-        },
+        }
         Err(_) => 0.0,
     }
 }

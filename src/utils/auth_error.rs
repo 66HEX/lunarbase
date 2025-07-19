@@ -1,9 +1,9 @@
 use axum::{
+    Json,
     http::StatusCode,
     response::{IntoResponse, Response},
-    Json,
 };
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use std::fmt;
 
 /// Production-safe auth errors - never expose sensitive information
@@ -36,7 +36,9 @@ impl fmt::Display for AuthError {
             AuthError::TokenMissing => write!(f, "Token missing"),
             AuthError::InsufficientPermissions => write!(f, "Insufficient permissions"),
             AuthError::RateLimitExceeded => write!(f, "Rate limit exceeded"),
-            AuthError::ValidationError(errors) => write!(f, "Validation error: {}", errors.join(", ")),
+            AuthError::ValidationError(errors) => {
+                write!(f, "Validation error: {}", errors.join(", "))
+            }
             AuthError::BadRequest(msg) => write!(f, "Bad request: {}", msg),
             AuthError::DatabaseError => write!(f, "Database error"),
             AuthError::InternalError => write!(f, "Internal server error"),
@@ -54,73 +56,61 @@ impl IntoResponse for AuthError {
             AuthError::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password",
-                "INVALID_CREDENTIALS"
+                "INVALID_CREDENTIALS",
             ),
             AuthError::AccountLocked => (
                 StatusCode::FORBIDDEN,
                 "Account temporarily locked due to multiple failed login attempts",
-                "ACCOUNT_LOCKED"
+                "ACCOUNT_LOCKED",
             ),
             AuthError::AccountNotVerified => (
                 StatusCode::FORBIDDEN,
                 "Please verify your email address to continue",
-                "ACCOUNT_NOT_VERIFIED"
+                "ACCOUNT_NOT_VERIFIED",
             ),
             AuthError::TokenExpired => (
                 StatusCode::UNAUTHORIZED,
                 "Token has expired",
-                "TOKEN_EXPIRED"
+                "TOKEN_EXPIRED",
             ),
             AuthError::TokenInvalid => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid or malformed token",
-                "TOKEN_INVALID"
+                "TOKEN_INVALID",
             ),
             AuthError::TokenMissing => (
                 StatusCode::UNAUTHORIZED,
                 "Authorization token is missing",
-                "TOKEN_MISSING"
+                "TOKEN_MISSING",
             ),
             AuthError::InsufficientPermissions => (
                 StatusCode::FORBIDDEN,
                 "You don't have permission to access this resource",
-                "INSUFFICIENT_PERMISSIONS"
+                "INSUFFICIENT_PERMISSIONS",
             ),
             AuthError::RateLimitExceeded => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "Too many requests. Please try again later",
-                "RATE_LIMIT_EXCEEDED"
+                "RATE_LIMIT_EXCEEDED",
             ),
             AuthError::ValidationError(_) => (
                 StatusCode::BAD_REQUEST,
                 "Validation failed",
-                "VALIDATION_ERROR"
+                "VALIDATION_ERROR",
             ),
-            AuthError::BadRequest(_) => (
-                StatusCode::BAD_REQUEST,
-                "Bad request",
-                "BAD_REQUEST"
-            ),
+            AuthError::BadRequest(_) => (StatusCode::BAD_REQUEST, "Bad request", "BAD_REQUEST"),
             AuthError::DatabaseError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "A database error occurred. Please try again later",
-                "DATABASE_ERROR"
+                "DATABASE_ERROR",
             ),
             AuthError::InternalError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "An internal error occurred. Please try again later",
-                "INTERNAL_ERROR"
+                "INTERNAL_ERROR",
             ),
-            AuthError::NotFound(_) => (
-                StatusCode::NOT_FOUND,
-                "Resource not found",
-                "NOT_FOUND"
-            ),
-            AuthError::Forbidden(_) => (
-                StatusCode::FORBIDDEN,
-                "Access forbidden",
-                "FORBIDDEN"
-            ),
+            AuthError::NotFound(_) => (StatusCode::NOT_FOUND, "Resource not found", "NOT_FOUND"),
+            AuthError::Forbidden(_) => (StatusCode::FORBIDDEN, "Access forbidden", "FORBIDDEN"),
         };
 
         let body = Json(json!({

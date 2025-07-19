@@ -1,28 +1,28 @@
-use chrono::{Duration, Utc, NaiveDateTime, DateTime};
-use jsonwebtoken::{decode, encode, Algorithm, DecodingKey, EncodingKey, Header, Validation};
-use serde::{Deserialize, Serialize};
+use chrono::{DateTime, Duration, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
+use serde::{Deserialize, Serialize};
 
 use super::AuthError;
 use crate::schema::blacklisted_tokens;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
-    pub sub: String,        // Subject (user ID)
-    pub email: String,      // User email
-    pub role: String,       // User role
-    pub exp: i64,          // Expiration time
-    pub iat: i64,          // Issued at
-    pub jti: String,       // JWT ID for token blacklisting
+    pub sub: String,   // Subject (user ID)
+    pub email: String, // User email
+    pub role: String,  // User role
+    pub exp: i64,      // Expiration time
+    pub iat: i64,      // Issued at
+    pub jti: String,   // JWT ID for token blacklisting
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct RefreshClaims {
-    pub sub: String,        // Subject (user ID)  
-    pub exp: i64,          // Expiration time
-    pub iat: i64,          // Issued at
-    pub jti: String,       // JWT ID
+    pub sub: String,        // Subject (user ID)
+    pub exp: i64,           // Expiration time
+    pub iat: i64,           // Issued at
+    pub jti: String,        // JWT ID
     pub token_type: String, // "refresh"
 }
 
@@ -54,7 +54,7 @@ impl JwtService {
     ) -> Result<String, AuthError> {
         let now = Utc::now();
         let exp = now + self.access_token_duration;
-        
+
         let claims = Claims {
             sub: user_id.to_string(),
             email: email.to_string(),
@@ -88,7 +88,7 @@ impl JwtService {
     /// Validate and decode access token
     pub fn validate_access_token(&self, token: &str) -> Result<Claims, AuthError> {
         let validation = Validation::new(Algorithm::HS256);
-        
+
         match decode::<Claims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => {
                 // Check if token is expired
@@ -105,7 +105,7 @@ impl JwtService {
     /// Validate and decode refresh token
     pub fn validate_refresh_token(&self, token: &str) -> Result<RefreshClaims, AuthError> {
         let validation = Validation::new(Algorithm::HS256);
-        
+
         match decode::<RefreshClaims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => {
                 // Check if token is expired
@@ -113,12 +113,12 @@ impl JwtService {
                 if token_data.claims.exp < now {
                     return Err(AuthError::TokenExpired);
                 }
-                
+
                 // Check if it's actually a refresh token
                 if token_data.claims.token_type != "refresh" {
                     return Err(AuthError::TokenInvalid);
                 }
-                
+
                 Ok(token_data.claims)
             }
             Err(_) => Err(AuthError::TokenInvalid),
@@ -144,7 +144,7 @@ impl JwtService {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.validate_exp = false; // Don't validate expiration
         validation.validate_nbf = false; // Don't validate not before
-        
+
         match decode::<Claims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => Ok(token_data.claims),
             Err(_) => Err(AuthError::TokenInvalid),
@@ -156,7 +156,7 @@ impl JwtService {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.validate_exp = false;
         validation.validate_nbf = false;
-        
+
         match decode::<RefreshClaims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => Ok(token_data.claims),
             Err(_) => Err(AuthError::TokenInvalid),
@@ -165,8 +165,7 @@ impl JwtService {
 
     /// Check if token is blacklisted
     pub fn is_token_blacklisted(&self, jti: &str) -> Result<bool, AuthError> {
-        let mut conn = self.pool.get()
-            .map_err(|_| AuthError::InternalError)?;
+        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
         let count: i64 = blacklisted_tokens::table
             .filter(blacklisted_tokens::jti.eq(jti))
@@ -178,12 +177,17 @@ impl JwtService {
     }
 
     /// Add token to blacklist
-    pub fn blacklist_token(&self, token: &str, token_type: &str, reason: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn blacklist_token(
+        &self,
+        token: &str,
+        token_type: &str,
+        reason: Option<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut conn = self.pool.get()?;
-        
+
         // Decode token to get claims
         let claims = self.decode_token_unsafe(token)?;
-        
+
         let new_blacklisted_token = crate::models::NewBlacklistedToken {
             jti: claims.jti,
             user_id: claims.sub.parse()?,
@@ -191,43 +195,50 @@ impl JwtService {
             expires_at: Self::timestamp_to_naive_datetime(claims.exp),
             reason,
         };
-        
+
         diesel::insert_into(blacklisted_tokens::table)
             .values(&new_blacklisted_token)
             .execute(&mut conn)?;
-        
+
         Ok(())
     }
 
     /// Validate access token with blacklist check
     pub fn validate_access_token_with_blacklist(&self, token: &str) -> Result<Claims, AuthError> {
         let claims = self.validate_access_token(token)?;
-        
+
         if self.is_token_blacklisted(&claims.jti)? {
             return Err(AuthError::TokenInvalid);
         }
-        
+
         Ok(claims)
     }
 
     /// Validate refresh token with blacklist check
-    pub fn validate_refresh_token_with_blacklist(&self, token: &str) -> Result<RefreshClaims, AuthError> {
+    pub fn validate_refresh_token_with_blacklist(
+        &self,
+        token: &str,
+    ) -> Result<RefreshClaims, AuthError> {
         let claims = self.validate_refresh_token(token)?;
-        
+
         if self.is_token_blacklisted(&claims.jti)? {
             return Err(AuthError::TokenInvalid);
         }
-        
+
         Ok(claims)
     }
 
     /// Blacklist refresh token
-    pub fn blacklist_refresh_token(&self, token: &str, reason: Option<String>) -> Result<(), Box<dyn std::error::Error>> {
+    pub fn blacklist_refresh_token(
+        &self,
+        token: &str,
+        reason: Option<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let mut conn = self.pool.get()?;
-        
+
         // Decode refresh token to get claims
         let refresh_claims = self.decode_refresh_token_unsafe(token)?;
-        
+
         let new_blacklisted_token = crate::models::NewBlacklistedToken {
             jti: refresh_claims.jti,
             user_id: refresh_claims.sub.parse()?,
@@ -235,11 +246,11 @@ impl JwtService {
             expires_at: Self::timestamp_to_naive_datetime(refresh_claims.exp),
             reason,
         };
-        
+
         diesel::insert_into(blacklisted_tokens::table)
             .values(&new_blacklisted_token)
             .execute(&mut conn)?;
-        
+
         Ok(())
     }
 

@@ -1,26 +1,22 @@
 use axum::{
     Router,
-    routing::{get, post, put, delete},
-    http::{StatusCode, Request},
     body::Body,
+    http::{Request, StatusCode},
+    routing::{delete, get, post, put},
 };
-use serde_json::{json, Value};
-use tower::ServiceExt;
 use http_body_util::BodyExt;
+use serde_json::{Value, json};
+use tower::ServiceExt;
 use uuid;
 
-use lunarbase::{AppState, Config};
+use axum::middleware;
 use lunarbase::database::create_pool;
 use lunarbase::handlers::{
-    collections::*,
-    permissions::*,
-    record_permissions::*,
-    ownership::*,
-    auth::*,
+    auth::*, collections::*, ownership::*, permissions::*, record_permissions::*,
 };
-use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
 use lunarbase::middleware::auth_middleware;
-use axum::middleware;
+use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
+use lunarbase::{AppState, Config};
 
 fn create_test_router() -> Router {
     let test_jwt_secret = "test_permission_secret".to_string();
@@ -54,32 +50,73 @@ fn create_test_router() -> Router {
         .route("/permissions/roles", post(create_role))
         .route("/permissions/roles", get(list_roles))
         .route("/permissions/roles/{role_name}", get(get_role))
-        .route("/permissions/collections/{name}", post(set_collection_permission))
-        .route("/permissions/collections/{name}", get(get_collection_permissions))
-        .route("/permissions/users/{user_id}/collections/{name}", post(set_user_collection_permission))
-        .route("/permissions/users/{user_id}/collections/{name}", get(get_user_collection_permissions))
-        .route("/permissions/users/{user_id}/collections", get(get_user_accessible_collections))
+        .route(
+            "/permissions/collections/{name}",
+            post(set_collection_permission),
+        )
+        .route(
+            "/permissions/collections/{name}",
+            get(get_collection_permissions),
+        )
+        .route(
+            "/permissions/users/{user_id}/collections/{name}",
+            post(set_user_collection_permission),
+        )
+        .route(
+            "/permissions/users/{user_id}/collections/{name}",
+            get(get_user_collection_permissions),
+        )
+        .route(
+            "/permissions/users/{user_id}/collections",
+            get(get_user_accessible_collections),
+        )
         // Record-level permissions
-        .route("/permissions/collections/{name}/records/{record_id}", post(set_record_permission))
-        .route("/permissions/collections/{name}/records/{record_id}/users/{user_id}", get(get_record_permissions))
-        .route("/permissions/collections/{name}/records/{record_id}/users/{user_id}", delete(remove_record_permission))
-        .route("/permissions/collections/{name}/records/{record_id}/users", get(list_record_permissions))
+        .route(
+            "/permissions/collections/{name}/records/{record_id}",
+            post(set_record_permission),
+        )
+        .route(
+            "/permissions/collections/{name}/records/{record_id}/users/{user_id}",
+            get(get_record_permissions),
+        )
+        .route(
+            "/permissions/collections/{name}/records/{record_id}/users/{user_id}",
+            delete(remove_record_permission),
+        )
+        .route(
+            "/permissions/collections/{name}/records/{record_id}/users",
+            get(list_record_permissions),
+        )
         // Ownership management
-        .route("/ownership/collections/{name}/records/{record_id}/transfer", post(transfer_record_ownership))
-        .route("/ownership/collections/{name}/my-records", get(get_my_owned_records))
-        .route("/ownership/collections/{name}/users/{user_id}/records", get(get_user_owned_records))
-        .route("/ownership/collections/{name}/records/{record_id}/check", get(check_record_ownership))
-        .route("/ownership/collections/{name}/stats", get(get_ownership_stats))
-        .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
+        .route(
+            "/ownership/collections/{name}/records/{record_id}/transfer",
+            post(transfer_record_ownership),
+        )
+        .route(
+            "/ownership/collections/{name}/my-records",
+            get(get_my_owned_records),
+        )
+        .route(
+            "/ownership/collections/{name}/users/{user_id}/records",
+            get(get_user_owned_records),
+        )
+        .route(
+            "/ownership/collections/{name}/records/{record_id}/check",
+            get(check_record_ownership),
+        )
+        .route(
+            "/ownership/collections/{name}/stats",
+            get(get_ownership_stats),
+        )
+        .layer(middleware::from_fn_with_state(
+            app_state.auth_state.clone(),
+            auth_middleware,
+        ));
 
     // Combine routes
-    let api_routes = Router::new()
-        .merge(public_routes)
-        .merge(protected_routes);
+    let api_routes = Router::new().merge(public_routes).merge(protected_routes);
 
-    let router = Router::new()
-        .nest("/api", api_routes)
-        .with_state(app_state);
+    let router = Router::new().nest("/api", api_routes).with_state(app_state);
 
     // Skip middleware in tests to avoid Prometheus global recorder conflicts
     router
@@ -136,7 +173,7 @@ fn unique_collection_name(prefix: &str) -> String {
 }
 
 fn create_token_for_user(user_id: i32, role: &str) -> String {
-    use jsonwebtoken::{encode, Header, EncodingKey};
+    use jsonwebtoken::{EncodingKey, Header, encode};
     use lunarbase::utils::Claims;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -156,8 +193,12 @@ fn create_token_for_user(user_id: i32, role: &str) -> String {
     };
 
     let jwt_secret = "test_permission_secret";
-    encode(&Header::default(), &claims, &EncodingKey::from_secret(jwt_secret.as_ref()))
-        .expect("Failed to create test token")
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(jwt_secret.as_ref()),
+    )
+    .expect("Failed to create test token")
 }
 
 async fn create_admin_token(app: &Router) -> (i32, String) {
@@ -170,7 +211,10 @@ fn create_user_token(user_id: i32) -> String {
 
 async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
     let unique_email = format!("test_{}@example.com", uuid::Uuid::new_v4());
-    let unique_username = format!("test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string()); // Keep username short
+    let unique_username = format!(
+        "test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    ); // Keep username short
     let register_payload = json!({
         "email": unique_email,
         "password": "Test123!@#",
@@ -187,31 +231,36 @@ async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
     let register_response = app.clone().oneshot(register_request).await.unwrap();
     assert_eq!(register_response.status(), StatusCode::CREATED);
 
-    let body = register_response.into_body().collect().await.unwrap().to_bytes();
+    let body = register_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     let user_id = json_response["data"]["user"]["id"].as_i64().unwrap() as i32;
-    
+
     // If role is not "user", update the user's role in the database
     if role != "user" {
         use diesel::prelude::*;
-        use lunarbase::schema::users;
         use lunarbase::Config;
         use lunarbase::database::create_pool;
-        
+        use lunarbase::schema::users;
+
         let config = Config::from_env().expect("Failed to load config");
         let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
         let mut conn = db_pool.get().expect("Failed to get database connection");
-        
+
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(users::role.eq(role))
             .execute(&mut conn)
             .expect("Failed to update user role");
     }
-    
+
     let token = create_token_for_user(user_id, role);
-    
+
     (user_id, token)
 }
 
@@ -223,7 +272,10 @@ async fn test_role_management_full_cycle() {
     let (_admin_id, admin_token) = create_admin_token(&app).await;
 
     // 1. Create a new role with unique name
-    let unique_role_name = format!("role_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_role_name = format!(
+        "role_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     let role_payload = json!({
         "name": unique_role_name.clone(),
         "description": "Can edit content but not admin features",
@@ -252,10 +304,15 @@ async fn test_role_management_full_cycle() {
     let list_roles_response = app.clone().oneshot(list_roles_request).await.unwrap();
     assert_eq!(list_roles_response.status(), StatusCode::OK);
 
-    let body = list_roles_response.into_body().collect().await.unwrap().to_bytes();
+    let body = list_roles_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert!(json_response["data"].is_array());
     let roles = json_response["data"].as_array().unwrap();
     assert!(roles.iter().any(|role| role["name"] == unique_role_name));
@@ -271,12 +328,20 @@ async fn test_role_management_full_cycle() {
     let get_role_response = app.clone().oneshot(get_role_request).await.unwrap();
     assert_eq!(get_role_response.status(), StatusCode::OK);
 
-    let body = get_role_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_role_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["name"], unique_role_name);
-    assert_eq!(json_response["data"]["description"], "Can edit content but not admin features");
+    assert_eq!(
+        json_response["data"]["description"],
+        "Can edit content but not admin features"
+    );
 }
 
 #[tokio::test]
@@ -329,7 +394,11 @@ async fn test_collection_permissions_full_scenario() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // 2. Set user-specific collection permissions
@@ -342,7 +411,10 @@ async fn test_collection_permissions_full_scenario() {
     });
 
     let set_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
@@ -354,7 +426,10 @@ async fn test_collection_permissions_full_scenario() {
 
     // 3. Get user's collection permissions
     let get_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user_id, unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::empty())
@@ -363,10 +438,15 @@ async fn test_collection_permissions_full_scenario() {
     let get_permission_response = app.clone().oneshot(get_permission_request).await.unwrap();
     assert_eq!(get_permission_response.status(), StatusCode::OK);
 
-    let body = get_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["permissions"]["can_create"], true);
     assert_eq!(json_response["data"]["permissions"]["can_read"], true);
     assert_eq!(json_response["data"]["permissions"]["can_update"], false);
@@ -392,18 +472,35 @@ async fn test_collection_permissions_full_scenario() {
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
     let status = create_record_response.status();
     if status != StatusCode::CREATED {
-        let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+        let body = create_record_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
-        println!("Create record failed with status: {}, body: {}", status, body_str);
+        println!(
+            "Create record failed with status: {}, body: {}",
+            status, body_str
+        );
         panic!("Expected CREATED status, got: {}", status);
     }
     assert_eq!(status, StatusCode::CREATED);
 
-    let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+    let body = create_record_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
-    let record_id: i32 = json_response["data"]["id"].as_str().unwrap().parse().unwrap();
+
+    let record_id: i32 = json_response["data"]["id"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
 
     // 5. Test user cannot update record (no permission)
     let update_payload = json!({
@@ -413,7 +510,10 @@ async fn test_collection_permissions_full_scenario() {
     });
 
     let update_record_request = Request::builder()
-        .uri(&format!("/api/collections/{}/records/{}", unique_name, record_id))
+        .uri(&format!(
+            "/api/collections/{}/records/{}",
+            unique_name, record_id
+        ))
         .method("PUT")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", user_token))
@@ -422,8 +522,10 @@ async fn test_collection_permissions_full_scenario() {
 
     let update_record_response = app.clone().oneshot(update_record_request).await.unwrap();
     // This should fail due to lack of update permission
-    assert!(update_record_response.status() == StatusCode::FORBIDDEN || 
-            update_record_response.status() == StatusCode::UNAUTHORIZED);
+    assert!(
+        update_record_response.status() == StatusCode::FORBIDDEN
+            || update_record_response.status() == StatusCode::UNAUTHORIZED
+    );
 }
 
 // === RECORD PERMISSIONS TESTS ===
@@ -453,7 +555,11 @@ async fn test_record_level_permissions() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Give user1 permission to create records in this collection
@@ -466,7 +572,10 @@ async fn test_record_level_permissions() {
     });
 
     let set_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", _user1_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            _user1_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
@@ -495,18 +604,35 @@ async fn test_record_level_permissions() {
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
     let status = create_record_response.status();
     if status != StatusCode::CREATED {
-        let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+        let body = create_record_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
-        println!("Create record failed with status: {}, body: {}", status, body_str);
+        println!(
+            "Create record failed with status: {}, body: {}",
+            status, body_str
+        );
         panic!("Expected CREATED status, got: {}", status);
     }
     assert_eq!(status, StatusCode::CREATED);
 
-    let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+    let body = create_record_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
-    let record_id: i32 = json_response["data"]["id"].as_str().unwrap().parse().unwrap();
+
+    let record_id: i32 = json_response["data"]["id"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
 
     // Set record-specific permission for user2
     let record_permission_payload = json!({
@@ -518,44 +644,70 @@ async fn test_record_level_permissions() {
     });
 
     let set_record_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/collections/{}/records/{}", unique_name, record_id))
+        .uri(&format!(
+            "/api/permissions/collections/{}/records/{}",
+            unique_name, record_id
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(record_permission_payload.to_string()))
         .unwrap();
 
-    let set_record_permission_response = app.clone().oneshot(set_record_permission_request).await.unwrap();
+    let set_record_permission_response = app
+        .clone()
+        .oneshot(set_record_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_record_permission_response.status(), StatusCode::OK);
 
     // Get record permissions for user2
     let get_record_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/collections/{}/records/{}/users/{}", unique_name, record_id, user2_id))
+        .uri(&format!(
+            "/api/permissions/collections/{}/records/{}/users/{}",
+            unique_name, record_id, user2_id
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_record_permission_response = app.clone().oneshot(get_record_permission_request).await.unwrap();
+    let get_record_permission_response = app
+        .clone()
+        .oneshot(get_record_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_record_permission_response.status(), StatusCode::OK);
 
-    let body = get_record_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_record_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["permissions"]["can_read"], true);
     assert_eq!(json_response["data"]["permissions"]["can_update"], false);
     assert_eq!(json_response["data"]["permissions"]["can_delete"], false);
 
     // List all record permissions
     let list_record_permissions_request = Request::builder()
-        .uri(&format!("/api/permissions/collections/{}/records/{}/users", unique_name, record_id))
+        .uri(&format!(
+            "/api/permissions/collections/{}/records/{}/users",
+            unique_name, record_id
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::empty())
         .unwrap();
 
-    let list_record_permissions_response = app.clone().oneshot(list_record_permissions_request).await.unwrap();
+    let list_record_permissions_response = app
+        .clone()
+        .oneshot(list_record_permissions_request)
+        .await
+        .unwrap();
     assert_eq!(list_record_permissions_response.status(), StatusCode::OK);
 }
 
@@ -586,7 +738,11 @@ async fn test_ownership_full_scenario() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Give user1 permission to create records in this collection
@@ -599,7 +755,10 @@ async fn test_ownership_full_scenario() {
     });
 
     let set_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user1_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user1_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
@@ -628,22 +787,42 @@ async fn test_ownership_full_scenario() {
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
     let status = create_record_response.status();
     if status != StatusCode::CREATED {
-        let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+        let body = create_record_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
-        println!("Create record failed with status: {}, body: {}", status, body_str);
+        println!(
+            "Create record failed with status: {}, body: {}",
+            status, body_str
+        );
         panic!("Expected status 201 CREATED, got {}", status);
     }
     assert_eq!(status, StatusCode::CREATED);
 
-    let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+    let body = create_record_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
-    let record_id: i32 = json_response["data"]["id"].as_str().unwrap().parse().unwrap();
+
+    let record_id: i32 = json_response["data"]["id"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
 
     // Check ownership (user1 should be owner)
     let check_ownership_request = Request::builder()
-        .uri(&format!("/api/ownership/collections/{}/records/{}/check", unique_name, record_id))
+        .uri(&format!(
+            "/api/ownership/collections/{}/records/{}/check",
+            unique_name, record_id
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user1_token))
         .body(Body::empty())
@@ -652,28 +831,45 @@ async fn test_ownership_full_scenario() {
     let check_ownership_response = app.clone().oneshot(check_ownership_request).await.unwrap();
     assert_eq!(check_ownership_response.status(), StatusCode::OK);
 
-    let body = check_ownership_response.into_body().collect().await.unwrap().to_bytes();
+    let body = check_ownership_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["is_owner"], true);
     assert_eq!(json_response["data"]["user_id"], user1_id);
 
     // Get user1's owned records
     let get_owned_records_request = Request::builder()
-        .uri(&format!("/api/ownership/collections/{}/my-records", unique_name))
+        .uri(&format!(
+            "/api/ownership/collections/{}/my-records",
+            unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user1_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_owned_records_response = app.clone().oneshot(get_owned_records_request).await.unwrap();
+    let get_owned_records_response = app
+        .clone()
+        .oneshot(get_owned_records_request)
+        .await
+        .unwrap();
     assert_eq!(get_owned_records_response.status(), StatusCode::OK);
 
-    let body = get_owned_records_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_owned_records_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["total_owned"], 1);
     assert!(json_response["data"]["records"].is_array());
 
@@ -683,31 +879,50 @@ async fn test_ownership_full_scenario() {
     });
 
     let transfer_ownership_request = Request::builder()
-        .uri(&format!("/api/ownership/collections/{}/records/{}/transfer", unique_name, record_id))
+        .uri(&format!(
+            "/api/ownership/collections/{}/records/{}/transfer",
+            unique_name, record_id
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", user1_token))
         .body(Body::from(transfer_payload.to_string()))
         .unwrap();
 
-    let transfer_ownership_response = app.clone().oneshot(transfer_ownership_request).await.unwrap();
+    let transfer_ownership_response = app
+        .clone()
+        .oneshot(transfer_ownership_request)
+        .await
+        .unwrap();
     assert_eq!(transfer_ownership_response.status(), StatusCode::OK);
 
     // Verify ownership transferred to user2
     let check_ownership_user2_request = Request::builder()
-        .uri(&format!("/api/ownership/collections/{}/records/{}/check", unique_name, record_id))
+        .uri(&format!(
+            "/api/ownership/collections/{}/records/{}/check",
+            unique_name, record_id
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user2_token))
         .body(Body::empty())
         .unwrap();
 
-    let check_ownership_user2_response = app.clone().oneshot(check_ownership_user2_request).await.unwrap();
+    let check_ownership_user2_response = app
+        .clone()
+        .oneshot(check_ownership_user2_request)
+        .await
+        .unwrap();
     assert_eq!(check_ownership_user2_response.status(), StatusCode::OK);
 
-    let body = check_ownership_user2_response.into_body().collect().await.unwrap().to_bytes();
+    let body = check_ownership_user2_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["is_owner"], true);
     assert_eq!(json_response["data"]["user_id"], user2_id);
 
@@ -722,10 +937,15 @@ async fn test_ownership_full_scenario() {
     let ownership_stats_response = app.clone().oneshot(ownership_stats_request).await.unwrap();
     assert_eq!(ownership_stats_response.status(), StatusCode::OK);
 
-    let body = ownership_stats_response.into_body().collect().await.unwrap().to_bytes();
+    let body = ownership_stats_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert!(json_response["data"]["total_records"].as_i64().unwrap() >= 1);
     assert!(json_response["data"]["owned_records"].as_i64().unwrap() >= 1);
 }
@@ -767,7 +987,11 @@ async fn test_permission_error_scenarios() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Set admin permissions for the collection
@@ -789,7 +1013,11 @@ async fn test_permission_error_scenarios() {
         .body(Body::from(admin_permission_payload.to_string()))
         .unwrap();
 
-    let set_admin_permission_response = app.clone().oneshot(set_admin_permission_request).await.unwrap();
+    let set_admin_permission_response = app
+        .clone()
+        .oneshot(set_admin_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_admin_permission_response.status(), StatusCode::OK);
 
     // Test user accessing admin endpoints
@@ -820,14 +1048,23 @@ async fn test_permission_error_scenarios() {
         .unwrap();
 
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
-    
+
     assert_eq!(create_record_response.status(), StatusCode::CREATED);
 
-    let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+    let body = create_record_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
-    let record_id: i32 = json_response["data"]["id"].as_str().unwrap().parse().unwrap();
+
+    let record_id: i32 = json_response["data"]["id"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
 
     // User tries to transfer ownership of admin's record (should fail)
     let transfer_payload = json!({
@@ -835,16 +1072,25 @@ async fn test_permission_error_scenarios() {
     });
 
     let transfer_ownership_request = Request::builder()
-        .uri(&format!("/api/ownership/collections/{}/records/{}/transfer", unique_name, record_id))
+        .uri(&format!(
+            "/api/ownership/collections/{}/records/{}/transfer",
+            unique_name, record_id
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::from(transfer_payload.to_string()))
         .unwrap();
 
-    let transfer_ownership_response = app.clone().oneshot(transfer_ownership_request).await.unwrap();
-    assert!(transfer_ownership_response.status() == StatusCode::FORBIDDEN || 
-            transfer_ownership_response.status() == StatusCode::UNAUTHORIZED);
+    let transfer_ownership_response = app
+        .clone()
+        .oneshot(transfer_ownership_request)
+        .await
+        .unwrap();
+    assert!(
+        transfer_ownership_response.status() == StatusCode::FORBIDDEN
+            || transfer_ownership_response.status() == StatusCode::UNAUTHORIZED
+    );
 }
 
 #[tokio::test]
@@ -861,7 +1107,11 @@ async fn test_hierarchical_permissions() {
         .body(Body::empty())
         .unwrap();
 
-    let get_user_collections_response = app.clone().oneshot(get_user_collections_request).await.unwrap();
+    let get_user_collections_response = app
+        .clone()
+        .oneshot(get_user_collections_request)
+        .await
+        .unwrap();
     assert_eq!(get_user_collections_response.status(), StatusCode::OK);
 
     // User cannot view other users' collections (if implemented)
@@ -885,30 +1135,51 @@ async fn test_hierarchical_permissions() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Admin can view user's owned records
     let get_user_owned_records_request = Request::builder()
-        .uri(&format!("/api/ownership/collections/{}/users/{}/records", unique_name, user_id))
+        .uri(&format!(
+            "/api/ownership/collections/{}/users/{}/records",
+            unique_name, user_id
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_user_owned_records_response = app.clone().oneshot(get_user_owned_records_request).await.unwrap();
+    let get_user_owned_records_response = app
+        .clone()
+        .oneshot(get_user_owned_records_request)
+        .await
+        .unwrap();
     assert_eq!(get_user_owned_records_response.status(), StatusCode::OK);
 
     // User cannot view other users' owned records
     let get_other_user_records_request = Request::builder()
-        .uri(&format!("/api/ownership/collections/{}/users/999/records", unique_name))
+        .uri(&format!(
+            "/api/ownership/collections/{}/users/999/records",
+            unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_other_user_records_response = app.clone().oneshot(get_other_user_records_request).await.unwrap();
-    assert_eq!(get_other_user_records_response.status(), StatusCode::FORBIDDEN);
+    let get_other_user_records_response = app
+        .clone()
+        .oneshot(get_other_user_records_request)
+        .await
+        .unwrap();
+    assert_eq!(
+        get_other_user_records_response.status(),
+        StatusCode::FORBIDDEN
+    );
 }
 
 // === ROLE PERMISSIONS TESTS ===
@@ -917,9 +1188,12 @@ async fn test_hierarchical_permissions() {
 async fn test_role_collection_permissions_full_cycle() {
     let app = create_test_router();
     let (_admin_id, admin_token) = create_admin_token(&app).await;
-    
+
     // 1. Create a custom role
-    let unique_role_name = format!("editor_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_role_name = format!(
+        "editor_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     let role_payload = json!({
         "name": unique_role_name.clone(),
         "description": "Editor role for testing",
@@ -955,7 +1229,11 @@ async fn test_role_collection_permissions_full_cycle() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // 3. Set role-based collection permissions
@@ -977,24 +1255,40 @@ async fn test_role_collection_permissions_full_cycle() {
         .body(Body::from(role_permission_payload.to_string()))
         .unwrap();
 
-    let set_role_permission_response = app.clone().oneshot(set_role_permission_request).await.unwrap();
+    let set_role_permission_response = app
+        .clone()
+        .oneshot(set_role_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_role_permission_response.status(), StatusCode::OK);
 
     // 4. Get role-based collection permissions
     let get_role_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/collections/{}?role_name={}", unique_name, unique_role_name))
+        .uri(&format!(
+            "/api/permissions/collections/{}?role_name={}",
+            unique_name, unique_role_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_role_permission_response = app.clone().oneshot(get_role_permission_request).await.unwrap();
+    let get_role_permission_response = app
+        .clone()
+        .oneshot(get_role_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_role_permission_response.status(), StatusCode::OK);
 
-    let body = get_role_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_role_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["permissions"]["can_create"], true);
     assert_eq!(json_response["data"]["permissions"]["can_read"], true);
     assert_eq!(json_response["data"]["permissions"]["can_update"], true);
@@ -1020,24 +1314,40 @@ async fn test_role_collection_permissions_full_cycle() {
         .body(Body::from(updated_role_permission_payload.to_string()))
         .unwrap();
 
-    let update_role_permission_response = app.clone().oneshot(update_role_permission_request).await.unwrap();
+    let update_role_permission_response = app
+        .clone()
+        .oneshot(update_role_permission_request)
+        .await
+        .unwrap();
     assert_eq!(update_role_permission_response.status(), StatusCode::OK);
 
     // 6. Verify updated permissions
     let verify_role_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/collections/{}?role_name={}", unique_name, unique_role_name))
+        .uri(&format!(
+            "/api/permissions/collections/{}?role_name={}",
+            unique_name, unique_role_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::empty())
         .unwrap();
 
-    let verify_role_permission_response = app.clone().oneshot(verify_role_permission_request).await.unwrap();
+    let verify_role_permission_response = app
+        .clone()
+        .oneshot(verify_role_permission_request)
+        .await
+        .unwrap();
     assert_eq!(verify_role_permission_response.status(), StatusCode::OK);
 
-    let body = verify_role_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = verify_role_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["permissions"]["can_create"], false);
     assert_eq!(json_response["data"]["permissions"]["can_read"], true);
     assert_eq!(json_response["data"]["permissions"]["can_update"], false);
@@ -1049,12 +1359,21 @@ async fn test_role_collection_permissions_full_cycle() {
 async fn test_multiple_role_permissions() {
     let app = create_test_router();
     let (_admin_id, admin_token) = create_admin_token(&app).await;
-    
+
     // Create multiple roles
-    let editor_role = format!("editor_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
-    let viewer_role = format!("viewer_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
-    
-    for (role_name, description) in [(editor_role.clone(), "Editor role"), (viewer_role.clone(), "Viewer role")] {
+    let editor_role = format!(
+        "editor_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
+    let viewer_role = format!(
+        "viewer_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
+
+    for (role_name, description) in [
+        (editor_role.clone(), "Editor role"),
+        (viewer_role.clone(), "Viewer role"),
+    ] {
         let role_payload = json!({
             "name": role_name,
             "description": description,
@@ -1091,7 +1410,11 @@ async fn test_multiple_role_permissions() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Set different permissions for each role
@@ -1124,7 +1447,11 @@ async fn test_multiple_role_permissions() {
         .body(Body::from(editor_permissions.to_string()))
         .unwrap();
 
-    let set_editor_permission_response = app.clone().oneshot(set_editor_permission_request).await.unwrap();
+    let set_editor_permission_response = app
+        .clone()
+        .oneshot(set_editor_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_editor_permission_response.status(), StatusCode::OK);
 
     // Set viewer permissions
@@ -1136,42 +1463,70 @@ async fn test_multiple_role_permissions() {
         .body(Body::from(viewer_permissions.to_string()))
         .unwrap();
 
-    let set_viewer_permission_response = app.clone().oneshot(set_viewer_permission_request).await.unwrap();
+    let set_viewer_permission_response = app
+        .clone()
+        .oneshot(set_viewer_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_viewer_permission_response.status(), StatusCode::OK);
 
     // Verify editor permissions
     let get_editor_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/collections/{}?role_name={}", unique_name, editor_role))
+        .uri(&format!(
+            "/api/permissions/collections/{}?role_name={}",
+            unique_name, editor_role
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_editor_permission_response = app.clone().oneshot(get_editor_permission_request).await.unwrap();
+    let get_editor_permission_response = app
+        .clone()
+        .oneshot(get_editor_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_editor_permission_response.status(), StatusCode::OK);
 
-    let body = get_editor_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_editor_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["permissions"]["can_create"], true);
     assert_eq!(json_response["data"]["permissions"]["can_delete"], true);
 
     // Verify viewer permissions
     let get_viewer_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/collections/{}?role_name={}", unique_name, viewer_role))
+        .uri(&format!(
+            "/api/permissions/collections/{}?role_name={}",
+            unique_name, viewer_role
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_viewer_permission_response = app.clone().oneshot(get_viewer_permission_request).await.unwrap();
+    let get_viewer_permission_response = app
+        .clone()
+        .oneshot(get_viewer_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_viewer_permission_response.status(), StatusCode::OK);
 
-    let body = get_viewer_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_viewer_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["permissions"]["can_create"], false);
     assert_eq!(json_response["data"]["permissions"]["can_delete"], false);
     assert_eq!(json_response["data"]["permissions"]["can_read"], true);
@@ -1184,7 +1539,7 @@ async fn test_user_specific_permissions_override_role() {
     let app = create_test_router();
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user_id, user_token) = create_test_user(&app, "user").await;
-    
+
     // Create test collection
     let schema = create_test_schema();
     let unique_name = unique_collection_name("user_override_test");
@@ -1203,7 +1558,11 @@ async fn test_user_specific_permissions_override_role() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Set role-based permissions (user role typically has limited delete access)
@@ -1225,7 +1584,11 @@ async fn test_user_specific_permissions_override_role() {
         .body(Body::from(role_permission_payload.to_string()))
         .unwrap();
 
-    let set_role_permission_response = app.clone().oneshot(set_role_permission_request).await.unwrap();
+    let set_role_permission_response = app
+        .clone()
+        .oneshot(set_role_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_role_permission_response.status(), StatusCode::OK);
 
     // Set user-specific permissions that override role permissions
@@ -1240,31 +1603,50 @@ async fn test_user_specific_permissions_override_role() {
     });
 
     let set_user_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(user_permission_payload.to_string()))
         .unwrap();
 
-    let set_user_permission_response = app.clone().oneshot(set_user_permission_request).await.unwrap();
+    let set_user_permission_response = app
+        .clone()
+        .oneshot(set_user_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_user_permission_response.status(), StatusCode::OK);
 
     // Verify user-specific permissions
     let get_user_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user_id, unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_user_permission_response = app.clone().oneshot(get_user_permission_request).await.unwrap();
+    let get_user_permission_response = app
+        .clone()
+        .oneshot(get_user_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_user_permission_response.status(), StatusCode::OK);
 
-    let body = get_user_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_user_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     // User should have delete permission despite role restriction
     assert_eq!(json_response["data"]["permissions"]["can_delete"], true);
     assert_eq!(json_response["data"]["permissions"]["can_create"], true);
@@ -1291,15 +1673,27 @@ async fn test_user_specific_permissions_override_role() {
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
     assert_eq!(create_record_response.status(), StatusCode::CREATED);
 
-    let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+    let body = create_record_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
-    let record_id: i32 = json_response["data"]["id"].as_str().unwrap().parse().unwrap();
+
+    let record_id: i32 = json_response["data"]["id"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
 
     // User should be able to delete the record (due to user-specific permission override)
     let delete_record_request = Request::builder()
-        .uri(&format!("/api/collections/{}/records/{}", unique_name, record_id))
+        .uri(&format!(
+            "/api/collections/{}/records/{}",
+            unique_name, record_id
+        ))
         .method("DELETE")
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::empty())
@@ -1314,7 +1708,7 @@ async fn test_user_specific_permissions_null_values() {
     let app = create_test_router();
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user_id, user_token) = create_test_user(&app, "user").await;
-    
+
     // Create test collection
     let schema = create_test_schema();
     let unique_name = unique_collection_name("user_null_test");
@@ -1333,7 +1727,11 @@ async fn test_user_specific_permissions_null_values() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Set user-specific permissions with some null values (should fall back to role permissions)
@@ -1348,36 +1746,55 @@ async fn test_user_specific_permissions_null_values() {
     });
 
     let set_user_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(user_permission_payload.to_string()))
         .unwrap();
 
-    let set_user_permission_response = app.clone().oneshot(set_user_permission_request).await.unwrap();
+    let set_user_permission_response = app
+        .clone()
+        .oneshot(set_user_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_user_permission_response.status(), StatusCode::OK);
 
     // Verify user-specific permissions
     let get_user_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user_id, unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_user_permission_response = app.clone().oneshot(get_user_permission_request).await.unwrap();
+    let get_user_permission_response = app
+        .clone()
+        .oneshot(get_user_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_user_permission_response.status(), StatusCode::OK);
 
-    let body = get_user_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_user_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     // Explicit permissions should be respected
     assert_eq!(json_response["data"]["permissions"]["can_create"], true);
     assert_eq!(json_response["data"]["permissions"]["can_update"], false);
     assert_eq!(json_response["data"]["permissions"]["can_list"], true);
-    
+
     // Null permissions should fall back to role defaults
     // Note: The exact behavior depends on implementation - these might be null or default role values
 }
@@ -1388,7 +1805,7 @@ async fn test_user_permissions_unauthorized_access() {
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user1_id, user1_token) = create_test_user(&app, "user").await;
     let (user2_id, user2_token) = create_test_user(&app, "user").await;
-    
+
     // Create test collection
     let schema = create_test_schema();
     let unique_name = unique_collection_name("user_unauth_test");
@@ -1407,7 +1824,11 @@ async fn test_user_permissions_unauthorized_access() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Set permissions for user1
@@ -1422,26 +1843,43 @@ async fn test_user_permissions_unauthorized_access() {
     });
 
     let set_user1_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user1_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user1_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(user1_permission_payload.to_string()))
         .unwrap();
 
-    let set_user1_permission_response = app.clone().oneshot(set_user1_permission_request).await.unwrap();
+    let set_user1_permission_response = app
+        .clone()
+        .oneshot(set_user1_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_user1_permission_response.status(), StatusCode::OK);
 
     // User2 tries to access user1's permissions (should be forbidden)
     let get_user1_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user1_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user1_id, unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user2_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_user1_permission_response = app.clone().oneshot(get_user1_permission_request).await.unwrap();
-    assert_eq!(get_user1_permission_response.status(), StatusCode::FORBIDDEN);
+    let get_user1_permission_response = app
+        .clone()
+        .oneshot(get_user1_permission_request)
+        .await
+        .unwrap();
+    assert_eq!(
+        get_user1_permission_response.status(),
+        StatusCode::FORBIDDEN
+    );
 
     // User2 tries to set user1's permissions (should be forbidden)
     let malicious_permission_payload = json!({
@@ -1455,31 +1893,53 @@ async fn test_user_permissions_unauthorized_access() {
     });
 
     let malicious_set_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user1_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user1_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", user2_token))
         .body(Body::from(malicious_permission_payload.to_string()))
         .unwrap();
 
-    let malicious_set_permission_response = app.clone().oneshot(malicious_set_permission_request).await.unwrap();
-    assert_eq!(malicious_set_permission_response.status(), StatusCode::FORBIDDEN);
+    let malicious_set_permission_response = app
+        .clone()
+        .oneshot(malicious_set_permission_request)
+        .await
+        .unwrap();
+    assert_eq!(
+        malicious_set_permission_response.status(),
+        StatusCode::FORBIDDEN
+    );
 
     // User1 should still be able to access their own permissions
     let get_own_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user1_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user1_id, unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user1_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_own_permission_response = app.clone().oneshot(get_own_permission_request).await.unwrap();
+    let get_own_permission_response = app
+        .clone()
+        .oneshot(get_own_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_own_permission_response.status(), StatusCode::OK);
 
-    let body = get_own_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_own_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     // Verify permissions are still intact
     assert_eq!(json_response["data"]["permissions"]["can_create"], true);
     assert_eq!(json_response["data"]["permissions"]["can_read"], true);
@@ -1499,31 +1959,50 @@ async fn test_user_permissions_unauthorized_access() {
     });
 
     let set_user2_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user2_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user2_id, unique_name
+        ))
         .method("POST")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(user2_permission_payload.to_string()))
         .unwrap();
 
-    let set_user2_permission_response = app.clone().oneshot(set_user2_permission_request).await.unwrap();
+    let set_user2_permission_response = app
+        .clone()
+        .oneshot(set_user2_permission_request)
+        .await
+        .unwrap();
     assert_eq!(set_user2_permission_response.status(), StatusCode::OK);
 
     // User2 should be able to access their own permissions
     let get_user2_own_permission_request = Request::builder()
-        .uri(&format!("/api/permissions/users/{}/collections/{}", user2_id, unique_name))
+        .uri(&format!(
+            "/api/permissions/users/{}/collections/{}",
+            user2_id, unique_name
+        ))
         .method("GET")
         .header("authorization", format!("Bearer {}", user2_token))
         .body(Body::empty())
         .unwrap();
 
-    let get_user2_own_permission_response = app.clone().oneshot(get_user2_own_permission_request).await.unwrap();
+    let get_user2_own_permission_response = app
+        .clone()
+        .oneshot(get_user2_own_permission_request)
+        .await
+        .unwrap();
     assert_eq!(get_user2_own_permission_response.status(), StatusCode::OK);
 
-    let body = get_user2_own_permission_response.into_body().collect().await.unwrap().to_bytes();
+    let body = get_user2_own_permission_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     // Verify user2's permissions
     assert_eq!(json_response["data"]["permissions"]["can_create"], false);
     assert_eq!(json_response["data"]["permissions"]["can_read"], true);

@@ -321,9 +321,8 @@ export function CollectionRecordsEditSheet({
 					<Form onSubmit={handleSubmit}>
 						<div className="space-y-6">
 							{collection &&
-							collection.schema?.fields?.filter(
-								(field) => field.name !== "id",
-							).length === 0 ? (
+							collection.schema?.fields?.filter((field) => field.name !== "id")
+								.length === 0 ? (
 								<div className="text-center py-8">
 									<Database className="w-12 h-12 mx-auto text-nocta-400 mb-4" />
 									<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
@@ -345,11 +344,7 @@ export function CollectionRecordsEditSheet({
 					<SheetClose asChild>
 						<Button variant="ghost">Cancel</Button>
 					</SheetClose>
-					<Button
-						type="submit"
-						disabled={submitting}
-						onClick={handleSubmit}
-					>
+					<Button type="submit" disabled={submitting} onClick={handleSubmit}>
 						{submitting ? (
 							<>
 								<Spinner size="sm" className="mr-2" />

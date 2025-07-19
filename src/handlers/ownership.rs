@@ -1,29 +1,28 @@
+use crate::utils::ErrorResponse;
 use axum::{
-    extract::{Path, State, Query},
-    response::Json,
     Extension,
+    extract::{Path, Query, State},
+    response::Json,
 };
 use serde::Deserialize;
-use serde_json::{json, Value};
+use serde_json::{Value, json};
 use utoipa::ToSchema;
-use crate::utils::ErrorResponse;
 
 use crate::{
-    models::User,
-    utils::{AuthError, ApiResponse, Claims},
     AppState,
+    models::User,
+    utils::{ApiResponse, AuthError, Claims},
 };
 
 // Helper function to convert Claims to User for ownership checks
 async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
     use crate::schema::users;
     use diesel::prelude::*;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
-    
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     users::table
         .filter(users::id.eq(user_id))
         .first::<User>(&mut conn)
@@ -80,7 +79,13 @@ pub async fn transfer_record_ownership(
     // Transfer ownership
     state
         .ownership_service
-        .transfer_ownership(&user, &record, request.new_owner_id, &collection_name, record_id)
+        .transfer_ownership(
+            &user,
+            &record,
+            request.new_owner_id,
+            &collection_name,
+            record_id,
+        )
         .await?;
 
     Ok(Json(ApiResponse::success(json!({
@@ -128,7 +133,11 @@ pub async fn get_my_owned_records(
     // Get full record details for owned records
     let mut owned_records = Vec::new();
     for record_id in owned_record_ids {
-        if let Ok(record) = state.collection_service.get_record(&collection_name, record_id).await {
+        if let Ok(record) = state
+            .collection_service
+            .get_record(&collection_name, record_id)
+            .await
+        {
             owned_records.push(record);
         }
     }
@@ -177,7 +186,7 @@ pub async fn get_user_owned_records(
     use crate::schema::users;
     use diesel::prelude::*;
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     let target_user = users::table
         .filter(users::id.eq(user_id))
         .first::<User>(&mut conn)
@@ -191,7 +200,11 @@ pub async fn get_user_owned_records(
     // Get full record details for owned records
     let mut owned_records = Vec::new();
     for record_id in owned_record_ids {
-        if let Ok(record) = state.collection_service.get_record(&collection_name, record_id).await {
+        if let Ok(record) = state
+            .collection_service
+            .get_record(&collection_name, record_id)
+            .await
+        {
             owned_records.push(record);
         }
     }
@@ -239,9 +252,7 @@ pub async fn check_record_ownership(
         .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
 
     // Check ownership
-    let is_owner = state
-        .ownership_service
-        .check_ownership(&user, &record)?;
+    let is_owner = state.ownership_service.check_ownership(&user, &record)?;
 
     let ownership_permissions = state
         .ownership_service
@@ -312,12 +323,12 @@ pub async fn get_ownership_stats(
     // Get basic stats
     use diesel::prelude::*;
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
-    
+
     let table_name = format!("records_{}", collection_name);
-    
+
     // Count total records
     let total_records_query = format!("SELECT COUNT(*) as count FROM {}", table_name);
-    
+
     #[derive(QueryableByName)]
     struct CountResult {
         #[diesel(sql_type = diesel::sql_types::BigInt)]
@@ -334,10 +345,10 @@ pub async fn get_ownership_stats(
 
     // Count records with ownership (have user_id)
     let owned_records_query = format!(
-        "SELECT COUNT(*) as count FROM {} WHERE user_id IS NOT NULL", 
+        "SELECT COUNT(*) as count FROM {} WHERE user_id IS NOT NULL",
         table_name
     );
-    
+
     let owned_records = diesel::sql_query(&owned_records_query)
         .load::<CountResult>(&mut conn)
         .unwrap_or_default()

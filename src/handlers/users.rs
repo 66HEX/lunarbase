@@ -1,23 +1,23 @@
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHasher};
 use axum::{
-    extract::{State, Query},
-    response::Json,
     Extension,
+    extract::{Query, State},
     http::StatusCode,
+    response::Json,
 };
 use diesel::prelude::*;
+use rand::{RngCore, rngs::OsRng};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use utoipa::ToSchema;
-use argon2::{Argon2, PasswordHasher};
-use argon2::password_hash::SaltString;
-use rand::{rngs::OsRng, RngCore};
 
 use crate::{
     AppState,
-    models::{User, NewUser, UpdateUser},
+    models::{NewUser, UpdateUser, User},
     schema::users,
-    utils::{AuthError, ErrorResponse, Claims},
     utils::auth_error::ApiResponse,
+    utils::{AuthError, Claims, ErrorResponse},
 };
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -77,7 +77,10 @@ pub async fn list_users(
     }
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Set default limit to 10, max 100
     let limit = query.limit.unwrap_or(10).min(100);
@@ -132,7 +135,7 @@ pub async fn list_users(
     // Get total count before applying pagination
     let total_count: i64 = {
         let mut count_query = users::table.into_boxed();
-        
+
         // Apply the same filtering for count
         if let Some(filter_str) = &query.filter {
             if filter_str.contains("email:like:") {
@@ -147,8 +150,11 @@ pub async fn list_users(
                 count_query = count_query.filter(users::is_verified.eq(false));
             }
         }
-        
-        count_query.count().first(&mut conn).map_err(|_| AuthError::DatabaseError)?
+
+        count_query
+            .count()
+            .first(&mut conn)
+            .map_err(|_| AuthError::DatabaseError)?
     };
 
     // Apply pagination
@@ -212,7 +218,10 @@ pub async fn get_user(
     }
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Find user by ID
     let user: User = users::table
@@ -220,7 +229,9 @@ pub async fn get_user(
         .first(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
-    Ok(Json(ApiResponse::success(serde_json::to_value(user.to_response()).unwrap())))
+    Ok(Json(ApiResponse::success(
+        serde_json::to_value(user.to_response()).unwrap(),
+    )))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -253,16 +264,21 @@ impl CreateUserRequest {
             || !self.password.chars().any(|c| c.is_uppercase())
             || !self.password.chars().any(|c| c.is_lowercase())
             || !self.password.chars().any(|c| c.is_numeric())
-            || !self.password.chars().any(|c| c.is_ascii_punctuation()) {
+            || !self.password.chars().any(|c| c.is_ascii_punctuation())
+        {
             errors.push("Password must be at least 8 characters long and contain uppercase, lowercase, number and special character".to_string());
         }
 
         // Username validation
         if self.username.is_empty() {
             errors.push("Username is required".to_string());
-        } else if self.username.len() < 3 
+        } else if self.username.len() < 3
             || self.username.len() > 30
-            || !self.username.chars().all(|c| c.is_alphanumeric() || c == '_') {
+            || !self
+                .username
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '_')
+        {
             errors.push("Username must be 3-30 characters long and contain only letters, numbers, and underscores".to_string());
         }
 
@@ -312,7 +328,10 @@ pub async fn create_user(
     payload.validate().map_err(AuthError::ValidationError)?;
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Check if email already exists
     let existing_email = users::table
@@ -322,7 +341,9 @@ pub async fn create_user(
         .map_err(|_| AuthError::DatabaseError)?;
 
     if existing_email.is_some() {
-        return Err(AuthError::ValidationError(vec!["Email already registered".to_string()]));
+        return Err(AuthError::ValidationError(vec![
+            "Email already registered".to_string(),
+        ]));
     }
 
     // Check if username already exists
@@ -333,22 +354,24 @@ pub async fn create_user(
         .map_err(|_| AuthError::DatabaseError)?;
 
     if existing_username.is_some() {
-        return Err(AuthError::ValidationError(vec!["Username already taken".to_string()]));
+        return Err(AuthError::ValidationError(vec![
+            "Username already taken".to_string(),
+        ]));
     }
 
     // Hash password using the same parameters as new_with_role
     let mut salt_bytes = [0u8; 32];
     OsRng.fill_bytes(&mut salt_bytes);
-    
-    let salt = SaltString::encode_b64(&salt_bytes)
-        .map_err(|_| AuthError::InternalError)?;
-    
+
+    let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| AuthError::InternalError)?;
+
     let argon2 = Argon2::new(
         argon2::Algorithm::Argon2id,
         argon2::Version::V0x13,
         argon2::Params::new(65536, 4, 2, None).unwrap(),
     );
-    let password_hash = argon2.hash_password(payload.password.as_bytes(), &salt)
+    let password_hash = argon2
+        .hash_password(payload.password.as_bytes(), &salt)
         .map_err(|_| AuthError::InternalError)?
         .to_string();
 
@@ -372,7 +395,12 @@ pub async fn create_user(
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    Ok((StatusCode::CREATED, Json(ApiResponse::success(serde_json::to_value(user.to_response()).unwrap()))))
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiResponse::success(
+            serde_json::to_value(user.to_response()).unwrap(),
+        )),
+    ))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -412,7 +440,8 @@ impl UpdateUserRequest {
                 || !password.chars().any(|c| c.is_uppercase())
                 || !password.chars().any(|c| c.is_lowercase())
                 || !password.chars().any(|c| c.is_numeric())
-                || !password.chars().any(|c| c.is_ascii_punctuation()) {
+                || !password.chars().any(|c| c.is_ascii_punctuation())
+            {
                 errors.push("Password must be at least 8 characters long and contain uppercase, lowercase, number and special character".to_string());
             }
         }
@@ -421,9 +450,10 @@ impl UpdateUserRequest {
         if let Some(username) = &self.username {
             if username.is_empty() {
                 errors.push("Username cannot be empty".to_string());
-            } else if username.len() < 3 
+            } else if username.len() < 3
                 || username.len() > 30
-                || !username.chars().all(|c| c.is_alphanumeric() || c == '_') {
+                || !username.chars().all(|c| c.is_alphanumeric() || c == '_')
+            {
                 errors.push("Username must be 3-30 characters long and contain only letters, numbers, and underscores".to_string());
             }
         }
@@ -481,7 +511,10 @@ pub async fn update_user(
     payload.validate().map_err(AuthError::ValidationError)?;
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Check if user exists
     let existing_user: User = users::table
@@ -500,7 +533,9 @@ pub async fn update_user(
                 .map_err(|_| AuthError::DatabaseError)?;
 
             if email_conflict.is_some() {
-                return Err(AuthError::ValidationError(vec!["Email already registered".to_string()]));
+                return Err(AuthError::ValidationError(vec![
+                    "Email already registered".to_string(),
+                ]));
             }
         }
     }
@@ -516,7 +551,9 @@ pub async fn update_user(
                 .map_err(|_| AuthError::DatabaseError)?;
 
             if username_conflict.is_some() {
-                return Err(AuthError::ValidationError(vec!["Username already taken".to_string()]));
+                return Err(AuthError::ValidationError(vec![
+                    "Username already taken".to_string(),
+                ]));
             }
         }
     }
@@ -538,19 +575,19 @@ pub async fn update_user(
     if let Some(new_password) = &payload.password {
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
-        
-        let salt = SaltString::encode_b64(&salt_bytes)
-            .map_err(|_| AuthError::InternalError)?;
-        
+
+        let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| AuthError::InternalError)?;
+
         let argon2 = Argon2::new(
             argon2::Algorithm::Argon2id,
             argon2::Version::V0x13,
             argon2::Params::new(65536, 4, 2, None).unwrap(),
         );
-        let password_hash = argon2.hash_password(new_password.as_bytes(), &salt)
+        let password_hash = argon2
+            .hash_password(new_password.as_bytes(), &salt)
             .map_err(|_| AuthError::InternalError)?
             .to_string();
-        
+
         update_data.password_hash = Some(password_hash);
     }
 
@@ -566,7 +603,9 @@ pub async fn update_user(
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    Ok(Json(ApiResponse::success(serde_json::to_value(updated_user.to_response()).unwrap())))
+    Ok(Json(ApiResponse::success(
+        serde_json::to_value(updated_user.to_response()).unwrap(),
+    )))
 }
 
 /// Delete user by ID (admin only)
@@ -599,15 +638,22 @@ pub async fn delete_user(
     }
 
     // Prevent admin from deleting themselves
-    let current_user_id: i32 = claims.sub.parse()
+    let current_user_id: i32 = claims
+        .sub
+        .parse()
         .map_err(|_| AuthError::ValidationError(vec!["Invalid token".to_string()]))?;
-    
+
     if current_user_id == user_id {
-        return Err(AuthError::ValidationError(vec!["Cannot delete yourself".to_string()]));
+        return Err(AuthError::ValidationError(vec![
+            "Cannot delete yourself".to_string(),
+        ]));
     }
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Check if user exists
     let _existing_user: User = users::table
@@ -659,7 +705,10 @@ pub async fn unlock_user(
     }
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Check if user exists
     let existing_user: User = users::table
@@ -681,7 +730,7 @@ pub async fn unlock_user(
         is_active: None,
         role: None,
         failed_login_attempts: Some(0), // Reset failed login attempts
-        locked_until: Some(None), // Remove lock
+        locked_until: Some(None),       // Remove lock
         last_login_at: None,
     };
 
@@ -697,5 +746,7 @@ pub async fn unlock_user(
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    Ok(Json(ApiResponse::success(serde_json::to_value(updated_user.to_response()).unwrap())))
+    Ok(Json(ApiResponse::success(
+        serde_json::to_value(updated_user.to_response()).unwrap(),
+    )))
 }

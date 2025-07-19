@@ -1,5 +1,5 @@
-use diesel::sqlite::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool, PoolError, PooledConnection};
+use diesel::sqlite::SqliteConnection;
 
 pub type DatabasePool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -8,6 +8,8 @@ pub fn create_pool(database_url: &str) -> Result<DatabasePool, PoolError> {
     Pool::builder().build(manager)
 }
 
-pub fn get_connection(pool: &DatabasePool) -> Result<PooledConnection<ConnectionManager<SqliteConnection>>, PoolError> {
+pub fn get_connection(
+    pool: &DatabasePool,
+) -> Result<PooledConnection<ConnectionManager<SqliteConnection>>, PoolError> {
     pool.get()
-} 
+}

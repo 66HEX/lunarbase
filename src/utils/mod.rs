@@ -5,7 +5,7 @@ pub mod auth_error;
 pub mod jwt_service;
 
 pub use auth_error::AuthError;
-pub use jwt_service::{JwtService, Claims};
+pub use jwt_service::{Claims, JwtService};
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct ApiResponse<T> {
@@ -31,7 +31,7 @@ impl<T> ApiResponse<T> {
             message: None,
         }
     }
-    
+
     pub fn success_with_message(data: T, message: String) -> Self {
         Self {
             success: true,
@@ -49,7 +49,7 @@ impl ErrorResponse {
             details: None,
         }
     }
-    
+
     pub fn with_details(error: String, details: String) -> Self {
         Self {
             success: false,

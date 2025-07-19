@@ -1,8 +1,8 @@
 use axum::{
+    Extension,
     extract::{Request, State},
     http::StatusCode,
     response::Json,
-    Extension,
 };
 use diesel::prelude::*;
 use serde_json::Value;
@@ -11,9 +11,11 @@ use std::time::Duration;
 use crate::{
     AppState,
     middleware::extract_user_claims,
-    models::{LoginRequest, NewUser, RegisterRequest, User, AuthResponse, LogoutRequest, LogoutResponse},
+    models::{
+        AuthResponse, LoginRequest, LogoutRequest, LogoutResponse, NewUser, RegisterRequest, User,
+    },
     schema::users,
-    utils::{AuthError, ApiResponse, ErrorResponse, Claims},
+    utils::{ApiResponse, AuthError, Claims, ErrorResponse},
 };
 
 /// Register a new user
@@ -34,7 +36,11 @@ pub async fn register(
     Json(payload): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Rate limiting check
-    if !app_state.auth_state.rate_limiter.check_rate_limit("register") {
+    if !app_state
+        .auth_state
+        .rate_limiter
+        .check_rate_limit("register")
+    {
         return Err(AuthError::RateLimitExceeded);
     }
 
@@ -42,7 +48,10 @@ pub async fn register(
     payload.validate().map_err(AuthError::ValidationError)?;
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Check if user already exists (timing attack protection)
     let existing_user = users::table
@@ -54,7 +63,9 @@ pub async fn register(
     if existing_user.is_some() {
         // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec!["Email already registered".to_string()]));
+        return Err(AuthError::ValidationError(vec![
+            "Email already registered".to_string(),
+        ]));
     }
 
     // Check username availability (timing attack protection)
@@ -67,15 +78,14 @@ pub async fn register(
     if existing_username.is_some() {
         // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec!["Username already taken".to_string()]));
+        return Err(AuthError::ValidationError(vec![
+            "Username already taken".to_string(),
+        ]));
     }
 
     // Create new user with secure password hashing
-    let new_user = NewUser::new(
-        payload.email,
-        &payload.password,
-        payload.username,
-    ).map_err(|_| AuthError::InternalError)?;
+    let new_user = NewUser::new(payload.email, &payload.password, payload.username)
+        .map_err(|_| AuthError::InternalError)?;
 
     // Insert user into database
     diesel::insert_into(users::table)
@@ -90,22 +100,31 @@ pub async fn register(
         .map_err(|_| AuthError::DatabaseError)?;
 
     // Generate tokens
-    let access_token = app_state.auth_state.jwt_service.generate_access_token(
-        user.id,
-        &user.email,
-        &user.role,
-    )?;
+    let access_token =
+        app_state
+            .auth_state
+            .jwt_service
+            .generate_access_token(user.id, &user.email, &user.role)?;
 
-    let refresh_token = app_state.auth_state.jwt_service.generate_refresh_token(user.id)?;
+    let refresh_token = app_state
+        .auth_state
+        .jwt_service
+        .generate_refresh_token(user.id)?;
 
     let auth_response = AuthResponse {
         user: user.to_response(),
         access_token,
         refresh_token,
-        expires_in: app_state.auth_state.jwt_service.access_token_duration_seconds(),
+        expires_in: app_state
+            .auth_state
+            .jwt_service
+            .access_token_duration_seconds(),
     };
 
-    Ok((StatusCode::CREATED, Json(ApiResponse::success(auth_response))))
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiResponse::success(auth_response)),
+    ))
 }
 
 /// Logout endpoint - blacklists tokens
@@ -129,18 +148,19 @@ pub async fn logout(
 ) -> Result<Json<ApiResponse<LogoutResponse>>, AuthError> {
     // Get the current access token from the JWT ID in claims
     // Since we have the claims, we can blacklist using the JTI
-    app_state.auth_state.jwt_service.blacklist_token(
-        &claims.jti,
-        "access",
-        Some("User logout".to_string()),
-    ).map_err(|_| AuthError::InternalError)?;
+    app_state
+        .auth_state
+        .jwt_service
+        .blacklist_token(&claims.jti, "access", Some("User logout".to_string()))
+        .map_err(|_| AuthError::InternalError)?;
 
     // If refresh token is provided, blacklist it too
     if let Some(ref refresh_token) = payload.refresh_token {
-        app_state.auth_state.jwt_service.blacklist_refresh_token(
-            &refresh_token,
-            Some("User logout".to_string()),
-        ).map_err(|_| AuthError::InternalError)?;
+        app_state
+            .auth_state
+            .jwt_service
+            .blacklist_refresh_token(&refresh_token, Some("User logout".to_string()))
+            .map_err(|_| AuthError::InternalError)?;
     }
 
     let logout_response = LogoutResponse {
@@ -170,7 +190,11 @@ pub async fn login(
 ) -> Result<Json<ApiResponse<AuthResponse>>, AuthError> {
     // Rate limiting check
     let client_ip = "login"; // In production, get real IP
-    if !app_state.auth_state.rate_limiter.check_rate_limit(client_ip) {
+    if !app_state
+        .auth_state
+        .rate_limiter
+        .check_rate_limit(client_ip)
+    {
         return Err(AuthError::RateLimitExceeded);
     }
 
@@ -178,7 +202,10 @@ pub async fn login(
     payload.validate().map_err(AuthError::ValidationError)?;
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Add base delay for timing attack protection
     let base_delay = Duration::from_millis(100);
@@ -222,7 +249,8 @@ pub async fn login(
     }
 
     // Verify password
-    let password_valid = user.verify_password(&payload.password)
+    let password_valid = user
+        .verify_password(&payload.password)
         .map_err(|_| AuthError::InternalError)?;
 
     if !password_valid {
@@ -262,13 +290,16 @@ pub async fn login(
         .map_err(|_| AuthError::DatabaseError)?;
 
     // Generate tokens
-    let access_token = app_state.auth_state.jwt_service.generate_access_token(
-        user.id,
-        &user.email,
-        &user.role,
-    )?;
+    let access_token =
+        app_state
+            .auth_state
+            .jwt_service
+            .generate_access_token(user.id, &user.email, &user.role)?;
 
-    let refresh_token = app_state.auth_state.jwt_service.generate_refresh_token(user.id)?;
+    let refresh_token = app_state
+        .auth_state
+        .jwt_service
+        .generate_refresh_token(user.id)?;
 
     // Ensure minimum delay to prevent timing attacks
     let elapsed = start_time.elapsed();
@@ -280,7 +311,10 @@ pub async fn login(
         user: user.to_response(),
         access_token,
         refresh_token,
-        expires_in: app_state.auth_state.jwt_service.access_token_duration_seconds(),
+        expires_in: app_state
+            .auth_state
+            .jwt_service
+            .access_token_duration_seconds(),
     };
 
     Ok(Json(ApiResponse::success(auth_response)))
@@ -308,13 +342,21 @@ pub async fn refresh_token(
         .ok_or(AuthError::TokenInvalid)?;
 
     // Validate refresh token
-    let refresh_claims = app_state.auth_state.jwt_service.validate_refresh_token(refresh_token)?;
-    
-    let user_id: i32 = refresh_claims.sub.parse()
+    let refresh_claims = app_state
+        .auth_state
+        .jwt_service
+        .validate_refresh_token(refresh_token)?;
+
+    let user_id: i32 = refresh_claims
+        .sub
+        .parse()
         .map_err(|_| AuthError::TokenInvalid)?;
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Find user in database
     let user = users::table
@@ -328,19 +370,25 @@ pub async fn refresh_token(
     }
 
     // Generate new tokens
-    let access_token = app_state.auth_state.jwt_service.generate_access_token(
-        user.id,
-        &user.email,
-        &user.role,
-    )?;
+    let access_token =
+        app_state
+            .auth_state
+            .jwt_service
+            .generate_access_token(user.id, &user.email, &user.role)?;
 
-    let new_refresh_token = app_state.auth_state.jwt_service.generate_refresh_token(user.id)?;
+    let new_refresh_token = app_state
+        .auth_state
+        .jwt_service
+        .generate_refresh_token(user.id)?;
 
     let auth_response = AuthResponse {
         user: user.to_response(),
         access_token,
         refresh_token: new_refresh_token,
-        expires_in: app_state.auth_state.jwt_service.access_token_duration_seconds(),
+        expires_in: app_state
+            .auth_state
+            .jwt_service
+            .access_token_duration_seconds(),
     };
 
     Ok(Json(ApiResponse::success(auth_response)))
@@ -365,12 +413,14 @@ pub async fn me(
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
     // Extract user claims from request (set by auth middleware)
     let claims = extract_user_claims(&request)?;
-    
-    let user_id: i32 = claims.sub.parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Find user in database
     let user = users::table
@@ -378,8 +428,10 @@ pub async fn me(
         .first::<User>(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    Ok(Json(ApiResponse::success(serde_json::to_value(user.to_response()).unwrap())))
-} 
+    Ok(Json(ApiResponse::success(
+        serde_json::to_value(user.to_response()).unwrap(),
+    )))
+}
 
 /// Admin registration endpoint - allows creating first admin or additional admins
 #[utoipa::path(
@@ -399,7 +451,11 @@ pub async fn register_admin(
     Json(payload): Json<RegisterRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Rate limiting check
-    if !app_state.auth_state.rate_limiter.check_rate_limit("register_admin") {
+    if !app_state
+        .auth_state
+        .rate_limiter
+        .check_rate_limit("register_admin")
+    {
         return Err(AuthError::RateLimitExceeded);
     }
 
@@ -407,7 +463,10 @@ pub async fn register_admin(
     payload.validate().map_err(AuthError::ValidationError)?;
 
     // Get database connection
-    let mut conn = app_state.db_pool.get().map_err(|_| AuthError::DatabaseError)?;
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
 
     // Check if any admin exists
     let existing_admin = users::table
@@ -433,7 +492,9 @@ pub async fn register_admin(
     if existing_user.is_some() {
         // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec!["Email already registered".to_string()]));
+        return Err(AuthError::ValidationError(vec![
+            "Email already registered".to_string(),
+        ]));
     }
 
     // Check username availability (timing attack protection)
@@ -446,7 +507,9 @@ pub async fn register_admin(
     if existing_username.is_some() {
         // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec!["Username already taken".to_string()]));
+        return Err(AuthError::ValidationError(vec![
+            "Username already taken".to_string(),
+        ]));
     }
 
     // Create new admin user
@@ -455,7 +518,8 @@ pub async fn register_admin(
         &payload.password,
         payload.username,
         "admin".to_string(),
-    ).map_err(|_| AuthError::InternalError)?;
+    )
+    .map_err(|_| AuthError::InternalError)?;
 
     // Insert user into database
     diesel::insert_into(users::table)
@@ -470,20 +534,29 @@ pub async fn register_admin(
         .map_err(|_| AuthError::DatabaseError)?;
 
     // Generate tokens
-    let access_token = app_state.auth_state.jwt_service.generate_access_token(
-        user.id,
-        &user.email,
-        &user.role,
-    )?;
+    let access_token =
+        app_state
+            .auth_state
+            .jwt_service
+            .generate_access_token(user.id, &user.email, &user.role)?;
 
-    let refresh_token = app_state.auth_state.jwt_service.generate_refresh_token(user.id)?;
+    let refresh_token = app_state
+        .auth_state
+        .jwt_service
+        .generate_refresh_token(user.id)?;
 
     let auth_response = AuthResponse {
         user: user.to_response(),
         access_token,
         refresh_token,
-        expires_in: app_state.auth_state.jwt_service.access_token_duration_seconds(),
+        expires_in: app_state
+            .auth_state
+            .jwt_service
+            .access_token_duration_seconds(),
     };
 
-    Ok((StatusCode::CREATED, Json(ApiResponse::success(auth_response))))
+    Ok((
+        StatusCode::CREATED,
+        Json(ApiResponse::success(auth_response)),
+    ))
 }

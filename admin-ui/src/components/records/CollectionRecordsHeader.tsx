@@ -33,11 +33,7 @@ export function CollectionRecordsHeader({
 		<div className="flex items-start justify-between">
 			<div className="space-y-1">
 				<div className="flex items-center gap-3">
-					<Button
-						variant="ghost"
-						onClick={onNavigateBack}
-						className="p-2"
-					>
+					<Button variant="ghost" onClick={onNavigateBack} className="p-2">
 						<ArrowLeft className="w-4 h-4" />
 					</Button>
 					<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">

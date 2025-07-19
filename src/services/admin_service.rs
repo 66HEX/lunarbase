@@ -2,10 +2,10 @@ use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use tracing::{info, warn};
 
-use crate::models::{User, NewUser};
+use crate::Config;
+use crate::models::{NewUser, User};
 use crate::schema::users;
 use crate::utils::AuthError;
-use crate::Config;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -53,7 +53,9 @@ impl AdminService {
             .map_err(|_| AuthError::DatabaseError)?;
 
         if any_admin.is_some() {
-            warn!("Admin already exists but with different email. Skipping admin creation from environment variables.");
+            warn!(
+                "Admin already exists but with different email. Skipping admin creation from environment variables."
+            );
             return Ok(());
         }
 
@@ -63,7 +65,8 @@ impl AdminService {
             admin_password,
             admin_username.clone(),
             "admin".to_string(),
-        ).map_err(|e| {
+        )
+        .map_err(|e| {
             warn!("Failed to create admin user: {}", e);
             AuthError::InternalError
         })?;
@@ -80,7 +83,10 @@ impl AdminService {
             .execute(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        info!("Admin user created successfully: {} ({})", admin_email, admin_username);
+        info!(
+            "Admin user created successfully: {} ({})",
+            admin_email, admin_username
+        );
         Ok(())
     }
 

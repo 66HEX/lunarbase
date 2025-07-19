@@ -37,7 +37,13 @@ pub struct NewBlacklistedToken {
 }
 
 impl NewBlacklistedToken {
-    pub fn new(jti: String, user_id: i32, token_type: String, expires_at: NaiveDateTime, reason: Option<String>) -> Self {
+    pub fn new(
+        jti: String,
+        user_id: i32,
+        token_type: String,
+        expires_at: NaiveDateTime,
+        reason: Option<String>,
+    ) -> Self {
         Self {
             jti,
             user_id,
@@ -47,11 +53,21 @@ impl NewBlacklistedToken {
         }
     }
 
-    pub fn from_access_token(jti: String, user_id: i32, expires_at: NaiveDateTime, reason: Option<String>) -> Self {
+    pub fn from_access_token(
+        jti: String,
+        user_id: i32,
+        expires_at: NaiveDateTime,
+        reason: Option<String>,
+    ) -> Self {
         Self::new(jti, user_id, "access".to_string(), expires_at, reason)
     }
 
-    pub fn from_refresh_token(jti: String, user_id: i32, expires_at: NaiveDateTime, reason: Option<String>) -> Self {
+    pub fn from_refresh_token(
+        jti: String,
+        user_id: i32,
+        expires_at: NaiveDateTime,
+        reason: Option<String>,
+    ) -> Self {
         Self::new(jti, user_id, "refresh".to_string(), expires_at, reason)
     }
 }

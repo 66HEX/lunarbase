@@ -79,7 +79,9 @@ export function MetricCard({
 						)}
 					</div>
 					{trend && (
-						<div className={`flex items-center space-x-1 text-sm ${getTrendColor()}`}>
+						<div
+							className={`flex items-center space-x-1 text-sm ${getTrendColor()}`}
+						>
 							{getTrendIcon()}
 							<span>{trend.label}</span>
 						</div>

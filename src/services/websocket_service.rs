@@ -1,15 +1,14 @@
+use axum::extract::ws::{Message, WebSocket};
+use futures_util::{SinkExt, StreamExt};
 use std::collections::HashMap;
 use std::sync::Arc;
-use tokio::sync::{broadcast, RwLock, mpsc};
-use axum::extract::ws::{Message, WebSocket};
+use tokio::sync::{RwLock, broadcast, mpsc};
+use tracing::{debug, error, info, warn};
 use uuid::Uuid;
-use futures_util::{SinkExt, StreamExt};
-use tracing::{info, warn, error, debug};
 
 use crate::models::{
-    WebSocketMessage, SubscriptionRequest, UnsubscribeRequest, SubscriptionConfirmed,
-    SubscriptionError, EventMessage, ClientConnection, SubscriptionData, PendingEvent,
-    Permission
+    ClientConnection, EventMessage, PendingEvent, Permission, SubscriptionConfirmed,
+    SubscriptionData, SubscriptionError, SubscriptionRequest, UnsubscribeRequest, WebSocketMessage,
 };
 use crate::services::PermissionService;
 use crate::utils::AuthError;
@@ -20,7 +19,9 @@ pub type SubscriptionId = String;
 #[derive(Clone)]
 pub struct WebSocketService {
     // Active connections: ConnectionId -> (sender, client_info)
-    connections: Arc<RwLock<HashMap<ConnectionId, (mpsc::UnboundedSender<WebSocketMessage>, ClientConnection)>>>,
+    connections: Arc<
+        RwLock<HashMap<ConnectionId, (mpsc::UnboundedSender<WebSocketMessage>, ClientConnection)>>,
+    >,
     // Event broadcaster
     event_sender: broadcast::Sender<PendingEvent>,
     // Permission service for access control
@@ -30,7 +31,7 @@ pub struct WebSocketService {
 impl WebSocketService {
     pub fn new(permission_service: Arc<PermissionService>) -> Self {
         let (event_sender, _) = broadcast::channel(1000);
-        
+
         Self {
             connections: Arc::new(RwLock::new(HashMap::new())),
             event_sender,
@@ -44,7 +45,10 @@ impl WebSocketService {
         let mut client_connection = ClientConnection::new(user_id);
         client_connection.connection_id = connection_id;
 
-        info!("New WebSocket connection: {} (user: {:?})", connection_id, user_id);
+        info!(
+            "New WebSocket connection: {} (user: {:?})",
+            connection_id, user_id
+        );
 
         let (mut sender, mut receiver) = socket.split();
         let (tx, mut rx) = mpsc::unbounded_channel::<WebSocketMessage>();
@@ -71,7 +75,11 @@ impl WebSocketService {
                     }
                 };
 
-                if sender.send(Message::Text(json_message.into())).await.is_err() {
+                if sender
+                    .send(Message::Text(json_message.into()))
+                    .await
+                    .is_err()
+                {
                     debug!("Client disconnected during send");
                     break;
                 }
@@ -82,7 +90,7 @@ impl WebSocketService {
         let event_task = tokio::spawn(async move {
             while let Ok(event) = event_receiver.recv().await {
                 let connections = connections_clone.read().await;
-                
+
                 for (conn_id, (sender, client)) in connections.iter() {
                     // Find matching subscriptions for this event
                     for (sub_id, sub_data) in &client.subscriptions {
@@ -94,33 +102,42 @@ impl WebSocketService {
                                     Ok(conn) => conn,
                                     Err(_) => continue,
                                 };
-                                
+
                                 // Get user object
-                                use diesel::prelude::*;
-                                use crate::schema::users;
                                 use crate::models::User;
-                                let user = match users::table.find(sub_user_id).first::<User>(&mut conn) {
-                                    Ok(user) => user,
-                                    Err(_) => continue,
-                                };
-                                
+                                use crate::schema::users;
+                                use diesel::prelude::*;
+                                let user =
+                                    match users::table.find(sub_user_id).first::<User>(&mut conn) {
+                                        Ok(user) => user,
+                                        Err(_) => continue,
+                                    };
+
                                 // Get collection ID
-                                use crate::schema::collections;
                                 use crate::models::Collection;
+                                use crate::schema::collections;
                                 let collection = match collections::table
                                     .filter(collections::name.eq(&event.collection_name))
-                                    .first::<Collection>(&mut conn) {
+                                    .first::<Collection>(&mut conn)
+                                {
                                     Ok(collection) => collection,
                                     Err(_) => continue,
                                 };
-                                
+
                                 let has_permission = permission_service
-                                    .check_collection_permission(&user, collection.id, Permission::Read)
+                                    .check_collection_permission(
+                                        &user,
+                                        collection.id,
+                                        Permission::Read,
+                                    )
                                     .await
                                     .unwrap_or(false);
 
                                 if !has_permission {
-                                    debug!("User {} lacks permission for collection {}", sub_user_id, event.collection_name);
+                                    debug!(
+                                        "User {} lacks permission for collection {}",
+                                        sub_user_id, event.collection_name
+                                    );
                                     continue;
                                 }
                             }
@@ -180,7 +197,11 @@ impl WebSocketService {
     }
 
     /// Handle incoming client message
-    async fn handle_client_message(&self, connection_id: ConnectionId, text: &str) -> Result<(), AuthError> {
+    async fn handle_client_message(
+        &self,
+        connection_id: ConnectionId,
+        text: &str,
+    ) -> Result<(), AuthError> {
         let message: WebSocketMessage = serde_json::from_str(text)
             .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON message".to_string()]))?;
 
@@ -206,29 +227,39 @@ impl WebSocketService {
     }
 
     /// Handle subscription request
-    async fn handle_subscribe(&self, connection_id: ConnectionId, req: SubscriptionRequest) -> Result<(), AuthError> {
+    async fn handle_subscribe(
+        &self,
+        connection_id: ConnectionId,
+        req: SubscriptionRequest,
+    ) -> Result<(), AuthError> {
         let mut connections = self.connections.write().await;
-        
+
         if let Some((sender, client)) = connections.get_mut(&connection_id) {
             // Check permissions if user is authenticated
             if let Some(user_id) = client.user_id {
                 // Get user and collection for permission check
-                let mut conn = self.permission_service.pool.get()
+                let mut conn = self
+                    .permission_service
+                    .pool
+                    .get()
                     .map_err(|_| AuthError::InternalError)?;
-                
+
+                use crate::models::{Collection, User};
+                use crate::schema::{collections, users};
                 use diesel::prelude::*;
-                use crate::schema::{users, collections};
-                use crate::models::{User, Collection};
-                
-                let user = users::table.find(user_id).first::<User>(&mut conn)
+
+                let user = users::table
+                    .find(user_id)
+                    .first::<User>(&mut conn)
                     .map_err(|_| AuthError::InternalError)?;
-                
+
                 let collection = collections::table
                     .filter(collections::name.eq(&req.collection_name))
                     .first::<Collection>(&mut conn)
                     .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
-                
-                let has_permission = self.permission_service
+
+                let has_permission = self
+                    .permission_service
                     .check_collection_permission(&user, collection.id, Permission::Read)
                     .await
                     .map_err(|_| AuthError::InternalError)?;
@@ -269,12 +300,19 @@ impl WebSocketService {
     }
 
     /// Handle unsubscribe request
-    async fn handle_unsubscribe(&self, connection_id: ConnectionId, req: UnsubscribeRequest) -> Result<(), AuthError> {
+    async fn handle_unsubscribe(
+        &self,
+        connection_id: ConnectionId,
+        req: UnsubscribeRequest,
+    ) -> Result<(), AuthError> {
         let mut connections = self.connections.write().await;
-        
+
         if let Some((_sender, client)) = connections.get_mut(&connection_id) {
             client.remove_subscription(&req.subscription_id);
-            info!("Removed subscription {} for connection {}", req.subscription_id, connection_id);
+            info!(
+                "Removed subscription {} for connection {}",
+                req.subscription_id, connection_id
+            );
         }
 
         Ok(())
@@ -282,8 +320,11 @@ impl WebSocketService {
 
     /// Broadcast event to all relevant subscribers
     pub async fn broadcast_event(&self, event: PendingEvent) -> Result<(), AuthError> {
-        debug!("Broadcasting event for collection: {}", event.collection_name);
-        
+        debug!(
+            "Broadcasting event for collection: {}",
+            event.collection_name
+        );
+
         if let Err(e) = self.event_sender.send(event) {
             error!("Failed to broadcast event: {}", e);
             return Err(AuthError::InternalError);
@@ -301,7 +342,8 @@ impl WebSocketService {
     /// Get number of active subscriptions
     pub async fn subscription_count(&self) -> usize {
         let connections = self.connections.read().await;
-        connections.values()
+        connections
+            .values()
             .map(|(_, client)| client.subscriptions.len())
             .sum()
     }
@@ -327,7 +369,8 @@ impl WebSocketService {
         WebSocketStats {
             total_connections: connections.len(),
             authenticated_connections,
-            total_subscriptions: connections.values()
+            total_subscriptions: connections
+                .values()
                 .map(|(_, client)| client.subscriptions.len())
                 .sum(),
             subscriptions_by_collection,

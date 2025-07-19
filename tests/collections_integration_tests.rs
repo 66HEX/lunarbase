@@ -1,26 +1,26 @@
 use axum::{
     Router,
-    routing::{get, post, put, delete},
-    http::{StatusCode, Request},
     body::Body,
+    http::{Request, StatusCode},
+    routing::{delete, get, post, put},
 };
-use serde_json::{json, Value};
-use tower::ServiceExt;
 use http_body_util::BodyExt;
+use serde_json::{Value, json};
+use tower::ServiceExt;
 use uuid;
 
-use lunarbase::{AppState, Config};
-use lunarbase::database::create_pool;
-use lunarbase::handlers::collections::*;
-use lunarbase::handlers::auth::*;
-use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
-use lunarbase::middleware:: auth_middleware;
 use axum::middleware;
+use lunarbase::database::create_pool;
+use lunarbase::handlers::auth::*;
+use lunarbase::handlers::collections::*;
+use lunarbase::middleware::auth_middleware;
+use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
+use lunarbase::{AppState, Config};
 
 fn create_test_router() -> Router {
     // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
-    
+
     // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
@@ -43,18 +43,23 @@ fn create_test_router() -> Router {
         .route("/collections/{name}", delete(delete_collection))
         .route("/collections/stats", get(get_collections_stats))
         .route("/collections/{name}/records", post(create_record))
-        .route("/collections/{name}/records/{record_id}", put(update_record))
-        .route("/collections/{name}/records/{record_id}", delete(delete_record))
-        .layer(middleware::from_fn_with_state(app_state.auth_state.clone(), auth_middleware));
+        .route(
+            "/collections/{name}/records/{record_id}",
+            put(update_record),
+        )
+        .route(
+            "/collections/{name}/records/{record_id}",
+            delete(delete_record),
+        )
+        .layer(middleware::from_fn_with_state(
+            app_state.auth_state.clone(),
+            auth_middleware,
+        ));
 
     // Combine routes
-    let api_routes = Router::new()
-        .merge(public_routes)
-        .merge(protected_routes);
+    let api_routes = Router::new().merge(public_routes).merge(protected_routes);
 
-    let router = Router::new()
-        .nest("/api", api_routes)
-        .with_state(app_state);
+    let router = Router::new().nest("/api", api_routes).with_state(app_state);
 
     // Skip middleware in tests to avoid Prometheus global recorder conflicts
     router
@@ -139,13 +144,16 @@ async fn create_admin_token(app: &Router) -> (i32, String) {
 
 // Helper function to create test user and return (user_id, token)
 async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
+    use http_body_util::BodyExt;
     use serde_json::Value;
     use tower::ServiceExt;
-    use http_body_util::BodyExt;
-    
-    let unique_username = format!("test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+
+    let unique_username = format!(
+        "test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     let unique_email = format!("{}@test.com", unique_username);
-    
+
     let register_payload = json!({
         "username": unique_username,
         "email": unique_email,
@@ -160,37 +168,47 @@ async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
         .unwrap();
 
     let register_response = app.clone().oneshot(register_request).await.unwrap();
-    
+
     // Debug: Print response details if not CREATED
     let status = register_response.status();
     if status != StatusCode::CREATED {
         println!("Expected CREATED (201), got: {:?}", status);
-        let body = register_response.into_body().collect().await.unwrap().to_bytes();
+        let body = register_response
+            .into_body()
+            .collect()
+            .await
+            .unwrap()
+            .to_bytes();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
         println!("Response body: {}", body_str);
         panic!("Register failed with status: {:?}", status);
     }
-    
+
     assert_eq!(status, StatusCode::CREATED);
 
-    let body = register_response.into_body().collect().await.unwrap().to_bytes();
+    let body = register_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     // Extract user_id from data.user.id
     let user_id: i32 = json_response["data"]["user"]["id"].as_i64().unwrap() as i32;
 
     // If role is not "user", update the user's role in the database
     if role != "user" {
         use diesel::prelude::*;
-        use lunarbase::schema::users;
         use lunarbase::Config;
         use lunarbase::database::create_pool;
-        
+        use lunarbase::schema::users;
+
         let config = Config::from_env().expect("Failed to load config");
         let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
         let mut conn = db_pool.get().expect("Failed to get database connection");
-        
+
         diesel::update(users::table.filter(users::id.eq(user_id)))
             .set(users::role.eq(role))
             .execute(&mut conn)
@@ -203,7 +221,7 @@ async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
 
 // Helper function to create JWT token for specific user
 fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
-    use jsonwebtoken::{encode, Header, EncodingKey};
+    use jsonwebtoken::{EncodingKey, Header, encode};
     use lunarbase::utils::Claims;
     use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -223,8 +241,12 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     };
 
     let jwt_secret = "test_secret".to_string();
-    encode(&Header::default(), &claims, &EncodingKey::from_secret(jwt_secret.as_ref()))
-        .expect("Failed to create test token")
+    encode(
+        &Header::default(),
+        &claims,
+        &EncodingKey::from_secret(jwt_secret.as_ref()),
+    )
+    .expect("Failed to create test token")
 }
 
 #[tokio::test]
@@ -288,7 +310,7 @@ async fn test_create_collection_with_admin_auth() {
     let unique_name = unique_collection_name("admin_test");
     let payload = json!({
         "name": unique_name,
-        "display_name": "Admin Test Unique", 
+        "display_name": "Admin Test Unique",
         "description": "A test collection for admin auth test",
         "schema": schema
     });
@@ -376,9 +398,12 @@ async fn test_create_and_get_collection() {
     let body = get_response.into_body().collect().await.unwrap().to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["name"], unique_name);
-    assert_eq!(json_response["data"]["display_name"], "Get Test Unique Collection");
+    assert_eq!(
+        json_response["data"]["display_name"],
+        "Get Test Unique Collection"
+    );
 }
 
 #[tokio::test]
@@ -430,10 +455,15 @@ async fn test_create_record_success() {
     let create_record_response = app2.oneshot(create_record_request).await.unwrap();
     assert_eq!(create_record_response.status(), StatusCode::CREATED);
 
-    let body = create_record_response.into_body().collect().await.unwrap().to_bytes();
+    let body = create_record_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert_eq!(json_response["data"]["data"]["title"], "Test Article");
     assert_eq!(json_response["data"]["data"]["published"], true);
     assert_eq!(json_response["data"]["data"]["views"], 42);
@@ -450,7 +480,7 @@ async fn test_create_record_validation_error() {
     let unique_name = unique_collection_name("validation_test");
     let collection_payload = json!({
         "name": unique_name,
-        "display_name": "Validation Test Unique Collection", 
+        "display_name": "Validation Test Unique Collection",
         "description": "Test validation",
         "schema": schema
     });
@@ -522,10 +552,15 @@ async fn test_list_records_public() {
     let list_response = app2.oneshot(list_request).await.unwrap();
     assert_eq!(list_response.status(), StatusCode::OK);
 
-    let body = list_response.into_body().collect().await.unwrap().to_bytes();
+    let body = list_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     // Should return empty array for new collection
     assert!(json_response["data"].is_array());
 }
@@ -567,10 +602,15 @@ async fn test_get_collection_schema() {
     let schema_response = app2.oneshot(schema_request).await.unwrap();
     assert_eq!(schema_response.status(), StatusCode::OK);
 
-    let body = schema_response.into_body().collect().await.unwrap().to_bytes();
+    let body = schema_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    
+
     assert!(json_response["data"]["fields"].is_array());
     assert_eq!(json_response["data"]["fields"].as_array().unwrap().len(), 5);
 }

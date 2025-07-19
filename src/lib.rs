@@ -37,7 +37,7 @@ pub mod utils;
         handlers::auth::refresh_token,
         handlers::auth::me,
         handlers::auth::logout,
-        
+
         // Collection endpoints
         handlers::collections::create_collection,
         handlers::collections::list_collections,
@@ -46,7 +46,7 @@ pub mod utils;
         handlers::collections::delete_collection,
         handlers::collections::get_collection_schema,
         handlers::collections::get_collections_stats,
-        
+
         // Record endpoints
         handlers::collections::create_record,
         handlers::collections::list_records,
@@ -54,7 +54,7 @@ pub mod utils;
         handlers::collections::get_record,
         handlers::collections::update_record,
         handlers::collections::delete_record,
-        
+
         // Permission endpoints
         handlers::permissions::create_role,
         handlers::permissions::list_roles,
@@ -64,25 +64,25 @@ pub mod utils;
         handlers::permissions::get_collection_permissions,
         handlers::permissions::set_user_collection_permission,
         handlers::permissions::get_user_collection_permissions,
-        
+
         // Record Permission endpoints
         handlers::record_permissions::set_record_permission,
         handlers::record_permissions::get_record_permissions,
         handlers::record_permissions::remove_record_permission,
         handlers::record_permissions::list_record_permissions,
-        
+
         // Ownership endpoints
         handlers::ownership::transfer_record_ownership,
         handlers::ownership::get_my_owned_records,
         handlers::ownership::get_user_owned_records,
         handlers::ownership::check_record_ownership,
         handlers::ownership::get_ownership_stats,
-        
+
         // WebSocket endpoints
         handlers::websocket::websocket_handler,
         handlers::websocket::websocket_stats,
         handlers::websocket::websocket_status,
-        
+
         // User management endpoints
         handlers::users::list_users,
         handlers::users::get_user,
@@ -90,10 +90,10 @@ pub mod utils;
         handlers::users::update_user,
         handlers::users::delete_user,
         handlers::users::unlock_user,
-        
+
         // Health check
         handlers::health::health_check,
-        
+
         // Metrics endpoints
         handlers::metrics::get_metrics,
         handlers::metrics::get_metrics_summary,
@@ -108,7 +108,7 @@ pub mod utils;
             utils::ApiResponse<models::collection::RecordResponse>,
             utils::ApiResponse<Vec<models::collection::RecordResponse>>,
             utils::ErrorResponse,
-            
+
             // Auth models
             models::user::RegisterRequest,
             models::user::LoginRequest,
@@ -116,7 +116,7 @@ pub mod utils;
             models::user::AuthResponse,
             models::blacklisted_token::LogoutRequest,
             models::blacklisted_token::LogoutResponse,
-            
+
             // Collection models
             models::collection::CreateCollectionRequest,
             models::collection::UpdateCollectionRequest,
@@ -125,7 +125,7 @@ pub mod utils;
             models::collection::FieldDefinition,
             models::collection::FieldType,
             models::collection::ValidationRules,
-            
+
             // Record models
             models::collection::CreateRecordRequest,
             models::collection::UpdateRecordRequest,
@@ -133,7 +133,7 @@ pub mod utils;
             handlers::collections::PaginatedRecordsResponse,
             handlers::collections::RecordWithCollection,
             handlers::collections::PaginationMeta,
-            
+
             // Permission models
             models::permissions::Role,
             models::permissions::CollectionPermission,
@@ -143,17 +143,17 @@ pub mod utils;
             models::permissions::SetCollectionPermissionRequest,
             models::permissions::SetUserCollectionPermissionRequest,
             models::permissions::SetRecordPermissionRequest,
-            
+
             // Ownership models
             handlers::ownership::TransferOwnershipRequest,
             handlers::ownership::GetOwnedRecordsQuery,
-            
+
             // User management models
             handlers::users::CreateUserRequest,
             handlers::users::UpdateUserRequest,
             handlers::users::PaginatedUsersResponse,
             handlers::users::ListUsersQuery,
-            
+
             // WebSocket models
             services::WebSocketStats,
             handlers::websocket::WebSocketStatus,
@@ -194,7 +194,9 @@ impl utoipa::Modify for SecurityAddon {
 
 pub use config::Config;
 pub use database::DatabasePool;
-use services::{CollectionService, PermissionService, OwnershipService, AdminService, WebSocketService};
+use services::{
+    AdminService, CollectionService, OwnershipService, PermissionService, WebSocketService,
+};
 use std::sync::Arc;
 
 // Application state combining all shared state
@@ -211,16 +213,20 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(db_pool: DatabasePool, jwt_secret: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn new(
+        db_pool: DatabasePool,
+        jwt_secret: &str,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         let permission_service = PermissionService::new(db_pool.clone());
         let ownership_service = OwnershipService::new(db_pool.clone());
         let admin_service = AdminService::new(db_pool.clone());
         let metrics_state = middleware::MetricsState::new()?;
-        let websocket_service = Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
+        let websocket_service =
+            Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
         let collection_service = CollectionService::new(db_pool.clone())
             .with_websocket_service(websocket_service.clone())
             .with_permission_service(permission_service.clone());
-        
+
         Ok(Self {
             db_pool: db_pool.clone(),
             auth_state: middleware::AuthState::new(jwt_secret, db_pool.clone()),

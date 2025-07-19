@@ -1,10 +1,10 @@
+use argon2::password_hash::SaltString;
+use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
 use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
+use rand::{RngCore, rngs::OsRng};
 use serde::{Deserialize, Serialize};
 use utoipa::ToSchema;
-use argon2::{Argon2, PasswordHash, PasswordHasher, PasswordVerifier};
-use argon2::password_hash::SaltString;
-use rand::{rngs::OsRng, RngCore};
 
 use crate::schema::users;
 
@@ -126,7 +126,9 @@ impl User {
     /// Verify password with timing attack protection
     pub fn verify_password(&self, password: &str) -> Result<bool, argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(&self.password_hash)?;
-        Ok(Argon2::default().verify_password(password.as_bytes(), &parsed_hash).is_ok())
+        Ok(Argon2::default()
+            .verify_password(password.as_bytes(), &parsed_hash)
+            .is_ok())
     }
 
     /// Convert to safe response (no sensitive data)
@@ -138,8 +140,12 @@ impl User {
             is_verified: self.is_verified,
             is_active: self.is_active,
             role: self.role.clone(),
-            last_login_at: self.last_login_at.map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
-            locked_until: self.locked_until.map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
+            last_login_at: self
+                .last_login_at
+                .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
+            locked_until: self
+                .locked_until
+                .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
             created_at: DateTime::from_naive_utc_and_offset(self.created_at, Utc),
         }
     }
@@ -156,12 +162,13 @@ impl NewUser {
         // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
-        
+
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
-        
+
         let argon2 = Argon2::default();
-        let password_hash = argon2.hash_password(password.as_bytes(), &salt)
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
             .map_err(|e| format!("Password hashing failed: {}", e))?
             .to_string();
 
@@ -174,20 +181,26 @@ impl NewUser {
     }
 
     /// Create new user with custom role and secure password hashing
-    pub fn new_with_role(email: String, password: &str, username: String, role: String) -> Result<Self, String> {
+    pub fn new_with_role(
+        email: String,
+        password: &str,
+        username: String,
+        role: String,
+    ) -> Result<Self, String> {
         // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
-        
+
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
-        
+
         let argon2 = Argon2::new(
             argon2::Algorithm::Argon2id,
             argon2::Version::V0x13,
             argon2::Params::new(65536, 4, 2, None).unwrap(),
         );
-        let password_hash = argon2.hash_password(password.as_bytes(), &salt)
+        let password_hash = argon2
+            .hash_password(password.as_bytes(), &salt)
             .map_err(|e| format!("Password hashing failed: {}", e))?
             .to_string();
 
@@ -248,9 +261,12 @@ impl RegisterRequest {
     }
 
     fn is_valid_username(&self) -> bool {
-        self.username.len() >= 3 
+        self.username.len() >= 3
             && self.username.len() <= 30
-            && self.username.chars().all(|c| c.is_alphanumeric() || c == '_')
+            && self
+                .username
+                .chars()
+                .all(|c| c.is_alphanumeric() || c == '_')
     }
 }
 
