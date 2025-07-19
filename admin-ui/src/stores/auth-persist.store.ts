@@ -45,6 +45,7 @@ interface AuthActions {
 	login: (email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
 	refreshTokens: () => Promise<boolean>;
+	fetchUser: () => Promise<void>;
 	setUser: (user: User) => void;
 	setTokens: (accessToken: string, refreshToken: string) => void;
 	clearAuth: () => void;
@@ -168,6 +169,17 @@ export const useAuthStore = create<AuthStore>()(
 					set((state) => {
 						state.user = user;
 					});
+				},
+
+				fetchUser: async () => {
+					try {
+						const user = await authApi.me();
+						set((state) => {
+							state.user = user;
+						});
+					} catch (error) {
+						console.error("Failed to fetch user:", error);
+					}
 				},
 
 				setTokens: (accessToken: string, refreshToken: string) => {

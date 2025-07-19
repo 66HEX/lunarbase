@@ -5,6 +5,7 @@ import {
 	redirect,
 	useLocation,
 } from "@tanstack/react-router";
+import { useEffect } from "react";
 import {
 	Activity,
 	BarChart3,
@@ -59,7 +60,14 @@ export const Route = createRootRoute({
 
 function RootComponent() {
 	const location = useLocation();
-	const { logout } = useAuth();
+	const { logout, user, isAuthenticated, fetchUser } = useAuth();
+
+	// Fetch user data if authenticated but user data is not loaded
+	useEffect(() => {
+		if (isAuthenticated && !user) {
+			fetchUser();
+		}
+	}, [isAuthenticated, user, fetchUser]);
 
 	const handleLogout = async () => {
 		await logout();
@@ -116,18 +124,22 @@ function RootComponent() {
 						</nav>
 
 						{/* User Profile */}
-						<div className="p-4 border-t border-nocta-200 dark:border-nocta-800">
-							<div className="flex items-center space-x-3 mb-3">
-								<Avatar size="md" fallback="AD" status="online" />
-								<div className="flex-1 min-w-0">
-									<p className="text-sm font-medium text-nocta-900 dark:text-nocta-100 truncate">
-										Administrator
-									</p>
-									<p className="text-xs text-nocta-600 dark:text-nocta-400 truncate">
-										admin@lunarbase.dev
-									</p>
+							<div className="p-4 border-t border-nocta-200 dark:border-nocta-800">
+								<div className="flex items-center space-x-3 mb-3">
+									<Avatar 
+										size="md" 
+										fallback={user?.username ? user.username.substring(0, 2).toUpperCase() : "U"} 
+										status="online" 
+									/>
+									<div className="flex-1 min-w-0">
+										<p className="text-sm font-medium text-nocta-900 dark:text-nocta-100 truncate">
+											{user?.username || "Loading..."}
+										</p>
+										<p className="text-xs text-nocta-600 dark:text-nocta-400 truncate">
+											{user?.email || "Loading..."}
+										</p>
+									</div>
 								</div>
-							</div>
 							<Button
 								variant="ghost"
 								size="sm"

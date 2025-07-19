@@ -34,6 +34,7 @@ export const useAuth = () => {
 		refreshTokens,
 		setTokens,
 		clearAuth,
+		fetchUser,
 	} = useAuthStore();
 
 	// Enhanced logout function that includes navigation
@@ -55,6 +56,8 @@ export const useAuth = () => {
 		// If we have tokens but not authenticated in store, set them
 		if (!isAuthenticated && token && refreshToken) {
 			setTokens(token, refreshToken);
+			// Fetch user data after setting tokens
+			await fetchUser();
 		}
 
 		// Check if token is expired or expiring soon
@@ -97,6 +100,7 @@ export const useAuth = () => {
 		user,
 		logout,
 		checkAuth,
+		fetchUser,
 	};
 };
 
