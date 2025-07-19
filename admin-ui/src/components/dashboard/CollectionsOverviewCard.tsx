@@ -61,7 +61,7 @@ export function CollectionsOverviewCard({
 								<div className="pt-3 border-t border-nocta-200 dark:border-nocta-800/50">
 									<Link
 										to="/collections"
-										className="text-sm text-nocta-600 dark:text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 font-medium flex items-center gap-1"
+										className="text-sm text-nocta-600 dark:text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 font-medium flex items-center gap-1 transition-colors duration-200 w-fit"
 									>
 										View{" "}
 										{Object.keys(collections.records_per_collection).length - 5}{" "}

@@ -55,12 +55,12 @@ export default function RecordComponent() {
 	const [recordToDelete, setRecordToDelete] = useState<number | null>(null);
 
 	// Search and pagination state
-	const [searchTerm, setSearchTerm] = useState("");
+	const [localSearchTerm, setLocalSearchTerm] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
 	const pageSize = 10;
 
 	// Debounce search term
-	const debouncedSearchTerm = useDebounce(searchTerm, 300);
+	const debouncedSearchTerm = useDebounce(localSearchTerm, 300);
 
 	// Use TanStack Query for records
 	const {
@@ -283,7 +283,7 @@ export default function RecordComponent() {
 
 
 	const handleSearchChange = (value: string) => {
-		setSearchTerm(value);
+		setLocalSearchTerm(value);
 	};
 
 	const handlePageChange = (page: number) => {
@@ -342,7 +342,7 @@ export default function RecordComponent() {
 				collectionName={collection?.display_name || collectionName}
 				collection={collection}
 				totalCount={totalCount}
-				searchTerm={searchTerm}
+				searchTerm={localSearchTerm}
 				onSearchChange={handleSearchChange}
 				onNavigateBack={() => navigate({ to: "/records" })}
 				isSheetOpen={isSheetOpen}
@@ -453,7 +453,7 @@ export default function RecordComponent() {
 				</div>
 			) : (
 				<EmptyCollectionRecordsState
-					searchTerm={searchTerm}
+					searchTerm={localSearchTerm}
 					collectionName={collectionName}
 					onAddRecord={() => setIsSheetOpen(true)}
 				/>

@@ -31,8 +31,8 @@ export function useCollectionRecordsQuery({
 
 	// Add search/filter if provided
 	if (searchTerm && searchTerm.trim()) {
-		// Use search parameter for searching across all fields
-		queryOptions.search = searchTerm.trim();
+		// Use filter parameter for searching across all fields
+		queryOptions.filter = `title:like:${searchTerm.trim()}`;
 	}
 
 	if (filter) {
