@@ -1,6 +1,6 @@
 use crate::AppState;
 use axum::{Router, middleware};
-use tower_http::cors::{Any, CorsLayer};
+use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -22,7 +22,12 @@ pub fn setup_logging() {
 
 pub fn setup_cors() -> CorsLayer {
     CorsLayer::new()
-        .allow_origin(Any)
+        .allow_origin([
+            "http://localhost:3000".parse().unwrap(),
+            "http://localhost:5173".parse().unwrap(),
+            "http://127.0.0.1:3000".parse().unwrap(),
+            "http://127.0.0.1:5173".parse().unwrap(),
+        ])
         .allow_methods([
             axum::http::Method::GET,
             axum::http::Method::POST,
@@ -32,7 +37,9 @@ pub fn setup_cors() -> CorsLayer {
         .allow_headers([
             axum::http::header::CONTENT_TYPE,
             axum::http::header::AUTHORIZATION,
+            axum::http::header::COOKIE,
         ])
+        .allow_credentials(true)
 }
 
 pub fn add_middleware(app: Router, app_state: AppState) -> Router {

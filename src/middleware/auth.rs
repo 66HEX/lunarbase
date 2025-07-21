@@ -8,7 +8,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use crate::utils::{AuthError, Claims, JwtService};
+use crate::utils::{AuthError, Claims, CookieService, JwtService};
 use diesel::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 
@@ -81,15 +81,19 @@ pub async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Result<Response, AuthError> {
-    // Get authorization header
-    let auth_header = request
+    // Try to get token from cookie first, then fallback to Authorization header
+    let token = if let Some(cookie_token) = CookieService::extract_access_token(request.headers()) {
+        cookie_token
+    } else if let Some(auth_header) = request
         .headers()
         .get(AUTHORIZATION)
         .and_then(|header| header.to_str().ok())
-        .ok_or(AuthError::TokenInvalid)?;
-
-    // Extract token from header
-    let token = JwtService::extract_token_from_header(auth_header)?;
+    {
+        // Extract token from header (fallback for compatibility)
+        JwtService::extract_token_from_header(auth_header)?.to_string()
+    } else {
+        return Err(AuthError::TokenInvalid);
+    };
 
     // Rate limiting check
     let client_ip = request
@@ -106,7 +110,7 @@ pub async fn auth_middleware(
     // Validate token with blacklist check
     let claims = auth_state
         .jwt_service
-        .validate_access_token_with_blacklist(token)?;
+        .validate_access_token_with_blacklist(&token)?;
 
     // Inject claims into request extensions for downstream handlers
     request.extensions_mut().insert(claims);
@@ -120,20 +124,27 @@ pub async fn optional_auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Response {
-    // Try to get authorization header
-    if let Some(auth_header) = request
+    // Try to get token from cookie first, then fallback to Authorization header
+    let token = if let Some(cookie_token) = CookieService::extract_access_token(request.headers()) {
+        Some(cookie_token)
+    } else if let Some(auth_header) = request
         .headers()
         .get(AUTHORIZATION)
         .and_then(|header| header.to_str().ok())
     {
-        // Try to extract and validate token
-        if let Ok(token) = JwtService::extract_token_from_header(auth_header) {
-            if let Ok(claims) = auth_state
-                .jwt_service
-                .validate_access_token_with_blacklist(token)
-            {
-                request.extensions_mut().insert(claims);
-            }
+        // Try to extract token from header (fallback for compatibility)
+        JwtService::extract_token_from_header(auth_header).ok().map(|s| s.to_string())
+    } else {
+        None
+    };
+
+    // Try to validate token if we have one
+    if let Some(token) = token {
+        if let Ok(claims) = auth_state
+            .jwt_service
+            .validate_access_token_with_blacklist(&token)
+        {
+            request.extensions_mut().insert(claims);
         }
     }
 

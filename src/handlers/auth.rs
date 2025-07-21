@@ -1,7 +1,7 @@
 use axum::{
     Extension,
     extract::{Request, State},
-    http::StatusCode,
+    http::{HeaderMap, StatusCode},
     response::Json,
 };
 use diesel::prelude::*;
@@ -15,7 +15,7 @@ use crate::{
         AuthResponse, LoginRequest, LogoutRequest, LogoutResponse, NewUser, RegisterRequest, User,
     },
     schema::users,
-    utils::{ApiResponse, AuthError, Claims, ErrorResponse},
+    utils::{ApiResponse, AuthError, Claims, CookieService, ErrorResponse},
 };
 
 /// Register a new user
@@ -34,7 +34,7 @@ use crate::{
 pub async fn register(
     State(app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<ApiResponse<AuthResponse>>), AuthError> {
+) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Rate limiting check
     if !app_state
         .auth_state
@@ -111,10 +111,17 @@ pub async fn register(
         .jwt_service
         .generate_refresh_token(user.id)?;
 
+    // Set tokens as httpOnly cookies
+    let cookie_service = CookieService::new();
+    let mut headers = HeaderMap::new();
+    cookie_service.set_access_token_cookie(&mut headers, &access_token);
+    cookie_service.set_refresh_token_cookie(&mut headers, &refresh_token);
+
+    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token,
-        refresh_token,
+        access_token: String::new(), // Empty for security
+        refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state
             .jwt_service
@@ -123,6 +130,7 @@ pub async fn register(
 
     Ok((
         StatusCode::CREATED,
+        headers,
         Json(ApiResponse::success(auth_response)),
     ))
 }
@@ -144,8 +152,8 @@ pub async fn register(
 pub async fn logout(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
-    Json(payload): Json<LogoutRequest>,
-) -> Result<Json<ApiResponse<LogoutResponse>>, AuthError> {
+    request: Request,
+) -> Result<(HeaderMap, Json<ApiResponse<LogoutResponse>>), AuthError> {
     // Get the current access token from the JWT ID in claims
     // Since we have the claims, we can blacklist using the JTI
     app_state
@@ -154,8 +162,8 @@ pub async fn logout(
         .blacklist_token(&claims.jti, "access", Some("User logout".to_string()))
         .map_err(|_| AuthError::InternalError)?;
 
-    // If refresh token is provided, blacklist it too
-    if let Some(ref refresh_token) = payload.refresh_token {
+    // Try to get refresh token from cookie and blacklist it
+    if let Some(refresh_token) = CookieService::extract_refresh_token(request.headers()) {
         app_state
             .auth_state
             .jwt_service
@@ -163,11 +171,16 @@ pub async fn logout(
             .map_err(|_| AuthError::InternalError)?;
     }
 
+    // Clear cookies
+    let cookie_service = CookieService::new();
+    let mut headers = HeaderMap::new();
+    cookie_service.clear_all_tokens(&mut headers);
+
     let logout_response = LogoutResponse {
         message: "Successfully logged out".to_string(),
     };
 
-    Ok(Json(ApiResponse::success(logout_response)))
+    Ok((headers, Json(ApiResponse::success(logout_response))))
 }
 
 /// User login endpoint with timing attack protection and account lockout
@@ -187,7 +200,7 @@ pub async fn logout(
 pub async fn login(
     State(app_state): State<AppState>,
     Json(payload): Json<LoginRequest>,
-) -> Result<Json<ApiResponse<AuthResponse>>, AuthError> {
+) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Rate limiting check
     let client_ip = "login"; // In production, get real IP
     if !app_state
@@ -301,23 +314,30 @@ pub async fn login(
         .jwt_service
         .generate_refresh_token(user.id)?;
 
+    // Set tokens as httpOnly cookies
+    let cookie_service = CookieService::new();
+    let mut headers = HeaderMap::new();
+    cookie_service.set_access_token_cookie(&mut headers, &access_token);
+    cookie_service.set_refresh_token_cookie(&mut headers, &refresh_token);
+
     // Ensure minimum delay to prevent timing attacks
     let elapsed = start_time.elapsed();
     if elapsed < base_delay {
         tokio::time::sleep(base_delay - elapsed).await;
     }
 
+    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token,
-        refresh_token,
+        access_token: String::new(), // Empty for security
+        refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state
             .jwt_service
             .access_token_duration_seconds(),
     };
 
-    Ok(Json(ApiResponse::success(auth_response)))
+    Ok((headers, Json(ApiResponse::success(auth_response))))
 }
 
 /// Refresh token endpoint
@@ -333,19 +353,17 @@ pub async fn login(
 )]
 pub async fn refresh_token(
     State(app_state): State<AppState>,
-    Json(payload): Json<serde_json::Value>,
-) -> Result<Json<ApiResponse<AuthResponse>>, AuthError> {
-    // Extract refresh token from payload
-    let refresh_token = payload
-        .get("refresh_token")
-        .and_then(|t| t.as_str())
+    request: Request,
+) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+    // Extract refresh token from cookie
+    let refresh_token = CookieService::extract_refresh_token(request.headers())
         .ok_or(AuthError::TokenInvalid)?;
 
     // Validate refresh token
     let refresh_claims = app_state
         .auth_state
         .jwt_service
-        .validate_refresh_token(refresh_token)?;
+        .validate_refresh_token(&refresh_token)?;
 
     let user_id: i32 = refresh_claims
         .sub
@@ -381,17 +399,24 @@ pub async fn refresh_token(
         .jwt_service
         .generate_refresh_token(user.id)?;
 
+    // Set new tokens as httpOnly cookies
+    let cookie_service = CookieService::new();
+    let mut headers = HeaderMap::new();
+    cookie_service.set_access_token_cookie(&mut headers, &access_token);
+    cookie_service.set_refresh_token_cookie(&mut headers, &new_refresh_token);
+
+    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token,
-        refresh_token: new_refresh_token,
+        access_token: String::new(), // Empty for security
+        refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state
             .jwt_service
             .access_token_duration_seconds(),
     };
 
-    Ok(Json(ApiResponse::success(auth_response)))
+    Ok((headers, Json(ApiResponse::success(auth_response))))
 }
 
 /// Get current user profile (protected endpoint)
@@ -449,7 +474,7 @@ pub async fn me(
 pub async fn register_admin(
     State(app_state): State<AppState>,
     Json(payload): Json<RegisterRequest>,
-) -> Result<(StatusCode, Json<ApiResponse<AuthResponse>>), AuthError> {
+) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Rate limiting check
     if !app_state
         .auth_state
@@ -545,10 +570,17 @@ pub async fn register_admin(
         .jwt_service
         .generate_refresh_token(user.id)?;
 
+    // Set tokens as httpOnly cookies
+    let cookie_service = CookieService::new();
+    let mut headers = HeaderMap::new();
+    cookie_service.set_access_token_cookie(&mut headers, &access_token);
+    cookie_service.set_refresh_token_cookie(&mut headers, &refresh_token);
+
+    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token,
-        refresh_token,
+        access_token: String::new(), // Empty for security
+        refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state
             .jwt_service
@@ -557,6 +589,7 @@ pub async fn register_admin(
 
     Ok((
         StatusCode::CREATED,
+        headers,
         Json(ApiResponse::success(auth_response)),
     ))
 }

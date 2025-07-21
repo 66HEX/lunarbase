@@ -26,8 +26,8 @@ import { getAuthToken } from "@/lib/api";
 const navigation = [
 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
 	{ name: "Collections", href: "/collections", icon: Database },
-	{ name: "Users", href: "/users", icon: Users },
 	{ name: "Records", href: "/records", icon: FileText },
+	{ name: "Users", href: "/users", icon: Users },
 	{ name: "Permissions", href: "/permissions", icon: Shield },
 	{ name: "WebSocket", href: "/websocket", icon: Activity },
 	{ name: "Metrics", href: "/metrics", icon: BarChart3 },

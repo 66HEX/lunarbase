@@ -2,9 +2,11 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 pub mod auth_error;
+pub mod cookie_service;
 pub mod jwt_service;
 
 pub use auth_error::AuthError;
+pub use cookie_service::CookieService;
 pub use jwt_service::{Claims, JwtService};
 
 #[derive(Debug, Serialize, ToSchema)]
