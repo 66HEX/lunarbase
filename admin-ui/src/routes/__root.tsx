@@ -5,7 +5,6 @@ import {
 	redirect,
 	useLocation,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
 import {
 	Activity,
 	BarChart3,
@@ -17,11 +16,12 @@ import {
 	Shield,
 	Users,
 } from "lucide-react";
+import { useEffect } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { getAuthToken } from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-persist.store";
 
 const navigation = [
 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -36,18 +36,20 @@ const navigation = [
 
 export const Route = createRootRoute({
 	component: RootComponent,
-	beforeLoad: ({ location }) => {
+	beforeLoad: async ({ location }) => {
 		// Allow access to login page without authentication
+		// Check both /login and /admin/login due to basepath configuration
 		if (
 			location.pathname === "/login" ||
-			location.pathname.endsWith("/login")
+			location.pathname === "/admin/login"
 		) {
 			return;
 		}
 
-		// Check if user is authenticated
-		const token = getAuthToken();
-		if (!token) {
+		// Check if user is authenticated using auth store
+		const { checkAuth } = useAuthStore.getState();
+		const isAuthenticated = await checkAuth();
+		if (!isAuthenticated) {
 			throw redirect({
 				to: "/login",
 				search: {
@@ -74,7 +76,7 @@ function RootComponent() {
 	};
 
 	const isLoginPage =
-		location.pathname === "/login" || location.pathname.endsWith("/login");
+		location.pathname === "/login" || location.pathname === "/admin/login";
 
 	return (
 		<div className="min-h-screen">
@@ -100,9 +102,11 @@ function RootComponent() {
 						<nav className="flex-1 px-4 py-6 space-y-1">
 							{navigation.map((item) => {
 								const Icon = item.icon;
+								const currentPath =
+									location.pathname.replace(/^\/admin/, "") || "/";
 								const isActive =
-									location.pathname === `/admin${item.href}` ||
-									location.pathname.startsWith(`/admin${item.href}`);
+									currentPath === item.href ||
+									(item.href !== "/" && currentPath.startsWith(item.href));
 
 								return (
 									<Link
@@ -124,22 +128,26 @@ function RootComponent() {
 						</nav>
 
 						{/* User Profile */}
-							<div className="p-4 border-t border-nocta-200 dark:border-nocta-800">
-								<div className="flex items-center space-x-3 mb-3">
-									<Avatar 
-										size="md" 
-										fallback={user?.username ? user.username.substring(0, 2).toUpperCase() : "U"} 
-										status="online" 
-									/>
-									<div className="flex-1 min-w-0">
-										<p className="text-sm font-medium text-nocta-900 dark:text-nocta-100 truncate">
-											{user?.username || "Loading..."}
-										</p>
-										<p className="text-xs text-nocta-600 dark:text-nocta-400 truncate">
-											{user?.email || "Loading..."}
-										</p>
-									</div>
+						<div className="p-4 border-t border-nocta-200 dark:border-nocta-800">
+							<div className="flex items-center space-x-3 mb-3">
+								<Avatar
+									size="md"
+									fallback={
+										user?.username
+											? user.username.substring(0, 2).toUpperCase()
+											: "U"
+									}
+									status="online"
+								/>
+								<div className="flex-1 min-w-0">
+									<p className="text-sm font-medium text-nocta-900 dark:text-nocta-100 truncate">
+										{user?.username || "Loading..."}
+									</p>
+									<p className="text-xs text-nocta-600 dark:text-nocta-400 truncate">
+										{user?.email || "Loading..."}
+									</p>
 								</div>
+							</div>
 							<Button
 								variant="ghost"
 								size="sm"

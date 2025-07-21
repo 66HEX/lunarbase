@@ -6,6 +6,12 @@ import {
 } from "@tanstack/react-router";
 import { ArrowLeft, Edit3, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
+import {
+	CollectionRecordsEditSheet,
+	CollectionRecordsHeader,
+	DeleteRecordDialog,
+	EmptyCollectionRecordsState,
+} from "@/components/records";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -14,12 +20,6 @@ import { useToast } from "@/components/ui/toast";
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
 import { useDebounce } from "@/hooks/useDebounce";
 import { CustomApiError, collectionsApi, recordsApi } from "@/lib/api";
-import {
-	CollectionRecordsHeader,
-	CollectionRecordsEditSheet,
-	EmptyCollectionRecordsState,
-	DeleteRecordDialog,
-} from "@/components/records";
 import type {
 	ApiRecord,
 	Collection,

@@ -4,7 +4,6 @@ import { devtools, subscribeWithSelector } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type { RootStore } from "@/types/store.types";
 // Import store slices
-import { createAuthSlice } from "./auth.store";
 import { createCollectionsSlice } from "./collections.store";
 import { createPermissionsSlice } from "./permissions.store";
 import { createRecordsSlice } from "./records.store";
@@ -16,7 +15,6 @@ export const useStore = create<RootStore>()(
 	devtools(
 		subscribeWithSelector(
 			immer((...args) => ({
-				auth: createAuthSlice(...args),
 				collections: createCollectionsSlice(...args),
 				records: createRecordsSlice(...args),
 				users: createUsersSlice(...args),
@@ -32,7 +30,6 @@ export const useStore = create<RootStore>()(
 );
 
 // Selector hooks for better performance
-export const useAuth = () => useStore((state) => state.auth);
 export const useCollections = () => useStore((state) => state.collections);
 export const useRecords = () => useStore((state) => state.records);
 export const useUsers = () => useStore((state) => state.users);
@@ -43,7 +40,6 @@ export const useUI = () => useStore((state) => state.ui);
 export const useIsLoading = () =>
 	useStore(
 		(state) =>
-			state.auth.loading ||
 			state.collections.loading ||
 			state.records.loading ||
 			state.users.loading ||
@@ -53,7 +49,6 @@ export const useIsLoading = () =>
 export const useHasError = () =>
 	useStore(
 		(state) =>
-			state.auth.error ||
 			state.collections.error ||
 			state.records.error ||
 			state.users.error ||

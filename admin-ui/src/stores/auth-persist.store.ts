@@ -2,41 +2,12 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
-import {
-	authApi,
-	getAuthToken,
-	getRefreshToken,
-	removeAuthToken,
-	setAuthToken,
-	setRefreshToken,
-} from "@/lib/api";
+import { authApi } from "@/lib/api";
 import type { User } from "@/types/api";
-
-// Helper function to decode JWT and get expiration time
-const getTokenExpiration = (token: string): number | null => {
-	try {
-		const payload = JSON.parse(atob(token.split(".")[1]));
-		return payload.exp * 1000; // Convert to milliseconds
-	} catch {
-		return null;
-	}
-};
-
-// Helper function to check if token is about to expire (within 5 minutes)
-const isTokenExpiringSoon = (token: string): boolean => {
-	const expiration = getTokenExpiration(token);
-	if (!expiration) return true;
-
-	const now = Date.now();
-	const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
-	return expiration - now < fiveMinutes;
-};
 
 interface AuthState {
 	user: User | null;
 	isAuthenticated: boolean;
-	accessToken: string | null;
-	refreshToken: string | null;
 	loading: boolean;
 	error: string | null;
 }
@@ -44,13 +15,12 @@ interface AuthState {
 interface AuthActions {
 	login: (email: string, password: string) => Promise<void>;
 	logout: () => Promise<void>;
-	refreshTokens: () => Promise<boolean>;
 	fetchUser: () => Promise<void>;
 	setUser: (user: User) => void;
-	setTokens: (accessToken: string, refreshToken: string) => void;
 	clearAuth: () => void;
 	setLoading: (loading: boolean) => void;
 	setError: (error: string | null) => void;
+	checkAuth: () => Promise<boolean>;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -62,8 +32,6 @@ export const useAuthStore = create<AuthStore>()(
 				// Initial state
 				user: null,
 				isAuthenticated: false,
-				accessToken: null,
-				refreshToken: null,
 				loading: false,
 				error: null,
 
@@ -75,18 +43,14 @@ export const useAuthStore = create<AuthStore>()(
 					});
 
 					try {
-						const response = await authApi.login({ email, password });
-						const { user, access_token, refresh_token } = response.data;
+						await authApi.login({ email, password });
 
-						// Store tokens
-						setAuthToken(access_token);
-						setRefreshToken(refresh_token);
+						// Fetch user data to verify authentication
+						const userData = await authApi.me();
 
 						set((state) => {
-							state.user = user;
+							state.user = userData;
 							state.isAuthenticated = true;
-							state.accessToken = access_token;
-							state.refreshToken = refresh_token;
 							state.loading = false;
 							state.error = null;
 						});
@@ -96,8 +60,6 @@ export const useAuthStore = create<AuthStore>()(
 							state.error = error.message || "Login failed";
 							state.isAuthenticated = false;
 							state.user = null;
-							state.accessToken = null;
-							state.refreshToken = null;
 						});
 						throw error;
 					}
@@ -111,56 +73,36 @@ export const useAuthStore = create<AuthStore>()(
 					try {
 						await authApi.logout();
 					} catch (error) {
-						console.error("Logout error:", error);
+						// Silently handle logout errors
 					} finally {
-						// Always clear auth state regardless of API call result
-						removeAuthToken();
+						// Clear auth state
 						set((state) => {
 							state.user = null;
 							state.isAuthenticated = false;
-							state.accessToken = null;
-							state.refreshToken = null;
 							state.loading = false;
 							state.error = null;
 						});
 					}
 				},
 
-				refreshTokens: async () => {
+				checkAuth: async () => {
 					try {
-						const refreshTokenValue = getRefreshToken();
-						if (!refreshTokenValue) {
-							return false;
-						}
-
-						const response = await authApi.refresh();
-						const { access_token, refresh_token, user } = response;
-
-						// Store new tokens
-						setAuthToken(access_token);
-						setRefreshToken(refresh_token);
+						// Try to get user data
+						const userData = await authApi.me();
 
 						set((state) => {
-							state.accessToken = access_token;
-							state.refreshToken = refresh_token;
-							state.user = user;
+							state.user = userData;
 							state.isAuthenticated = true;
+							state.error = null;
 						});
-
 						return true;
 					} catch (error) {
-						console.error("Token refresh failed:", error);
-
-						// Clear auth state on refresh failure
-						removeAuthToken();
+						// Clear auth state on error
 						set((state) => {
 							state.user = null;
 							state.isAuthenticated = false;
-							state.accessToken = null;
-							state.refreshToken = null;
-							state.error = "Session expired";
+							state.error = null;
 						});
-
 						return false;
 					}
 				},
@@ -178,28 +120,14 @@ export const useAuthStore = create<AuthStore>()(
 							state.user = user;
 						});
 					} catch (error) {
-						console.error("Failed to fetch user:", error);
+						// Silently handle fetch user errors
 					}
 				},
 
-				setTokens: (accessToken: string, refreshToken: string) => {
-					setAuthToken(accessToken);
-					setRefreshToken(refreshToken);
-
-					set((state) => {
-						state.accessToken = accessToken;
-						state.refreshToken = refreshToken;
-						state.isAuthenticated = true;
-					});
-				},
-
 				clearAuth: () => {
-					removeAuthToken();
 					set((state) => {
 						state.user = null;
 						state.isAuthenticated = false;
-						state.accessToken = null;
-						state.refreshToken = null;
 						state.loading = false;
 						state.error = null;
 					});
@@ -222,8 +150,6 @@ export const useAuthStore = create<AuthStore>()(
 				partialize: (state) => ({
 					user: state.user,
 					isAuthenticated: state.isAuthenticated,
-					accessToken: state.accessToken,
-					refreshToken: state.refreshToken,
 				}),
 			},
 		),
@@ -233,37 +159,3 @@ export const useAuthStore = create<AuthStore>()(
 		},
 	),
 );
-
-// Initialize auth state from stored tokens
-export const initializeAuth = () => {
-	const token = getAuthToken();
-	const refreshToken = getRefreshToken();
-
-	if (token && refreshToken) {
-		// Check if token is still valid
-		if (!isTokenExpiringSoon(token)) {
-			// Token is still valid, set authenticated state
-			return {
-				isAuthenticated: true,
-				accessToken: token,
-				refreshToken: refreshToken,
-				loading: false,
-			};
-		} else {
-			// Token is expiring, will need to refresh
-			return {
-				isAuthenticated: false,
-				accessToken: token,
-				refreshToken: refreshToken,
-				loading: true, // Will trigger refresh attempt
-			};
-		}
-	}
-
-	return {
-		isAuthenticated: false,
-		accessToken: null,
-		refreshToken: null,
-		loading: false,
-	};
-};

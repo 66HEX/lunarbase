@@ -31,30 +31,10 @@ import type {
 } from "@/types/api";
 
 // API Configuration
-const API_BASE_URL =
-	import.meta.env.VITE_API_BASE_URL || "http://localhost:3000/api";
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
-// Auth token management
-export const getAuthToken = (): string | null => {
-	return localStorage.getItem("access_token");
-};
-
-export const getRefreshToken = (): string | null => {
-	return localStorage.getItem("refresh_token");
-};
-
-export const setAuthToken = (token: string): void => {
-	localStorage.setItem("access_token", token);
-};
-
-export const setRefreshToken = (token: string): void => {
-	localStorage.setItem("refresh_token", token);
-};
-
-export const removeAuthToken = (): void => {
-	localStorage.removeItem("access_token");
-	localStorage.removeItem("refresh_token");
-};
+// Auth token management is now handled via httpOnly cookies
+// No client-side token management needed
 
 // API Error handling
 export class CustomApiError extends Error {
@@ -79,53 +59,41 @@ async function apiRequest<T>(
 	options: RequestInit = {},
 	isRetry: boolean = false,
 ): Promise<T> {
-	const token = getAuthToken();
-
 	const headers: { [key: string]: string } = {
 		"Content-Type": "application/json",
 		...(options.headers as { [key: string]: string }),
 	};
 
-	if (token) {
-		headers.Authorization = `Bearer ${token}`;
-	}
+	// Include credentials to send httpOnly cookies
 
 	const response = await fetch(`${API_BASE_URL}${endpoint}`, {
 		...options,
 		headers,
+		credentials: "include", // This ensures cookies are sent with requests
 	});
 
 	if (!response.ok) {
 		// Handle 401 Unauthorized - try to refresh token
 		if (response.status === 401 && !isRetry && endpoint !== "/auth/refresh") {
-			const refreshToken = getRefreshToken();
-			if (refreshToken) {
-				try {
-					// Try to refresh the token
-					const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
-						method: "POST",
-						headers: {
-							"Content-Type": "application/json",
-							Authorization: `Bearer ${refreshToken}`,
-						},
-					});
+			try {
+				// Try to refresh the token using httpOnly cookies
+				const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
+					method: "POST",
+					headers: {
+						"Content-Type": "application/json",
+					},
+					credentials: "include", // Send httpOnly cookies
+				});
 
-					if (refreshResponse.ok) {
-						const refreshData = await refreshResponse.json();
-						setAuthToken(refreshData.access_token);
-						setRefreshToken(refreshData.refresh_token);
-
-						// Retry the original request with new token
-						return apiRequest<T>(endpoint, options, true);
-					}
-				} catch (refreshError) {
-					// Refresh failed, remove tokens and redirect to login
-					removeAuthToken();
-					window.location.href = "/admin/login";
+				if (refreshResponse.ok) {
+					// Retry the original request
+					return apiRequest<T>(endpoint, options, true);
 				}
+			} catch (refreshError) {
+				// Refresh failed, redirect to login
+				window.location.href = "/admin/login";
 			}
-			// If refresh failed or no refresh token, remove tokens and redirect
-			removeAuthToken();
+			// If refresh failed, redirect to login
 			window.location.href = "/admin/login";
 		}
 
@@ -207,10 +175,8 @@ export const authApi = {
 	},
 
 	logout: async (): Promise<void> => {
-		const refreshToken = getRefreshToken();
 		await apiRequest<void>("/auth/logout", {
 			method: "POST",
-			body: JSON.stringify({ refresh_token: refreshToken }),
 		});
 	},
 };
@@ -587,9 +553,7 @@ export const healthApi = {
 export const metricsApi = {
 	getMetrics: async (): Promise<string> => {
 		const response = await fetch(`${API_BASE_URL}/metrics`, {
-			headers: {
-				Authorization: `Bearer ${getAuthToken()}`,
-			},
+			credentials: "include",
 		});
 		if (!response.ok) {
 			throw new Error(`HTTP error! status: ${response.status}`);

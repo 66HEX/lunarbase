@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { CustomApiError, getAuthToken } from "@/lib/api";
+import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import type { LoginRequest } from "@/types/api";
 
@@ -195,10 +195,11 @@ export default function LoginComponent() {
 
 export const Route = createFileRoute("/login")({
 	component: LoginComponent,
-	beforeLoad: () => {
-		// Redirect to dashboard if already authenticated
-		const token = getAuthToken();
-		if (token) {
+	beforeLoad: async () => {
+		// Check if already authenticated by checking if user exists in store
+		// Don't call checkAuth() here as it would cause 401 error on login page
+		const { user } = useAuthStore.getState();
+		if (user) {
 			throw redirect({
 				to: "/dashboard",
 			});

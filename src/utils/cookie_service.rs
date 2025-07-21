@@ -153,21 +153,30 @@ impl CookieService {
 
     /// Ekstraktuje token z ciasteczka
     pub fn extract_token_from_cookies(headers: &HeaderMap, token_name: &str) -> Option<String> {
-        headers
-            .get("cookie")
-            .and_then(|cookie_header| cookie_header.to_str().ok())
-            .and_then(|cookie_str| {
-                cookie_str
-                    .split(';')
-                    .find_map(|cookie| {
-                        let cookie = cookie.trim();
-                        if cookie.starts_with(&format!("{}=", token_name)) {
-                            Some(cookie[token_name.len() + 1..].to_string())
-                        } else {
-                            None
-                        }
-                    })
-            })
+        // Try different possible cookie header names
+        let cookie_headers = ["cookie", "Cookie", "COOKIE"];
+        
+        for header_name in &cookie_headers {
+            if let Some(result) = headers
+                .get(*header_name)
+                .and_then(|cookie_header| cookie_header.to_str().ok())
+                .and_then(|cookie_str| {
+                    cookie_str
+                        .split(';')
+                        .find_map(|cookie| {
+                            let cookie = cookie.trim();
+                            if cookie.starts_with(&format!("{}=", token_name)) {
+                                Some(cookie[token_name.len() + 1..].to_string())
+                            } else {
+                                None
+                            }
+                        })
+                }) {
+                return Some(result);
+            }
+        }
+        
+        None
     }
 
     /// Ekstraktuje access token z ciasteczka

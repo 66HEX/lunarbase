@@ -7,12 +7,7 @@ import {
 	useEffect,
 	useState,
 } from "react";
-import {
-	authApi,
-	getAuthToken,
-	getRefreshToken,
-	removeAuthToken,
-} from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-persist.store";
 
 interface AuthContextType {
 	isAuthenticated: boolean;
@@ -35,106 +30,39 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-	const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 	const [isLoading, setIsLoading] = useState<boolean>(true);
 	const navigate = useNavigate();
-
-	// Function to decode JWT and get expiration time
-	const getTokenExpiration = (token: string): number | null => {
-		try {
-			const payload = JSON.parse(atob(token.split(".")[1]));
-			return payload.exp * 1000; // Convert to milliseconds
-		} catch {
-			return null;
-		}
-	};
-
-	// Function to check if token is about to expire (within 5 minutes)
-	const isTokenExpiringSoon = (token: string): boolean => {
-		const expiration = getTokenExpiration(token);
-		if (!expiration) return true;
-
-		const now = Date.now();
-		const fiveMinutes = 5 * 60 * 1000; // 5 minutes in milliseconds
-		return expiration - now < fiveMinutes;
-	};
-
-	// Function to refresh token
-	const refreshToken = useCallback(async (): Promise<boolean> => {
-		try {
-			const refreshTokenValue = getRefreshToken();
-			if (!refreshTokenValue) {
-				return false;
-			}
-
-			await authApi.refresh();
-			return true;
-		} catch (error) {
-			console.error("Token refresh failed:", error);
-			return false;
-		}
-	}, []);
+	const { isAuthenticated, checkAuth, logout: storeLogout } = useAuthStore();
 
 	// Function to logout
 	const logout = useCallback(async () => {
 		try {
-			await authApi.logout();
+			await storeLogout();
+			navigate({ to: "/login" });
 		} catch (error) {
-			console.error("Logout error:", error);
-		} finally {
-			removeAuthToken();
-			setIsAuthenticated(false);
 			navigate({ to: "/login" });
 		}
-	}, [navigate]);
+	}, [navigate, storeLogout]);
 
 	// Function to check authentication status
-	const checkAuth = useCallback(async () => {
-		const token = getAuthToken();
-
-		if (!token) {
-			setIsAuthenticated(false);
-			setIsLoading(false);
-			return;
-		}
-
-		// Check if token is expired or expiring soon
-		if (isTokenExpiringSoon(token)) {
-			const refreshSuccess = await refreshToken();
-			if (!refreshSuccess) {
-				setIsAuthenticated(false);
-				setIsLoading(false);
-				removeAuthToken();
+	const checkAuthStatus = useCallback(async () => {
+		setIsLoading(true);
+		try {
+			const isAuth = await checkAuth();
+			if (!isAuth) {
 				navigate({ to: "/login" });
-				return;
 			}
+		} catch (error) {
+			navigate({ to: "/login" });
+		} finally {
+			setIsLoading(false);
 		}
-
-		setIsAuthenticated(true);
-		setIsLoading(false);
-	}, [refreshToken, navigate]);
+	}, [checkAuth, navigate]);
 
 	// Initial authentication check
 	useEffect(() => {
-		checkAuth();
-	}, [checkAuth]);
-
-	// Set up automatic token refresh
-	useEffect(() => {
-		if (!isAuthenticated) return;
-
-		const interval = setInterval(async () => {
-			const token = getAuthToken();
-			if (token && isTokenExpiringSoon(token)) {
-				const refreshSuccess = await refreshToken();
-				if (!refreshSuccess) {
-					await logout();
-				}
-			}
-		}, 60000); // Check every minute
-
-		return () => clearInterval(interval);
-	}, [isAuthenticated, refreshToken, logout]);
+		checkAuthStatus();
+	}, [checkAuthStatus]);
 
 	const value: AuthContextType = {
 		isAuthenticated,

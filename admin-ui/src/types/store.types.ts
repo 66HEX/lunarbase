@@ -18,25 +18,6 @@ export interface BaseStoreState {
 	error: string | null;
 }
 
-// Auth Store Types
-export interface AuthState extends BaseStoreState {
-	user: User | null;
-	isAuthenticated: boolean;
-	accessToken: string | null;
-	refreshToken: string | null;
-}
-
-export interface AuthActions {
-	login: (email: string, password: string) => Promise<void>;
-	logout: () => Promise<void>;
-	refreshTokens: () => Promise<boolean>;
-	setUser: (user: User) => void;
-	setTokens: (accessToken: string, refreshToken: string) => void;
-	clearAuth: () => void;
-}
-
-export type AuthStore = AuthState & AuthActions;
-
 // Collections Store Types
 export interface CollectionsState extends BaseStoreState {
 	collections: Collection[];
@@ -260,7 +241,6 @@ export type DashboardStore = DashboardState & DashboardActions;
 
 // Root Store Type
 export interface RootStore {
-	auth: AuthStore;
 	collections: CollectionsStore;
 	records: RecordsStore;
 	users: UsersStore;

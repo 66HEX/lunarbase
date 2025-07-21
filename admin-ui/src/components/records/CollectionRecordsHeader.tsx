@@ -2,9 +2,8 @@ import { ArrowLeft, Search } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Collection } from "@/types/api";
+import type { Collection, RecordData } from "@/types/api";
 import { CreateRecordSheet } from "./CreateRecordSheet";
-import type { RecordData } from "@/types/api";
 
 interface CollectionRecordsHeaderProps {
 	collectionName: string;

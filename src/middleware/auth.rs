@@ -81,17 +81,23 @@ pub async fn auth_middleware(
     mut request: Request,
     next: Next,
 ) -> Result<Response, AuthError> {
+    // Debug: log all headers
+    tracing::debug!("Request headers: {:?}", request.headers());
+    
     // Try to get token from cookie first, then fallback to Authorization header
     let token = if let Some(cookie_token) = CookieService::extract_access_token(request.headers()) {
+        tracing::debug!("Found token in cookie: {}", &cookie_token[..std::cmp::min(10, cookie_token.len())]);
         cookie_token
     } else if let Some(auth_header) = request
         .headers()
         .get(AUTHORIZATION)
         .and_then(|header| header.to_str().ok())
     {
+        tracing::debug!("Found token in Authorization header");
         // Extract token from header (fallback for compatibility)
         JwtService::extract_token_from_header(auth_header)?.to_string()
     } else {
+        tracing::debug!("No token found in cookies or Authorization header");
         return Err(AuthError::TokenInvalid);
     };
 
