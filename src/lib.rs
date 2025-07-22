@@ -82,6 +82,10 @@ pub mod utils;
         handlers::websocket::websocket_handler,
         handlers::websocket::websocket_stats,
         handlers::websocket::websocket_status,
+        handlers::websocket::get_connections,
+        handlers::websocket::disconnect_connection,
+        handlers::websocket::broadcast_message,
+        handlers::websocket::get_activity,
 
         // User management endpoints
         handlers::users::list_users,
@@ -157,6 +161,12 @@ pub mod utils;
             // WebSocket models
             services::WebSocketStats,
             handlers::websocket::WebSocketStatus,
+            handlers::websocket::ConnectionDetails,
+            handlers::websocket::SubscriptionInfo,
+            handlers::websocket::BroadcastRequest,
+            handlers::websocket::BroadcastResponse,
+            handlers::websocket::ActivityEntry,
+            handlers::websocket::ActivityResponse,
         )
     ),
     modifiers(&SecurityAddon),

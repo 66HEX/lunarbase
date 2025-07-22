@@ -1,7 +1,7 @@
 use axum::{
     Router,
     http::StatusCode,
-    routing::{get, post},
+    routing::{get, post, delete},
 };
 use serde_json::json;
 use tower::ServiceExt;
@@ -38,6 +38,10 @@ fn create_test_router() -> Router {
     let protected_routes = Router::new()
         .route("/auth/me", get(me))
         .route("/ws/stats", get(websocket_stats))
+        .route("/ws/connections", get(get_connections))
+        .route("/ws/connections/{connection_id}", delete(disconnect_connection))
+        .route("/ws/broadcast", post(broadcast_message))
+        .route("/ws/activity", get(get_activity))
         .layer(middleware::from_fn_with_state(
             app_state.auth_state.clone(),
             auth_middleware,
@@ -314,6 +318,432 @@ async fn test_subscription_data_matching() {
 
     assert!(subscription.matches_event(&matching_event));
     assert!(!subscription.matches_event(&non_matching_event));
+}
+
+// Tests for new admin WebSocket endpoints
+
+#[tokio::test]
+async fn test_get_connections_requires_admin() {
+    let app = create_test_router();
+
+    // Create regular user
+    let (_user_id, user_token) = create_test_user(&app, "user").await;
+
+    // Try to access connections with regular user
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/connections")
+                .header("Authorization", format!("Bearer {}", user_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_get_connections_with_admin() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    // Access connections with admin
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/connections")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
+    assert!(json_response["success"].as_bool().unwrap());
+    assert!(json_response["data"]["connections"].is_array());
+    assert!(json_response["data"]["total_count"].is_number());
+}
+
+#[tokio::test]
+async fn test_disconnect_connection_requires_admin() {
+    let app = create_test_router();
+
+    // Create regular user
+    let (_user_id, user_token) = create_test_user(&app, "user").await;
+
+    // Try to disconnect connection with regular user
+    let fake_connection_id = uuid::Uuid::new_v4().to_string();
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri(&format!("/api/ws/connections/{}", fake_connection_id))
+                .method("DELETE")
+                .header("Authorization", format!("Bearer {}", user_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_disconnect_nonexistent_connection() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    // Try to disconnect non-existent connection
+    let fake_connection_id = uuid::Uuid::new_v4().to_string();
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri(&format!("/api/ws/connections/{}", fake_connection_id))
+                .method("DELETE")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::NOT_FOUND);
+}
+
+#[tokio::test]
+async fn test_disconnect_connection_invalid_uuid() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    // Try to disconnect with invalid UUID
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/connections/invalid-uuid")
+                .method("DELETE")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+}
+
+#[tokio::test]
+async fn test_broadcast_message_requires_admin() {
+    let app = create_test_router();
+
+    // Create regular user
+    let (_user_id, user_token) = create_test_user(&app, "user").await;
+
+    let broadcast_payload = json!({
+        "message": "Test broadcast message",
+        "target_users": null,
+        "target_collections": null
+    });
+
+    // Try to broadcast with regular user
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/broadcast")
+                .method("POST")
+                .header("content-type", "application/json")
+                .header("Authorization", format!("Bearer {}", user_token))
+                .body(axum::body::Body::from(broadcast_payload.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_broadcast_message_with_admin() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    let broadcast_payload = json!({
+        "message": "Test admin broadcast",
+        "target_users": null,
+        "target_collections": null
+    });
+
+    // Broadcast with admin
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/broadcast")
+                .method("POST")
+                .header("content-type", "application/json")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::from(broadcast_payload.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json_response["success"].as_bool().unwrap());
+    assert_eq!(json_response["data"]["message"].as_str().unwrap(), "Test admin broadcast");
+    assert!(json_response["data"]["sent_to_connections"].is_number());
+}
+
+#[tokio::test]
+async fn test_broadcast_message_with_target_users() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    let broadcast_payload = json!({
+        "message": "Targeted broadcast",
+        "target_users": [1, 2, 3],
+        "target_collections": null
+    });
+
+    // Broadcast with specific user targets
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/broadcast")
+                .method("POST")
+                .header("content-type", "application/json")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::from(broadcast_payload.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json_response["success"].as_bool().unwrap());
+    assert_eq!(json_response["data"]["message"].as_str().unwrap(), "Targeted broadcast");
+}
+
+#[tokio::test]
+async fn test_broadcast_message_with_target_collections() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    let broadcast_payload = json!({
+        "message": "Collection broadcast",
+        "target_users": null,
+        "target_collections": ["articles", "users"]
+    });
+
+    // Broadcast with specific collection targets
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/broadcast")
+                .method("POST")
+                .header("content-type", "application/json")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::from(broadcast_payload.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json_response["success"].as_bool().unwrap());
+    assert_eq!(json_response["data"]["message"].as_str().unwrap(), "Collection broadcast");
+}
+
+#[tokio::test]
+async fn test_get_activity_requires_admin() {
+    let app = create_test_router();
+
+    // Create regular user
+    let (_user_id, user_token) = create_test_user(&app, "user").await;
+
+    // Try to access activity with regular user
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/activity")
+                .header("Authorization", format!("Bearer {}", user_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::FORBIDDEN);
+}
+
+#[tokio::test]
+async fn test_get_activity_with_admin() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    // Access activity with admin
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/activity")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json_response["success"].as_bool().unwrap());
+    assert!(json_response["data"]["activities"].is_array());
+    assert!(json_response["data"]["total_count"].is_number());
+}
+
+#[tokio::test]
+async fn test_get_activity_with_pagination() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    // Access activity with pagination parameters
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/activity?limit=10&offset=5")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::empty())
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    assert_eq!(response.status(), StatusCode::OK);
+
+    let body = axum::body::to_bytes(response.into_body(), usize::MAX)
+        .await
+        .unwrap();
+    let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
+
+    assert!(json_response["success"].as_bool().unwrap());
+    assert!(json_response["data"]["activities"].is_array());
+    assert!(json_response["data"]["total_count"].is_number());
+}
+
+#[tokio::test]
+async fn test_broadcast_request_validation() {
+    let app = create_test_router();
+
+    // Create admin user
+    let (_user_id, admin_token) = create_admin_token(&app).await;
+
+    // Test with empty message
+    let broadcast_payload = json!({
+        "message": "",
+        "target_users": null,
+        "target_collections": null
+    });
+
+    let response = app
+        .oneshot(
+            axum::http::Request::builder()
+                .uri("/api/ws/broadcast")
+                .method("POST")
+                .header("content-type", "application/json")
+                .header("Authorization", format!("Bearer {}", admin_token))
+                .body(axum::body::Body::from(broadcast_payload.to_string()))
+                .unwrap(),
+        )
+        .await
+        .unwrap();
+
+    // Should still work with empty message (validation depends on implementation)
+    assert_eq!(response.status(), StatusCode::OK);
+}
+
+#[tokio::test]
+async fn test_websocket_admin_endpoints_unauthorized() {
+    let app = create_test_router();
+
+    // Test all admin endpoints without authentication
+    let endpoints = vec![
+        ("/api/ws/connections", "GET"),
+        ("/api/ws/broadcast", "POST"),
+        ("/api/ws/activity", "GET"),
+    ];
+
+    for (endpoint, method) in endpoints {
+        let mut request_builder = axum::http::Request::builder().uri(endpoint);
+        
+        if method == "POST" {
+            request_builder = request_builder
+                .method("POST")
+                .header("content-type", "application/json");
+        }
+
+        let body = if method == "POST" {
+            axum::body::Body::from(json!({"message": "test"}).to_string())
+        } else {
+            axum::body::Body::empty()
+        };
+
+        let response = app
+            .clone()
+            .oneshot(request_builder.body(body).unwrap())
+            .await
+            .unwrap();
+
+        assert_eq!(
+            response.status(),
+            StatusCode::UNAUTHORIZED,
+            "Endpoint {} should require authentication",
+            endpoint
+        );
+    }
 }
 
 #[tokio::test]

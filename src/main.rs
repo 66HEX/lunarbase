@@ -34,7 +34,7 @@ use lunarbase::handlers::{
     },
     refresh_token, register, register_admin,
     users::{create_user, delete_user, get_user, list_users, unlock_user, update_user},
-    websocket::{websocket_handler, websocket_stats, websocket_status},
+    websocket::{websocket_handler, websocket_stats, websocket_status, get_connections, disconnect_connection, broadcast_message, get_activity},
 };
 use lunarbase::middleware::{add_middleware, auth_middleware, setup_logging};
 use lunarbase::{ApiDoc, AppState, Config};
@@ -192,6 +192,10 @@ fn create_router(app_state: AppState) -> Router {
         .route("/users/{user_id}/unlock", post(unlock_user))
         // WebSocket admin endpoints
         .route("/ws/stats", get(websocket_stats))
+        .route("/ws/connections", get(get_connections))
+        .route("/ws/connections/{connection_id}", delete(disconnect_connection))
+        .route("/ws/broadcast", post(broadcast_message))
+        .route("/ws/activity", get(get_activity))
         .layer(middleware::from_fn_with_state(
             app_state.auth_state.clone(),
             auth_middleware,
