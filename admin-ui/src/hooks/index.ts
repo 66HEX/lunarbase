@@ -12,3 +12,11 @@ export {
 } from "./useDashboardQueries";
 export { useDebounce } from "./useDebounce";
 export { useUsersQuery } from "./useUsersQuery";
+export {
+	useWebSocketStatsQuery as useWebSocketStatsQueryNew,
+	useWebSocketConnectionsQuery,
+	useWebSocketActivityQuery,
+	useDisconnectConnectionMutation,
+	useBroadcastMessageMutation,
+	useWebSocketData,
+} from "./useWebSocketQueries";

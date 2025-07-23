@@ -24,6 +24,10 @@ pub async fn get_metrics(State(app_state): State<AppState>) -> Result<String, St
         .metrics_state
         .update_database_connections(&app_state.db_pool);
 
+    // Update WebSocket connections metric
+    let websocket_count = app_state.websocket_service.connection_count().await;
+    app_state.metrics_state.active_connections.set(websocket_count as f64);
+
     app_state
         .metrics_state
         .get_metrics()
@@ -48,6 +52,10 @@ pub async fn get_metrics_summary(
     app_state
         .metrics_state
         .update_database_connections(&app_state.db_pool);
+
+    // Update WebSocket connections metric
+    let websocket_count = app_state.websocket_service.connection_count().await;
+    app_state.metrics_state.active_connections.set(websocket_count as f64);
 
     // Get current metric values for dashboard display
     let request_count = app_state.metrics_state.request_counter.get();

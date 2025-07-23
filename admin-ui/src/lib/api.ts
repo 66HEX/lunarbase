@@ -1,5 +1,7 @@
 import type {
 	ApiResponse,
+	BroadcastMessageRequest,
+	BroadcastMessageResponse,
 	Collection,
 	CollectionPermission,
 	CollectionStats,
@@ -27,6 +29,8 @@ import type {
 	User,
 	UserCollectionPermission,
 	UsersListParams,
+	WebSocketActivityResponse,
+	WebSocketConnectionsResponse,
 	WebSocketStats,
 } from "@/types/api";
 
@@ -485,6 +489,26 @@ export const webSocketApi = {
 			await apiRequest<ApiResponse<{ status: string; message: string }>>(
 				"/ws/status",
 			);
+		return response.data;
+	},
+	getConnections: async (): Promise<WebSocketConnectionsResponse> => {
+		const response = await apiRequest<ApiResponse<WebSocketConnectionsResponse>>("/ws/connections");
+		return response.data;
+	},
+	disconnectConnection: async (connectionId: string): Promise<void> => {
+		await apiRequest<void>(`/ws/connections/${connectionId}`, {
+			method: "DELETE",
+		});
+	},
+	broadcastMessage: async (data: BroadcastMessageRequest): Promise<BroadcastMessageResponse> => {
+		const response = await apiRequest<ApiResponse<BroadcastMessageResponse>>("/ws/broadcast", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+		return response.data;
+	},
+	getActivity: async (): Promise<WebSocketActivityResponse> => {
+		const response = await apiRequest<ApiResponse<WebSocketActivityResponse>>("/ws/activity");
 		return response.data;
 	},
 };

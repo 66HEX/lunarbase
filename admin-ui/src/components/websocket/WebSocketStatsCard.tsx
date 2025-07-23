@@ -1,7 +1,7 @@
 import { Minus, TrendingDown, TrendingUp } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
-interface MetricCardProps {
+interface WebSocketStatsCardProps {
 	title: string;
 	value: string | number;
 	icon: React.ElementType;
@@ -13,14 +13,14 @@ interface MetricCardProps {
 	description?: string;
 }
 
-export function MetricCard({
+export function WebSocketStatsCard({
 	title,
 	value,
 	icon: Icon,
 	unit,
 	trend,
 	description,
-}: MetricCardProps) {
+}: WebSocketStatsCardProps) {
 	const getTrendIcon = () => {
 		if (!trend) return null;
 		if (trend.value > 0) return <TrendingUp className="w-4 h-4" />;
@@ -34,6 +34,7 @@ export function MetricCard({
 		if (trend.value < 0) return "text-red-600 dark:text-red-400";
 		return "text-nocta-500 dark:text-nocta-400";
 	};
+
 
 	return (
 		<Card className="h-full">

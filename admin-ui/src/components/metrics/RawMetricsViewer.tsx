@@ -109,7 +109,7 @@ export function RawMetricsViewer() {
 							/>
 						</div>
 						<Button
-							variant="primary"
+							variant="ghost"
 							size="sm"
 							onClick={() => refetch()}
 							disabled={isLoading}
@@ -117,7 +117,7 @@ export function RawMetricsViewer() {
 							<RefreshCw className="w-4 h-4 mr-2" />
 							Refresh
 						</Button>
-						<Button variant="primary" size="sm" onClick={handleCopy}>
+						<Button variant="secondary" size="sm" onClick={handleCopy}>
 							<Copy className="w-4 h-4 mr-2" />
 							Copy
 						</Button>

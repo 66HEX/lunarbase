@@ -292,6 +292,49 @@ export interface WebSocketStats {
 	subscriptions_by_collection: { [key: string]: number };
 }
 
+export interface WebSocketConnection {
+	connection_id: string;
+	user_id?: number;
+	connected_at: string;
+	subscriptions: WebSocketSubscription[];
+}
+
+export interface WebSocketSubscription {
+	subscription_id: string;
+	collection_name: string;
+	subscription_type: string;
+	filters?: any;
+}
+
+export interface WebSocketConnectionsResponse {
+	connections: WebSocketConnection[];
+	total_count: number;
+}
+
+export interface WebSocketActivity {
+	timestamp: string;
+	connection_id: string;
+	user_id?: number;
+	action: string;
+	details?: string;
+}
+
+export interface WebSocketActivityResponse {
+	activities: WebSocketActivity[];
+	total_count: number;
+}
+
+export interface BroadcastMessageRequest {
+	message: string;
+	target_users?: number[];
+	target_collections?: string[];
+}
+
+export interface BroadcastMessageResponse {
+	sent_to_connections: number;
+	message: string;
+}
+
 // Error Types
 export interface ApiError {
 	error: string;
