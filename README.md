@@ -1,3 +1,5 @@
+![LunarBase](lunar.png)
+
 # LunarBase
 
 A next-generation, security-first database management platform that combines the power of Rust's performance with React's flexibility. LunarBase delivers enterprise-grade data management through an intuitive admin interface built entirely with the proprietary **Nocta UI** component library.
@@ -142,3 +144,39 @@ With comprehensive TypeScript support, automatic API documentation, and the intu
 ---
 
 LunarBase represents the future of secure, real-time database management—where enterprise-grade security meets modern user experience, all powered by the innovative Nocta UI component library.
+
+## Contributing
+
+We welcome contributions to LunarBase! Whether you're fixing bugs, adding features, or improving documentation, your help is appreciated.
+
+### How to Contribute
+
+1. **Fork the repository** and create your feature branch from `main`
+2. **Make your changes** following the existing code style and conventions
+3. **Add tests** for any new functionality
+4. **Ensure all tests pass** by running ` cargo test -- --test-threads=1  `
+5. **Update documentation** if you're adding new features
+6. **Submit a pull request** with a clear description of your changes
+
+### Development Setup
+
+```bash
+# Clone your fork
+git clone https://github.com/66HEX/lunarbase.git
+cd lunarbase
+
+# Install dependencies
+cargo build
+cd admin-ui && npm install
+
+# Run tests
+ cargo test -- --test-threads=1  
+```
+
+### Code of Conduct
+
+Please be respectful and constructive in all interactions. We're committed to providing a welcoming environment for all contributors.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
