@@ -104,9 +104,9 @@ pub struct UserResponse {
 #[derive(Debug, Serialize, ToSchema)]
 pub struct AuthResponse {
     pub user: UserResponse,
-    #[schema(example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+    #[schema(example = "")]
     pub access_token: String,
-    #[schema(example = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...")]
+    #[schema(example = "")]
     pub refresh_token: String,
     #[schema(example = 3600)]
     pub expires_in: i64,

@@ -19,13 +19,16 @@ use crate::{
 };
 
 /// Register a new user
+/// 
+/// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
+/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/register",
     tag = "Authentication",
     request_body = RegisterRequest,
     responses(
-        (status = 201, description = "User registered successfully", body = ApiResponse<AuthResponse>),
+        (status = 201, description = "User registered successfully - tokens provided via httpOnly cookies", body = ApiResponse<AuthResponse>),
         (status = 400, description = "Validation error", body = ErrorResponse),
         (status = 409, description = "User already exists", body = ErrorResponse),
         (status = 429, description = "Rate limit exceeded", body = ErrorResponse)
@@ -187,13 +190,16 @@ pub async fn logout(
 }
 
 /// User login endpoint with timing attack protection and account lockout
+/// 
+/// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
+/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/login",
     tag = "Authentication",
     request_body = LoginRequest,
     responses(
-        (status = 200, description = "Login successful", body = ApiResponse<AuthResponse>),
+        (status = 200, description = "Login successful - tokens provided via httpOnly cookies", body = ApiResponse<AuthResponse>),
         (status = 400, description = "Validation error", body = ErrorResponse),
         (status = 401, description = "Invalid credentials", body = ErrorResponse),
         (status = 423, description = "Account locked", body = ErrorResponse),
@@ -344,13 +350,16 @@ pub async fn login(
 }
 
 /// Refresh token endpoint
+/// 
+/// **Note**: Refresh token is read from httpOnly cookies, and new tokens are provided via httpOnly cookies.
+/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/refresh",
     tag = "Authentication",
     request_body = serde_json::Value,
     responses(
-        (status = 200, description = "Token refreshed successfully", body = ApiResponse<AuthResponse>),
+        (status = 200, description = "Token refreshed successfully - new tokens provided via httpOnly cookies", body = ApiResponse<AuthResponse>),
         (status = 401, description = "Invalid refresh token", body = ErrorResponse)
     )
 )]
@@ -462,13 +471,16 @@ pub async fn me(
 }
 
 /// Admin registration endpoint - allows creating first admin or additional admins
+/// 
+/// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
+/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/register-admin",
     tag = "Authentication",
     request_body = RegisterRequest,
     responses(
-        (status = 201, description = "Admin registered successfully", body = ApiResponse<AuthResponse>),
+        (status = 201, description = "Admin registered successfully - tokens provided via httpOnly cookies", body = ApiResponse<AuthResponse>),
         (status = 400, description = "Validation error", body = ErrorResponse),
         (status = 409, description = "Admin already exists", body = ErrorResponse),
         (status = 429, description = "Rate limit exceeded", body = ErrorResponse)
