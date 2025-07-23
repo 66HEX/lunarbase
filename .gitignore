@@ -1,5 +1,7 @@
+/target
 .vercel
 .env
 .env.local
 .env.*.local
-/target
+*.db
+*.sqlite
