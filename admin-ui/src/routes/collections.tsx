@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	Calendar,
@@ -6,15 +5,17 @@ import {
 	Edit3,
 	FileText,
 	Plus,
-	Search,
 	Settings,
 	Trash2,
 } from "lucide-react";
 import { useState } from "react";
-import { CollectionDetailsSheet } from "@/components/collections/CollectionDetailsSheet";
-import { CollectionPermissionsSheet } from "@/components/collections/CollectionPermissionsSheet";
-import { CreateCollectionSheet } from "@/components/collections/CreateCollectionSheet";
-import { EditCollectionSheet } from "@/components/collections/EditCollectionSheet";
+import {
+	CollectionDetailsSheet,
+	CollectionPermissionsSheet,
+	CollectionsHeader,
+	CreateCollectionSheet,
+	EditCollectionSheet,
+} from "@/components/collections";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -28,39 +29,37 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
-import { CustomApiError } from "@/lib/api";
-import { useCollectionsStore } from "@/stores/collections-persist.store";
+import { useDeleteCollection } from "@/hooks/collections/useCollectionMutations";
+import { useCollections } from "@/hooks/collections/useCollections";
+import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 
 export default function CollectionsComponent() {
 	// React Query for data fetching
-	const { data, isLoading, error } = useCollectionsQuery();
+	const { data, isLoading, error } = useCollections();
 
-	// Zustand store for actions only
-	const { deleteCollection } = useCollectionsStore();
+	// Mutation for deleting collections
+	const deleteCollectionMutation = useDeleteCollection();
 
 	const collections = data?.collections || [];
 	const collectionRecordCounts = data?.recordCounts || {};
 	const loading = isLoading;
 
-	const queryClient = useQueryClient();
+	// UI store for modals and sheets
+	const modals = useClientStore((state) => state.ui.modals);
+	const sheets = useClientStore((state) => state.ui.sheets);
+	const openModal = useClientStore((state) => state.openModal);
+	const closeModal = useClientStore((state) => state.closeModal);
+	const openSheet = useClientStore((state) => state.openSheet);
+	const closeSheet = useClientStore((state) => state.closeSheet);
 
 	// Local UI states
 	const [searchTerm, setSearchTerm] = useState("");
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [collectionToDelete, setCollectionToDelete] = useState<string | null>(
 		null,
 	);
-
-	// Sheet states
-	const [isCreateSheetOpen, setIsCreateSheetOpen] = useState(false);
-	const [isDetailsSheetOpen, setIsDetailsSheetOpen] = useState(false);
-	const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
-	const [isPermissionsSheetOpen, setIsPermissionsSheetOpen] = useState(false);
 	const [selectedCollectionName, setSelectedCollectionName] = useState<
 		string | null
 	>(null);
@@ -70,7 +69,7 @@ export default function CollectionsComponent() {
 	// Handle opening collection details
 	const handleOpenDetails = (collectionName: string) => {
 		setSelectedCollectionName(collectionName);
-		setIsDetailsSheetOpen(true);
+		openSheet("collectionDetails");
 	};
 
 	// Handle opening collection edit
@@ -88,13 +87,13 @@ export default function CollectionsComponent() {
 		}
 
 		setSelectedCollectionName(collectionName);
-		setIsEditSheetOpen(true);
+		openModal("editCollection");
 	};
 
 	// Handle opening collection permissions
 	const handleOpenPermissions = (collectionName: string) => {
 		setSelectedCollectionName(collectionName);
-		setIsPermissionsSheetOpen(true);
+		openModal("permissions");
 	};
 	// Helper function to check if collection has records
 	const hasRecords = (collectionName: string): boolean => {
@@ -112,55 +111,26 @@ export default function CollectionsComponent() {
 
 	const handleDeleteCollection = async (name: string) => {
 		setCollectionToDelete(name);
-		setDeleteDialogOpen(true);
+		openModal("deleteCollection");
 	};
 
 	const confirmDeleteCollection = async () => {
 		if (!collectionToDelete) return;
 
 		try {
-			await deleteCollection(collectionToDelete);
-
-			// Invalidate and refetch collections query
-			queryClient.invalidateQueries({ queryKey: ["collections"] });
-
+			await deleteCollectionMutation.mutateAsync(collectionToDelete);
 			// Close dialog
-			setDeleteDialogOpen(false);
+			closeModal("deleteCollection");
 			setCollectionToDelete(null);
-			// Show success toast
-			toast({
-				title: "Collection deleted",
-				description: `Collection "${collectionToDelete}" has been deleted successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
 		} catch (error) {
-			console.error("Delete collection error:", error);
-			let errorMessage = "Failed to delete collection";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
-			setDeleteDialogOpen(false);
+			// Error handling is done in the mutation hook
+			closeModal("deleteCollection");
 			setCollectionToDelete(null);
 		}
 	};
 
 	const cancelDeleteCollection = () => {
-		setDeleteDialogOpen(false);
+		closeModal("deleteCollection");
 		setCollectionToDelete(null);
 	};
 
@@ -203,44 +173,12 @@ export default function CollectionsComponent() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between">
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">
-							Collections
-						</h1>
-						<Badge
-							variant="secondary"
-							className="px-2 py-0.5 text-xs font-medium"
-						>
-							{collections.length} total
-						</Badge>
-					</div>
-					<p className="text-lg text-nocta-600 dark:text-nocta-400">
-						Manage your data collections and schemas
-					</p>
-				</div>
-				<div className="flex items-center gap-3">
-					<div className="relative max-w-md">
-						<Input
-							placeholder="Search collections..."
-							leftIcon={
-								<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
-							}
-							value={searchTerm}
-							onChange={(e) => setSearchTerm(e.target.value)}
-							className="pl-10"
-						/>
-					</div>
-					<Button
-						className="px-4 py-2"
-						onClick={() => setIsCreateSheetOpen(true)}
-					>
-						<Plus className="w-4 h-4 mr-2" />
-						Create Collection
-					</Button>
-				</div>
-			</div>
+			<CollectionsHeader
+				collectionsCount={collections.length}
+				searchTerm={searchTerm}
+				onSearchChange={setSearchTerm}
+				onCreateCollection={() => openModal("createCollection")}
+			/>
 
 			{/* Collections Grid */}
 			{filteredCollections.length > 0 || (loading && !data) ? (
@@ -253,7 +191,7 @@ export default function CollectionsComponent() {
 							>
 								<CardHeader className="pb-4">
 									<div className="flex items-start justify-between">
-										<div className="flex items-center gap-3">
+										<div className="flex items-start gap-3">
 											<div className="p-2 rounded-lg bg-nocta-100 dark:bg-nocta-800/30">
 												<Database className="w-5 h-5 text-nocta-700 dark:text-nocta-300" />
 											</div>
@@ -422,7 +360,7 @@ export default function CollectionsComponent() {
 									: "Get started by creating your first data collection to organize your records."}
 							</p>
 							{!searchTerm && (
-								<Button onClick={() => setIsCreateSheetOpen(true)}>
+								<Button onClick={() => openModal("createCollection")}>
 									<Plus className="w-4 h-4 mr-2" />
 									Create Collection
 								</Button>
@@ -433,7 +371,10 @@ export default function CollectionsComponent() {
 			)}
 
 			{/* Delete Confirmation Dialog */}
-			<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+			<Dialog
+				open={modals.deleteCollection}
+				onOpenChange={(open) => !open && closeModal("deleteCollection")}
+			>
 				<DialogContent size="sm">
 					<DialogHeader>
 						<DialogTitle>Delete Collection</DialogTitle>
@@ -459,25 +400,25 @@ export default function CollectionsComponent() {
 
 			{/* Sheet components */}
 			<CreateCollectionSheet
-				isOpen={isCreateSheetOpen}
-				onOpenChange={setIsCreateSheetOpen}
+				isOpen={modals.createCollection}
+				onOpenChange={(open) => !open && closeModal("createCollection")}
 			/>
 
 			<CollectionDetailsSheet
-				isOpen={isDetailsSheetOpen}
-				onOpenChange={setIsDetailsSheetOpen}
+				isOpen={sheets.collectionDetails}
+				onOpenChange={(open) => !open && closeSheet("collectionDetails")}
 				collection={selectedCollection}
 			/>
 
 			<EditCollectionSheet
-				isOpen={isEditSheetOpen}
-				onOpenChange={setIsEditSheetOpen}
+				isOpen={modals.editCollection}
+				onOpenChange={(open) => !open && closeModal("editCollection")}
 				collection={selectedCollection}
 			/>
 
 			<CollectionPermissionsSheet
-				isOpen={isPermissionsSheetOpen}
-				onOpenChange={setIsPermissionsSheetOpen}
+				isOpen={modals.permissions}
+				onOpenChange={(open) => !open && closeModal("permissions")}
 				collection={selectedCollection}
 			/>
 		</div>

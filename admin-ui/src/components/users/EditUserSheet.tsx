@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Save, User as UserIcon } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -30,9 +29,14 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/components/ui/toast";
-import { CustomApiError } from "@/lib/api";
-import { useUsersStore } from "@/stores/users-persist.store";
+import { useUnlockUser, useUpdateUser } from "@/hooks/users/useUserMutations";
 import type { UpdateUserRequest, User } from "@/types/api";
+import {
+	userFieldDescriptions,
+	userRoleOptions,
+	userValidationMessages,
+	userValidationPatterns,
+} from "./constants";
 
 interface EditUserSheetProps {
 	isOpen: boolean;
@@ -45,11 +49,9 @@ export function EditUserSheet({
 	onOpenChange,
 	user,
 }: EditUserSheetProps) {
-	const { updateUser, unlockUser } = useUsersStore();
 	const { toast } = useToast();
-	const queryClient = useQueryClient();
-
-	const [submitting, setSubmitting] = useState(false);
+	const updateUserMutation = useUpdateUser();
+	const unlockUserMutation = useUnlockUser();
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [formData, setFormData] = useState<UpdateUserRequest>({
 		email: "",
@@ -62,22 +64,21 @@ export function EditUserSheet({
 		const newErrors: { [key: string]: string } = {};
 
 		if (!formData.email?.trim()) {
-			newErrors.email = "Email is required";
-		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-			newErrors.email = "Please enter a valid email address";
+			newErrors.email = userValidationMessages.email.required;
+		} else if (!userValidationPatterns.email.test(formData.email)) {
+			newErrors.email = userValidationMessages.email.invalid;
 		}
 
 		if (
 			formData.username &&
 			formData.username.trim() &&
-			!/^[a-zA-Z0-9_]+$/.test(formData.username)
+			!userValidationPatterns.username.test(formData.username)
 		) {
-			newErrors.username =
-				"Username can only contain letters, numbers, and underscores";
+			newErrors.username = userValidationMessages.username.invalid;
 		}
 
 		if (!formData.role) {
-			newErrors.role = "Role is required";
+			newErrors.role = userValidationMessages.role.required;
 		}
 
 		setFieldErrors(newErrors);
@@ -98,55 +99,24 @@ export function EditUserSheet({
 	const handleUpdateUser = async () => {
 		if (!user || !validateForm()) return;
 
-		setSubmitting(true);
+		const userData: UpdateUserRequest = {
+			email: formData.email?.trim(),
+			username: formData.username?.trim() || undefined,
+			role: formData.role,
+			is_active: formData.is_active,
+		};
 
-		try {
-			const userData: UpdateUserRequest = {
-				email: formData.email?.trim(),
-				username: formData.username?.trim() || undefined,
-				role: formData.role,
-				is_active: formData.is_active,
-			};
-
-			await updateUser(user.id, userData);
-
-			// Invalidate and refetch users query
-			queryClient.invalidateQueries({ queryKey: ["users"] });
-
-			onOpenChange(false);
-
-			toast({
-				title: "Success!",
-				description: `User "${formData.email}" has been updated successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		} catch (error) {
-			console.error("User update error:", error);
-
-			let errorMessage = "Failed to update user";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			} else if (error && typeof error === "object" && "message" in error) {
-				errorMessage = String(error.message);
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
-		} finally {
-			setSubmitting(false);
-		}
+		updateUserMutation.mutate(
+			{ id: user.id, data: userData },
+			{
+				onSuccess: () => {
+					onOpenChange(false);
+				},
+				onError: () => {
+					// Error handling is done in the mutation hook
+				},
+			},
+		);
 	};
 
 	const updateFormData = (
@@ -163,41 +133,14 @@ export function EditUserSheet({
 	const handleUnlockUser = async () => {
 		if (!user) return;
 
-		setSubmitting(true);
-
-		try {
-			await unlockUser(user.id);
-
-			// Invalidate and refetch users query
-			queryClient.invalidateQueries({ queryKey: ["users"] });
-
-			onOpenChange(false);
-
-			toast({
-				title: "User unlocked",
-				description: `User "${user.email}" has been unlocked successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		} catch (error: any) {
-			console.error("Unlock user error:", error);
-			let errorMessage = "Failed to unlock user";
-
-			if (error?.message) {
-				errorMessage = error.message;
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
-		} finally {
-			setSubmitting(false);
-		}
+		unlockUserMutation.mutate(user.id, {
+			onSuccess: () => {
+				onOpenChange(false);
+			},
+			onError: () => {
+				// Error handling is done in the mutation hook
+			},
+		});
 	};
 
 	// Check if user is locked
@@ -250,9 +193,7 @@ export function EditUserSheet({
 										variant={fieldErrors.email ? "error" : "default"}
 									/>
 								</FormControl>
-								<FormDescription>
-									This will be used for login and notifications
-								</FormDescription>
+								<FormDescription>{userFieldDescriptions.email}</FormDescription>
 								<FormMessage />
 							</FormField>
 
@@ -269,7 +210,7 @@ export function EditUserSheet({
 									/>
 								</FormControl>
 								<FormDescription>
-									Optional. Can contain letters, numbers, and underscores
+									{userFieldDescriptions.username}
 								</FormDescription>
 								<FormMessage />
 							</FormField>
@@ -293,15 +234,15 @@ export function EditUserSheet({
 											<SelectValue placeholder="Select a role" />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="user">User</SelectItem>
-											<SelectItem value="admin">Admin</SelectItem>
-											<SelectItem value="guest">Guest</SelectItem>
+											{userRoleOptions.map((option) => (
+												<SelectItem key={option.value} value={option.value}>
+													{option.label}
+												</SelectItem>
+											))}
 										</SelectContent>
 									</Select>
 								</FormControl>
-								<FormDescription>
-									Determines the user's permissions in the system
-								</FormDescription>
+								<FormDescription>{userFieldDescriptions.role}</FormDescription>
 								<FormMessage />
 							</FormField>
 
@@ -311,7 +252,7 @@ export function EditUserSheet({
 									<div className="space-y-0.5">
 										<FormLabel>Active Status</FormLabel>
 										<FormDescription>
-											Inactive users cannot log in to the system
+											{userFieldDescriptions.isActive}
 										</FormDescription>
 									</div>
 									<FormControl>
@@ -346,10 +287,10 @@ export function EditUserSheet({
 											variant="primary"
 											size="sm"
 											onClick={handleUnlockUser}
-											disabled={submitting}
+											disabled={unlockUserMutation.isPending}
 											className=""
 										>
-											{submitting ? (
+											{unlockUserMutation.isPending ? (
 												<>
 													<Spinner size="sm" className="mr-2" />
 													Unlocking...
@@ -371,10 +312,10 @@ export function EditUserSheet({
 					</SheetClose>
 					<Button
 						type="submit"
-						disabled={submitting}
+						disabled={updateUserMutation.isPending}
 						onClick={handleUpdateUser}
 					>
-						{submitting ? (
+						{updateUserMutation.isPending ? (
 							<>
 								<Spinner size="sm" className="mr-2" />
 								Updating...

@@ -1,5 +1,6 @@
-export { WebSocketStats } from "./WebSocketStats";
-export { WebSocketConnections } from "./WebSocketConnections";
-export { WebSocketActivity } from "./WebSocketActivity";
-export { WebSocketSubscriptions } from "./WebSocketSubscriptions";
 export { BroadcastDialog } from "./BroadcastDialog";
+export { WebSocketActivity } from "./WebSocketActivity";
+export { WebSocketConnections } from "./WebSocketConnections";
+export { WebSocketHeader } from "./WebSocketHeader";
+export { WebSocketStats } from "./WebSocketStats";
+export { WebSocketSubscriptions } from "./WebSocketSubscriptions";

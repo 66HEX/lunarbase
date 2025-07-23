@@ -65,9 +65,7 @@ export function BroadcastDialog({
 									Broadcasting...
 								</>
 							) : (
-								<>
-									Send Message
-								</>
+								<>Send Message</>
 							)}
 						</Button>
 					</DialogActions>

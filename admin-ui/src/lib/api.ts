@@ -492,7 +492,10 @@ export const webSocketApi = {
 		return response.data;
 	},
 	getConnections: async (): Promise<WebSocketConnectionsResponse> => {
-		const response = await apiRequest<ApiResponse<WebSocketConnectionsResponse>>("/ws/connections");
+		const response =
+			await apiRequest<ApiResponse<WebSocketConnectionsResponse>>(
+				"/ws/connections",
+			);
 		return response.data;
 	},
 	disconnectConnection: async (connectionId: string): Promise<void> => {
@@ -500,15 +503,21 @@ export const webSocketApi = {
 			method: "DELETE",
 		});
 	},
-	broadcastMessage: async (data: BroadcastMessageRequest): Promise<BroadcastMessageResponse> => {
-		const response = await apiRequest<ApiResponse<BroadcastMessageResponse>>("/ws/broadcast", {
-			method: "POST",
-			body: JSON.stringify(data),
-		});
+	broadcastMessage: async (
+		data: BroadcastMessageRequest,
+	): Promise<BroadcastMessageResponse> => {
+		const response = await apiRequest<ApiResponse<BroadcastMessageResponse>>(
+			"/ws/broadcast",
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		);
 		return response.data;
 	},
 	getActivity: async (): Promise<WebSocketActivityResponse> => {
-		const response = await apiRequest<ApiResponse<WebSocketActivityResponse>>("/ws/activity");
+		const response =
+			await apiRequest<ApiResponse<WebSocketActivityResponse>>("/ws/activity");
 		return response.data;
 	},
 };

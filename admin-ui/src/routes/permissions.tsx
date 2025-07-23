@@ -1,6 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Edit3, Lock, Save, Shield, ShieldCheck, Unlock } from "lucide-react";
+import { Lock, Save, Shield, ShieldCheck, Unlock } from "lucide-react";
 import { useEffect, useState } from "react";
+import { PermissionsHeader } from "@/components/permissions";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -194,31 +195,7 @@ export default function PermissionsComponent() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between">
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">
-							Permissions
-						</h1>
-						<Badge
-							variant="secondary"
-							className="px-2 py-0.5 text-xs font-medium"
-						>
-							{rolePermissions.length} roles
-						</Badge>
-					</div>
-					<p className="text-lg text-nocta-600 dark:text-nocta-400">
-						Manage user roles and access permissions
-					</p>
-				</div>
-				<Button
-					onClick={() => setEditingRole(selectedRole)}
-					disabled={editingRole !== null}
-				>
-					<Edit3 className="w-4 h-4 mr-2" />
-					Edit Permissions
-				</Button>
-			</div>
+			<PermissionsHeader rolesCount={rolePermissions.length} />
 
 			{/* Error Alert */}
 			{error && (

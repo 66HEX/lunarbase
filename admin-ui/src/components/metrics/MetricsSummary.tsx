@@ -8,25 +8,6 @@ import { MetricCard } from "./MetricCard";
 export function MetricsSummary() {
 	const { data: metrics, isLoading, error, refetch } = useMetricsQuery();
 
-	const getConnectionStatus = (connections: number) => {
-		if (connections === 0) return "healthy";
-		if (connections < 10) return "healthy";
-		if (connections < 50) return "warning";
-		return "error";
-	};
-
-	const getRequestStatus = (requests: number) => {
-		if (requests < 1000) return "healthy";
-		if (requests < 10000) return "warning";
-		return "error";
-	};
-
-	const getDatabaseStatus = (connections: number) => {
-		if (connections === 0) return "error";
-		if (connections < 5) return "warning";
-		return "healthy";
-	};
-
 	if (isLoading && !metrics) {
 		return (
 			<Card>
@@ -81,7 +62,6 @@ export function MetricsSummary() {
 					value={metrics.http_requests_total.toLocaleString()}
 					icon={Globe}
 					unit="total"
-					status={getRequestStatus(metrics.http_requests_total)}
 					description="Total number of HTTP requests processed since server start"
 				/>
 
@@ -90,7 +70,6 @@ export function MetricsSummary() {
 					value={metrics.active_websocket_connections}
 					icon={Activity}
 					unit="connections"
-					status={getConnectionStatus(metrics.active_websocket_connections)}
 					description="Number of currently active WebSocket connections"
 				/>
 
@@ -99,7 +78,6 @@ export function MetricsSummary() {
 					value={metrics.database_connections_active}
 					icon={Database}
 					unit="active"
-					status={getDatabaseStatus(metrics.database_connections_active)}
 					description="Number of active database connections in the pool"
 				/>
 			</div>

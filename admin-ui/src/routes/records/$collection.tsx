@@ -17,15 +17,16 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
+import {
+	useCreateRecord,
+	useDeleteRecord,
+	useUpdateRecord,
+} from "@/hooks/records/useRecordMutations";
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
 import { useDebounce } from "@/hooks/useDebounce";
-import { CustomApiError, collectionsApi, recordsApi } from "@/lib/api";
-import type {
-	ApiRecord,
-	Collection,
-	CreateRecordRequest,
-	RecordData,
-} from "@/types/api";
+import { CustomApiError, collectionsApi } from "@/lib/api";
+import { useUI, useUIActions } from "@/stores/client.store";
+import type { ApiRecord, Collection, RecordData } from "@/types/api";
 
 // Use ApiRecord instead of Record to avoid conflict with TypeScript's built-in Record type
 type Record = ApiRecord;
@@ -46,9 +47,17 @@ export default function RecordComponent() {
 	const { toast } = useToast();
 	const queryClient = useQueryClient();
 
+	// React Query mutations
+	const createRecordMutation = useCreateRecord();
+	const updateRecordMutation = useUpdateRecord();
+	const deleteRecordMutation = useDeleteRecord();
+
 	const [collection, setCollection] = useState<Collection | null>(null);
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [recordToDelete, setRecordToDelete] = useState<number | null>(null);
+
+	// UI store for modals and sheets
+	const { modals, sheets } = useUI();
+	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
 
 	// Search and pagination state
 	const [localSearchTerm, setLocalSearchTerm] = useState("");
@@ -74,11 +83,7 @@ export default function RecordComponent() {
 	const records = recordsData?.records || [];
 	const totalCount = recordsData?.pagination?.total_count || 0;
 
-	// Sheet state
-	const [isSheetOpen, setIsSheetOpen] = useState(false);
-
-	// Edit sheet state
-	const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
+	// Local state for record data
 	const [editingRecord, setEditingRecord] = useState<Record | null>(null);
 
 	useEffect(() => {
@@ -129,141 +134,84 @@ export default function RecordComponent() {
 
 	const handleEditRecord = (record: Record) => {
 		setEditingRecord(record);
-		setIsEditSheetOpen(true);
+		openSheet("editRecord");
 	};
 
 	const handleCreateRecord = async (data: RecordData) => {
 		if (!collectionName) return;
 
-		try {
-			const request: CreateRecordRequest = {
-				data,
-			};
-
-			await recordsApi.create(collectionName, request);
-
-			toast({
-				title: "Success!",
-				description: `Record has been created successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-
-			// Invalidate queries to refresh data
-			queryClient.invalidateQueries({
-				queryKey: ["collectionRecords", collectionName],
-			});
-			queryClient.invalidateQueries({ queryKey: ["collections"] });
-		} catch (error) {
-			console.error("Record creation error:", error);
-
-			let errorMessage = "Failed to create record";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-			throw error;
-		}
+		createRecordMutation.mutate(
+			{
+				collectionName,
+				data: { data },
+			},
+			{
+				onSuccess: () => {
+					// Invalidate queries to refresh data
+					queryClient.invalidateQueries({
+						queryKey: ["collectionRecords", collectionName],
+					});
+				},
+				onError: (error) => {
+					throw error;
+				},
+			},
+		);
 	};
 
 	const handleUpdateRecord = async (data: RecordData) => {
 		if (!collectionName || !editingRecord) return;
 
-		try {
-			await recordsApi.update(collectionName, editingRecord.id, {
-				data,
-			});
-
-			toast({
-				title: "Success!",
-				description: `Record has been updated successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-
-			setIsEditSheetOpen(false);
-			setEditingRecord(null);
-
-			// Invalidate queries to refresh data
-			queryClient.invalidateQueries({
-				queryKey: ["collectionRecords", collectionName],
-			});
-		} catch (error) {
-			console.error("Record update error:", error);
-
-			let errorMessage = "Failed to update record";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-			throw error;
-		}
+		updateRecordMutation.mutate(
+			{
+				collectionName,
+				recordId: editingRecord.id,
+				data: { data },
+			},
+			{
+				onSuccess: () => {
+					closeSheet("editRecord");
+					setEditingRecord(null);
+					// Invalidate queries to refresh data
+					queryClient.invalidateQueries({
+						queryKey: ["collectionRecords", collectionName],
+					});
+				},
+				onError: (error) => {
+					throw error;
+				},
+			},
+		);
 	};
 
 	const handleDeleteRecord = async (recordId: number) => {
 		setRecordToDelete(recordId);
-		setDeleteDialogOpen(true);
+		openModal("deleteRecord");
 	};
 
 	const confirmDeleteRecord = async () => {
 		if (!recordToDelete || !collectionName) return;
 
-		try {
-			await recordsApi.delete(collectionName, recordToDelete);
-
-			setDeleteDialogOpen(false);
-			setRecordToDelete(null);
-
-			toast({
-				title: "Record deleted",
-				description: "Record has been deleted successfully.",
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-
-			// Invalidate queries to refresh data
-			queryClient.invalidateQueries({
-				queryKey: ["collectionRecords", collectionName],
-			});
-			queryClient.invalidateQueries({ queryKey: ["collections"] });
-		} catch (error) {
-			const errorMessage =
-				error instanceof CustomApiError
-					? error.message
-					: "Failed to delete record";
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-			setDeleteDialogOpen(false);
-			setRecordToDelete(null);
-		}
+		deleteRecordMutation.mutate(
+			{
+				collectionName,
+				recordId: recordToDelete,
+			},
+			{
+				onSuccess: () => {
+					closeModal("deleteRecord");
+					setRecordToDelete(null);
+					// Invalidate queries to refresh data
+					queryClient.invalidateQueries({
+						queryKey: ["collectionRecords", collectionName],
+					});
+				},
+				onError: () => {
+					closeModal("deleteRecord");
+					setRecordToDelete(null);
+				},
+			},
+		);
 	};
 
 	const handleSearchChange = (value: string) => {
@@ -329,8 +277,10 @@ export default function RecordComponent() {
 				searchTerm={localSearchTerm}
 				onSearchChange={handleSearchChange}
 				onNavigateBack={() => navigate({ to: "/records" })}
-				isSheetOpen={isSheetOpen}
-				onSheetOpenChange={setIsSheetOpen}
+				isSheetOpen={sheets.createRecord || false}
+				onSheetOpenChange={(open) =>
+					open ? openSheet("createRecord") : closeSheet("createRecord")
+				}
 				onCreateRecord={handleCreateRecord}
 			/>
 
@@ -453,24 +403,28 @@ export default function RecordComponent() {
 				<EmptyCollectionRecordsState
 					searchTerm={localSearchTerm}
 					collectionName={collectionName}
-					onAddRecord={() => setIsSheetOpen(true)}
+					onAddRecord={() => openSheet("createRecord")}
 				/>
 			)}
 
 			<CollectionRecordsEditSheet
-				open={isEditSheetOpen}
-				onOpenChange={setIsEditSheetOpen}
+				open={sheets.editRecord || false}
+				onOpenChange={(open) =>
+					open ? openSheet("editRecord") : closeSheet("editRecord")
+				}
 				record={editingRecord}
 				collection={collection}
 				onSubmit={handleUpdateRecord}
 			/>
 
 			<DeleteRecordDialog
-				open={deleteDialogOpen}
-				onOpenChange={setDeleteDialogOpen}
+				open={modals.deleteRecord || false}
+				onOpenChange={(open) =>
+					open ? openModal("deleteRecord") : closeModal("deleteRecord")
+				}
 				onConfirm={confirmDeleteRecord}
 				onCancel={() => {
-					setDeleteDialogOpen(false);
+					closeModal("deleteRecord");
 					setRecordToDelete(null);
 				}}
 			/>

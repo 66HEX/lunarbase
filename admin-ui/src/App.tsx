@@ -34,7 +34,7 @@ function App() {
 	return (
 		<StrictMode>
 			<QueryClientProvider client={queryClient}>
-				<ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+				<ThemeProvider defaultTheme="dark">
 					<ToastProvider>
 						<RouterProvider router={router} />
 					</ToastProvider>

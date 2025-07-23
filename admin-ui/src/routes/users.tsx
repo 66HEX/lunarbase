@@ -1,14 +1,6 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Edit3,
-	Eye,
-	Search,
-	Trash2,
-	User as UserIcon,
-	UserPlus,
-} from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { Edit3, Eye, Trash2, User as UserIcon, UserPlus } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,16 +15,19 @@ import {
 	DialogHeader,
 	DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
-import { useToast } from "@/components/ui/toast";
-import { CreateUserSheet } from "@/components/users/CreateUserSheet";
-import { EditUserSheet } from "@/components/users/EditUserSheet";
-import { UserDetailsSheet } from "@/components/users/UserDetailsSheet";
+
+import {
+	CreateUserSheet,
+	EditUserSheet,
+	UserDetailsSheet,
+	UsersHeader,
+} from "@/components/users";
+import { useDeleteUser } from "@/hooks/users/useUserMutations";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
-import { useUsersStore } from "@/stores/users-persist.store";
+import { useUI, useUIActions } from "@/stores/client.store";
 import type { User } from "@/types/api";
 
 interface ExtendedUser extends User {
@@ -57,14 +52,13 @@ const statusColors = {
 };
 
 export default function UsersComponent() {
-	const {
-		searchTerm,
-		currentPage,
-		pageSize,
-		deleteUser,
-		setCurrentPage,
-		setSearchTerm,
-	} = useUsersStore();
+	// Local state for search and pagination
+	const [searchTerm, setSearchTerm] = useState("");
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pageSize] = useState(10);
+
+	// React Query mutations
+	const deleteUserMutation = useDeleteUser();
 
 	// Use React Query for data fetching with keepPreviousData
 	const { data, isLoading, error } = useUsersQuery({
@@ -77,20 +71,17 @@ export default function UsersComponent() {
 	const totalCount = data?.pagination?.total_count || 0;
 	const loading = isLoading;
 
-	const [isCreateUserSheetOpen, setIsCreateUserSheetOpen] = useState(false);
-	const [isUserDetailsSheetOpen, setIsUserDetailsSheetOpen] = useState(false);
-	const [isEditUserSheetOpen, setIsEditUserSheetOpen] = useState(false);
+	// UI store for modals and sheets
+	const { modals, sheets } = useUI();
+	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
+
 	const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
 	const [userToEdit, setUserToEdit] = useState<User | null>(null);
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [userToDelete, setUserToDelete] = useState<{
 		id: number;
 		email: string;
 	} | null>(null);
 	const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
-
-	const { toast } = useToast();
-	const queryClient = useQueryClient();
 
 	useEffect(() => {
 		setLocalSearchTerm(searchTerm);
@@ -111,64 +102,39 @@ export default function UsersComponent() {
 		if (!user) return;
 
 		setUserToDelete({ id: userId, email: user.email });
-		setDeleteDialogOpen(true);
+		openModal("deleteUser");
 	};
 
 	const confirmDeleteUser = async () => {
 		if (!userToDelete) return;
 
-		try {
-			await deleteUser(userToDelete.id);
-
-			// Invalidate and refetch users query
-			queryClient.invalidateQueries({ queryKey: ["users"] });
-
-			// Close dialog
-			setDeleteDialogOpen(false);
-			setUserToDelete(null);
-			// Show success toast
-			toast({
-				title: "User deleted",
-				description: `User "${userToDelete.email}" has been deleted successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		} catch (error: any) {
-			console.error("Delete user error:", error);
-			let errorMessage = "Failed to delete user";
-
-			if (error?.message) {
-				errorMessage = error.message;
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
-			setDeleteDialogOpen(false);
-			setUserToDelete(null);
-		}
+		deleteUserMutation.mutate(userToDelete.id, {
+			onSuccess: () => {
+				closeModal("deleteUser");
+				setUserToDelete(null);
+			},
+			onError: () => {
+				closeModal("deleteUser");
+				setUserToDelete(null);
+			},
+		});
 	};
 
 	const cancelDeleteUser = () => {
-		setDeleteDialogOpen(false);
+		closeModal("deleteUser");
 		setUserToDelete(null);
 	};
 
 	const handleViewUser = (userId: number) => {
 		setSelectedUserId(userId);
-		setIsUserDetailsSheetOpen(true);
+		openSheet("userDetails");
 	};
 
 	const handleEditUser = (userId: number) => {
 		const user = users.find((u) => u.id === userId);
 		if (user) {
 			setUserToEdit(user);
-			setIsEditUserSheetOpen(true);
+			openSheet("editUser");
 		}
 	};
 
@@ -179,13 +145,6 @@ export default function UsersComponent() {
 	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
 	};
-
-	const handleSearchChange = useCallback(
-		(e: React.ChangeEvent<HTMLInputElement>) => {
-			setLocalSearchTerm(e.target.value);
-		},
-		[],
-	);
 
 	// Convert users from store to ExtendedUser format - memoized to prevent unnecessary recalculations
 	const extendedUsers: ExtendedUser[] = useMemo(
@@ -377,44 +336,12 @@ export default function UsersComponent() {
 	return (
 		<div className="space-y-6">
 			{/* Header */}
-			<div className="flex items-start justify-between">
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">
-							Users
-						</h1>
-						<Badge
-							variant="secondary"
-							className="px-2 py-0.5 text-xs font-medium"
-						>
-							{totalCount} total
-						</Badge>
-					</div>
-					<p className="text-lg text-nocta-600 dark:text-nocta-400">
-						Manage user accounts and permissions
-					</p>
-				</div>
-				<div className="flex items-center gap-3">
-					<div className="relative max-w-md">
-						<Input
-							placeholder="Search users by email..."
-							leftIcon={
-								<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
-							}
-							value={localSearchTerm}
-							onChange={handleSearchChange}
-							className="pl-10"
-						/>
-					</div>
-					<Button
-						className="px-4 py-2"
-						onClick={() => setIsCreateUserSheetOpen(true)}
-					>
-						<UserPlus className="w-4 h-4 mr-2" />
-						Create New User
-					</Button>
-				</div>
-			</div>
+			<UsersHeader
+				usersCount={totalCount}
+				searchTerm={localSearchTerm}
+				onSearchChange={setLocalSearchTerm}
+				onCreateUser={() => openSheet("createUser")}
+			/>
 
 			{/* Users Table */}
 			{extendedUsers.length > 0 || (loading && !data) ? (
@@ -458,7 +385,7 @@ export default function UsersComponent() {
 									: "Get started by adding your first user account."}
 							</p>
 							{!searchTerm && (
-								<Button onClick={() => setIsCreateUserSheetOpen(true)}>
+								<Button onClick={() => openSheet("createUser")}>
 									<UserPlus className="w-4 h-4 mr-2" />
 									Create New User
 								</Button>
@@ -470,26 +397,29 @@ export default function UsersComponent() {
 
 			{/* Create User Sheet */}
 			<CreateUserSheet
-				isOpen={isCreateUserSheetOpen}
-				onOpenChange={setIsCreateUserSheetOpen}
+				isOpen={sheets.createUser}
+				onOpenChange={(open) => !open && closeSheet("createUser")}
 			/>
 
 			{/* User Details Sheet */}
 			<UserDetailsSheet
-				isOpen={isUserDetailsSheetOpen}
-				onOpenChange={setIsUserDetailsSheetOpen}
+				isOpen={sheets.userDetails}
+				onOpenChange={(open) => !open && closeSheet("userDetails")}
 				userId={selectedUserId}
 			/>
 
 			{/* Edit User Sheet */}
 			<EditUserSheet
-				isOpen={isEditUserSheetOpen}
-				onOpenChange={setIsEditUserSheetOpen}
+				isOpen={sheets.editUser}
+				onOpenChange={(open) => !open && closeSheet("editUser")}
 				user={userToEdit}
 			/>
 
 			{/* Delete User Dialog */}
-			<Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+			<Dialog
+				open={modals.deleteUser}
+				onOpenChange={(open) => !open && closeModal("deleteUser")}
+			>
 				<DialogContent>
 					<DialogHeader>
 						<DialogTitle>Delete User</DialogTitle>

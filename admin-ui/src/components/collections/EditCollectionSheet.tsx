@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,9 +28,8 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useToast } from "@/components/ui/toast";
+import { useUpdateCollection } from "@/hooks/collections/useCollectionMutations";
 import { CustomApiError } from "@/lib/api";
-import { useCollectionsStore } from "@/stores/collections-persist.store";
 import type {
 	Collection,
 	FieldDefinition,
@@ -50,9 +48,7 @@ export function EditCollectionSheet({
 	onOpenChange,
 	collection,
 }: EditCollectionSheetProps) {
-	const { updateCollection } = useCollectionsStore();
-	const { toast } = useToast();
-	const queryClient = useQueryClient();
+	const updateCollectionMutation = useUpdateCollection();
 
 	const [editSubmitting, setEditSubmitting] = useState(false);
 	const [editFieldErrors, setEditFieldErrors] = useState<{
@@ -116,16 +112,6 @@ export function EditCollectionSheet({
 
 		setEditFieldErrors(newErrors);
 
-		if (Object.keys(newErrors).length > 0) {
-			toast({
-				title: "Validation Error",
-				description: "Please fix the validation errors in the form",
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		}
-
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -140,24 +126,16 @@ export function EditCollectionSheet({
 				schema: { fields: editFields },
 			};
 
-			await updateCollection(collection.name, request);
-
-			// Invalidate and refetch collections query
-			queryClient.invalidateQueries({ queryKey: ["collections"] });
+			await updateCollectionMutation.mutateAsync({
+				name: collection.name,
+				data: request,
+			});
 
 			// Close sheet and reset form
 			onOpenChange(false);
 			setEditCollectionName("");
 			setEditFields([]);
 			setEditFieldErrors({});
-
-			toast({
-				title: "Success!",
-				description: `Collection "${editCollectionName}" has been updated successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
 		} catch (error) {
 			console.error("Collection update error:", error);
 
@@ -172,14 +150,6 @@ export function EditCollectionSheet({
 			} else if (error && typeof error === "object" && "message" in error) {
 				errorMessage = String(error.message);
 			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
 		} finally {
 			setEditSubmitting(false);
 		}

@@ -1,12 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { webSocketApi } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/components/ui/toast";
+import { webSocketApi } from "@/lib/api";
 import type {
-	WebSocketStats,
-	WebSocketConnectionsResponse,
-	WebSocketActivityResponse,
 	BroadcastMessageRequest,
 	BroadcastMessageResponse,
+	WebSocketActivityResponse,
+	WebSocketConnectionsResponse,
+	WebSocketStats,
 } from "@/types/api";
 
 // Hook for WebSocket stats
@@ -67,7 +67,8 @@ export const useDisconnectConnectionMutation = () => {
 			queryClient.invalidateQueries({ queryKey: ["websocket", "activity"] });
 			toast({
 				title: "Connection Disconnected",
-				description: "The WebSocket connection has been successfully disconnected.",
+				description:
+					"The WebSocket connection has been successfully disconnected.",
 			});
 		},
 		onError: (error: any) => {
@@ -86,7 +87,9 @@ export const useBroadcastMessageMutation = () => {
 	const { toast } = useToast();
 
 	return useMutation({
-		mutationFn: async (data: BroadcastMessageRequest): Promise<BroadcastMessageResponse> => {
+		mutationFn: async (
+			data: BroadcastMessageRequest,
+		): Promise<BroadcastMessageResponse> => {
 			return await webSocketApi.broadcastMessage(data);
 		},
 		onSuccess: (data) => {
@@ -120,7 +123,10 @@ export const useWebSocketData = () => {
 		activity: activityQuery.data,
 
 		// Loading states
-		isLoading: statsQuery.isLoading || connectionsQuery.isLoading || activityQuery.isLoading,
+		isLoading:
+			statsQuery.isLoading ||
+			connectionsQuery.isLoading ||
+			activityQuery.isLoading,
 		isStatsLoading: statsQuery.isLoading,
 		isConnectionsLoading: connectionsQuery.isLoading,
 		isActivityLoading: activityQuery.isLoading,

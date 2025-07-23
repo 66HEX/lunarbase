@@ -1,43 +1,36 @@
 import { createFileRoute } from "@tanstack/react-router";
-import {
-	Activity,
-	Radio,
-	RefreshCw,
-} from "lucide-react";
+import { Activity } from "lucide-react";
 import { useState } from "react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/toast";
+import {
+	BroadcastDialog,
+	WebSocketActivity,
+	WebSocketConnections,
+	WebSocketHeader,
+	WebSocketStats,
+	WebSocketSubscriptions,
+} from "@/components/websocket";
 import { useWebSocketData } from "@/hooks/useWebSocketQueries";
 import { webSocketApi } from "@/lib/api";
-import type {
-	BroadcastMessageRequest,
-} from "@/types/api";
-import {
-	WebSocketStats,
-	WebSocketConnections,
-	WebSocketActivity,
-	WebSocketSubscriptions,
-	BroadcastDialog,
-} from "@/components/websocket";
+import { useUI, useUIActions } from "@/stores/client.store";
+import type { BroadcastMessageRequest } from "@/types/api";
 
 export const Route = createFileRoute("/websocket")({
 	component: WebSocketComponent,
 });
 
 function WebSocketComponent() {
-	const {
-		stats,
-		connections,
-		activity,
-		isLoading,
-		error,
-		refetchAll,
-	} = useWebSocketData();
+	const { stats, connections, activity, isLoading, error, refetchAll } =
+		useWebSocketData();
 
-	const [broadcastDialogOpen, setBroadcastDialogOpen] = useState(false);
+	// UI store for modals
+	const { modals } = useUI();
+	const { openModal, closeModal } = useUIActions();
+
 	const [broadcastMessage, setBroadcastMessage] = useState("");
 	const [isBroadcasting, setIsBroadcasting] = useState(false);
 	const { toast } = useToast();
@@ -64,7 +57,7 @@ function WebSocketComponent() {
 				variant: "success",
 			});
 			setBroadcastMessage("");
-			setBroadcastDialogOpen(false);
+			closeModal("broadcast");
 			refetchAll();
 		} catch (error: any) {
 			toast({
@@ -94,7 +87,6 @@ function WebSocketComponent() {
 			});
 		}
 	};
-
 
 	if (isLoading) {
 		return (
@@ -131,52 +123,22 @@ function WebSocketComponent() {
 	return (
 		<div className="space-y-4">
 			{/* Header */}
-			<div className="flex items-start justify-between mb-6">
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">
-							WebSocket Management
-						</h1>
-						<Badge
-							variant={stats?.total_connections ? "success" : "secondary"}
-							className="px-2 py-0.5 text-xs font-medium"
-						>
-							{stats?.total_connections || 0} active
-						</Badge>
-					</div>
-					<p className="text-lg text-nocta-600 dark:text-nocta-400">
-						Monitor real-time connections and manage WebSocket activity
-					</p>
-				</div>
-				<div className="flex items-center gap-3">
-					<Button
-						variant="ghost"
-						size="sm"
-						onClick={refetchAll}
-						disabled={isLoading}
-					>
-						<RefreshCw className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
-						Refresh
-					</Button>
-					<Button
-						className="px-4 py-2"
-						onClick={() => setBroadcastDialogOpen(true)}
-						disabled={!stats?.total_connections}
-					>
-						<Radio className="w-4 h-4 mr-2" />
-						Broadcast Message
-					</Button>
-				</div>
-			</div>
+			<WebSocketHeader
+				activeConnections={stats?.total_connections || 0}
+				onRefresh={refetchAll}
+				onBroadcast={() => openModal("broadcast")}
+				isLoading={isLoading}
+			/>
 
 			{/* Stats Cards */}
 			<WebSocketStats stats={stats} />
 
 			{/* Main Content Tabs */}
 			<Tabs defaultValue="connections" className="w-full">
-				<TabsList className="grid w-full grid-cols-2">
+				<TabsList className="grid w-full grid-cols-3">
 					<TabsTrigger value="connections">Active Connections</TabsTrigger>
 					<TabsTrigger value="activity">Recent Activity</TabsTrigger>
+					<TabsTrigger value="subscriptions">Subscriptions</TabsTrigger>
 				</TabsList>
 				<TabsContent value="connections" className="mt-4">
 					<WebSocketConnections
@@ -188,15 +150,32 @@ function WebSocketComponent() {
 				<TabsContent value="activity" className="mt-4">
 					<WebSocketActivity activity={activity} />
 				</TabsContent>
+				<TabsContent value="subscriptions" className="mt-4">
+					{!stats?.subscriptions_by_collection ||
+					Object.keys(stats.subscriptions_by_collection).length === 0 ? (
+						<Card className="flex items-center justify-center py-12">
+							<div className="text-center">
+								<Activity className="w-12 h-12 mx-auto mb-4 text-nocta-400 dark:text-nocta-600" />
+								<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+									No Active Subscriptions
+								</h3>
+								<p className="text-nocta-600 dark:text-nocta-400">
+									There are currently no active WebSocket subscriptions.
+								</p>
+							</div>
+						</Card>
+					) : (
+						<WebSocketSubscriptions stats={stats} />
+					)}
+				</TabsContent>
 			</Tabs>
-
-			{/* Subscription Details */}
-			<WebSocketSubscriptions stats={stats} />
 
 			{/* Broadcast Message Dialog */}
 			<BroadcastDialog
-				open={broadcastDialogOpen}
-				onOpenChange={setBroadcastDialogOpen}
+				open={modals.broadcast || false}
+				onOpenChange={(open) =>
+					open ? openModal("broadcast") : closeModal("broadcast")
+				}
 				message={broadcastMessage}
 				onMessageChange={setBroadcastMessage}
 				onBroadcast={handleBroadcast}

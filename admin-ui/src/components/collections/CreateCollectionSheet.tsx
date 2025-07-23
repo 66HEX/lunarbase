@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,9 +28,8 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useToast } from "@/components/ui/toast";
+import { useCreateCollection } from "@/hooks/collections/useCollectionMutations";
 import { CustomApiError } from "@/lib/api";
-import { useCollectionsStore } from "@/stores/collections-persist.store";
 import type { CreateCollectionRequest, FieldDefinition } from "@/types/api";
 import { fieldTypeIcons, fieldTypeOptions } from "./constants";
 
@@ -44,9 +42,7 @@ export function CreateCollectionSheet({
 	isOpen,
 	onOpenChange,
 }: CreateCollectionSheetProps) {
-	const { createCollection } = useCollectionsStore();
-	const { toast } = useToast();
-	const queryClient = useQueryClient();
+	const createCollectionMutation = useCreateCollection();
 
 	const [submitting, setSubmitting] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
@@ -112,16 +108,6 @@ export function CreateCollectionSheet({
 
 		setFieldErrors(newErrors);
 
-		if (Object.keys(newErrors).length > 0) {
-			toast({
-				title: "Validation Error",
-				description: "Please fix the validation errors in the form",
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		}
-
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -136,10 +122,7 @@ export function CreateCollectionSheet({
 				schema: { fields },
 			};
 
-			await createCollection(request);
-
-			// Invalidate and refetch collections query
-			queryClient.invalidateQueries({ queryKey: ["collections"] });
+			await createCollectionMutation.mutateAsync(request);
 
 			// Reset form and close sheet
 			setCollectionName("");
@@ -153,14 +136,6 @@ export function CreateCollectionSheet({
 			]);
 			setFieldErrors({});
 			onOpenChange(false);
-
-			toast({
-				title: "Success!",
-				description: `Collection "${collectionName}" has been created successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
 		} catch (error) {
 			console.error("Collection creation error:", error);
 
@@ -175,14 +150,6 @@ export function CreateCollectionSheet({
 			} else if (error && typeof error === "object" && "message" in error) {
 				errorMessage = String(error.message);
 			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
 		} finally {
 			setSubmitting(false);
 		}

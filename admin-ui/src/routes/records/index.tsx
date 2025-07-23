@@ -1,28 +1,40 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Edit3, Search, Trash2 } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { Edit3, Trash2 } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
 	DeleteRecordDialog,
 	EditRecordSheet,
 	EmptyRecordsState,
+	RecordsHeader,
 } from "@/components/records";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
 import { useToast } from "@/components/ui/toast";
+import {
+	useDeleteRecord,
+	useUpdateRecord,
+} from "@/hooks/records/useRecordMutations";
 import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
+import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
 import { CustomApiError } from "@/lib/api";
-import { useCollections, useRecords } from "@/stores";
+import { useUI, useUIActions } from "@/stores/client.store";
 import type { Collection, RecordData, RecordWithCollection } from "@/types/api";
 
 export default function RecordsComponent() {
 	// Use stores and hooks
-	const { collections, fetchCollections } = useCollections();
-	const { searchTerm, currentPage, pageSize, setSearchTerm, setCurrentPage } =
-		useRecords();
+	const { data: collectionsData } = useCollectionsQuery();
+	const collections = collectionsData?.collections || [];
+
+	// Local state for pagination and search (replacing useRecords store)
+	const [searchTerm, setSearchTerm] = useState("");
+	const [currentPage, setCurrentPage] = useState(1);
+	const [pageSize] = useState(20);
+
+	const { modals, sheets } = useUI();
+	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
 
 	const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
 	const { data, isLoading, error, refetch } = useAllRecordsQuery({
@@ -31,14 +43,12 @@ export default function RecordsComponent() {
 		searchTerm,
 	});
 
-	const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
 	const [recordToDelete, setRecordToDelete] = useState<{
 		collectionName: string;
 		recordId: number;
 	} | null>(null);
 
 	// Edit sheet state
-	const [isEditSheetOpen, setIsEditSheetOpen] = useState(false);
 	const [editingRecord, setEditingRecord] =
 		useState<RecordWithCollection | null>(null);
 	const [editingCollection, setEditingCollection] = useState<Collection | null>(
@@ -47,25 +57,13 @@ export default function RecordsComponent() {
 
 	const { toast } = useToast();
 
+	// React Query mutations
+	const deleteRecordMutation = useDeleteRecord();
+	const updateRecordMutation = useUpdateRecord();
+
 	useEffect(() => {
 		setLocalSearchTerm(searchTerm);
 	}, [searchTerm]);
-
-	useEffect(() => {
-		fetchCollections().catch((error) => {
-			const errorMessage =
-				error instanceof CustomApiError
-					? error.message
-					: "Failed to fetch collections";
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		});
-	}, []);
 
 	useEffect(() => {
 		const timeoutId = setTimeout(() => {
@@ -79,7 +77,7 @@ export default function RecordsComponent() {
 	}, [localSearchTerm, searchTerm, setSearchTerm, setCurrentPage]);
 
 	useEffect(() => {
-		if (isEditSheetOpen && editingRecord) {
+		if (sheets.editRecord && editingRecord) {
 			const collection = collections.find(
 				(c) => c.name === editingRecord.collection_name,
 			);
@@ -87,7 +85,7 @@ export default function RecordsComponent() {
 				setEditingCollection(collection);
 			}
 		}
-	}, [isEditSheetOpen, editingRecord, collections]);
+	}, [sheets.editRecord, editingRecord, collections]);
 
 	// Handle query error
 	useEffect(() => {
@@ -111,113 +109,70 @@ export default function RecordsComponent() {
 		recordId: number,
 	) => {
 		setRecordToDelete({ collectionName, recordId });
-		setDeleteDialogOpen(true);
+		openModal("deleteRecord");
 	};
 
 	const confirmDeleteRecord = async () => {
 		if (!recordToDelete) return;
 
-		try {
-			const { recordsApi } = await import("@/lib/api");
-			await recordsApi.delete(
-				recordToDelete.collectionName,
-				recordToDelete.recordId,
-			);
-			setDeleteDialogOpen(false);
-			setRecordToDelete(null);
-
-			// Refetch data to update the list
-			refetch();
-
-			toast({
-				title: "Record deleted",
-				description: "Record has been deleted successfully.",
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		} catch (error) {
-			const errorMessage =
-				error instanceof CustomApiError
-					? error.message
-					: "Failed to delete record";
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-			setDeleteDialogOpen(false);
-			setRecordToDelete(null);
-		}
+		deleteRecordMutation.mutate(
+			{
+				collectionName: recordToDelete.collectionName,
+				recordId: recordToDelete.recordId,
+			},
+			{
+				onSuccess: () => {
+					closeModal("deleteRecord");
+					setRecordToDelete(null);
+					// Refetch data to update the list
+					refetch();
+				},
+				onError: () => {
+					closeModal("deleteRecord");
+					setRecordToDelete(null);
+				},
+			},
+		);
 	};
 
 	const cancelDeleteRecord = () => {
-		setDeleteDialogOpen(false);
+		closeModal("deleteRecord");
 		setRecordToDelete(null);
 	};
 
 	const handleEditRecord = (record: RecordWithCollection) => {
 		setEditingRecord(record);
-		setIsEditSheetOpen(true);
+		openSheet("editRecord");
 	};
 
 	const handleUpdateRecord = async (data: RecordData) => {
 		if (!editingRecord) return;
 
-		try {
-			const { recordsApi } = await import("@/lib/api");
-			await recordsApi.update(editingRecord.collection_name, editingRecord.id, {
-				data,
-			});
-
-			toast({
-				title: "Success!",
-				description: `Record has been updated successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 1000,
-			});
-
-			setEditingRecord(null);
-			setEditingCollection(null);
-
-			// Refetch data to update the list
-			refetch();
-		} catch (error) {
-			console.error("Record update error:", error);
-
-			let errorMessage = "Failed to update record";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 1000,
-			});
-
-			throw error; // Re-throw to let EditRecordSheet handle it
-		}
+		updateRecordMutation.mutate(
+			{
+				collectionName: editingRecord.collection_name,
+				recordId: editingRecord.id,
+				data: { data },
+			},
+			{
+				onSuccess: () => {
+					setEditingRecord(null);
+					setEditingCollection(null);
+					closeSheet("editRecord");
+					// Refetch data to update the list
+					refetch();
+				},
+				onError: (error) => {
+					closeSheet("editRecord");
+					throw error; // Re-throw to let EditRecordSheet handle it
+				},
+			},
+		);
 	};
 
 	const handlePageChange = (page: number) => {
 		setCurrentPage(page);
 	};
-
-	const handleSearchChange = useCallback(
-		(e: React.ChangeEvent<HTMLInputElement>) => {
-			setLocalSearchTerm(e.target.value);
-		},
-		[],
-	);
 
 	const formatFieldValue = (value: any): string => {
 		if (value === null || value === undefined) return "-";
@@ -340,38 +295,11 @@ export default function RecordsComponent() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
-			<div className="flex items-start justify-between">
-				<div className="space-y-1">
-					<div className="flex items-center gap-3">
-						<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">
-							All Records
-						</h1>
-						<Badge
-							variant="secondary"
-							className="px-2 py-0.5 text-xs font-medium"
-						>
-							{totalRecords} records
-						</Badge>
-					</div>
-					<p className="text-lg text-nocta-600 dark:text-nocta-400">
-						Browse and manage all records across collections
-					</p>
-				</div>
-				<div className="flex items-center gap-3">
-					<div className="relative max-w-md">
-						<Input
-							placeholder="Search records..."
-							leftIcon={
-								<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
-							}
-							value={localSearchTerm}
-							onChange={handleSearchChange}
-							className="pl-10"
-						/>
-					</div>
-				</div>
-			</div>
+			<RecordsHeader
+				totalRecords={totalRecords}
+				searchTerm={localSearchTerm}
+				onSearchChange={(value) => setLocalSearchTerm(value)}
+			/>
 
 			{/* Records Table */}
 			{allRecords.length > 0 || isLoading ? (
@@ -405,16 +333,20 @@ export default function RecordsComponent() {
 
 			{/* Delete Confirmation Dialog */}
 			<DeleteRecordDialog
-				open={deleteDialogOpen}
-				onOpenChange={setDeleteDialogOpen}
+				open={modals.deleteRecord || false}
+				onOpenChange={(open) =>
+					open ? openModal("deleteRecord") : closeModal("deleteRecord")
+				}
 				onConfirm={confirmDeleteRecord}
 				onCancel={cancelDeleteRecord}
 			/>
 
 			{/* Edit Record Sheet */}
 			<EditRecordSheet
-				open={isEditSheetOpen}
-				onOpenChange={setIsEditSheetOpen}
+				open={sheets.editRecord || false}
+				onOpenChange={(open) =>
+					open ? openSheet("editRecord") : closeSheet("editRecord")
+				}
 				record={editingRecord}
 				collection={editingCollection}
 				onSubmit={handleUpdateRecord}

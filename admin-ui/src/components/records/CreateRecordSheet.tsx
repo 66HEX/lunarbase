@@ -1,16 +1,4 @@
-import {
-	Braces,
-	Calendar,
-	Database,
-	FileText,
-	Hash,
-	Link as LinkIcon,
-	Mail,
-	Plus,
-	Save,
-	ToggleLeft,
-	Type,
-} from "lucide-react";
+import { Database, Plus, Save } from "lucide-react";
 import type React from "react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -31,18 +19,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
-
-const fieldTypeIcons = {
-	text: Type,
-	number: Hash,
-	boolean: ToggleLeft,
-	date: Calendar,
-	email: Mail,
-	url: LinkIcon,
-	json: Braces,
-	file: FileText,
-	relation: Database,
-};
+import {
+	fieldTypeIcons,
+	getDefaultFieldValue,
+	processFieldValue,
+	recordToastMessages,
+	validateFieldValue,
+} from "./constants";
 
 interface CreateRecordSheetProps {
 	open: boolean;
@@ -75,20 +58,10 @@ export function CreateRecordSheet({
 		const initialData: RecordData = {};
 		collection.schema?.fields?.forEach((field) => {
 			if (field.name !== "id") {
-				if (field.default_value !== null && field.default_value !== undefined) {
-					initialData[field.name] = field.default_value;
-				} else {
-					switch (field.field_type) {
-						case "boolean":
-							initialData[field.name] = false;
-							break;
-						case "number":
-							initialData[field.name] = "";
-							break;
-						default:
-							initialData[field.name] = "";
-					}
-				}
+				initialData[field.name] = getDefaultFieldValue(
+					field.field_type,
+					field.default_value,
+				);
 			}
 		});
 		setFormData(initialData);
@@ -110,61 +83,16 @@ export function CreateRecordSheet({
 			if (field.name === "id") return;
 
 			const value = formData[field.name];
-
-			if (
-				field.required &&
-				(value === "" || value === null || value === undefined)
-			) {
-				newErrors[field.name] = `${field.name} is required`;
-				return;
-			}
-
-			if (
-				!field.required &&
-				(value === "" || value === null || value === undefined)
-			) {
-				return;
-			}
-
-			switch (field.field_type) {
-				case "email":
-					if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
-						newErrors[field.name] = "Please enter a valid email address";
-					}
-					break;
-				case "url":
-					if (value && !/^https?:\/\/.+/.test(value)) {
-						newErrors[field.name] =
-							"Please enter a valid URL (starting with http:// or https://)";
-					}
-					break;
-				case "number":
-					if (value && isNaN(Number(value))) {
-						newErrors[field.name] = "Please enter a valid number";
-					}
-					break;
-				case "json":
-					if (value) {
-						try {
-							JSON.parse(value);
-						} catch {
-							newErrors[field.name] = "Please enter valid JSON";
-						}
-					}
-					break;
+			const error = validateFieldValue(field, value);
+			if (error) {
+				newErrors[field.name] = error;
 			}
 		});
 
 		setFieldErrors(newErrors);
 
 		if (Object.keys(newErrors).length > 0) {
-			toast({
-				title: "Validation Error",
-				description: "Please fix the validation errors below",
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
+			toast(recordToastMessages.validationError);
 		}
 
 		return Object.keys(newErrors).length === 0;
@@ -184,35 +112,12 @@ export function CreateRecordSheet({
 				collection.schema?.fields?.filter((field) => field.name !== "id") || [];
 
 			fieldsToProcess.forEach((field) => {
-				let value = formData[field.name];
-
-				switch (field.field_type) {
-					case "number":
-						if (value !== "" && value !== null && value !== undefined) {
-							value = Number(value);
-						} else if (!field.required) {
-							value = null;
-						}
-						break;
-					case "boolean":
-						value = Boolean(value);
-						break;
-					case "json":
-						if (value && typeof value === "string") {
-							try {
-								value = JSON.parse(value);
-							} catch {
-								// Keep as string if parsing fails
-							}
-						}
-						break;
-					default:
-						if (!field.required && value === "") {
-							value = null;
-						}
-				}
-
-				submitData[field.name] = value;
+				const value = formData[field.name];
+				submitData[field.name] = processFieldValue(
+					field.field_type,
+					value,
+					field.required,
+				);
 			});
 
 			await onSubmit(submitData);
@@ -299,7 +204,7 @@ export function CreateRecordSheet({
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetTrigger asChild>
-				<Button>
+				<Button className="w-full">
 					<Plus className="w-4 h-4 mr-2" />
 					Add Record
 				</Button>

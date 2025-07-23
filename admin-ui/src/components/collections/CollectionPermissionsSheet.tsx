@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Save, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
@@ -14,10 +13,13 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useToast } from "@/components/ui/toast";
+import { useSaveCollectionPermissions } from "@/hooks/collections/useCollectionMutations";
+import {
+	useAllRoleCollectionPermissions,
+	useRoles,
+} from "@/hooks/permissions/usePermissions";
+import { useUsers } from "@/hooks/users/useUsers";
 import { CustomApiError } from "@/lib/api";
-import { usePermissions, useUsers } from "@/stores";
-import { useCollectionsStore } from "@/stores/collections-persist.store";
 import type { Collection, CollectionPermissions } from "@/types/api";
 
 interface CollectionPermissionsSheetProps {
@@ -38,17 +40,16 @@ export function CollectionPermissionsSheet({
 	onOpenChange,
 	collection,
 }: CollectionPermissionsSheetProps) {
-	const { saveCollectionPermissions } = useCollectionsStore();
-	const { users, fetchUsers } = useUsers();
-	const {
-		fetchRoles,
-		fetchAllRolePermissionsForCollection,
-		roles,
-		collectionPermissions,
-		loading: permissionsLoading,
-	} = usePermissions();
-	const { toast } = useToast();
-	const queryClient = useQueryClient();
+	const saveCollectionPermissionsMutation = useSaveCollectionPermissions();
+	const { data: usersData } = useUsers();
+	const users = usersData?.users || [];
+	const { data: rolesData, isLoading: rolesLoading } = useRoles();
+	const roles = rolesData || [];
+	const { data: collectionPermissionsData, isLoading: permissionsLoading } =
+		useAllRoleCollectionPermissions(collection?.name || "", {
+			enabled: !!collection?.name && isOpen,
+		});
+	const collectionPermissions = collectionPermissionsData || {};
 
 	const [permissionsSubmitting, setPermissionsSubmitting] = useState(false);
 	const [rolePermissions, setRolePermissions] = useState<
@@ -126,20 +127,12 @@ export function CollectionPermissionsSheet({
 				user_permissions: filteredUserPermissions,
 			};
 
-			await saveCollectionPermissions(collection.name, permissions);
-
-			// Invalidate and refetch collections query
-			queryClient.invalidateQueries({ queryKey: ["collections"] });
+			await saveCollectionPermissionsMutation.mutateAsync({
+				collectionName: collection.name,
+				permissions,
+			});
 
 			onOpenChange(false);
-
-			toast({
-				title: "Success!",
-				description: `Permissions for "${collection.name}" have been saved successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
 		} catch (error) {
 			console.error("Permissions save error:", error);
 
@@ -154,63 +147,52 @@ export function CollectionPermissionsSheet({
 			} else if (error && typeof error === "object" && "message" in error) {
 				errorMessage = String(error.message);
 			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
 		} finally {
 			setPermissionsSubmitting(false);
 		}
 	};
 
-	// Initialize permissions when collection changes
+	// Initialize role permissions when data is loaded
 	useEffect(() => {
-		if (collection && isOpen) {
-			// Fetch roles if not already loaded
-			if (roles.length === 0) {
-				fetchRoles();
-			}
-
-			// Fetch permissions from backend
-			fetchAllRolePermissionsForCollection(collection.name);
-
-			// Fetch users if not already loaded
-			if (users.length === 0) {
-				fetchUsers();
-			}
+		if (roles.length > 0) {
+			// Initialize role permissions with default values
+			const initialRolePermissions: CollectionPermissions["role_permissions"] =
+				{};
+			roles.forEach((role: any) => {
+				initialRolePermissions[role.name] = {
+					can_create: false,
+					can_read: false,
+					can_update: false,
+					can_delete: false,
+					can_list: false,
+				};
+			});
+			setRolePermissions(initialRolePermissions);
 		}
-	}, [
-		collection,
-		isOpen,
-		roles.length,
-		users.length,
-		fetchRoles,
-		fetchAllRolePermissionsForCollection,
-		fetchUsers,
-	]);
+	}, [roles]);
 
 	// Update local state when permissions are loaded from backend
 	useEffect(() => {
-		if (collection && collectionPermissions[collection.name]) {
-			const backendPermissions = collectionPermissions[collection.name];
-
+		if (
+			collection &&
+			collectionPermissions &&
+			Object.keys(collectionPermissions).length > 0
+		) {
 			// Convert backend permissions to component format
 			const formattedRolePermissions: CollectionPermissions["role_permissions"] =
 				{};
 
-			Object.entries(backendPermissions).forEach(([roleName, permission]) => {
-				formattedRolePermissions[roleName] = {
-					can_create: permission.can_create,
-					can_read: permission.can_read,
-					can_update: permission.can_update,
-					can_delete: permission.can_delete,
-					can_list: permission.can_list,
-				};
-			});
+			Object.entries(collectionPermissions).forEach(
+				([roleName, permission]: [string, any]) => {
+					formattedRolePermissions[roleName] = {
+						can_create: permission.can_create,
+						can_read: permission.can_read,
+						can_update: permission.can_update,
+						can_delete: permission.can_delete,
+						can_list: permission.can_list,
+					};
+				},
+			);
 
 			setRolePermissions(formattedRolePermissions);
 			setUserPermissions(collection.permissions?.user_permissions || {});
@@ -248,7 +230,7 @@ export function CollectionPermissionsSheet({
 								Role-based Permissions
 							</h3>
 
-							{permissionsLoading ? (
+							{permissionsLoading || rolesLoading ? (
 								<div className="flex items-center justify-center py-8">
 									<Spinner className="w-6 h-6" />
 									<span className="ml-2 text-sm text-nocta-600 dark:text-nocta-400">

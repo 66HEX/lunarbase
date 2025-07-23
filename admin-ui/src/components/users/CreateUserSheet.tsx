@@ -1,4 +1,3 @@
-import { useQueryClient } from "@tanstack/react-query";
 import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -29,9 +28,15 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import { CustomApiError } from "@/lib/api";
-import { useUsersStore } from "@/stores/users-persist.store";
+import { useCreateUser } from "@/hooks/users/useUserMutations";
 import type { CreateUserRequest } from "@/types/api";
+import {
+	defaultUserFormData,
+	userFieldDescriptions,
+	userRoleOptions,
+	userValidationMessages,
+	userValidationPatterns,
+} from "./constants";
 
 interface CreateUserSheetProps {
 	isOpen: boolean;
@@ -42,45 +47,38 @@ export function CreateUserSheet({
 	isOpen,
 	onOpenChange,
 }: CreateUserSheetProps) {
-	const { createUser } = useUsersStore();
 	const { toast } = useToast();
-	const queryClient = useQueryClient();
+	const createUserMutation = useCreateUser();
 
-	const [submitting, setSubmitting] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-	const [formData, setFormData] = useState<CreateUserRequest>({
-		email: "",
-		password: "",
-		username: "",
-		role: "user",
-	});
+	const [formData, setFormData] =
+		useState<CreateUserRequest>(defaultUserFormData);
 
 	const validateForm = (): boolean => {
 		const newErrors: { [key: string]: string } = {};
 
 		if (!formData.email.trim()) {
-			newErrors.email = "Email is required";
-		} else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-			newErrors.email = "Please enter a valid email address";
+			newErrors.email = userValidationMessages.email.required;
+		} else if (!userValidationPatterns.email.test(formData.email)) {
+			newErrors.email = userValidationMessages.email.invalid;
 		}
 
 		if (!formData.password.trim()) {
-			newErrors.password = "Password is required";
+			newErrors.password = userValidationMessages.password.required;
 		} else if (formData.password.length < 8) {
-			newErrors.password = "Password must be at least 8 characters long";
+			newErrors.password = userValidationMessages.password.minLength;
 		}
 
 		if (
 			formData.username &&
 			formData.username.trim() &&
-			!/^[a-zA-Z0-9_]+$/.test(formData.username)
+			!userValidationPatterns.username.test(formData.username)
 		) {
-			newErrors.username =
-				"Username can only contain letters, numbers, and underscores";
+			newErrors.username = userValidationMessages.username.invalid;
 		}
 
 		if (!formData.role) {
-			newErrors.role = "Role is required";
+			newErrors.role = userValidationMessages.role.required;
 		}
 
 		setFieldErrors(newErrors);
@@ -101,63 +99,24 @@ export function CreateUserSheet({
 	const handleCreateUser = async () => {
 		if (!validateForm()) return;
 
-		setSubmitting(true);
+		const userData: CreateUserRequest = {
+			email: formData.email.trim(),
+			password: formData.password,
+			username: formData.username?.trim() || undefined,
+			role: formData.role,
+		};
 
-		try {
-			const userData: CreateUserRequest = {
-				email: formData.email.trim(),
-				password: formData.password,
-				username: formData.username?.trim() || undefined,
-				role: formData.role,
-			};
-
-			await createUser(userData);
-
-			// Invalidate and refetch users query
-			queryClient.invalidateQueries({ queryKey: ["users"] });
-
-			// Reset form and close sheet
-			setFormData({
-				email: "",
-				password: "",
-				username: "",
-				role: "user",
-			});
-			setFieldErrors({});
-			onOpenChange(false);
-
-			toast({
-				title: "Success!",
-				description: `User "${formData.email}" has been created successfully.`,
-				variant: "success",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		} catch (error) {
-			console.error("User creation error:", error);
-
-			let errorMessage = "Failed to create user";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			} else if (error && typeof error === "object" && "message" in error) {
-				errorMessage = String(error.message);
-			}
-
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 5000,
-			});
-		} finally {
-			setSubmitting(false);
-		}
+		createUserMutation.mutate(userData, {
+			onSuccess: () => {
+				// Reset form and close sheet
+				setFormData(defaultUserFormData);
+				setFieldErrors({});
+				onOpenChange(false);
+			},
+			onError: () => {
+				// Error handling is done in the mutation hook
+			},
+		});
 	};
 
 	const updateFormData = (field: keyof CreateUserRequest, value: string) => {
@@ -171,12 +130,7 @@ export function CreateUserSheet({
 	// Reset form when sheet opens
 	useEffect(() => {
 		if (isOpen) {
-			setFormData({
-				email: "",
-				password: "",
-				username: "",
-				role: "user",
-			});
+			setFormData(defaultUserFormData);
 			setFieldErrors({});
 		}
 	}, [isOpen]);
@@ -214,9 +168,7 @@ export function CreateUserSheet({
 										variant={fieldErrors.email ? "error" : "default"}
 									/>
 								</FormControl>
-								<FormDescription>
-									This will be used for login and notifications
-								</FormDescription>
+								<FormDescription>{userFieldDescriptions.email}</FormDescription>
 								<FormMessage />
 							</FormField>
 
@@ -233,7 +185,7 @@ export function CreateUserSheet({
 									/>
 								</FormControl>
 								<FormDescription>
-									Optional. Can contain letters, numbers, and underscores
+									{userFieldDescriptions.username}
 								</FormDescription>
 								<FormMessage />
 							</FormField>
@@ -252,7 +204,7 @@ export function CreateUserSheet({
 									/>
 								</FormControl>
 								<FormDescription>
-									Must be at least 8 characters long
+									{userFieldDescriptions.password}
 								</FormDescription>
 								<FormMessage />
 							</FormField>
@@ -271,15 +223,15 @@ export function CreateUserSheet({
 											<SelectValue placeholder="Select a role" />
 										</SelectTrigger>
 										<SelectContent>
-											<SelectItem value="user">User</SelectItem>
-											<SelectItem value="admin">Admin</SelectItem>
-											<SelectItem value="guest">Guest</SelectItem>
+											{userRoleOptions.map((option) => (
+												<SelectItem key={option.value} value={option.value}>
+													{option.label}
+												</SelectItem>
+											))}
 										</SelectContent>
 									</Select>
 								</FormControl>
-								<FormDescription>
-									Determines the user's permissions in the system
-								</FormDescription>
+								<FormDescription>{userFieldDescriptions.role}</FormDescription>
 								<FormMessage />
 							</FormField>
 						</div>
@@ -292,10 +244,10 @@ export function CreateUserSheet({
 					</SheetClose>
 					<Button
 						type="submit"
-						disabled={submitting}
+						disabled={createUserMutation.isPending}
 						onClick={handleCreateUser}
 					>
-						{submitting ? (
+						{createUserMutation.isPending ? (
 							<>
 								<Spinner size="sm" className="mr-2" />
 								Creating...

@@ -35,7 +35,6 @@ export function WebSocketStatsCard({
 		return "text-nocta-500 dark:text-nocta-400";
 	};
 
-
 	return (
 		<Card className="h-full">
 			<CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
