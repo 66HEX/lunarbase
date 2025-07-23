@@ -203,6 +203,32 @@ impl JwtService {
         Ok(())
     }
 
+    /// Add token to blacklist by JTI (for when we already have claims)
+    pub fn blacklist_token_by_jti(
+        &self,
+        jti: &str,
+        user_id: i32,
+        token_type: &str,
+        expires_at: NaiveDateTime,
+        reason: Option<String>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let mut conn = self.pool.get()?;
+
+        let new_blacklisted_token = crate::models::NewBlacklistedToken {
+            jti: jti.to_string(),
+            user_id,
+            token_type: token_type.to_string(),
+            expires_at,
+            reason,
+        };
+
+        diesel::insert_into(blacklisted_tokens::table)
+            .values(&new_blacklisted_token)
+            .execute(&mut conn)?;
+
+        Ok(())
+    }
+
     /// Validate access token with blacklist check
     pub fn validate_access_token_with_blacklist(&self, token: &str) -> Result<Claims, AuthError> {
         let claims = self.validate_access_token(token)?;

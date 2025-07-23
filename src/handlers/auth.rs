@@ -156,10 +156,13 @@ pub async fn logout(
 ) -> Result<(HeaderMap, Json<ApiResponse<LogoutResponse>>), AuthError> {
     // Get the current access token from the JWT ID in claims
     // Since we have the claims, we can blacklist using the JTI
+    let expires_at = crate::utils::jwt_service::JwtService::timestamp_to_naive_datetime(claims.exp);
+    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::InternalError)?;
+    
     app_state
         .auth_state
         .jwt_service
-        .blacklist_token(&claims.jti, "access", Some("User logout".to_string()))
+        .blacklist_token_by_jti(&claims.jti, user_id, "access", expires_at, Some("User logout".to_string()))
         .map_err(|_| AuthError::InternalError)?;
 
     // Try to get refresh token from cookie and blacklist it
