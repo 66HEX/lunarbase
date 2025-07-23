@@ -1,1 +1,5 @@
+.vercel
+.env
+.env.local
+.env.*.local
 /target
