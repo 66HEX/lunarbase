@@ -39,6 +39,7 @@ export interface LoginRequest {
 
 export interface LoginResponse {
 	user: User;
+	expires_in: number;
 }
 
 export interface RegisterRequest {
