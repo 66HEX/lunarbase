@@ -27,7 +27,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
-import { Textarea } from "@/components/ui/textarea";
+import { JsonEditor } from "@/components/ui/json-editor";
 import { useCollections } from "@/hooks/collections/useCollections";
 import type {
 	Collection,
@@ -187,15 +187,14 @@ export function EditRecordSheet({
 							</span>
 						</div>
 					) : field.field_type === "json" ? (
-						<Textarea
+						<JsonEditor
 							placeholder={`Enter JSON data for ${field.name}`}
 							value={
 								typeof value === "string"
 									? value
 									: JSON.stringify(value, null, 2)
 							}
-							onChange={(e) => updateFormData(field.name, e.target.value)}
-							className="w-full"
+							onChange={(newValue) => updateFormData(field.name, newValue)}
 							variant={hasError ? "error" : "default"}
 							rows={4}
 						/>

@@ -23,7 +23,7 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { Textarea } from "@/components/ui/textarea";
+import { JsonEditor } from "@/components/ui/json-editor";
 import { useToast } from "@/components/ui/toast";
 import { useCollections } from "@/hooks/collections/useCollections";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
@@ -176,15 +176,14 @@ export function CreateRecordSheet({
 							</span>
 						</div>
 					) : field.field_type === "json" ? (
-						<Textarea
+						<JsonEditor
 							placeholder={`Enter JSON data for ${field.name}`}
 							value={
 								typeof value === "string"
 									? value
 									: JSON.stringify(value, null, 2)
 							}
-							onChange={(e) => updateFormData(field.name, e.target.value)}
-							className="w-full"
+							onChange={(newValue) => updateFormData(field.name, newValue)}
 							variant={hasError ? "error" : "default"}
 							rows={4}
 						/>

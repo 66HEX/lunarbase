@@ -292,13 +292,19 @@ impl CollectionService {
             FieldType::Text
             | FieldType::Email
             | FieldType::Url
-            | FieldType::Json
             | FieldType::File
             | FieldType::Relation => {
                 if let Some(s) = value.as_str() {
                     format!("'{}'", s.replace("'", "''"))
                 } else {
                     "NULL".to_string()
+                }
+            }
+            FieldType::Json => {
+                // For JSON fields, serialize the entire value to a JSON string
+                match serde_json::to_string(value) {
+                    Ok(json_str) => format!("'{}'", json_str.replace("'", "''")),
+                    Err(_) => "NULL".to_string(),
                 }
             }
             FieldType::Number => {
@@ -379,7 +385,6 @@ impl CollectionService {
                 FieldType::Text
                 | FieldType::Email
                 | FieldType::Url
-                | FieldType::Json
                 | FieldType::File
                 | FieldType::Relation => {
                     #[derive(Debug, diesel::QueryableByName)]
@@ -401,6 +406,35 @@ impl CollectionService {
                             .as_ref()
                             .map(|s| Value::String(s.clone()))
                             .unwrap_or(Value::Null)
+                    } else {
+                        Value::Null
+                    }
+                }
+                FieldType::Json => {
+                    #[derive(Debug, diesel::QueryableByName)]
+                    struct JsonField {
+                        #[diesel(sql_type = Nullable<Text>)]
+                        value: Option<String>,
+                    }
+
+                    let query_with_alias = format!(
+                        "SELECT {} as value FROM {} WHERE id = {}",
+                        field.name, table_name, base_row.id
+                    );
+                    let result: Vec<JsonField> = diesel::sql_query(&query_with_alias)
+                        .load(conn)
+                        .map_err(|_| AuthError::InternalError)?;
+
+                    if let Some(row) = result.first() {
+                        if let Some(json_str) = &row.value {
+                            // Try to parse the JSON string back to a Value
+                            match serde_json::from_str(json_str) {
+                                Ok(json_value) => json_value,
+                                Err(_) => Value::String(json_str.clone()), // Fallback to string if parsing fails
+                            }
+                        } else {
+                            Value::Null
+                        }
                     } else {
                         Value::Null
                     }
