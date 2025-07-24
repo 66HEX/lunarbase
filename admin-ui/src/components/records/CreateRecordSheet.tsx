@@ -6,6 +6,13 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
 	Sheet,
 	SheetClose,
 	SheetContent,
@@ -18,6 +25,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/toast";
+import { useCollections } from "@/hooks/collections/useCollections";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
 import {
 	fieldTypeIcons,
@@ -44,6 +52,10 @@ export function CreateRecordSheet({
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [formData, setFormData] = useState<RecordData>({});
 	const { toast } = useToast();
+	const { data: collectionsData } = useCollections();
+
+	// Get available collections for relation fields
+	const availableCollections = collectionsData?.collections || [];
 
 	useEffect(() => {
 		if (open && collection) {
@@ -176,6 +188,22 @@ export function CreateRecordSheet({
 							variant={hasError ? "error" : "default"}
 							rows={4}
 						/>
+					) : field.field_type === "relation" ? (
+						<Select
+							value={value}
+							onValueChange={(selectedValue) => updateFormData(field.name, selectedValue)}
+						>
+							<SelectTrigger className={`w-full ${hasError ? "border-red-500" : ""}`}>
+								<SelectValue placeholder={`Select ${field.name}`} />
+							</SelectTrigger>
+							<SelectContent>
+								{availableCollections.map((col) => (
+									<SelectItem key={col.id} value={col.id.toString()}>
+										{col.display_name || col.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					) : (
 						<Input
 							type={
@@ -204,7 +232,7 @@ export function CreateRecordSheet({
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
 			<SheetTrigger asChild>
-				<Button className="w-full">
+				<Button className="w-full whitespace-nowrap">
 					<Plus className="w-4 h-4 mr-2" />
 					Add Record
 				</Button>

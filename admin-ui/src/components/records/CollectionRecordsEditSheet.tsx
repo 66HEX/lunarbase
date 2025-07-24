@@ -24,6 +24,13 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
+import {
 	Sheet,
 	SheetClose,
 	SheetContent,
@@ -34,6 +41,7 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
+import { useCollections } from "@/hooks/collections/useCollections";
 import type {
 	ApiRecord,
 	Collection,
@@ -68,9 +76,13 @@ export function CollectionRecordsEditSheet({
 	collection,
 	onSubmit,
 }: CollectionRecordsEditSheetProps) {
+	const { data: collectionsData } = useCollections();
 	const [submitting, setSubmitting] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [formData, setFormData] = useState<RecordData>({});
+
+	// Get available collections for relation fields
+	const availableCollections = collectionsData?.collections || [];
 
 	useEffect(() => {
 		if (open && record && collection) {
@@ -273,6 +285,22 @@ export function CollectionRecordsEditSheet({
 							variant={hasError ? "error" : "default"}
 							rows={4}
 						/>
+					) : field.field_type === "relation" ? (
+						<Select
+							value={value}
+							onValueChange={(selectedValue) => updateFormData(field.name, selectedValue)}
+						>
+							<SelectTrigger className={`w-full ${hasError ? "border-red-500" : ""}`}>
+								<SelectValue placeholder={`Select ${field.name}`} />
+							</SelectTrigger>
+							<SelectContent>
+								{availableCollections.map((col) => (
+									<SelectItem key={col.id} value={col.id.toString()}>
+										{col.display_name || col.name}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
 					) : (
 						<Input
 							type={
