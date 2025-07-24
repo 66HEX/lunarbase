@@ -174,11 +174,21 @@ export default function RecordsComponent() {
 		setCurrentPage(page);
 	};
 
-	const formatFieldValue = (value: any): string => {
+	const formatFieldValue = (value: any, maxLength: number = 50): string => {
 		if (value === null || value === undefined) return "-";
 		if (typeof value === "boolean") return value ? "Yes" : "No";
-		if (typeof value === "object") return JSON.stringify(value);
-		return String(value);
+		if (typeof value === "object") {
+			const jsonString = JSON.stringify(value);
+			if (jsonString.length > maxLength) {
+				return jsonString.substring(0, maxLength) + "...";
+			}
+			return jsonString;
+		}
+		const stringValue = String(value);
+		if (stringValue.length > maxLength) {
+			return stringValue.substring(0, maxLength) + "...";
+		}
+		return stringValue;
 	};
 
 	// Get records from query

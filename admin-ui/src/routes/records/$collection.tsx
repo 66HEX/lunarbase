@@ -32,11 +32,21 @@ import type { ApiRecord, Collection, RecordData } from "@/types/api";
 type Record = ApiRecord;
 
 // Helper function for formatting field values
-const formatFieldValue = (value: any): string => {
+const formatFieldValue = (value: any, maxLength: number = 50): string => {
 	if (value === null || value === undefined) return "-";
 	if (typeof value === "boolean") return value ? "Yes" : "No";
-	if (typeof value === "object") return JSON.stringify(value);
-	return String(value);
+	if (typeof value === "object") {
+		const jsonString = JSON.stringify(value);
+		if (jsonString.length > maxLength) {
+			return jsonString.substring(0, maxLength) + "...";
+		}
+		return jsonString;
+	}
+	const stringValue = String(value);
+	if (stringValue.length > maxLength) {
+		return stringValue.substring(0, maxLength) + "...";
+	}
+	return stringValue;
 };
 
 export default function RecordComponent() {
@@ -287,108 +297,110 @@ export default function RecordComponent() {
 			{/* Records Table */}
 			{records.length > 0 || isLoading ? (
 				<div className="space-y-4">
-					<Table<ApiRecord>
-						columns={[
-							{
-								key: "id",
-								title: "ID",
-								className: "w-16",
-								render: (
-									_value: unknown,
-									record: ApiRecord,
-									_index: number,
-								) => <div className="font-medium">{record.id}</div>,
-							},
-							{
-								key: "data",
-								title: "Data",
-								render: (
-									_value: unknown,
-									record: ApiRecord,
-									_index: number,
-								) => (
-									<div className="flex gap-4">
-										{Object.entries(record.data)
-											.slice(1, 3)
-											.map(([key, value]) => (
-												<div key={key} className="text-sm">
-													<span className="font-medium text-nocta-700 dark:text-nocta-300">
-														{key}:
-													</span>{" "}
-													<span className="text-nocta-600 dark:text-nocta-400 truncate">
-														{formatFieldValue(value)}
-													</span>
+					<div className="overflow-x-auto">
+						<Table<ApiRecord>
+							columns={[
+								{
+									key: "id",
+									title: "ID",
+									className: "w-16",
+									render: (
+										_value: unknown,
+										record: ApiRecord,
+										_index: number,
+									) => <div className="font-medium">{record.id}</div>,
+								},
+								{
+									key: "data",
+									title: "Data",
+									render: (
+										_value: unknown,
+										record: ApiRecord,
+										_index: number,
+									) => (
+										<div className="flex gap-4">
+											{Object.entries(record.data)
+												.slice(1, 3)
+												.map(([key, value]) => (
+													<div key={key} className="text-sm">
+														<span className="font-medium text-nocta-700 dark:text-nocta-300">
+															{key}:
+														</span>{" "}
+														<span className="text-nocta-600 dark:text-nocta-400 truncate">
+															{formatFieldValue(value)}
+														</span>
+													</div>
+												))}
+											{Object.keys(record.data).length > 3 && (
+												<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
+													+{Object.keys(record.data).length - 3} more fields
 												</div>
-											))}
-										{Object.keys(record.data).length > 3 && (
-											<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1 truncate">
-												+{Object.keys(record.data).length - 3} more fields
+											)}
+										</div>
+									),
+								},
+								{
+									key: "created_at",
+									title: "Created",
+									className: "w-32",
+									render: (
+										_value: unknown,
+										record: ApiRecord,
+										_index: number,
+									) => (
+										<div className="text-sm">
+											<div className="text-nocta-900 dark:text-nocta-100">
+												{new Date(record.created_at).toLocaleDateString()}
 											</div>
-										)}
-									</div>
-								),
-							},
-							{
-								key: "created_at",
-								title: "Created",
-								className: "w-32",
-								render: (
-									_value: unknown,
-									record: ApiRecord,
-									_index: number,
-								) => (
-									<div className="text-sm">
-										<div className="text-nocta-900 dark:text-nocta-100">
-											{new Date(record.created_at).toLocaleDateString()}
+											<div className="text-nocta-500 dark:text-nocta-500">
+												{new Date(record.created_at).toLocaleTimeString()}
+											</div>
 										</div>
-										<div className="text-nocta-500 dark:text-nocta-500">
-											{new Date(record.created_at).toLocaleTimeString()}
+									),
+								},
+								{
+									key: "actions",
+									title: "Actions",
+									className: "w-24",
+									align: "left",
+									render: (
+										_value: unknown,
+										record: ApiRecord,
+										_index: number,
+									) => (
+										<div className="flex items-center gap-1">
+											<Button
+												variant="ghost"
+												size="sm"
+												className="w-8 h-8 p-0"
+												onClick={() => handleEditRecord(record)}
+												title="Edit record"
+											>
+												<Edit3 className="w-4 h-4" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+												onClick={() => handleDeleteRecord(record.id)}
+												title="Delete record"
+											>
+												<Trash2 className="w-4 h-4" />
+											</Button>
 										</div>
-									</div>
-								),
-							},
-							{
-								key: "actions",
-								title: "Actions",
-								className: "w-24",
-								align: "left",
-								render: (
-									_value: unknown,
-									record: ApiRecord,
-									_index: number,
-								) => (
-									<div className="flex items-center gap-1">
-										<Button
-											variant="ghost"
-											size="sm"
-											className="w-8 h-8 p-0"
-											onClick={() => handleEditRecord(record)}
-											title="Edit record"
-										>
-											<Edit3 className="w-4 h-4" />
-										</Button>
-										<Button
-											variant="ghost"
-											size="sm"
-											className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-											onClick={() => handleDeleteRecord(record.id)}
-											title="Delete record"
-										>
-											<Trash2 className="w-4 h-4" />
-										</Button>
-									</div>
-								),
-							},
-						]}
-						data={records}
-						loading={isLoading}
-						pagination={{
-							current: currentPage,
-							pageSize: pageSize,
-							total: totalCount,
-							onChange: handlePageChange,
-						}}
-					/>
+									),
+								},
+							]}
+							data={records}
+							loading={isLoading}
+							pagination={{
+								current: currentPage,
+								pageSize: pageSize,
+								total: totalCount,
+								onChange: handlePageChange,
+							}}
+						/>
+					</div>
 					{/* Subtle loading indicator for pagination */}
 					{isLoading && (
 						<div className="flex items-center justify-center py-2">

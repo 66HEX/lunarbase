@@ -1,12 +1,12 @@
 import { cva, type VariantProps } from "class-variance-authority";
-import { Check, Copy, Eye, EyeOff, RotateCcw } from "lucide-react";
+import { Check, Copy, RotateCcw } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
-import { Button } from "./button";
 import { cn } from "@/lib/utils";
+import { Button } from "./button";
 
 const jsonEditorVariants = cva(
 	[
-		"w-full h-96 rounded-lg border transition-all duration-200 ease-in-out",
+		"w-full h-120 rounded-lg border transition-all duration-200 ease-in-out",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
 		"focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50",
 		"disabled:opacity-50 disabled:cursor-not-allowed",
@@ -79,7 +79,10 @@ const labelVariants = cva("block text-sm font-medium mb-1.5", {
 });
 
 export interface JsonEditorProps
-	extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, "size" | "onChange">,
+	extends Omit<
+			React.TextareaHTMLAttributes<HTMLTextAreaElement>,
+			"size" | "onChange"
+		>,
 		VariantProps<typeof jsonEditorVariants> {
 	value: string;
 	onChange: (value: string) => void;
@@ -112,7 +115,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 	const [isValid, setIsValid] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [isFormatted, setIsFormatted] = useState(false);
-	const [showPreview, setShowPreview] = useState(false);
+
 	const [copied, setCopied] = useState(false);
 
 	// Validate JSON
@@ -179,19 +182,16 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 		validateJson(value);
 	}, [value, validateJson]);
 
-	// Parse for preview
-	const parsedValue = React.useMemo(() => {
-		if (!value.trim() || !isValid) return null;
-		try {
-			return JSON.parse(value);
-		} catch {
-			return null;
-		}
-	}, [value, isValid]);
+
 
 	// Determine the effective variant
-	const effectiveVariant = !isValid ? "error" : isValid && value.trim() ? "success" : variant;
-	const displayErrorMessage = (variant === "error" && errorMessage) || (!isValid && error);
+	const effectiveVariant = !isValid
+		? "error"
+		: isValid && value.trim()
+			? "success"
+			: variant;
+	const displayErrorMessage =
+		(variant === "error" && errorMessage) || (!isValid && error);
 	const displaySuccessMessage = variant === "success" && successMessage;
 
 	return (
@@ -220,23 +220,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 						)}
 					</div>
 					<div className="flex items-center gap-1">
-						<Button
-							type="button"
-							variant="icon"
-							size="sm"
-							onClick={() => setShowPreview(!showPreview)}
-							disabled={!isValid || !value.trim()}
-							className={cn(
-								"transition-opacity duration-200",
-								!value.trim() && "opacity-30 pointer-events-none"
-							)}
-						>
-							{showPreview ? (
-								<EyeOff className="w-4 h-4" />
-							) : (
-								<Eye className="w-4 h-4" />
-							)}
-						</Button>
+
 						<Button
 							type="button"
 							variant="icon"
@@ -245,7 +229,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 							disabled={!isValid || readOnly || !value.trim()}
 							className={cn(
 								"transition-opacity duration-200",
-								!value.trim() && "opacity-30 pointer-events-none"
+								!value.trim() && "opacity-30 pointer-events-none",
 							)}
 						>
 							{isFormatted ? (
@@ -262,7 +246,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 							disabled={!value.trim()}
 							className={cn(
 								"transition-opacity duration-200",
-								!value.trim() && "opacity-30 pointer-events-none"
+								!value.trim() && "opacity-30 pointer-events-none",
 							)}
 						>
 							{copied ? (
@@ -279,7 +263,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 							disabled={readOnly || !value.trim()}
 							className={cn(
 								"transition-opacity duration-200",
-								!value.trim() && "opacity-30 pointer-events-none"
+								!value.trim() && "opacity-30 pointer-events-none",
 							)}
 						>
 							<RotateCcw className="w-4 h-4" />
@@ -295,7 +279,10 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 				rows={rows}
 				disabled={disabled}
 				readOnly={readOnly}
-				className={cn(jsonEditorVariants({ variant: effectiveVariant, size }), className)}
+				className={cn(
+					jsonEditorVariants({ variant: effectiveVariant, size }),
+					className,
+				)}
 				{...props}
 			/>
 
@@ -313,18 +300,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 				<p className={messageVariants({ type: "helper" })}>{helperText}</p>
 			)}
 
-			{showPreview && parsedValue && (
-				<div className="mt-3">
-					<div className="text-sm font-medium text-nocta-700 dark:text-nocta-300 mb-2">
-						Preview:
-					</div>
-					<div className="p-3 bg-nocta-100 dark:bg-nocta-800/50 rounded-lg border border-nocta-200 dark:border-nocta-700">
-						<pre className="text-xs text-nocta-800 dark:text-nocta-200 whitespace-pre-wrap break-words font-mono">
-							{JSON.stringify(parsedValue, null, 2)}
-						</pre>
-					</div>
-				</div>
-			)}
+
 		</div>
 	);
-}
+};

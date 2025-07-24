@@ -23,6 +23,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { JsonEditor } from "@/components/ui/json-editor";
 import {
 	Select,
 	SelectContent,
@@ -40,7 +41,6 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { JsonEditor } from "@/components/ui/json-editor";
 import { useCollections } from "@/hooks/collections/useCollections";
 import type {
 	ApiRecord,
@@ -287,9 +287,13 @@ export function CollectionRecordsEditSheet({
 					) : field.field_type === "relation" ? (
 						<Select
 							value={value}
-							onValueChange={(selectedValue) => updateFormData(field.name, selectedValue)}
+							onValueChange={(selectedValue) =>
+								updateFormData(field.name, selectedValue)
+							}
 						>
-							<SelectTrigger className={`w-full ${hasError ? "border-red-500" : ""}`}>
+							<SelectTrigger
+								className={`w-full ${hasError ? "border-red-500" : ""}`}
+							>
 								<SelectValue placeholder={`Select ${field.name}`} />
 							</SelectTrigger>
 							<SelectContent>

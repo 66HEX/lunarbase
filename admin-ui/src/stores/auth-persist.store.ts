@@ -173,14 +173,14 @@ export const useAuthStore = create<AuthStore>()(
 					const timer = setTimeout(async () => {
 						try {
 							const refreshResponse = await authApi.refresh();
-							
+
 							// Start next refresh cycle if expires_in is available
 							if (refreshResponse?.expires_in) {
 								get().startTokenRefresh(refreshResponse.expires_in);
 							}
 						} catch (error) {
 							// If refresh fails, logout user
-							console.error('Token refresh failed:', error);
+							console.error("Token refresh failed:", error);
 							get().logout();
 						}
 					}, refreshTime);
