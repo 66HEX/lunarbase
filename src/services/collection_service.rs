@@ -221,6 +221,86 @@ impl CollectionService {
         Ok(())
     }
 
+    fn update_records_table_schema(
+        &self,
+        conn: &mut SqliteConnection,
+        collection_name: &str,
+        old_schema: &CollectionSchema,
+        new_schema: &CollectionSchema,
+    ) -> Result<(), AuthError> {
+        let table_name = self.get_records_table_name(collection_name);
+        
+        // Create map for easier comparison
+        let old_fields: std::collections::HashMap<String, &FieldDefinition> = 
+            old_schema.fields.iter().map(|f| (f.name.clone(), f)).collect();
+        
+        // Add new columns
+        for field in &new_schema.fields {
+            if !old_fields.contains_key(&field.name) && field.name.to_lowercase() != "id" {
+                let field_type = self.map_field_type_to_sql(&field.field_type);
+                let not_null = if field.required { " NOT NULL" } else { "" };
+                
+                let default_clause = if let Some(default_value) = &field.default_value {
+                    match field.field_type {
+                        FieldType::Text | FieldType::Email | FieldType::Url => {
+                            if let Some(s) = default_value.as_str() {
+                                format!(" DEFAULT '{}'", s.replace("'", "''"))
+                            } else {
+                                String::new()
+                            }
+                        }
+                        FieldType::Number => {
+                            if let Some(n) = default_value.as_f64() {
+                                format!(" DEFAULT {}", n)
+                            } else {
+                                String::new()
+                            }
+                        }
+                        FieldType::Boolean => {
+                            if let Some(b) = default_value.as_bool() {
+                                format!(" DEFAULT {}", if b { "1" } else { "0" })
+                            } else {
+                                String::new()
+                            }
+                        }
+                        _ => String::new(),
+                    }
+                } else if field.required {
+                    // For required fields without default, provide a sensible default
+                    match field.field_type {
+                        FieldType::Text | FieldType::Email | FieldType::Url | FieldType::File | FieldType::Relation => " DEFAULT ''".to_string(),
+                        FieldType::Number => " DEFAULT 0".to_string(),
+                        FieldType::Boolean => " DEFAULT 0".to_string(),
+                        FieldType::Json => " DEFAULT '{}'".to_string(),
+                        FieldType::Date => " DEFAULT CURRENT_TIMESTAMP".to_string(),
+                    }
+                } else {
+                    String::new()
+                };
+                
+                let add_column_sql = format!(
+                    "ALTER TABLE {} ADD COLUMN {} {}{}{}",
+                    table_name, field.name, field_type, not_null, default_clause
+                );
+                
+                tracing::debug!("Adding column with SQL: {}", add_column_sql);
+                diesel::sql_query(&add_column_sql)
+                    .execute(conn)
+                    .map_err(|e| {
+                        tracing::error!("Failed to add column {}: {:?}", field.name, e);
+                        AuthError::InternalError
+                    })?;
+            }
+        }
+        
+        // Note: SQLite doesn't support dropping columns directly
+        // For removed fields, we'll leave them in the table but they won't be used
+        // This is safer and avoids data loss
+        
+        tracing::debug!("Schema update completed for table: {}", table_name);
+        Ok(())
+    }
+
     // Create default permissions for a collection
     async fn create_default_permissions(&self, collection_id: i32) -> Result<(), AuthError> {
         if let Some(permission_service) = &self.permission_service {
@@ -376,11 +456,6 @@ impl CollectionService {
         let table_name = self.get_records_table_name(collection_name);
 
         for field in &schema.fields {
-            let _field_query = format!(
-                "SELECT {} FROM {} WHERE id = {}",
-                field.name, table_name, base_row.id
-            );
-
             let field_value = match field.field_type {
                 FieldType::Text
                 | FieldType::Email
@@ -742,9 +817,16 @@ impl CollectionService {
             schema_json: None,
         };
 
-        // If schema is being updated, validate it
+        // If schema is being updated, validate it and update table structure
         if let Some(schema) = request.schema {
             self.validate_schema(&schema)?;
+            
+            // Get current schema for comparison
+            let current_schema = collection.get_schema().map_err(|_| AuthError::InternalError)?;
+            
+            // Update table structure if schema changed
+            self.update_records_table_schema(&mut conn, &collection.name, &current_schema, &schema)?;
+            
             update.schema_json =
                 Some(serde_json::to_string(&schema).map_err(|_| AuthError::InternalError)?);
         }

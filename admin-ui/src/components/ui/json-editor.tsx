@@ -6,7 +6,7 @@ import { cn } from "@/lib/utils";
 
 const jsonEditorVariants = cva(
 	[
-		"w-full rounded-lg border transition-all duration-200 ease-in-out",
+		"w-full h-96 rounded-lg border transition-all duration-200 ease-in-out",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
 		"focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50",
 		"disabled:opacity-50 disabled:cursor-not-allowed",
@@ -220,57 +220,70 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 						)}
 					</div>
 					<div className="flex items-center gap-1">
-						{value.trim() && (
-							<>
-								<Button
-									type="button"
-									variant="icon"
-									size="sm"
-									onClick={() => setShowPreview(!showPreview)}
-									disabled={!isValid}
-								>
-									{showPreview ? (
-										<EyeOff className="w-4 h-4" />
-									) : (
-										<Eye className="w-4 h-4" />
-									)}
-								</Button>
-								<Button
-									type="button"
-									variant="icon"
-									size="sm"
-									onClick={formatJson}
-									disabled={!isValid || readOnly}
-								>
-									{isFormatted ? (
-										<Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-									) : (
-										"{ }"
-									)}
-								</Button>
-								<Button
-									type="button"
-									variant="icon"
-									size="sm"
-									onClick={copyToClipboard}
-								>
-									{copied ? (
-										<Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-									) : (
-										<Copy className="w-4 h-4" />
-									)}
-								</Button>
-								<Button
-									type="button"
-									variant="icon"
-									size="sm"
-									onClick={resetJson}
-									disabled={readOnly}
-								>
-									<RotateCcw className="w-4 h-4" />
-								</Button>
-							</>
-						)}
+						<Button
+							type="button"
+							variant="icon"
+							size="sm"
+							onClick={() => setShowPreview(!showPreview)}
+							disabled={!isValid || !value.trim()}
+							className={cn(
+								"transition-opacity duration-200",
+								!value.trim() && "opacity-30 pointer-events-none"
+							)}
+						>
+							{showPreview ? (
+								<EyeOff className="w-4 h-4" />
+							) : (
+								<Eye className="w-4 h-4" />
+							)}
+						</Button>
+						<Button
+							type="button"
+							variant="icon"
+							size="sm"
+							onClick={formatJson}
+							disabled={!isValid || readOnly || !value.trim()}
+							className={cn(
+								"transition-opacity duration-200",
+								!value.trim() && "opacity-30 pointer-events-none"
+							)}
+						>
+							{isFormatted ? (
+								<Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+							) : (
+								"{ }"
+							)}
+						</Button>
+						<Button
+							type="button"
+							variant="icon"
+							size="sm"
+							onClick={copyToClipboard}
+							disabled={!value.trim()}
+							className={cn(
+								"transition-opacity duration-200",
+								!value.trim() && "opacity-30 pointer-events-none"
+							)}
+						>
+							{copied ? (
+								<Check className="w-4 h-4 text-green-600 dark:text-green-400" />
+							) : (
+								<Copy className="w-4 h-4" />
+							)}
+						</Button>
+						<Button
+							type="button"
+							variant="icon"
+							size="sm"
+							onClick={resetJson}
+							disabled={readOnly || !value.trim()}
+							className={cn(
+								"transition-opacity duration-200",
+								!value.trim() && "opacity-30 pointer-events-none"
+							)}
+						>
+							<RotateCcw className="w-4 h-4" />
+						</Button>
 					</div>
 				</div>
 			)}

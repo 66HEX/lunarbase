@@ -321,7 +321,7 @@ export default function RecordComponent() {
 												</div>
 											))}
 										{Object.keys(record.data).length > 3 && (
-											<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
+											<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1 truncate">
 												+{Object.keys(record.data).length - 3} more fields
 											</div>
 										)}
