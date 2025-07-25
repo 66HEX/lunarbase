@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { usersApi } from "@/lib/api";
-import type { User, UsersListParams } from "@/types/api";
+import type { UsersListParams } from "@/types/api";
 
 // Query keys for users
 export const userKeys = {

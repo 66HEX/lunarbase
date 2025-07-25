@@ -120,7 +120,7 @@ export function CollectionRecordsEditSheet({
 		setFormData(initialData);
 	};
 
-	const updateFormData = (fieldName: string, value: any) => {
+	const updateFormData = (fieldName: string, value: string | number | boolean | null) => {
 		setFormData((prev) => ({
 			...prev,
 			[fieldName]: value,

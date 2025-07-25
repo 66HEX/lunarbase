@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { useUpdateCollection } from "@/hooks/collections/useCollectionMutations";
-import { CustomApiError } from "@/lib/api";
 import type {
 	Collection,
 	FieldDefinition,
@@ -139,17 +138,6 @@ export function EditCollectionSheet({
 		} catch (error) {
 			console.error("Collection update error:", error);
 
-			let errorMessage = "Failed to update collection";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			} else if (error && typeof error === "object" && "message" in error) {
-				errorMessage = String(error.message);
-			}
 		} finally {
 			setEditSubmitting(false);
 		}
@@ -291,7 +279,7 @@ export function EditCollectionSheet({
 																	value={field.field_type}
 																	onValueChange={(value) =>
 																		updateEditField(index, {
-																			field_type: value as any,
+																			field_type: value as FieldDefinition["field_type"],
 																		})
 																	}
 																	disabled={index === 0}

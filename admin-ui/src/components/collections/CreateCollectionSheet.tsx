@@ -29,7 +29,6 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateCollection } from "@/hooks/collections/useCollectionMutations";
-import { CustomApiError } from "@/lib/api";
 import type { CreateCollectionRequest, FieldDefinition } from "@/types/api";
 import { fieldTypeIcons, fieldTypeOptions } from "./constants";
 
@@ -138,18 +137,6 @@ export function CreateCollectionSheet({
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Collection creation error:", error);
-
-			let errorMessage = "Failed to create collection";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			} else if (error && typeof error === "object" && "message" in error) {
-				errorMessage = String(error.message);
-			}
 		} finally {
 			setSubmitting(false);
 		}
@@ -291,10 +278,10 @@ export function CreateCollectionSheet({
 																<Select
 																	value={field.field_type}
 																	onValueChange={(value) =>
-																		updateField(index, {
-																			field_type: value as any,
-																		})
-																	}
+										updateField(index, {
+											field_type: value as FieldDefinition["field_type"],
+										})
+									}
 																	disabled={index === 0}
 																>
 																	<SelectTrigger className="w-full">

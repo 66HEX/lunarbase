@@ -16,8 +16,8 @@ import LunarLogo from "@/assets/lunar.svg";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
-import { useUI, useUIActions } from "@/stores/client.store";
 import { cn } from "@/lib/utils";
+import { useUI, useUIActions } from "@/stores/client.store";
 
 const navigation = [
 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -137,7 +137,7 @@ export function Sidebar() {
 				<div
 					className={cn(
 						"fixed inset-0 bg-black/50 z-30 lg:hidden transition-opacity duration-300 ease-out",
-						isVisible ? "opacity-100" : "opacity-0"
+						isVisible ? "opacity-100" : "opacity-0",
 					)}
 					onClick={() => setSidebarOpen(false)}
 					aria-hidden="true"
@@ -150,7 +150,7 @@ export function Sidebar() {
 				className={cn(
 					"fixed inset-y-0 left-0 overflow-hidden z-40 w-72 bg-white/80 dark:bg-nocta-900/80 p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent transition-transform duration-300 ease-in-out",
 					sidebar.isOpen ? "translate-x-0" : "-translate-x-full",
-					"lg:translate-x-0"
+					"lg:translate-x-0",
 				)}
 			>
 				<div className="flex flex-col h-full bg-nocta-100 dark:bg-nocta-900 shadow-sm dark:shadow-lg">

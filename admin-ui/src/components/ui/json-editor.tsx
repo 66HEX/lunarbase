@@ -1,7 +1,8 @@
+import CodeEditor from "@uiw/react-textarea-code-editor";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Check, Copy, RotateCcw } from "lucide-react";
-import React, { useCallback, useEffect, useState } from "react";
-import CodeEditor from '@uiw/react-textarea-code-editor';
+import type React from "react";
+import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 
@@ -182,8 +183,6 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 		validateJson(value);
 	}, [value, validateJson]);
 
-
-
 	// Determine the effective variant
 	const effectiveVariant = !isValid
 		? "error"
@@ -220,7 +219,6 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 						)}
 					</div>
 					<div className="flex items-center gap-1">
-
 						<Button
 							type="button"
 							variant="icon"
@@ -272,10 +270,13 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 				</div>
 			)}
 
-			<div className={cn(
-				jsonEditorVariants({ variant: effectiveVariant, size }),
-				className,
-			)} style={{maxHeight: `${(rows || 6) * 1.5}em` }}>
+			<div
+				className={cn(
+					jsonEditorVariants({ variant: effectiveVariant, size }),
+					className,
+				)}
+				style={{ maxHeight: `${(rows || 6) * 1.5}em` }}
+			>
 				<CodeEditor
 					value={value}
 					onChange={handleChange}
@@ -283,20 +284,26 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 					placeholder={placeholder}
 					disabled={disabled}
 					readOnly={readOnly}
-					data-color-mode={typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'}
+					data-color-mode={
+						typeof window !== "undefined" &&
+						window.matchMedia("(prefers-color-scheme: dark)").matches
+							? "dark"
+							: "light"
+					}
 					style={{
-						fontSize: size === 'sm' ? '14px' : size === 'lg' ? '16px' : '14px',
-						fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
-						lineHeight: '1.5',
+						fontSize: size === "sm" ? "14px" : size === "lg" ? "16px" : "14px",
+						fontFamily:
+							'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+						lineHeight: "1.5",
 						minHeight: `${(rows || 6) * 1.5}em`,
-						border: 'none',
-						outline: 'none',
-						padding: '0',
-						margin: '0',
-						background: 'transparent',
-						width: '100%',
-						height: '100%',
-						resize: 'none',
+						border: "none",
+						outline: "none",
+						padding: "0",
+						margin: "0",
+						background: "transparent",
+						width: "100%",
+						height: "100%",
+						resize: "none",
 					}}
 				/>
 			</div>
@@ -314,8 +321,6 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 			{helperText && !displayErrorMessage && !displaySuccessMessage && (
 				<p className={messageVariants({ type: "helper" })}>{helperText}</p>
 			)}
-
-
 		</div>
 	);
 };

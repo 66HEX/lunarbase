@@ -23,7 +23,7 @@ export function RawMetricsViewer() {
 				position: "bottom-center",
 				duration: 3000,
 			});
-		} catch (error) {
+		} catch {
 			toast({
 				title: "Copy failed",
 				description: "Failed to copy metrics to clipboard.",

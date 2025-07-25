@@ -28,7 +28,7 @@ export const useSetCollectionPermission = () => {
 	return useMutation({
 		mutationFn: (data: SetCollectionPermissionRequest) =>
 			permissionsApi.setCollectionPermission(data),
-		onSuccess: (_, variables) => {
+		onSuccess: () => {
 			// Invalidate related queries
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.collectionPermissions(),

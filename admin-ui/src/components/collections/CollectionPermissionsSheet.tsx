@@ -19,7 +19,6 @@ import {
 	useRoles,
 } from "@/hooks/permissions/usePermissions";
 import { useUsers } from "@/hooks/users/useUsers";
-import { CustomApiError } from "@/lib/api";
 import type { Collection, CollectionPermissions } from "@/types/api";
 
 interface CollectionPermissionsSheetProps {
@@ -44,12 +43,10 @@ export function CollectionPermissionsSheet({
 	const { data: usersData } = useUsers();
 	const users = usersData?.users || [];
 	const { data: rolesData, isLoading: rolesLoading } = useRoles();
-	const roles = rolesData || [];
 	const { data: collectionPermissionsData, isLoading: permissionsLoading } =
 		useAllRoleCollectionPermissions(collection?.name || "", {
 			enabled: !!collection?.name && isOpen,
 		});
-	const collectionPermissions = collectionPermissionsData || {};
 
 	const [permissionsSubmitting, setPermissionsSubmitting] = useState(false);
 	const [rolePermissions, setRolePermissions] = useState<
@@ -106,12 +103,24 @@ export function CollectionPermissionsSheet({
 				{};
 
 			Object.entries(userPermissions).forEach(([userId, perms]) => {
-				const filteredPerms: any = {};
+				const filteredPerms: {
+					can_create: boolean | null;
+					can_read: boolean | null;
+					can_update: boolean | null;
+					can_delete: boolean | null;
+					can_list: boolean | null;
+				} = {
+					can_create: null,
+					can_read: null,
+					can_update: null,
+					can_delete: null,
+					can_list: null,
+				};
 				let hasExplicitPermissions = false;
 
 				Object.entries(perms).forEach(([permType, permValue]) => {
 					if (permValue !== null) {
-						filteredPerms[permType] = permValue;
+						filteredPerms[permType as PermissionType] = permValue;
 						hasExplicitPermissions = true;
 					}
 				});
@@ -135,18 +144,6 @@ export function CollectionPermissionsSheet({
 			onOpenChange(false);
 		} catch (error) {
 			console.error("Permissions save error:", error);
-
-			let errorMessage = "Failed to save permissions";
-
-			if (error instanceof CustomApiError) {
-				errorMessage = error.message;
-			} else if (error instanceof Error) {
-				errorMessage = error.message;
-			} else if (typeof error === "string") {
-				errorMessage = error;
-			} else if (error && typeof error === "object" && "message" in error) {
-				errorMessage = String(error.message);
-			}
 		} finally {
 			setPermissionsSubmitting(false);
 		}
@@ -154,11 +151,12 @@ export function CollectionPermissionsSheet({
 
 	// Initialize role permissions when data is loaded
 	useEffect(() => {
+		const roles = rolesData || [];
 		if (roles.length > 0) {
 			// Initialize role permissions with default values
 			const initialRolePermissions: CollectionPermissions["role_permissions"] =
 				{};
-			roles.forEach((role: any) => {
+			roles.forEach((role: { name: string }) => {
 				initialRolePermissions[role.name] = {
 					can_create: false,
 					can_read: false,
@@ -169,10 +167,11 @@ export function CollectionPermissionsSheet({
 			});
 			setRolePermissions(initialRolePermissions);
 		}
-	}, [roles]);
+	}, [rolesData]);
 
 	// Update local state when permissions are loaded from backend
 	useEffect(() => {
+		const collectionPermissions = collectionPermissionsData || {};
 		if (
 			collection &&
 			collectionPermissions &&
@@ -183,7 +182,13 @@ export function CollectionPermissionsSheet({
 				{};
 
 			Object.entries(collectionPermissions).forEach(
-				([roleName, permission]: [string, any]) => {
+				([roleName, permission]: [string, {
+					can_create: boolean;
+					can_read: boolean;
+					can_update: boolean;
+					can_delete: boolean;
+					can_list: boolean;
+				}]) => {
 					formattedRolePermissions[roleName] = {
 						can_create: permission.can_create,
 						can_read: permission.can_read,
@@ -197,7 +202,7 @@ export function CollectionPermissionsSheet({
 			setRolePermissions(formattedRolePermissions);
 			setUserPermissions(collection.permissions?.user_permissions || {});
 		}
-	}, [collection, collectionPermissions]);
+	}, [collection, collectionPermissionsData]);
 
 	if (!collection) return null;
 

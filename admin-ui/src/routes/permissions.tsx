@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CustomApiError } from "@/lib/api";
-import type { Collection, CollectionPermissions } from "@/types/api";
+import type { CollectionPermissions } from "@/types/api";
 
 interface Permission {
 	id: string;
@@ -89,12 +89,11 @@ const permissionTypeColors = {
 
 export default function PermissionsComponent() {
 	const [rolePermissions, setRolePermissions] = useState<RolePermission[]>([]);
-	const [collections, setCollections] = useState<Collection[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
 	const [selectedRole, setSelectedRole] = useState<string>("Admin");
 	const [editingRole, setEditingRole] = useState<string | null>(null);
-	const [searchTerm, setSearchTerm] = useState("");
+	const [searchTerm] = useState("");
 
 	useEffect(() => {
 		fetchData();
@@ -114,7 +113,7 @@ export default function PermissionsComponent() {
 			// For now, using mock data
 			await new Promise((resolve) => setTimeout(resolve, 1000));
 			setRolePermissions(mockRolePermissions);
-			setCollections([]);
+
 		} catch (error) {
 			setError(
 				error instanceof CustomApiError

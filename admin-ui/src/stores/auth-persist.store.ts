@@ -63,15 +63,16 @@ export const useAuthStore = create<AuthStore>()(
 						if (loginResponse?.data?.expires_in) {
 							get().startTokenRefresh(loginResponse.data.expires_in);
 						}
-					} catch (error: any) {
-						set((state) => {
-							state.loading = false;
-							state.error = error.message || "Login failed";
-							state.isAuthenticated = false;
-							state.user = null;
-						});
-						throw error;
-					}
+					} catch (error: unknown) {
+					const errorMessage = error instanceof Error ? error.message : "Login failed";
+					set((state) => {
+						state.loading = false;
+						state.error = errorMessage;
+						state.isAuthenticated = false;
+						state.user = null;
+					});
+					throw error;
+				}
 				},
 
 				logout: async () => {
@@ -84,9 +85,9 @@ export const useAuthStore = create<AuthStore>()(
 
 					try {
 						await authApi.logout();
-					} catch (error) {
-						// Silently handle logout errors
-					} finally {
+					} catch {
+				// Silently handle logout errors
+			} finally {
 						// Clear auth state
 						set((state) => {
 							state.user = null;
@@ -109,8 +110,8 @@ export const useAuthStore = create<AuthStore>()(
 							state.error = null;
 						});
 						return true;
-					} catch (error) {
-						// Clear auth state on error
+					} catch {
+				// Clear auth state on error
 						set((state) => {
 							state.user = null;
 							state.isAuthenticated = false;
@@ -132,9 +133,9 @@ export const useAuthStore = create<AuthStore>()(
 						set((state) => {
 							state.user = user;
 						});
-					} catch (error) {
-						// Silently handle fetch user errors
-					}
+					} catch {
+				// Silently handle fetch user errors
+			}
 				},
 
 				clearAuth: () => {

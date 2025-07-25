@@ -161,7 +161,7 @@ export default function SettingsComponent() {
 	const [systemInfo, setSystemInfo] = useState<SystemInfo>(mockSystemInfo);
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
-	const [error, setError] = useState<string | null>(null);
+	const [, setError] = useState<string | null>(null);
 	const { toast } = useToast();
 
 	useEffect(() => {

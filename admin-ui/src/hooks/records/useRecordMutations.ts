@@ -24,7 +24,7 @@ export const useCreateRecord = () => {
 		}) => {
 			return await recordsApi.create(collectionName, data);
 		},
-		onSuccess: (newRecord: Record, { collectionName }) => {
+		onSuccess: (_, { collectionName }) => {
 			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
 

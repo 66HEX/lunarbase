@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { permissionsApi, rolesApi } from "@/lib/api";
-import type { Role, UserCollectionPermission } from "@/types/api";
 
 // Query keys for permissions
 export const permissionKeys = {
