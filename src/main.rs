@@ -10,7 +10,7 @@ use utoipa_swagger_ui::SwaggerUi;
 
 use lunarbase::database::create_pool;
 use lunarbase::handlers::{
-    admin::serve_admin_assets,
+    admin::{serve_admin_assets},
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
         get_collection_schema, get_collections_stats, get_record, list_all_records,

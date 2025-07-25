@@ -1,5 +1,5 @@
 use axum::response::{Html, IntoResponse};
-use tower_http::services::ServeDir;
+use tower_http::services::{ServeDir, ServeFile};
 
 // Serve the main admin HTML page
 pub async fn serve_admin_html() -> impl IntoResponse {
@@ -7,9 +7,9 @@ pub async fn serve_admin_html() -> impl IntoResponse {
     Html(html)
 }
 
-// Create service for serving static assets
-pub fn serve_admin_assets() -> ServeDir {
-    ServeDir::new("admin-ui/dist")
+// Create service for serving static assets with SPA fallback
+pub fn serve_admin_assets() -> ServeDir<ServeFile> {
+    ServeDir::new("admin-ui/dist").fallback(ServeFile::new("admin-ui/dist/index.html"))
 }
 
 // Handle admin routes that should serve the SPA
