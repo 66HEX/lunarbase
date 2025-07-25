@@ -165,30 +165,39 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
                     // Estimate total records (this is approximate)
                     let total_records = estimate_total_records(&mut conn);
 
+                    // Get real pool state information
+                    let pool_state = state.db_pool.state();
+                    
                     DatabaseHealth {
                         status: "healthy".to_string(),
-                        connection_pool_size: 10, // From your pool configuration
-                        active_connections: 1,    // Simplified for now
+                        connection_pool_size: pool_state.connections + pool_state.idle_connections,
+                        active_connections: pool_state.connections,
                         total_collections: collections_count,
                         total_records,
                     }
                 }
-                Err(_) => DatabaseHealth {
-                    status: "unhealthy".to_string(),
-                    connection_pool_size: 10,
-                    active_connections: 0,
-                    total_collections: 0,
-                    total_records: 0,
-                },
+                Err(_) => {
+                    let pool_state = state.db_pool.state();
+                    DatabaseHealth {
+                        status: "unhealthy".to_string(),
+                        connection_pool_size: pool_state.connections + pool_state.idle_connections,
+                        active_connections: pool_state.connections,
+                        total_collections: 0,
+                        total_records: 0,
+                    }
+                }
             }
         }
-        Err(_) => DatabaseHealth {
-            status: "connection_failed".to_string(),
-            connection_pool_size: 10,
-            active_connections: 0,
-            total_collections: 0,
-            total_records: 0,
-        },
+        Err(_) => {
+            let pool_state = state.db_pool.state();
+            DatabaseHealth {
+                status: "connection_failed".to_string(),
+                connection_pool_size: pool_state.connections + pool_state.idle_connections,
+                active_connections: pool_state.connections,
+                total_collections: 0,
+                total_records: 0,
+            }
+        }
     }
 }
 
