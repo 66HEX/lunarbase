@@ -11,12 +11,13 @@ import {
 	Users,
 	X,
 } from "lucide-react";
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useUI, useUIActions } from "@/stores/client.store";
+import { cn } from "@/lib/utils";
 
 const navigation = [
 	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
@@ -34,6 +35,10 @@ export function Sidebar() {
 	const { logout, user } = useAuth();
 	const { sidebar } = useUI();
 	const { setSidebarOpen } = useUIActions();
+	const sidebarRef = useRef<HTMLDivElement>(null);
+	const [isVisible, setIsVisible] = useState(false);
+	const [shouldRender, setShouldRender] = useState(false);
+	const timeoutRef = useRef<number | null>(null);
 
 	// Memoize setSidebarOpen to prevent infinite loops
 	const setSidebarOpenStable = useCallback(
@@ -74,21 +79,79 @@ export function Sidebar() {
 		}
 	}, [location.pathname, setSidebarOpenStable]);
 
+	// Handle animation states
+	useEffect(() => {
+		if (timeoutRef.current) {
+			window.clearTimeout(timeoutRef.current);
+		}
+
+		if (sidebar.isOpen && window.innerWidth < 1024) {
+			setShouldRender(true);
+			timeoutRef.current = window.setTimeout(() => {
+				setIsVisible(true);
+			}, 16);
+		} else {
+			setIsVisible(false);
+			if (window.innerWidth < 1024) {
+				timeoutRef.current = window.setTimeout(() => {
+					setShouldRender(false);
+				}, 300);
+			} else {
+				setShouldRender(true);
+				setIsVisible(true);
+			}
+		}
+
+		return () => {
+			if (timeoutRef.current) {
+				window.clearTimeout(timeoutRef.current);
+			}
+		};
+	}, [sidebar.isOpen]);
+
+	// Handle click outside
+	useEffect(() => {
+		const handleClickOutside = (e: MouseEvent) => {
+			if (
+				sidebarRef.current &&
+				!sidebarRef.current.contains(e.target as Node) &&
+				window.innerWidth < 1024
+			) {
+				setSidebarOpen(false);
+			}
+		};
+
+		if (sidebar.isOpen && window.innerWidth < 1024) {
+			document.addEventListener("mousedown", handleClickOutside);
+		}
+
+		return () => {
+			document.removeEventListener("mousedown", handleClickOutside);
+		};
+	}, [sidebar.isOpen, setSidebarOpen]);
+
 	return (
 		<>
 			{/* Backdrop for mobile */}
-			{sidebar.isOpen && (
+			{shouldRender && window.innerWidth < 1024 && (
 				<div
-					className="fixed inset-0 bg-black/50 z-30 lg:hidden"
+					className={cn(
+						"fixed inset-0 bg-black/50 z-30 lg:hidden transition-opacity duration-300 ease-out",
+						isVisible ? "opacity-100" : "opacity-0"
+					)}
 					onClick={() => setSidebarOpen(false)}
+					aria-hidden="true"
 				/>
 			)}
 
 			{/* Sidebar */}
 			<div
-				className={`fixed inset-y-0 left-0 overflow-hidden z-40 w-72 bg-white/80 dark:bg-nocta-900/80 p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent transition-transform duration-300 ease-in-out ${
-					sidebar.isOpen ? "translate-x-0" : "-translate-x-full"
-				} lg:translate-x-0`}
+				ref={sidebarRef}
+				className={cn(
+					"fixed inset-y-0 left-0 overflow-hidden z-40 w-72 bg-white/80 dark:bg-nocta-900/80 p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent transition-transform duration-300 ease-in-out",
+					sidebar.isOpen ? "translate-x-0" : "-translate-x-full",
+					"lg:translate-x-0"
+				)}
 			>
 				<div className="flex flex-col h-full bg-nocta-100 dark:bg-nocta-900 shadow-sm dark:shadow-lg">
 					{/* Header */}
