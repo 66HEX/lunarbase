@@ -63,8 +63,8 @@ impl CookieService {
         let cookie_value = self.build_cookie(
             "refresh_token",
             token,
-            Duration::days(7), // 7 dni
-            "/auth/refresh", // Ograniczenie ścieżki dla bezpieczeństwa
+            Duration::days(7),
+            "/",
         );
         
         if let Ok(header_value) = HeaderValue::from_str(&cookie_value) {
@@ -83,7 +83,7 @@ impl CookieService {
 
     /// Usuwa refresh token (ustawia puste ciasteczko z przeszłą datą)
     pub fn clear_refresh_token_cookie(&self, headers: &mut HeaderMap) {
-        let cookie_value = self.build_clear_cookie("refresh_token", "/auth/refresh");
+        let cookie_value = self.build_clear_cookie("refresh_token", "/");
         
         if let Ok(header_value) = HeaderValue::from_str(&cookie_value) {
             headers.append(SET_COOKIE, header_value);
