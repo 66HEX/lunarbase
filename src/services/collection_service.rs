@@ -230,11 +230,26 @@ impl CollectionService {
     ) -> Result<(), AuthError> {
         let table_name = self.get_records_table_name(collection_name);
         
-        // Create map for easier comparison
+        // Create maps for easier comparison
         let old_fields: std::collections::HashMap<String, &FieldDefinition> = 
             old_schema.fields.iter().map(|f| (f.name.clone(), f)).collect();
+        let new_fields: std::collections::HashMap<String, &FieldDefinition> = 
+            new_schema.fields.iter().map(|f| (f.name.clone(), f)).collect();
         
-        // Add new columns
+        // Check if we need to drop any columns
+        let fields_to_drop: Vec<String> = old_fields
+            .keys()
+            .filter(|field_name| !new_fields.contains_key(*field_name) && field_name.to_lowercase() != "id")
+            .cloned()
+            .collect();
+        
+        // If we need to drop columns, use table recreation strategy
+        if !fields_to_drop.is_empty() {
+            tracing::info!("Dropping columns {:?} from table {}, using table recreation strategy", fields_to_drop, table_name);
+            return self.recreate_table_with_schema(conn, collection_name, new_schema);
+        }
+        
+        // Otherwise, just add new columns (existing logic)
         for field in &new_schema.fields {
             if !old_fields.contains_key(&field.name) && field.name.to_lowercase() != "id" {
                 let field_type = self.map_field_type_to_sql(&field.field_type);
@@ -293,11 +308,209 @@ impl CollectionService {
             }
         }
         
-        // Note: SQLite doesn't support dropping columns directly
-        // For removed fields, we'll leave them in the table but they won't be used
-        // This is safer and avoids data loss
-        
         tracing::debug!("Schema update completed for table: {}", table_name);
+        Ok(())
+    }
+
+    /// Recreates the table with new schema, preserving all existing data
+    /// This is used when columns need to be dropped (SQLite limitation workaround)
+    fn recreate_table_with_schema(
+        &self,
+        conn: &mut SqliteConnection,
+        collection_name: &str,
+        new_schema: &CollectionSchema,
+    ) -> Result<(), AuthError> {
+        let table_name = self.get_records_table_name(collection_name);
+        let temp_table_name = format!("{}_temp_{}", table_name, chrono::Utc::now().timestamp());
+        
+        tracing::info!("Starting table recreation for {}", table_name);
+        
+        // Step 1: Create new table with updated schema
+        let create_temp_sql = self.generate_create_table_sql_with_name(&temp_table_name, new_schema);
+        tracing::debug!("Creating temporary table with SQL: {}", create_temp_sql);
+        diesel::sql_query(&create_temp_sql)
+            .execute(conn)
+            .map_err(|e| {
+                tracing::error!("Failed to create temporary table: {:?}", e);
+                AuthError::InternalError
+            })?;
+        
+        // Step 2: Copy data from old table to new table
+        // Only copy columns that exist in both schemas
+        let common_columns = self.get_common_columns(collection_name, new_schema, conn)?;
+        let columns_list = common_columns.join(", ");
+        
+        let copy_data_sql = format!(
+            "INSERT INTO {} ({}) SELECT {} FROM {}",
+            temp_table_name, columns_list, columns_list, table_name
+        );
+        
+        tracing::debug!("Copying data with SQL: {}", copy_data_sql);
+        diesel::sql_query(&copy_data_sql)
+            .execute(conn)
+            .map_err(|e| {
+                tracing::error!("Failed to copy data to temporary table: {:?}", e);
+                // Clean up temporary table on failure
+                let _ = diesel::sql_query(&format!("DROP TABLE IF EXISTS {}", temp_table_name)).execute(conn);
+                AuthError::InternalError
+            })?;
+        
+        // Step 3: Drop old table (including triggers and indexes)
+        self.drop_records_table(conn, collection_name)?;
+        
+        // Step 4: Rename temporary table to original name
+        let rename_sql = format!("ALTER TABLE {} RENAME TO {}", temp_table_name, table_name);
+        tracing::debug!("Renaming table with SQL: {}", rename_sql);
+        diesel::sql_query(&rename_sql)
+            .execute(conn)
+            .map_err(|e| {
+                tracing::error!("Failed to rename temporary table: {:?}", e);
+                AuthError::InternalError
+            })?;
+        
+        // Step 5: Recreate indexes and triggers
+        self.create_table_indexes_and_triggers(conn, collection_name)?;
+        
+        tracing::info!("Table recreation completed successfully for {}", table_name);
+        Ok(())
+    }
+
+    /// Generate CREATE TABLE SQL with custom table name
+    fn generate_create_table_sql_with_name(
+        &self,
+        table_name: &str,
+        schema: &CollectionSchema,
+    ) -> String {
+        let mut sql = format!("CREATE TABLE {} (\n", table_name);
+        sql.push_str("    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\n");
+
+        for field in &schema.fields {
+            // Skip 'id' field since it's already added as PRIMARY KEY
+            if field.name.to_lowercase() == "id" {
+                continue;
+            }
+
+            let field_type = self.map_field_type_to_sql(&field.field_type);
+            let not_null = if field.required { " NOT NULL" } else { "" };
+
+            let default_clause = if let Some(default_value) = &field.default_value {
+                match field.field_type {
+                    FieldType::Text | FieldType::Email | FieldType::Url => {
+                        if let Some(s) = default_value.as_str() {
+                            format!(" DEFAULT '{}'", s.replace("'", "''"))
+                        } else {
+                            String::new()
+                        }
+                    }
+                    FieldType::Number => {
+                        if let Some(n) = default_value.as_f64() {
+                            format!(" DEFAULT {}", n)
+                        } else {
+                            String::new()
+                        }
+                    }
+                    FieldType::Boolean => {
+                        if let Some(b) = default_value.as_bool() {
+                            format!(" DEFAULT {}", if b { "TRUE" } else { "FALSE" })
+                        } else {
+                            String::new()
+                        }
+                    }
+                    _ => String::new(),
+                }
+            } else {
+                String::new()
+            };
+
+            sql.push_str(&format!(
+                "    {} {}{}{},\n",
+                field.name, field_type, not_null, default_clause
+            ));
+        }
+
+        sql.push_str("    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n");
+        sql.push_str("    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n");
+        sql.push_str(")");
+
+        sql
+    }
+
+    /// Get columns that exist in both old table and new schema
+    fn get_common_columns(
+        &self,
+        collection_name: &str,
+        new_schema: &CollectionSchema,
+        conn: &mut SqliteConnection,
+    ) -> Result<Vec<String>, AuthError> {
+        let table_name = self.get_records_table_name(collection_name);
+        
+        // Get existing columns from the table
+        let pragma_sql = format!("PRAGMA table_info({})", table_name);
+        
+        #[derive(Debug, diesel::QueryableByName)]
+        struct ColumnInfo {
+            #[diesel(sql_type = diesel::sql_types::Text)]
+            name: String,
+        }
+        
+        let existing_columns: Vec<ColumnInfo> = diesel::sql_query(&pragma_sql)
+            .load(conn)
+            .map_err(|e| {
+                tracing::error!("Failed to get table info: {:?}", e);
+                AuthError::InternalError
+            })?;
+        
+        let existing_column_names: std::collections::HashSet<String> = 
+            existing_columns.into_iter().map(|col| col.name).collect();
+        
+        // Start with system columns that should always exist
+        let mut common_columns = vec!["id".to_string(), "created_at".to_string(), "updated_at".to_string()];
+        
+        // Add schema fields that exist in the old table
+        for field in &new_schema.fields {
+            if field.name.to_lowercase() != "id" && existing_column_names.contains(&field.name) {
+                common_columns.push(field.name.clone());
+            }
+        }
+        
+        tracing::debug!("Common columns for migration: {:?}", common_columns);
+        Ok(common_columns)
+    }
+
+    /// Create indexes and triggers for the table
+    fn create_table_indexes_and_triggers(
+        &self,
+        conn: &mut SqliteConnection,
+        collection_name: &str,
+    ) -> Result<(), AuthError> {
+        let table_name = self.get_records_table_name(collection_name);
+        
+        // Create index
+        let index_sql = format!(
+            "CREATE INDEX idx_{}_created_at ON {} (created_at)",
+            table_name, table_name
+        );
+        tracing::debug!("Creating index with SQL: {}", index_sql);
+        diesel::sql_query(&index_sql).execute(conn).map_err(|e| {
+            tracing::error!("Failed to create index: {:?}", e);
+            AuthError::InternalError
+        })?;
+        
+        // Create update trigger
+        let trigger_sql = format!(
+            "CREATE TRIGGER update_{}_updated_at 
+             AFTER UPDATE ON {}
+             BEGIN
+                 UPDATE {} SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+             END",
+            table_name, table_name, table_name
+        );
+        tracing::debug!("Creating trigger with SQL: {}", trigger_sql);
+        diesel::sql_query(&trigger_sql).execute(conn).map_err(|e| {
+            tracing::error!("Failed to create trigger: {:?}", e);
+            AuthError::InternalError
+        })?;
+        
         Ok(())
     }
 
