@@ -1,12 +1,13 @@
 import { cva, type VariantProps } from "class-variance-authority";
 import { Check, Copy, RotateCcw } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
+import CodeEditor from '@uiw/react-textarea-code-editor';
 import { cn } from "@/lib/utils";
 import { Button } from "./button";
 
 const jsonEditorVariants = cva(
 	[
-		"w-full h-120 rounded-lg border transition-all duration-200 ease-in-out",
+		"w-full min-h-120 overflow-y-auto h-full rounded-lg border transition-all duration-200 ease-in-out",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
 		"focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50",
 		"disabled:opacity-50 disabled:cursor-not-allowed",
@@ -110,7 +111,6 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 	rows = 6,
 	disabled = false,
 	readOnly = false,
-	...props
 }) => {
 	const [isValid, setIsValid] = useState(true);
 	const [error, setError] = useState<string | null>(null);
@@ -272,19 +272,34 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 				</div>
 			)}
 
-			<textarea
-				value={value}
-				onChange={handleChange}
-				placeholder={placeholder}
-				rows={rows}
-				disabled={disabled}
-				readOnly={readOnly}
-				className={cn(
-					jsonEditorVariants({ variant: effectiveVariant, size }),
-					className,
-				)}
-				{...props}
-			/>
+			<div className={cn(
+				jsonEditorVariants({ variant: effectiveVariant, size }),
+				className,
+			)} style={{maxHeight: `${(rows || 6) * 1.5}em` }}>
+				<CodeEditor
+					value={value}
+					onChange={handleChange}
+					language="json"
+					placeholder={placeholder}
+					disabled={disabled}
+					readOnly={readOnly}
+					data-color-mode={typeof window !== 'undefined' && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'}
+					style={{
+						fontSize: size === 'sm' ? '14px' : size === 'lg' ? '16px' : '14px',
+						fontFamily: 'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
+						lineHeight: '1.5',
+						minHeight: `${(rows || 6) * 1.5}em`,
+						border: 'none',
+						outline: 'none',
+						padding: '0',
+						margin: '0',
+						background: 'transparent',
+						width: '100%',
+						height: '100%',
+						resize: 'none',
+					}}
+				/>
+			</div>
 
 			{displayErrorMessage && (
 				<p className={messageVariants({ type: "error" })}>
