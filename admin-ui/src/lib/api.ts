@@ -93,7 +93,7 @@ async function apiRequest<T>(
 					// Retry the original request
 					return apiRequest<T>(endpoint, options, true);
 				}
-			} catch (refreshError) {
+			} catch {
 				// Refresh failed, redirect to login
 				window.location.href = "/admin/login";
 			}
@@ -220,8 +220,8 @@ export const collectionsApi = {
 			method: "DELETE",
 		}),
 
-	getSchema: (name: string): Promise<any> =>
-		apiRequest<any>(`/collections/${name}/schema`),
+	getSchema: (name: string): Promise<unknown> =>
+		apiRequest<unknown>(`/collections/${name}/schema`),
 
 	getStats: async (): Promise<CollectionStats> => {
 		const response =

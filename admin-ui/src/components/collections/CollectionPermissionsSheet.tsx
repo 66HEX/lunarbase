@@ -182,19 +182,20 @@ export function CollectionPermissionsSheet({
 				{};
 
 			Object.entries(collectionPermissions).forEach(
-				([roleName, permission]: [string, {
-					can_create: boolean;
-					can_read: boolean;
-					can_update: boolean;
-					can_delete: boolean;
-					can_list: boolean;
-				}]) => {
+				([roleName, permission]) => {
+					const typedPermission = permission as {
+						can_create: boolean;
+						can_read: boolean;
+						can_update: boolean;
+						can_delete: boolean;
+						can_list: boolean;
+					};
 					formattedRolePermissions[roleName] = {
-						can_create: permission.can_create,
-						can_read: permission.can_read,
-						can_update: permission.can_update,
-						can_delete: permission.can_delete,
-						can_list: permission.can_list,
+						can_create: typedPermission.can_create,
+						can_read: typedPermission.can_read,
+						can_update: typedPermission.can_update,
+						can_delete: typedPermission.can_delete,
+						can_list: typedPermission.can_list,
 					};
 				},
 			);

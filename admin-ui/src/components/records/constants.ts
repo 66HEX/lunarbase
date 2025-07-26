@@ -39,7 +39,10 @@ export const fieldValidationMessages = {
 };
 
 // Default values for different field types
-export const getDefaultFieldValue = (fieldType: string, defaultValue?: any) => {
+export const getDefaultFieldValue = (
+	fieldType: string,
+	defaultValue?: unknown,
+) => {
 	if (defaultValue !== null && defaultValue !== undefined) {
 		return defaultValue;
 	}
@@ -57,7 +60,7 @@ export const getDefaultFieldValue = (fieldType: string, defaultValue?: any) => {
 // Field type processing for form submission
 export const processFieldValue = (
 	fieldType: string,
-	value: any,
+	value: unknown,
 	isRequired: boolean,
 ) => {
 	switch (fieldType) {
@@ -86,7 +89,10 @@ export const processFieldValue = (
 };
 
 // Field validation function
-export const validateFieldValue = (field: any, value: any): string | null => {
+export const validateFieldValue = (
+	field: { name: string; field_type: string; required: boolean },
+	value: unknown,
+): string | null => {
 	if (
 		field.required &&
 		(value === "" || value === null || value === undefined)
@@ -103,12 +109,20 @@ export const validateFieldValue = (field: any, value: any): string | null => {
 
 	switch (field.field_type) {
 		case "email":
-			if (value && !fieldValidationPatterns.email.test(value)) {
+			if (
+				value &&
+				typeof value === "string" &&
+				!fieldValidationPatterns.email.test(value)
+			) {
 				return fieldValidationMessages.email;
 			}
 			break;
 		case "url":
-			if (value && !fieldValidationPatterns.url.test(value)) {
+			if (
+				value &&
+				typeof value === "string" &&
+				!fieldValidationPatterns.url.test(value)
+			) {
 				return fieldValidationMessages.url;
 			}
 			break;
@@ -118,7 +132,7 @@ export const validateFieldValue = (field: any, value: any): string | null => {
 			}
 			break;
 		case "json":
-			if (value) {
+			if (value && typeof value === "string") {
 				try {
 					JSON.parse(value);
 				} catch {

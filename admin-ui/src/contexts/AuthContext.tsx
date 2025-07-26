@@ -1,29 +1,8 @@
 import { useNavigate } from "@tanstack/react-router";
 import type React from "react";
-import {
-	createContext,
-	useCallback,
-	useContext,
-	useEffect,
-	useState,
-} from "react";
+import { useCallback, useEffect, useState } from "react";
+import { AuthContext, type AuthContextType } from "@/contexts/auth-context";
 import { useAuthStore } from "@/stores/auth-persist.store";
-
-interface AuthContextType {
-	isAuthenticated: boolean;
-	isLoading: boolean;
-	logout: () => Promise<void>;
-}
-
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-export const useAuth = () => {
-	const context = useContext(AuthContext);
-	if (context === undefined) {
-		throw new Error("useAuth must be used within an AuthProvider");
-	}
-	return context;
-};
 
 interface AuthProviderProps {
 	children: React.ReactNode;
@@ -39,7 +18,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		try {
 			await storeLogout();
 			navigate({ to: "/login" });
-		} catch (error) {
+		} catch {
 			navigate({ to: "/login" });
 		}
 	}, [navigate, storeLogout]);
@@ -52,7 +31,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 			if (!isAuth) {
 				navigate({ to: "/login" });
 			}
-		} catch (error) {
+		} catch {
 			navigate({ to: "/login" });
 		} finally {
 			setIsLoading(false);

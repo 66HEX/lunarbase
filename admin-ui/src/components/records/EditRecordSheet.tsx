@@ -1,6 +1,6 @@
 import { Save } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -69,14 +69,7 @@ export function EditRecordSheet({
 	// Get available collections for relation fields
 	const availableCollections = collectionsData?.collections || [];
 
-	useEffect(() => {
-		if (open && record && collection) {
-			initializeFormData();
-			setFieldErrors({});
-		}
-	}, [open, record, collection]);
-
-	const initializeFormData = () => {
+	const initializeFormData = useCallback(() => {
 		if (!record || !collection) return;
 
 		const initialData: RecordData = {};
@@ -94,9 +87,19 @@ export function EditRecordSheet({
 			}
 		});
 		setFormData(initialData);
-	};
+	}, [record, collection]);
 
-	const updateFormData = (fieldName: string, value: any) => {
+	useEffect(() => {
+		if (open && record && collection) {
+			initializeFormData();
+			setFieldErrors({});
+		}
+	}, [open, record, collection, initializeFormData]);
+
+	const updateFormData = (
+		fieldName: string,
+		value: string | number | boolean | null,
+	) => {
 		setFormData((prev) => ({
 			...prev,
 			[fieldName]: value,
@@ -157,7 +160,7 @@ export function EditRecordSheet({
 		if (field.name === "id") return null;
 
 		const IconComponent = fieldTypeIcons[field.field_type];
-		const value = formData[field.name] || "";
+		const value = formData[field.name] ?? "";
 		const hasError = !!fieldErrors[field.name];
 
 		return (
@@ -200,7 +203,11 @@ export function EditRecordSheet({
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
-							value={value}
+							value={
+								typeof value === "string" || typeof value === "number"
+									? String(value)
+									: ""
+							}
 							onValueChange={(selectedValue) =>
 								updateFormData(field.name, selectedValue)
 							}
@@ -232,7 +239,11 @@ export function EditRecordSheet({
 												: "text"
 							}
 							placeholder={`Enter ${field.name}`}
-							value={value}
+							value={
+								typeof value === "string" || typeof value === "number"
+									? String(value)
+									: ""
+							}
 							className="w-full"
 							onChange={(e) => updateFormData(field.name, e.target.value)}
 							variant={hasError ? "error" : "default"}

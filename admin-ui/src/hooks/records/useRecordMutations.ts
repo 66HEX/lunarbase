@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 import { recordsApi } from "@/lib/api";
 import type {
 	CreateRecordRequest,
@@ -41,9 +41,8 @@ export const useCreateRecord = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to create record";
+		onError: (error: Error) => {
+			const message = error?.message || "Failed to create record";
 			toast({
 				title: "Error",
 				description: message,
@@ -91,9 +90,8 @@ export const useUpdateRecord = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to update record";
+		onError: (error: Error) => {
+			const message = error?.message || "Failed to update record";
 			toast({
 				title: "Error",
 				description: message,
@@ -143,9 +141,8 @@ export const useDeleteRecord = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to delete record";
+		onError: (error: Error) => {
+			const message = error?.message || "Failed to delete record";
 			toast({
 				title: "Error",
 				description: message,
@@ -200,9 +197,8 @@ export const useBulkDeleteRecords = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to delete records";
+		onError: (error: Error) => {
+			const message = error?.message || "Failed to delete records";
 			toast({
 				title: "Error",
 				description: message,

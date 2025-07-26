@@ -7,7 +7,6 @@ import {
 	LayoutDashboard,
 	LogOut,
 	Settings,
-	Shield,
 	Users,
 	X,
 } from "lucide-react";
@@ -24,7 +23,6 @@ const navigation = [
 	{ name: "Collections", href: "/collections", icon: Database },
 	{ name: "Records", href: "/records", icon: FileText },
 	{ name: "Users", href: "/users", icon: Users },
-	{ name: "Permissions", href: "/permissions", icon: Shield },
 	{ name: "WebSocket", href: "/websocket", icon: Activity },
 	{ name: "Metrics", href: "/metrics", icon: BarChart3 },
 	{ name: "Settings", href: "/settings", icon: Settings },
@@ -32,7 +30,9 @@ const navigation = [
 
 export function Sidebar() {
 	const location = useLocation();
-	const { logout, user } = useAuth();
+	const authData = useAuth();
+	const logout = authData.logout;
+	const user = 'user' in authData ? authData.user : null;
 	const { sidebar } = useUI();
 	const { setSidebarOpen } = useUIActions();
 	const sidebarRef = useRef<HTMLDivElement>(null);

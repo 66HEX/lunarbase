@@ -11,7 +11,7 @@ import {
 	Type,
 } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -84,14 +84,7 @@ export function CollectionRecordsEditSheet({
 	// Get available collections for relation fields
 	const availableCollections = collectionsData?.collections || [];
 
-	useEffect(() => {
-		if (open && record && collection) {
-			initializeFormData();
-			setFieldErrors({});
-		}
-	}, [open, record, collection]);
-
-	const initializeFormData = () => {
+	const initializeFormData = useCallback(() => {
 		if (!record || !collection) return;
 
 		const initialData: RecordData = {};
@@ -118,9 +111,19 @@ export function CollectionRecordsEditSheet({
 			}
 		});
 		setFormData(initialData);
-	};
+	}, [record, collection]);
 
-	const updateFormData = (fieldName: string, value: string | number | boolean | null) => {
+	useEffect(() => {
+		if (open && record && collection) {
+			initializeFormData();
+			setFieldErrors({});
+		}
+	}, [open, record, collection, initializeFormData]);
+
+	const updateFormData = (
+		fieldName: string,
+		value: string | number | boolean | null,
+	) => {
 		setFormData((prev) => ({
 			...prev,
 			[fieldName]: value,
@@ -154,12 +157,20 @@ export function CollectionRecordsEditSheet({
 
 			switch (field.field_type) {
 				case "email":
-					if (value && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)) {
+					if (
+						value &&
+						typeof value === "string" &&
+						!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+					) {
 						newErrors[field.name] = "Please enter a valid email address";
 					}
 					break;
 				case "url":
-					if (value && !/^https?:\/\/.+/.test(value)) {
+					if (
+						value &&
+						typeof value === "string" &&
+						!/^https?:\/\/.+/.test(value)
+					) {
 						newErrors[field.name] =
 							"Please enter a valid URL (starting with http:// or https://)";
 					}
@@ -170,7 +181,7 @@ export function CollectionRecordsEditSheet({
 					}
 					break;
 				case "json":
-					if (value) {
+					if (value && typeof value === "string") {
 						try {
 							JSON.parse(value);
 						} catch {
@@ -243,7 +254,7 @@ export function CollectionRecordsEditSheet({
 		if (field.name === "id") return null;
 
 		const IconComponent = fieldTypeIcons[field.field_type];
-		const value = formData[field.name] || "";
+		const value = formData[field.name] ?? "";
 		const hasError = !!fieldErrors[field.name];
 
 		return (
@@ -286,7 +297,7 @@ export function CollectionRecordsEditSheet({
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
-							value={value}
+							value={typeof value === "string" ? value : ""}
 							onValueChange={(selectedValue) =>
 								updateFormData(field.name, selectedValue)
 							}
@@ -318,16 +329,23 @@ export function CollectionRecordsEditSheet({
 												: "text"
 							}
 							placeholder={`Enter ${field.name}`}
-							value={value}
+							value={
+								typeof value === "string" || typeof value === "number"
+									? String(value)
+									: ""
+							}
 							className="w-full"
 							onChange={(e) => updateFormData(field.name, e.target.value)}
 							variant={hasError ? "error" : "default"}
 						/>
 					)}
 				</FormControl>
-				{field.default_value && (
+				{field.default_value !== undefined && field.default_value !== null && (
 					<FormDescription>
-						Default: {String(field.default_value)}
+						Default:{" "}
+						{typeof field.default_value === "object"
+							? JSON.stringify(field.default_value)
+							: String(field.default_value)}
 					</FormDescription>
 				)}
 				<FormMessage />

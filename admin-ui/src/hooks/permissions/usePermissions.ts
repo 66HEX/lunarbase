@@ -73,35 +73,37 @@ export const useAllRoleCollectionPermissions = (
 			collectionName,
 		],
 		queryFn: async () => {
-			const permissionsPromises = roles.map(async (role: any) => {
-				try {
-					const permissions = await permissionsApi.getCollectionPermissions(
-						role.name,
-						collectionName,
-					);
-					return { roleName: role.name, permissions };
-				} catch (error) {
-					// Return default permissions if not found
-					return {
-						roleName: role.name,
-						permissions: {
-							id: 0,
-							role_id: role.id,
-							collection_name: collectionName,
-							can_create: false,
-							can_read: false,
-							can_update: false,
-							can_delete: false,
-							can_list: false,
-							created_at: new Date().toISOString(),
-							updated_at: new Date().toISOString(),
-						},
-					};
-				}
-			});
+			const permissionsPromises = roles.map(
+				async (role: { id: number; name: string }) => {
+					try {
+						const permissions = await permissionsApi.getCollectionPermissions(
+							role.name,
+							collectionName,
+						);
+						return { roleName: role.name, permissions };
+					} catch {
+						// Return default permissions if not found
+						return {
+							roleName: role.name,
+							permissions: {
+								id: 0,
+								role_id: role.id,
+								collection_name: collectionName,
+								can_create: false,
+								can_read: false,
+								can_update: false,
+								can_delete: false,
+								can_list: false,
+								created_at: new Date().toISOString(),
+								updated_at: new Date().toISOString(),
+							},
+						};
+					}
+				},
+			);
 
 			const results = await Promise.all(permissionsPromises);
-			const permissionsMap: Record<string, any> = {};
+			const permissionsMap: Record<string, unknown> = {};
 
 			results.forEach(({ roleName, permissions }) => {
 				permissionsMap[roleName] = permissions;

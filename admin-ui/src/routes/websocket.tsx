@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/toast";
 import {
 	BroadcastDialog,
 	WebSocketActivity,
@@ -14,6 +13,7 @@ import {
 	WebSocketStats,
 	WebSocketSubscriptions,
 } from "@/components/websocket";
+import { useToast } from "@/hooks/useToast";
 import { useWebSocketData } from "@/hooks/useWebSocketQueries";
 import { webSocketApi } from "@/lib/api";
 import { useUI, useUIActions } from "@/stores/client.store";
@@ -59,10 +59,10 @@ function WebSocketComponent() {
 			setBroadcastMessage("");
 			closeModal("broadcast");
 			refetchAll();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			toast({
 				title: "Broadcast Failed",
-				description: error.message || "Failed to broadcast message",
+				description: (error as Error).message || "Failed to broadcast message",
 				variant: "destructive",
 			});
 		} finally {
@@ -79,10 +79,11 @@ function WebSocketComponent() {
 				variant: "success",
 			});
 			refetchAll();
-		} catch (error: any) {
+		} catch (error: unknown) {
 			toast({
 				title: "Disconnect Failed",
-				description: error.message || "Failed to disconnect connection",
+				description:
+					(error as Error).message || "Failed to disconnect connection",
 				variant: "destructive",
 			});
 		}

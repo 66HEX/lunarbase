@@ -12,7 +12,6 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WebsocketRouteImport } from './routes/websocket'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
-import { Route as PermissionsRouteImport } from './routes/permissions'
 import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as DashboardRouteImport } from './routes/dashboard'
@@ -34,11 +33,6 @@ const UsersRoute = UsersRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PermissionsRoute = PermissionsRouteImport.update({
-  id: '/permissions',
-  path: '/permissions',
   getParentRoute: () => rootRouteImport,
 } as any)
 const MetricsRoute = MetricsRouteImport.update({
@@ -83,7 +77,6 @@ export interface FileRoutesByFullPath {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/metrics': typeof MetricsRoute
-  '/permissions': typeof PermissionsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
@@ -96,7 +89,6 @@ export interface FileRoutesByTo {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/metrics': typeof MetricsRoute
-  '/permissions': typeof PermissionsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
@@ -110,7 +102,6 @@ export interface FileRoutesById {
   '/dashboard': typeof DashboardRoute
   '/login': typeof LoginRoute
   '/metrics': typeof MetricsRoute
-  '/permissions': typeof PermissionsRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
@@ -125,7 +116,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/metrics'
-    | '/permissions'
     | '/settings'
     | '/users'
     | '/websocket'
@@ -138,7 +128,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/metrics'
-    | '/permissions'
     | '/settings'
     | '/users'
     | '/websocket'
@@ -151,7 +140,6 @@ export interface FileRouteTypes {
     | '/dashboard'
     | '/login'
     | '/metrics'
-    | '/permissions'
     | '/settings'
     | '/users'
     | '/websocket'
@@ -165,7 +153,6 @@ export interface RootRouteChildren {
   DashboardRoute: typeof DashboardRoute
   LoginRoute: typeof LoginRoute
   MetricsRoute: typeof MetricsRoute
-  PermissionsRoute: typeof PermissionsRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
   WebsocketRoute: typeof WebsocketRoute
@@ -194,13 +181,6 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/permissions': {
-      id: '/permissions'
-      path: '/permissions'
-      fullPath: '/permissions'
-      preLoaderRoute: typeof PermissionsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/metrics': {
@@ -261,7 +241,6 @@ const rootRouteChildren: RootRouteChildren = {
   DashboardRoute: DashboardRoute,
   LoginRoute: LoginRoute,
   MetricsRoute: MetricsRoute,
-  PermissionsRoute: PermissionsRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
   WebsocketRoute: WebsocketRoute,

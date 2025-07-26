@@ -1,6 +1,6 @@
 import { Database, Plus, Save } from "lucide-react";
 import type React from "react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Form, FormControl, FormField, FormLabel } from "@/components/ui/form";
@@ -24,8 +24,8 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useToast } from "@/components/ui/toast";
 import { useCollections } from "@/hooks/collections/useCollections";
+import { useToast } from "@/hooks/useToast";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
 import {
 	fieldTypeIcons,
@@ -57,14 +57,7 @@ export function CreateRecordSheet({
 	// Get available collections for relation fields
 	const availableCollections = collectionsData?.collections || [];
 
-	useEffect(() => {
-		if (open && collection) {
-			initializeFormData();
-			setFieldErrors({});
-		}
-	}, [open, collection]);
-
-	const initializeFormData = () => {
+	const initializeFormData = useCallback(() => {
 		if (!collection) return;
 
 		const initialData: RecordData = {};
@@ -77,9 +70,19 @@ export function CreateRecordSheet({
 			}
 		});
 		setFormData(initialData);
-	};
+	}, [collection]);
 
-	const updateFormData = (fieldName: string, value: any) => {
+	useEffect(() => {
+		if (open && collection) {
+			initializeFormData();
+			setFieldErrors({});
+		}
+	}, [open, collection, initializeFormData]);
+
+	const updateFormData = (
+		fieldName: string,
+		value: string | number | boolean | null,
+	) => {
 		setFormData((prev) => ({
 			...prev,
 			[fieldName]: value,
@@ -146,7 +149,7 @@ export function CreateRecordSheet({
 		if (field.name === "id") return null;
 
 		const IconComponent = fieldTypeIcons[field.field_type];
-		const value = formData[field.name] || "";
+		const value = formData[field.name];
 		const hasError = !!fieldErrors[field.name];
 
 		return (
@@ -189,7 +192,7 @@ export function CreateRecordSheet({
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
-							value={value}
+							value={typeof value === "string" ? value : ""}
 							onValueChange={(selectedValue) =>
 								updateFormData(field.name, selectedValue)
 							}
@@ -221,7 +224,11 @@ export function CreateRecordSheet({
 												: "text"
 							}
 							placeholder={`Enter ${field.name}`}
-							value={value}
+							value={
+								typeof value === "string" || typeof value === "number"
+									? String(value)
+									: ""
+							}
 							className="w-full"
 							onChange={(e) => updateFormData(field.name, e.target.value)}
 							variant={hasError ? "error" : "default"}

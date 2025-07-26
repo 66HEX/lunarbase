@@ -1,1 +1,0 @@
-export { PermissionsHeader } from "./PermissionsHeader";

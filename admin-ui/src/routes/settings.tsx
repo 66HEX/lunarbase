@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 import { CustomApiError } from "@/lib/api";
 
 interface DatabaseSettings {
@@ -200,7 +200,7 @@ export default function SettingsComponent() {
 		}
 	};
 
-	const saveSettings = async (category: string, _settings: any) => {
+	const saveSettings = async (category: string) => {
 		setSaving(true);
 		setError(null);
 
@@ -547,7 +547,7 @@ export default function SettingsComponent() {
 							</div>
 
 							<Button
-								onClick={() => saveSettings("Database", databaseSettings)}
+								onClick={() => saveSettings("Database")}
 								disabled={saving}
 								className="w-full md:w-auto"
 							>
@@ -763,7 +763,7 @@ export default function SettingsComponent() {
 							</div>
 
 							<Button
-								onClick={() => saveSettings("Security", securitySettings)}
+								onClick={() => saveSettings("Security")}
 								disabled={saving}
 								className="w-full md:w-auto"
 							>
@@ -954,7 +954,7 @@ export default function SettingsComponent() {
 							)}
 
 							<Button
-								onClick={() => saveSettings("API", apiSettings)}
+								onClick={() => saveSettings("API")}
 								disabled={saving}
 								className="w-full md:w-auto"
 							>
@@ -1176,9 +1176,7 @@ export default function SettingsComponent() {
 							)}
 
 							<Button
-								onClick={() =>
-									saveSettings("Notifications", notificationSettings)
-								}
+								onClick={() => saveSettings("Notifications")}
 								disabled={saving}
 								className="w-full md:w-auto"
 							>

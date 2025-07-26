@@ -2,7 +2,9 @@
 export interface ApiResponse<T> {
 	success: boolean;
 	data: T;
-	error?: any;
+	error?:
+		| string
+		| { message: string; code?: string; validation_errors?: string[] };
 	timestamp: string;
 }
 
@@ -86,7 +88,7 @@ export interface FieldDefinition {
 		| "file"
 		| "relation";
 	required: boolean;
-	default_value?: any;
+	default_value?: unknown;
 	validation?: {
 		min_length?: number;
 		max_length?: number;
@@ -123,7 +125,7 @@ export interface UpdateCollectionRequest {
 
 // Record Types
 export interface RecordData {
-	[key: string]: any;
+	[key: string]: unknown;
 }
 
 export interface ApiRecord {
@@ -304,7 +306,7 @@ export interface WebSocketSubscription {
 	subscription_id: string;
 	collection_name: string;
 	subscription_type: string;
-	filters?: any;
+	filters?: { [key: string]: unknown };
 }
 
 export interface WebSocketConnectionsResponse {

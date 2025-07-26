@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 import { usersApi } from "@/lib/api";
 import type { CreateUserRequest, UpdateUserRequest, User } from "@/types/api";
 import { userKeys } from "./useUsers";
@@ -21,7 +21,7 @@ export const useCreateUser = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to create user",
 				description: error?.message || "An unexpected error occurred.",
@@ -52,7 +52,7 @@ export const useUpdateUser = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to update user",
 				description: error?.message || "An unexpected error occurred.",
@@ -73,8 +73,9 @@ export const useDeleteUser = () => {
 			// Remove the user from all relevant queries
 			queryClient.removeQueries({ queryKey: userKeys.detail(deletedUserId) });
 
-			// Invalidate users list
+			// Invalidate users list (both old and new query keys)
 			queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: ["users"] });
 
 			toast({
 				title: "User deleted",
@@ -82,7 +83,7 @@ export const useDeleteUser = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to delete user",
 				description: error?.message || "An unexpected error occurred.",
@@ -112,7 +113,7 @@ export const useUnlockUser = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to unlock user",
 				description: error?.message || "An unexpected error occurred.",

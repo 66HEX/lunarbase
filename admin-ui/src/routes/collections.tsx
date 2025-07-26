@@ -30,9 +30,9 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { useToast } from "@/components/ui/toast";
 import { useDeleteCollection } from "@/hooks/collections/useCollectionMutations";
 import { useCollections } from "@/hooks/collections/useCollections";
+import { useToast } from "@/hooks/useToast";
 import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 
@@ -122,7 +122,7 @@ export default function CollectionsComponent() {
 			// Close dialog
 			closeModal("deleteCollection");
 			setCollectionToDelete(null);
-		} catch (error) {
+		} catch {
 			// Error handling is done in the mutation hook
 			closeModal("deleteCollection");
 			setCollectionToDelete(null);

@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Edit3, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	DeleteRecordDialog,
 	EditRecordSheet,
@@ -12,13 +12,13 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
-import { useToast } from "@/components/ui/toast";
 import {
 	useDeleteRecord,
 	useUpdateRecord,
 } from "@/hooks/records/useRecordMutations";
 import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
 import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
+import { useToast } from "@/hooks/useToast";
 import { CustomApiError } from "@/lib/api";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { Collection, RecordData, RecordWithCollection } from "@/types/api";
@@ -26,7 +26,10 @@ import type { Collection, RecordData, RecordWithCollection } from "@/types/api";
 export default function RecordsComponent() {
 	// Use stores and hooks
 	const { data: collectionsData } = useCollectionsQuery();
-	const collections = collectionsData?.collections || [];
+	const collections = useMemo(
+		() => collectionsData?.collections || [],
+		[collectionsData?.collections],
+	);
 
 	// Local state for pagination and search (replacing useRecords store)
 	const [searchTerm, setSearchTerm] = useState("");
@@ -174,7 +177,7 @@ export default function RecordsComponent() {
 		setCurrentPage(page);
 	};
 
-	const formatFieldValue = (value: any, maxLength: number = 50): string => {
+	const formatFieldValue = (value: unknown, maxLength: number = 50): string => {
 		if (value === null || value === undefined) return "-";
 		if (typeof value === "boolean") return value ? "Yes" : "No";
 		if (typeof value === "object") {
@@ -315,9 +318,9 @@ export default function RecordsComponent() {
 			{allRecords.length > 0 || isLoading ? (
 				<div className="space-y-4">
 					<div className="overflow-x-auto">
-						<Table
-							columns={columns as any}
-							data={allRecords as any}
+						<Table<RecordWithCollection>
+							columns={columns}
+							data={allRecords}
 							loading={isLoading} // Show spinner on loading
 							pagination={{
 								current: currentPage,

@@ -137,7 +137,6 @@ export function EditCollectionSheet({
 			setEditFieldErrors({});
 		} catch (error) {
 			console.error("Collection update error:", error);
-
 		} finally {
 			setEditSubmitting(false);
 		}
@@ -279,7 +278,8 @@ export function EditCollectionSheet({
 																	value={field.field_type}
 																	onValueChange={(value) =>
 																		updateEditField(index, {
-																			field_type: value as FieldDefinition["field_type"],
+																			field_type:
+																				value as FieldDefinition["field_type"],
 																		})
 																	}
 																	disabled={index === 0}
@@ -312,7 +312,7 @@ export function EditCollectionSheet({
 																<Input
 																	placeholder="Optional"
 																	className="w-full"
-																	value={field.default_value || ""}
+																	value={typeof field.default_value === 'string' ? field.default_value : field.default_value ? JSON.stringify(field.default_value) : ""}
 																	onChange={(e) =>
 																		updateEditField(index, {
 																			default_value: e.target.value || null,

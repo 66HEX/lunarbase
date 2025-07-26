@@ -1,10 +1,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 import { collectionsApi, permissionsApi } from "@/lib/api";
 import type {
 	Collection,
+	CollectionPermissions,
 	CreateCollectionRequest,
+	SetCollectionPermissionRequest,
 	UpdateCollectionRequest,
+	BasePermissions,
 } from "@/types/api";
 
 /**
@@ -50,12 +53,10 @@ export const useCreateCollection = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to create collection";
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
-				description: message,
+				description: error?.message || "Failed to create collection",
 				variant: "destructive",
 			});
 		},
@@ -118,12 +119,10 @@ export const useUpdateCollection = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to update collection";
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
-				description: message,
+				description: error?.message || "Failed to update collection",
 				variant: "destructive",
 			});
 		},
@@ -161,8 +160,8 @@ export const useDeleteCollection = () => {
 						| undefined,
 				) => {
 					if (!old) return old;
-					const { [deletedName]: removed, ...remainingCounts } =
-						old.recordCounts;
+					const remainingCounts = { ...old.recordCounts };
+					delete remainingCounts[deletedName];
 					return {
 						collections: old.collections.filter(
 							(collection) => collection.name !== deletedName,
@@ -182,12 +181,10 @@ export const useDeleteCollection = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to delete collection";
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
-				description: message,
+				description: error?.message || "Failed to delete collection",
 				variant: "destructive",
 			});
 		},
@@ -207,9 +204,48 @@ export const useSaveCollectionPermissions = () => {
 			permissions,
 		}: {
 			collectionName: string;
-			permissions: any;
+			permissions: CollectionPermissions;
 		}) => {
-			await permissionsApi.setCollectionPermission(permissions);
+			// Convert CollectionPermissions to individual SetCollectionPermissionRequest calls
+			const promises: Promise<void>[] = [];
+			
+			// Set role permissions
+			for (const [roleName, rolePerms] of Object.entries(permissions.role_permissions)) {
+				const typedRolePerms = rolePerms as BasePermissions;
+				const rolePermissionRequest: SetCollectionPermissionRequest = {
+					role_name: roleName,
+					collection_name: collectionName,
+					can_create: typedRolePerms.can_create,
+					can_read: typedRolePerms.can_read,
+					can_update: typedRolePerms.can_update,
+					can_delete: typedRolePerms.can_delete,
+					can_list: typedRolePerms.can_list,
+				};
+				promises.push(permissionsApi.setCollectionPermission(rolePermissionRequest));
+			}
+			
+			// Set user permissions
+			for (const [userId, userPerms] of Object.entries(permissions.user_permissions)) {
+				const typedUserPerms = userPerms as {
+					can_create: boolean | null;
+					can_read: boolean | null;
+					can_update: boolean | null;
+					can_delete: boolean | null;
+					can_list: boolean | null;
+				};
+				const userPermissionRequest = {
+					user_id: parseInt(userId),
+					collection_name: collectionName,
+					can_create: typedUserPerms.can_create,
+					can_read: typedUserPerms.can_read,
+					can_update: typedUserPerms.can_update,
+					can_delete: typedUserPerms.can_delete,
+					can_list: typedUserPerms.can_list,
+				};
+				promises.push(permissionsApi.setUserCollectionPermissions(userPermissionRequest));
+			}
+			
+			await Promise.all(promises);
 			return { collectionName, permissions };
 		},
 		onSuccess: ({ collectionName }) => {
@@ -225,12 +261,10 @@ export const useSaveCollectionPermissions = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
-			const message =
-				error?.response?.data?.message || "Failed to save permissions";
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
-				description: message,
+				description: error?.message || "Failed to save permissions",
 				variant: "destructive",
 			});
 		},

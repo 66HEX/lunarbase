@@ -11,7 +11,7 @@ export function WebSocketStats({ stats }: WebSocketStatsProps) {
 		<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
 			{webSocketStatsConfig.map((config) => {
 				const value = config.valueTransform
-					? config.valueTransform(stats)
+					? config.valueTransform(stats || { total_connections: 0 })
 					: (stats?.[config.key as keyof WebSocketStatsType] as
 							| string
 							| number) || 0;

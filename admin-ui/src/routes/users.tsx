@@ -67,7 +67,7 @@ export default function UsersComponent() {
 		searchTerm,
 	});
 
-	const users = data?.users || [];
+	const users = useMemo(() => data?.users || [], [data?.users]);
 	const totalCount = data?.pagination?.total_count || 0;
 	const loading = isLoading;
 
@@ -348,8 +348,10 @@ export default function UsersComponent() {
 				<div className="space-y-4">
 					<div className="overflow-x-auto">
 						<Table
-							columns={columns as any}
-							data={extendedUsers as any}
+							columns={
+								columns as unknown as TableColumn<Record<string, unknown>>[]
+							}
+							data={extendedUsers as unknown as Record<string, unknown>[]}
 							loading={loading && !data} // Only show spinner on initial load
 							pagination={{
 								current: currentPage,

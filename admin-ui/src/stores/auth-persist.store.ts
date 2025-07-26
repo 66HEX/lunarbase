@@ -64,15 +64,16 @@ export const useAuthStore = create<AuthStore>()(
 							get().startTokenRefresh(loginResponse.data.expires_in);
 						}
 					} catch (error: unknown) {
-					const errorMessage = error instanceof Error ? error.message : "Login failed";
-					set((state) => {
-						state.loading = false;
-						state.error = errorMessage;
-						state.isAuthenticated = false;
-						state.user = null;
-					});
-					throw error;
-				}
+						const errorMessage =
+							error instanceof Error ? error.message : "Login failed";
+						set((state) => {
+							state.loading = false;
+							state.error = errorMessage;
+							state.isAuthenticated = false;
+							state.user = null;
+						});
+						throw error;
+					}
 				},
 
 				logout: async () => {
@@ -86,8 +87,8 @@ export const useAuthStore = create<AuthStore>()(
 					try {
 						await authApi.logout();
 					} catch {
-				// Silently handle logout errors
-			} finally {
+						// Silently handle logout errors
+					} finally {
 						// Clear auth state
 						set((state) => {
 							state.user = null;
@@ -111,7 +112,7 @@ export const useAuthStore = create<AuthStore>()(
 						});
 						return true;
 					} catch {
-				// Clear auth state on error
+						// Clear auth state on error
 						set((state) => {
 							state.user = null;
 							state.isAuthenticated = false;
@@ -134,8 +135,8 @@ export const useAuthStore = create<AuthStore>()(
 							state.user = user;
 						});
 					} catch {
-				// Silently handle fetch user errors
-			}
+						// Silently handle fetch user errors
+					}
 				},
 
 				clearAuth: () => {

@@ -147,7 +147,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 			onChange(formatted);
 			setIsFormatted(true);
 			setTimeout(() => setIsFormatted(false), 2000);
-		} catch (err) {
+		} catch {
 			// Don't format if invalid
 		}
 	}, [value, onChange]);

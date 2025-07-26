@@ -5,7 +5,7 @@ import {
 	useParams,
 } from "@tanstack/react-router";
 import { ArrowLeft, Edit3, Trash2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
 	CollectionRecordsEditSheet,
 	CollectionRecordsHeader,
@@ -16,7 +16,6 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Table } from "@/components/ui/table";
-import { useToast } from "@/components/ui/toast";
 import {
 	useCreateRecord,
 	useDeleteRecord,
@@ -24,6 +23,7 @@ import {
 } from "@/hooks/records/useRecordMutations";
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
 import { useDebounce } from "@/hooks/useDebounce";
+import { useToast } from "@/hooks/useToast";
 import { CustomApiError, collectionsApi } from "@/lib/api";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, Collection, RecordData } from "@/types/api";
@@ -32,7 +32,7 @@ import type { ApiRecord, Collection, RecordData } from "@/types/api";
 type Record = ApiRecord;
 
 // Helper function for formatting field values
-const formatFieldValue = (value: any, maxLength: number = 50): string => {
+const formatFieldValue = (value: unknown, maxLength: number = 50): string => {
 	if (value === null || value === undefined) return "-";
 	if (typeof value === "boolean") return value ? "Yes" : "No";
 	if (typeof value === "object") {
@@ -96,32 +96,7 @@ export default function RecordComponent() {
 	// Local state for record data
 	const [editingRecord, setEditingRecord] = useState<Record | null>(null);
 
-	useEffect(() => {
-		if (collectionName) {
-			fetchCollection();
-		}
-	}, [collectionName]);
-
-	// Reset page when search term changes
-	useEffect(() => {
-		setCurrentPage(1);
-	}, [debouncedSearchTerm]);
-
-	// Refresh data when component becomes visible again
-	useEffect(() => {
-		const handleVisibilityChange = () => {
-			if (!document.hidden && collectionName) {
-				refetch();
-				fetchCollection();
-			}
-		};
-
-		document.addEventListener("visibilitychange", handleVisibilityChange);
-		return () =>
-			document.removeEventListener("visibilitychange", handleVisibilityChange);
-	}, [collectionName, refetch]);
-
-	const fetchCollection = async () => {
+	const fetchCollection = useCallback(async () => {
 		if (!collectionName) return;
 
 		try {
@@ -140,7 +115,32 @@ export default function RecordComponent() {
 				duration: 3000,
 			});
 		}
-	};
+	}, [collectionName, toast]);
+
+	useEffect(() => {
+		if (collectionName) {
+			fetchCollection();
+		}
+	}, [collectionName, fetchCollection]);
+
+	// Reset page when search term changes
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [debouncedSearchTerm]);
+
+	// Refresh data when component becomes visible again
+	useEffect(() => {
+		const handleVisibilityChange = () => {
+			if (!document.hidden && collectionName) {
+				refetch();
+				fetchCollection();
+			}
+		};
+
+		document.addEventListener("visibilitychange", handleVisibilityChange);
+		return () =>
+			document.removeEventListener("visibilitychange", handleVisibilityChange);
+	}, [collectionName, refetch, fetchCollection]);
 
 	const handleEditRecord = (record: Record) => {
 		setEditingRecord(record);
@@ -304,20 +304,14 @@ export default function RecordComponent() {
 									key: "id",
 									title: "ID",
 									className: "w-16",
-									render: (
-										_value: unknown,
-										record: ApiRecord,
-										_index: number,
-									) => <div className="font-medium">{record.id}</div>,
+									render: (_value: unknown, record: ApiRecord) => (
+										<div className="font-medium">{record.id}</div>
+									),
 								},
 								{
 									key: "data",
 									title: "Data",
-									render: (
-										_value: unknown,
-										record: ApiRecord,
-										_index: number,
-									) => (
+									render: (_value: unknown, record: ApiRecord) => (
 										<div className="flex gap-4">
 											{Object.entries(record.data)
 												.slice(1, 3)
@@ -343,11 +337,7 @@ export default function RecordComponent() {
 									key: "created_at",
 									title: "Created",
 									className: "w-32",
-									render: (
-										_value: unknown,
-										record: ApiRecord,
-										_index: number,
-									) => (
+									render: (_value: unknown, record: ApiRecord) => (
 										<div className="text-sm">
 											<div className="text-nocta-900 dark:text-nocta-100">
 												{new Date(record.created_at).toLocaleDateString()}
@@ -363,11 +353,7 @@ export default function RecordComponent() {
 									title: "Actions",
 									className: "w-24",
 									align: "left",
-									render: (
-										_value: unknown,
-										record: ApiRecord,
-										_index: number,
-									) => (
+									render: (_value: unknown, record: ApiRecord) => (
 										<div className="flex items-center gap-1">
 											<Button
 												variant="ghost"

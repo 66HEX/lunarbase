@@ -75,8 +75,10 @@ export function UserDetailsSheet({
 				role: userData.role as "admin" | "user" | "guest",
 			};
 			setUser(extendedUser);
-		} catch (err: any) {
-			setError(err.message || "Failed to fetch user data");
+		} catch (err: unknown) {
+			setError(
+				err instanceof Error ? err.message : "Failed to fetch user data",
+			);
 		} finally {
 			setLoading(false);
 		}

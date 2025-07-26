@@ -40,13 +40,16 @@ export const Route = createRootRoute({
 
 function RootComponent() {
 	const location = useLocation();
-	const { user, isAuthenticated, fetchUser } = useAuth();
+	const authData = useAuth();
+	const user = 'user' in authData ? authData.user : null;
+	const isAuthenticated = authData.isAuthenticated;
+	const fetchUser = 'fetchUser' in authData ? authData.fetchUser : undefined;
 	const { sidebar } = useUI();
 	const { setSidebarOpen } = useUIActions();
 
 	// Fetch user data if authenticated but user data is not loaded
 	useEffect(() => {
-		if (isAuthenticated && !user) {
+		if (isAuthenticated && !user && fetchUser) {
 			fetchUser();
 		}
 	}, [isAuthenticated, user, fetchUser]);

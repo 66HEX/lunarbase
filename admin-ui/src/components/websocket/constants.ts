@@ -79,7 +79,7 @@ export const webSocketStatsConfig = [
 		title: "Server Status",
 		icon: Wifi,
 		description: "Current WebSocket server status",
-		valueTransform: (stats: any) =>
+		valueTransform: (stats: { total_connections?: number }) =>
 			stats?.total_connections ? "Active" : "Idle",
 	},
 ];

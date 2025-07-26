@@ -131,8 +131,14 @@ export function WebSocketConnections({
 			<CardContent>
 				{connections?.connections && connections.connections.length > 0 ? (
 					<Table
-						columns={connectionColumns as any}
-						data={connections.connections as any}
+						columns={
+							connectionColumns as unknown as TableColumn<
+								Record<string, unknown>
+							>[]
+						}
+						data={
+							connections.connections as unknown as Record<string, unknown>[]
+						}
 						loading={isLoading}
 					/>
 				) : (

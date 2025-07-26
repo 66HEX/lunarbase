@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 import { permissionsApi } from "@/lib/api";
 import type { SetCollectionPermissionRequest } from "@/types/api";
 
@@ -43,7 +43,7 @@ export const useSetCollectionPermission = () => {
 				variant: "default",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
 				description: error?.message || "Failed to update collection permission",
@@ -83,7 +83,7 @@ export const useSetUserCollectionPermissions = () => {
 				variant: "default",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
 				description: error?.message || "Failed to update user permissions",
@@ -117,7 +117,7 @@ export const useCheckCollectionPermission = () => {
 				collectionName,
 				permission,
 			),
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
 				description: error?.message || "Failed to check permission",

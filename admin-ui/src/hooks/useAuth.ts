@@ -1,8 +1,10 @@
 import { useNavigate } from "@tanstack/react-router";
-import { useCallback } from "react";
+import { useCallback, useContext } from "react";
+import { AuthContext } from "@/contexts/auth-context";
 import { useAuthStore } from "@/stores/auth-persist.store";
 
 export const useAuth = () => {
+	const context = useContext(AuthContext);
 	const navigate = useNavigate();
 	const {
 		isAuthenticated,
@@ -28,6 +30,11 @@ export const useAuth = () => {
 		}
 		return isAuth;
 	}, [storeCheckAuth, navigate]);
+
+	// Use context if available (within AuthProvider), otherwise use store
+	if (context) {
+		return context;
+	}
 
 	return {
 		isAuthenticated,

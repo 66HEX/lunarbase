@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 import { webSocketApi } from "@/lib/api";
 import type {
 	BroadcastMessageRequest,
@@ -71,7 +71,7 @@ export const useDisconnectConnectionMutation = () => {
 					"The WebSocket connection has been successfully disconnected.",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
 				description: error.message || "Failed to disconnect connection",
@@ -100,7 +100,7 @@ export const useBroadcastMessageMutation = () => {
 				description: `Message sent to ${data.sent_to_connections} connection(s).`,
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Error",
 				description: error.message || "Failed to broadcast message",

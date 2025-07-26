@@ -26,7 +26,7 @@ export function RecordsTable({
 	onEditRecord,
 	onDeleteRecord,
 }: RecordsTableProps) {
-	const formatFieldValue = (value: any): string => {
+	const formatFieldValue = (value: unknown): string => {
 		if (value === null || value === undefined) return "-";
 		if (typeof value === "boolean") return value ? "Yes" : "No";
 		if (typeof value === "object") return JSON.stringify(value);

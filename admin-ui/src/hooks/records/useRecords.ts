@@ -7,7 +7,7 @@ interface UseRecordsOptions {
 	page?: number;
 	limit?: number;
 	search?: string;
-	filters?: Record<string, any>;
+	filters?: Record<string, unknown>;
 	sortBy?: string;
 	sortOrder?: "asc" | "desc";
 	enabled?: boolean;

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/components/ui/toast";
+import { useToast } from "@/hooks/useToast";
 import { rolesApi } from "@/lib/api";
 import type { CreateRoleRequest, Role, UpdateRoleRequest } from "@/types/api";
 import { permissionKeys } from "./usePermissions";
@@ -21,7 +21,7 @@ export const useCreateRole = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to create role",
 				description: error?.message || "An unexpected error occurred.",
@@ -59,7 +59,7 @@ export const useUpdateRole = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to update role",
 				description: error?.message || "An unexpected error occurred.",
@@ -94,7 +94,7 @@ export const useDeleteRole = () => {
 				variant: "success",
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Failed to delete role",
 				description: error?.message || "An unexpected error occurred.",
