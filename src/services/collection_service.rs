@@ -828,6 +828,31 @@ impl CollectionService {
             data.insert(field.name.clone(), field_value);
         }
 
+        // Add ownership fields if they exist in the table
+        let ownership_fields = ["user_id", "created_by", "owner_id", "author_id"];
+        for field_name in &ownership_fields {
+            #[derive(Debug, diesel::QueryableByName)]
+            struct OwnershipField {
+                #[diesel(sql_type = Nullable<Integer>)]
+                value: Option<i32>,
+            }
+
+            let query_with_alias = format!(
+                "SELECT {} as value FROM {} WHERE id = {}",
+                field_name, table_name, base_row.id
+            );
+            
+            // Try to query the ownership field, ignore if column doesn't exist
+            if let Ok(result) = diesel::sql_query(&query_with_alias)
+                .load::<OwnershipField>(conn) {
+                if let Some(row) = result.first() {
+                    if let Some(value) = row.value {
+                        data.insert(field_name.to_string(), Value::Number(serde_json::Number::from(value)));
+                    }
+                }
+            }
+        }
+
         Ok(RecordResponse {
             id: base_row.id.to_string(),
             collection_id: collection.id.to_string(),

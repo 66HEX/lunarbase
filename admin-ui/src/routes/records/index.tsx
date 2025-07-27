@@ -7,6 +7,7 @@ import {
 	EmptyRecordsState,
 	RecordsHeader,
 } from "@/components/records";
+import { OwnershipBadge } from "@/components/ownership";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -17,6 +18,7 @@ import {
 	useUpdateRecord,
 } from "@/hooks/records/useRecordMutations";
 import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
+import { useAuthStore } from "@/stores/auth-persist.store";
 import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
 import { useToast } from "@/hooks/useToast";
 import { CustomApiError } from "@/lib/api";
@@ -25,6 +27,7 @@ import type { Collection, RecordData, RecordWithCollection } from "@/types/api";
 
 export default function RecordsComponent() {
 	// Use stores and hooks
+	const { user } = useAuthStore();
 	const { data: collectionsData } = useCollectionsQuery();
 	const collections = useMemo(
 		() => collectionsData?.collections || [],
@@ -202,6 +205,7 @@ export default function RecordsComponent() {
 		{
 			key: "id",
 			title: "ID",
+			className: "w-16",
 			render: (_, record) => (
 				<div className="text-sm font-mono text-nocta-600 dark:text-nocta-400">
 					{record.id}
@@ -211,6 +215,7 @@ export default function RecordsComponent() {
 		{
 			key: "collection_name",
 			title: "Collection",
+			className: "w-32",
 			render: (_, record) => (
 				<Link to={`/collections`}>
 					<Badge
@@ -225,31 +230,68 @@ export default function RecordsComponent() {
 		{
 			key: "data",
 			title: "Data",
-			render: (_, record) => (
-				<div className="flex gap-4">
-					{Object.entries(record.data)
-						.slice(1, 3)
-						.map(([key, value]) => (
-							<div key={key} className="text-sm">
-								<span className="font-medium text-nocta-700 dark:text-nocta-300">
-									{key}:
-								</span>{" "}
-								<span className="text-nocta-600 dark:text-nocta-400 truncate">
-									{formatFieldValue(value)}
-								</span>
+			render: (_, record) => {
+				// Filter out ownership-related fields and ID since they're shown in separate columns
+				const excludedFields = ['id', 'owner_id', 'author_id', 'created_by', 'user_id'];
+				const filteredEntries = Object.entries(record.data)
+					.filter(([key]) => !excludedFields.includes(key));
+				
+				return (
+					<div className="flex gap-4">
+						{filteredEntries
+							.slice(0, 2)
+							.map(([key, value]) => (
+								<div key={key} className="text-sm">
+									<span className="font-medium text-nocta-700 dark:text-nocta-300">
+										{key}:
+									</span>{" "}
+									<span className="text-nocta-600 dark:text-nocta-400 truncate">
+										{formatFieldValue(value)}
+									</span>
+								</div>
+							))}
+						{filteredEntries.length > 2 && (
+							<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
+								+{filteredEntries.length - 2} more fields
 							</div>
-						))}
-					{Object.keys(record.data).length > 3 && (
-						<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
-							+{Object.keys(record.data).length - 3} more fields
-						</div>
-					)}
-				</div>
-			),
+						)}
+					</div>
+				);
+			},
+		},
+		{
+			key: "ownership",
+			title: "Ownership",
+			className: "w-32",
+			render: (_, record) => {
+				// Extract ownership fields from record.data
+				const getUserId = (value: unknown): number | undefined => {
+					if (typeof value === 'number') return value;
+					if (typeof value === 'string') {
+						const parsed = parseInt(value, 10);
+						return isNaN(parsed) ? undefined : parsed;
+					}
+					return undefined;
+				};
+
+				return (
+					<OwnershipBadge
+						ownership={{
+							user_id: getUserId(record.data.user_id),
+							created_by: getUserId(record.data.created_by),
+							owner_id: getUserId(record.data.owner_id),
+							author_id: getUserId(record.data.author_id),
+						}}
+						currentUserId={user?.id}
+						size="sm"
+					/>
+				);
+			},
 		},
 		{
 			key: "created_at",
 			title: "Created",
+			className: "w-32",
 			render: (_, record) => (
 				<div className="text-sm">
 					<div className="text-nocta-900 dark:text-nocta-100">

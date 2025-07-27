@@ -12,6 +12,7 @@ import {
 	DeleteRecordDialog,
 	EmptyCollectionRecordsState,
 } from "@/components/records";
+import { OwnershipBadge } from "@/components/ownership";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -24,12 +25,23 @@ import {
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useToast } from "@/hooks/useToast";
+import { useAuthStore } from "@/stores/auth-persist.store";
 import { CustomApiError, collectionsApi } from "@/lib/api";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, Collection, RecordData } from "@/types/api";
 
 // Use ApiRecord instead of Record to avoid conflict with TypeScript's built-in Record type
 type Record = ApiRecord;
+
+// Helper function to safely parse user ID from record data
+const getUserId = (value: unknown): number | undefined => {
+	if (typeof value === 'number') return value;
+	if (typeof value === 'string') {
+		const parsed = parseInt(value, 10);
+		return isNaN(parsed) ? undefined : parsed;
+	}
+	return undefined;
+};
 
 // Helper function for formatting field values
 const formatFieldValue = (value: unknown, maxLength: number = 50): string => {
@@ -55,6 +67,7 @@ export default function RecordComponent() {
 	});
 	const navigate = useNavigate({ from: "/records/$collection" });
 	const { toast } = useToast();
+	const { user } = useAuthStore();
 	const queryClient = useQueryClient();
 
 	// React Query mutations
@@ -311,27 +324,51 @@ export default function RecordComponent() {
 								{
 									key: "data",
 									title: "Data",
-									render: (_value: unknown, record: ApiRecord) => (
-										<div className="flex gap-4">
-											{Object.entries(record.data)
-												.slice(1, 3)
-												.map(([key, value]) => (
-													<div key={key} className="text-sm">
-														<span className="font-medium text-nocta-700 dark:text-nocta-300">
-															{key}:
-														</span>{" "}
-														<span className="text-nocta-600 dark:text-nocta-400 truncate">
-															{formatFieldValue(value)}
-														</span>
+									render: (_value: unknown, record: ApiRecord) => {
+										// Filter out ownership-related fields and ID since they're shown in separate columns
+										const excludedFields = ['id', 'owner_id', 'author_id', 'created_by', 'user_id'];
+										const filteredEntries = Object.entries(record.data)
+											.filter(([key]) => !excludedFields.includes(key));
+										
+										return (
+											<div className="flex gap-4">
+												{filteredEntries
+													.slice(0, 2)
+													.map(([key, value]) => (
+														<div key={key} className="text-sm">
+															<span className="font-medium text-nocta-700 dark:text-nocta-300">
+																{key}:
+															</span>{" "}
+															<span className="text-nocta-600 dark:text-nocta-400 truncate">
+																{formatFieldValue(value)}
+															</span>
+														</div>
+													))}
+												{filteredEntries.length > 2 && (
+													<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
+														+{filteredEntries.length - 2} more fields
 													</div>
-												))}
-											{Object.keys(record.data).length > 3 && (
-												<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
-													+{Object.keys(record.data).length - 3} more fields
-												</div>
-											)}
-										</div>
-									),
+												)}
+											</div>
+										);
+									},
+								},
+								{
+									key: "ownership",
+									title: "Ownership",
+									className: "w-32",
+									render: (_value: unknown, record: ApiRecord) => (
+												<OwnershipBadge
+													ownership={{
+														user_id: getUserId(record.data.user_id),
+														created_by: getUserId(record.data.created_by),
+														owner_id: getUserId(record.data.owner_id),
+														author_id: getUserId(record.data.author_id),
+													}}
+													currentUserId={user?.id}
+													size="sm"
+												/>
+											),
 								},
 								{
 									key: "created_at",
