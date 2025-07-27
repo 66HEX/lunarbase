@@ -338,6 +338,51 @@ export interface BroadcastMessageResponse {
 	message: string;
 }
 
+// Ownership Types
+export interface OwnershipInfo {
+	user_id?: number;
+	created_by?: number;
+	owner_id?: number;
+	author_id?: number;
+}
+
+export interface OwnershipPermissions {
+	can_read: boolean;
+	can_update: boolean;
+	can_delete: boolean;
+	is_owner: boolean;
+}
+
+export interface OwnershipCheckResponse {
+	collection_name: string;
+	record_id: number;
+	user_id: number;
+	is_owner: boolean;
+	ownership_permissions: OwnershipPermissions;
+}
+
+export interface TransferOwnershipRequest {
+	new_owner_id: number;
+}
+
+export interface OwnershipStatsResponse {
+	collection_name: string;
+	collection_id: number;
+	total_records: number;
+	owned_records: number;
+	unowned_records: number;
+	ownership_percentage: number;
+	timestamp: string;
+}
+
+export interface OwnedRecordsResponse {
+	collection_name: string;
+	user_id: number;
+	username?: string;
+	total_owned: number;
+	records: Record[];
+}
+
 // Error Types
 export interface ApiError {
 	error: string;

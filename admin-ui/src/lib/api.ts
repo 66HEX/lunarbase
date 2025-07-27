@@ -12,6 +12,9 @@ import type {
 	HealthResponse,
 	LoginRequest,
 	LoginResponse,
+	OwnershipCheckResponse,
+	OwnershipStatsResponse,
+	OwnedRecordsResponse,
 	PaginatedRecordsResponse,
 	PaginatedUsersResponse,
 	PermissionResult,
@@ -22,6 +25,7 @@ import type {
 	Role,
 	SetCollectionPermissionRequest,
 	SetUserCollectionPermissionRequest,
+	TransferOwnershipRequest,
 	UpdateCollectionRequest,
 	UpdateRecordRequest,
 	UpdateRoleRequest,
@@ -606,5 +610,83 @@ export const metricsApi = {
 			timestamp: string;
 		}>("/metrics/summary");
 		return response;
+	},
+};
+
+// Ownership API
+export const ownershipApi = {
+	// Transfer ownership of a record
+	transferOwnership: async (
+		collectionName: string,
+		recordId: number,
+		data: TransferOwnershipRequest,
+	): Promise<void> => {
+		await apiRequest<void>(
+			`/ownership/collections/${collectionName}/records/${recordId}/transfer`,
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		);
+	},
+
+	// Get records owned by current user
+	getMyOwnedRecords: async (
+		collectionName: string,
+		limit?: number,
+		offset?: number,
+	): Promise<OwnedRecordsResponse> => {
+		const params = new URLSearchParams();
+		if (limit) params.append("limit", limit.toString());
+		if (offset) params.append("offset", offset.toString());
+
+		const queryString = params.toString();
+		const endpoint = `/ownership/collections/${collectionName}/my-records${
+			queryString ? `?${queryString}` : ""
+		}`;
+
+		const response = await apiRequest<ApiResponse<OwnedRecordsResponse>>(endpoint);
+		return response.data;
+	},
+
+	// Get records owned by a specific user (admin only)
+	getUserOwnedRecords: async (
+		collectionName: string,
+		userId: number,
+		limit?: number,
+		offset?: number,
+	): Promise<OwnedRecordsResponse> => {
+		const params = new URLSearchParams();
+		if (limit) params.append("limit", limit.toString());
+		if (offset) params.append("offset", offset.toString());
+
+		const queryString = params.toString();
+		const endpoint = `/ownership/collections/${collectionName}/users/${userId}/records${
+			queryString ? `?${queryString}` : ""
+		}`;
+
+		const response = await apiRequest<ApiResponse<OwnedRecordsResponse>>(endpoint);
+		return response.data;
+	},
+
+	// Check ownership of a specific record
+	checkRecordOwnership: async (
+		collectionName: string,
+		recordId: number,
+	): Promise<OwnershipCheckResponse> => {
+		const response = await apiRequest<ApiResponse<OwnershipCheckResponse>>(
+			`/ownership/collections/${collectionName}/records/${recordId}/check`,
+		);
+		return response.data;
+	},
+
+	// Get ownership statistics for a collection
+	getOwnershipStats: async (
+		collectionName: string,
+	): Promise<OwnershipStatsResponse> => {
+		const response = await apiRequest<ApiResponse<OwnershipStatsResponse>>(
+			`/ownership/collections/${collectionName}/stats`,
+		);
+		return response.data;
 	},
 };
