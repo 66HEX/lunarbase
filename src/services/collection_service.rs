@@ -134,6 +134,11 @@ impl CollectionService {
             ));
         }
 
+        // Add ownership fields
+        sql.push_str("    user_id INTEGER,\n");
+        sql.push_str("    created_by INTEGER,\n");
+        sql.push_str("    owner_id INTEGER,\n");
+        sql.push_str("    author_id INTEGER,\n");
         sql.push_str("    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n");
         sql.push_str("    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n");
         sql.push_str(")");
@@ -428,6 +433,11 @@ impl CollectionService {
             ));
         }
 
+        // Add ownership fields
+        sql.push_str("    user_id INTEGER,\n");
+        sql.push_str("    created_by INTEGER,\n");
+        sql.push_str("    owner_id INTEGER,\n");
+        sql.push_str("    author_id INTEGER,\n");
         sql.push_str("    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n");
         sql.push_str("    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP\n");
         sql.push_str(")");
@@ -465,6 +475,14 @@ impl CollectionService {
         
         // Start with system columns that should always exist
         let mut common_columns = vec!["id".to_string(), "created_at".to_string(), "updated_at".to_string()];
+        
+        // Add ownership columns if they exist in the old table
+        let ownership_fields = ["user_id", "created_by", "owner_id", "author_id"];
+        for field_name in &ownership_fields {
+            if existing_column_names.contains(*field_name) {
+                common_columns.push(field_name.to_string());
+            }
+        }
         
         // Add schema fields that exist in the old table
         for field in &new_schema.fields {
@@ -1138,11 +1156,25 @@ impl CollectionService {
         let mut columns = Vec::new();
         let mut values = Vec::new();
 
+        // Add schema-defined fields
         for field in &schema.fields {
             if let Some(field_value) = validated_data.get(&field.name) {
                 columns.push(field.name.clone());
                 let sql_value = self.value_to_sql_string(field_value, &field.field_type);
                 values.push(sql_value);
+            }
+        }
+
+        // Add ownership fields from request.data (these were added by ownership_service)
+        let ownership_fields = ["user_id", "created_by", "owner_id", "author_id"];
+        for field_name in &ownership_fields {
+            if let Some(field_value) = request.data.get(field_name) {
+                // Only add if not already included from schema
+                if !columns.contains(&field_name.to_string()) {
+                    columns.push(field_name.to_string());
+                    let sql_value = self.value_to_sql_string(field_value, &FieldType::Number);
+                    values.push(sql_value);
+                }
             }
         }
 
@@ -1315,10 +1347,24 @@ impl CollectionService {
         let table_name = self.get_records_table_name(collection_name);
         let mut set_clauses = Vec::new();
 
+        // Add schema-defined fields
         for field in &schema.fields {
             if let Some(field_value) = validated_data.get(&field.name) {
                 let sql_value = self.value_to_sql_string(field_value, &field.field_type);
                 set_clauses.push(format!("{} = {}", field.name, sql_value));
+            }
+        }
+
+        // Add ownership fields from request.data (if being updated)
+        let ownership_fields = ["user_id", "created_by", "owner_id", "author_id"];
+        for field_name in &ownership_fields {
+            if let Some(field_value) = request.data.get(field_name) {
+                // Check if this field wasn't already processed from schema
+                let already_processed = schema.fields.iter().any(|f| f.name == *field_name);
+                if !already_processed {
+                    let sql_value = self.value_to_sql_string(field_value, &FieldType::Number);
+                    set_clauses.push(format!("{} = {}", field_name, sql_value));
+                }
             }
         }
 
