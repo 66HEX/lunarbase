@@ -312,7 +312,13 @@ export function EditCollectionSheet({
 																<Input
 																	placeholder="Optional"
 																	className="w-full"
-																	value={typeof field.default_value === 'string' ? field.default_value : field.default_value ? JSON.stringify(field.default_value) : ""}
+																	value={
+																		typeof field.default_value === "string"
+																			? field.default_value
+																			: field.default_value
+																				? JSON.stringify(field.default_value)
+																				: ""
+																	}
 																	onChange={(e) =>
 																		updateEditField(index, {
 																			default_value: e.target.value || null,

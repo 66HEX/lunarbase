@@ -153,13 +153,6 @@ fn create_test_schema() -> CollectionSchema {
                     enum_values: None,
                 }),
             },
-            FieldDefinition {
-                name: "user_id".to_string(),
-                field_type: FieldType::Number,
-                required: false,
-                default_value: None,
-                validation: None,
-            },
         ],
     }
 }
@@ -841,7 +834,7 @@ async fn test_ownership_full_scenario() {
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
 
     assert_eq!(json_response["data"]["is_owner"], true);
-    assert_eq!(json_response["data"]["user_id"], user1_id);
+    assert_eq!(json_response["data"]["owner_id"], user1_id);
 
     // Get user1's owned records
     let get_owned_records_request = Request::builder()
@@ -924,7 +917,7 @@ async fn test_ownership_full_scenario() {
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
 
     assert_eq!(json_response["data"]["is_owner"], true);
-    assert_eq!(json_response["data"]["user_id"], user2_id);
+    assert_eq!(json_response["data"]["owner_id"], user2_id);
 
     // Admin can view ownership statistics
     let ownership_stats_request = Request::builder()
@@ -1593,7 +1586,7 @@ async fn test_user_specific_permissions_override_role() {
 
     // Set user-specific permissions that override role permissions
     let user_permission_payload = json!({
-        "user_id": user_id,
+        "owner_id": user_id,
         "collection_name": unique_name.clone(),
         "can_create": true,
         "can_read": true,
@@ -1736,7 +1729,7 @@ async fn test_user_specific_permissions_null_values() {
 
     // Set user-specific permissions with some null values (should fall back to role permissions)
     let user_permission_payload = json!({
-        "user_id": user_id,
+        "owner_id": user_id,
         "collection_name": unique_name.clone(),
         "can_create": true,
         "can_read": null,  // Should fall back to role permission
@@ -1833,7 +1826,7 @@ async fn test_user_permissions_unauthorized_access() {
 
     // Set permissions for user1
     let user1_permission_payload = json!({
-        "user_id": user1_id,
+        "owner_id": user1_id,
         "collection_name": unique_name.clone(),
         "can_create": true,
         "can_read": true,
@@ -1883,7 +1876,7 @@ async fn test_user_permissions_unauthorized_access() {
 
     // User2 tries to set user1's permissions (should be forbidden)
     let malicious_permission_payload = json!({
-        "user_id": user1_id,
+        "owner_id": user1_id,
         "collection_name": unique_name.clone(),
         "can_create": false,
         "can_read": false,
@@ -1949,7 +1942,7 @@ async fn test_user_permissions_unauthorized_access() {
 
     // Set permissions for user2 to verify they can access their own permissions
     let user2_permission_payload = json!({
-        "user_id": user2_id,
+        "owner_id": user2_id,
         "collection_name": unique_name.clone(),
         "can_create": false,
         "can_read": true,

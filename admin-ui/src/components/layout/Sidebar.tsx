@@ -32,7 +32,7 @@ export function Sidebar() {
 	const location = useLocation();
 	const authData = useAuth();
 	const logout = authData.logout;
-	const user = 'user' in authData ? authData.user : null;
+	const user = "user" in authData ? authData.user : null;
 	const { sidebar } = useUI();
 	const { setSidebarOpen } = useUIActions();
 	const sidebarRef = useRef<HTMLDivElement>(null);

@@ -2,6 +2,7 @@
 
 import { cva, type VariantProps } from "class-variance-authority";
 import React, { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 const selectTriggerVariants = cva(
@@ -35,9 +36,11 @@ export interface SelectProps {
 	value?: string;
 	defaultValue?: string;
 	onValueChange?: (value: string) => void;
+	onOpenChange?: (open: boolean) => void;
 	disabled?: boolean;
 	children: React.ReactNode;
 	size?: "sm" | "md" | "lg";
+	portalProps?: React.HTMLAttributes<HTMLDivElement>;
 }
 
 export interface SelectTriggerProps
@@ -84,6 +87,7 @@ const SelectContext = React.createContext<{
 	setOptions: React.Dispatch<
 		React.SetStateAction<Array<{ value: string; disabled: boolean }>>
 	>;
+	portalProps?: React.HTMLAttributes<HTMLDivElement>;
 }>({
 	open: false,
 	setOpen: () => {},
@@ -98,13 +102,19 @@ export const Select: React.FC<SelectProps> = ({
 	value: controlledValue,
 	defaultValue,
 	onValueChange,
+	onOpenChange,
 	disabled = false,
 	children,
 	size = "md",
+	portalProps,
 }) => {
 	const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
 	const [displayValue, setDisplayValue] = useState<React.ReactNode>(null);
-	const [open, setOpen] = useState(false);
+	const [open, setOpenState] = useState(false);
+
+	const setOpen = (newOpen: boolean) => {
+		setOpenState(newOpen);
+	};
 	const [focusedIndex, setFocusedIndex] = useState(-1);
 	const [options, setOptions] = useState<
 		Array<{ value: string; disabled: boolean }>
@@ -122,6 +132,11 @@ export const Select: React.FC<SelectProps> = ({
 			setFocusedIndex(-1);
 		}
 	}, [open]);
+
+	// Call onOpenChange when open state changes
+	useEffect(() => {
+		onOpenChange?.(open);
+	}, [open, onOpenChange]);
 
 	// Update displayValue when value changes or children change
 	useEffect(() => {
@@ -201,6 +216,7 @@ export const Select: React.FC<SelectProps> = ({
 				setFocusedIndex,
 				options,
 				setOptions,
+				portalProps,
 			}}
 		>
 			<div className="relative not-prose">{children}</div>
@@ -295,14 +311,58 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 		setFocusedIndex,
 		options,
 		onValueChange,
+		portalProps,
 	} = React.useContext(SelectContext);
 	const contentRef = useRef<HTMLDivElement>(null);
 	const [isVisible, setIsVisible] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
+	const [dropdownPosition, setDropdownPosition] = useState({
+		top: 0,
+		left: 0,
+		width: 0,
+	});
+	const [actualPosition, setActualPosition] = useState<"top" | "bottom">(
+		position,
+	);
 
 	useEffect(() => {
 		if (open) {
 			setShouldRender(true);
+			// Calculate position based on trigger element
+			if (triggerRef?.current) {
+				const triggerRect = triggerRef.current.getBoundingClientRect();
+				const viewportHeight = window.innerHeight;
+				const spaceBelow = viewportHeight - triggerRect.bottom;
+				const spaceAbove = triggerRect.top;
+				const dropdownHeight = 240; // max-h-60 = 240px
+
+				// Determine if dropdown should open upward or downward
+				let finalPosition: "top" | "bottom" = position;
+				if (
+					position === "bottom" &&
+					spaceBelow < dropdownHeight &&
+					spaceAbove > spaceBelow
+				) {
+					finalPosition = "top";
+				} else if (
+					position === "top" &&
+					spaceAbove < dropdownHeight &&
+					spaceBelow > spaceAbove
+				) {
+					finalPosition = "bottom";
+				}
+
+				setActualPosition(finalPosition);
+				setDropdownPosition({
+					top:
+						finalPosition === "bottom"
+							? triggerRect.bottom + window.scrollY + 4
+							: triggerRect.top + window.scrollY - 4,
+					left: triggerRect.left + window.scrollX,
+					width: triggerRect.width,
+				});
+			}
+
 			requestAnimationFrame(() => {
 				requestAnimationFrame(() => {
 					setIsVisible(true);
@@ -315,9 +375,44 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 			}, 200);
 			return () => clearTimeout(timer);
 		}
-	}, [open]);
+	}, [open, position, triggerRef]);
 
 	useEffect(() => {
+		const updatePosition = () => {
+			if (open && triggerRef?.current) {
+				const triggerRect = triggerRef.current.getBoundingClientRect();
+				const viewportHeight = window.innerHeight;
+				const spaceBelow = viewportHeight - triggerRect.bottom;
+				const spaceAbove = triggerRect.top;
+				const dropdownHeight = 240;
+
+				let finalPosition: "top" | "bottom" = position;
+				if (
+					position === "bottom" &&
+					spaceBelow < dropdownHeight &&
+					spaceAbove > spaceBelow
+				) {
+					finalPosition = "top";
+				} else if (
+					position === "top" &&
+					spaceAbove < dropdownHeight &&
+					spaceBelow > spaceAbove
+				) {
+					finalPosition = "bottom";
+				}
+
+				setActualPosition(finalPosition);
+				setDropdownPosition({
+					top:
+						finalPosition === "bottom"
+							? triggerRect.bottom + window.scrollY + 4
+							: triggerRect.top + window.scrollY - 4,
+					left: triggerRect.left + window.scrollX,
+					width: triggerRect.width,
+				});
+			}
+		};
+
 		const handleClickOutside = (event: MouseEvent) => {
 			const target = event.target as Node;
 			const isClickInContent =
@@ -396,11 +491,15 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 		if (open) {
 			document.addEventListener("mousedown", handleClickOutside);
 			document.addEventListener("keydown", handleKeyDown);
+			window.addEventListener("scroll", updatePosition, true);
+			window.addEventListener("resize", updatePosition);
 		}
 
 		return () => {
 			document.removeEventListener("mousedown", handleClickOutside);
 			document.removeEventListener("keydown", handleKeyDown);
+			window.removeEventListener("scroll", updatePosition, true);
+			window.removeEventListener("resize", updatePosition);
 		};
 	}, [
 		open,
@@ -411,17 +510,13 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 		options,
 		onValueChange,
 		children,
+		position,
 	]);
 
 	if (!shouldRender) return null;
 
-	const positionStyles = {
-		bottom: "top-full mt-1",
-		top: "bottom-full mb-1",
-	};
-
 	const animationStyles =
-		position === "bottom"
+		actualPosition === "bottom"
 			? `transform transition-all duration-200 ease-out origin-top ${
 					isVisible ? "translate-y-0 opacity-100" : "-translate-y-1 opacity-0"
 				}`
@@ -429,17 +524,28 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 					isVisible ? "translate-y-0 opacity-100" : "translate-y-1 opacity-0"
 				}`;
 
-	return (
+	const dropdownContent = (
 		<div
+			{...portalProps}
 			ref={contentRef}
 			id={contentId}
 			role="listbox"
+			style={{
+				position: "fixed",
+				top:
+					actualPosition === "bottom"
+						? dropdownPosition.top
+						: dropdownPosition.top - 240,
+				left: dropdownPosition.left,
+				width: dropdownPosition.width,
+				zIndex: 9999,
+			}}
 			className={cn(
-				"absolute z-50 w-full min-w-[8rem] overflow-hidden rounded-lg border border-nocta-300 dark:border-nocta-800/50 bg-white dark:bg-nocta-950 shadow-lg dark:shadow-xl",
-				positionStyles[position],
+				"min-w-[8rem] overflow-hidden rounded-lg border border-nocta-300 dark:border-nocta-800/50 bg-white dark:bg-nocta-950 shadow-lg dark:shadow-xl",
 				animationStyles,
 				"not-prose",
 				className,
+				portalProps?.className,
 			)}
 		>
 			<div className="max-h-60 overflow-auto py-1 flex flex-col gap-1">
@@ -447,6 +553,11 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 			</div>
 		</div>
 	);
+
+	// Use portal to render dropdown outside of component tree
+	return typeof document !== "undefined"
+		? createPortal(dropdownContent, document.body)
+		: null;
 };
 
 export const SelectItem: React.FC<SelectItemProps> = ({
@@ -533,7 +644,7 @@ export const SelectValue: React.FC<SelectValueProps> = ({
 	const { value, displayValue } = React.useContext(SelectContext);
 
 	return (
-		<span className={`block text-left ${className}`}>
+		<span className={`block text-left w-full ${className}`}>
 			{value ? (
 				<span>{displayValue}</span>
 			) : (

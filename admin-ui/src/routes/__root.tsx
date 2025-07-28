@@ -41,9 +41,9 @@ export const Route = createRootRoute({
 function RootComponent() {
 	const location = useLocation();
 	const authData = useAuth();
-	const user = 'user' in authData ? authData.user : null;
+	const user = "user" in authData ? authData.user : null;
 	const isAuthenticated = authData.isAuthenticated;
-	const fetchUser = 'fetchUser' in authData ? authData.fetchUser : undefined;
+	const fetchUser = "fetchUser" in authData ? authData.fetchUser : undefined;
 	const { sidebar } = useUI();
 	const { setSidebarOpen } = useUIActions();
 

@@ -12,9 +12,9 @@ import type {
 	HealthResponse,
 	LoginRequest,
 	LoginResponse,
+	OwnedRecordsResponse,
 	OwnershipCheckResponse,
 	OwnershipStatsResponse,
-	OwnedRecordsResponse,
 	PaginatedRecordsResponse,
 	PaginatedUsersResponse,
 	PermissionResult,
@@ -645,7 +645,8 @@ export const ownershipApi = {
 			queryString ? `?${queryString}` : ""
 		}`;
 
-		const response = await apiRequest<ApiResponse<OwnedRecordsResponse>>(endpoint);
+		const response =
+			await apiRequest<ApiResponse<OwnedRecordsResponse>>(endpoint);
 		return response.data;
 	},
 
@@ -665,7 +666,8 @@ export const ownershipApi = {
 			queryString ? `?${queryString}` : ""
 		}`;
 
-		const response = await apiRequest<ApiResponse<OwnedRecordsResponse>>(endpoint);
+		const response =
+			await apiRequest<ApiResponse<OwnedRecordsResponse>>(endpoint);
 		return response.data;
 	},
 

@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Edit3, Trash2 } from "lucide-react";
+import { Edit3, Trash2, UserPen } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import { OwnershipBadge, TransferOwnership } from "@/components/ownership";
 import {
 	DeleteRecordDialog,
 	EditRecordSheet,
 	EmptyRecordsState,
 	RecordsHeader,
 } from "@/components/records";
-import { OwnershipBadge } from "@/components/ownership";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -18,10 +18,10 @@ import {
 	useUpdateRecord,
 } from "@/hooks/records/useRecordMutations";
 import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
-import { useAuthStore } from "@/stores/auth-persist.store";
 import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
 import { useToast } from "@/hooks/useToast";
 import { CustomApiError } from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { Collection, RecordData, RecordWithCollection } from "@/types/api";
 
@@ -232,24 +232,29 @@ export default function RecordsComponent() {
 			title: "Data",
 			render: (_, record) => {
 				// Filter out ownership-related fields and ID since they're shown in separate columns
-				const excludedFields = ['id', 'owner_id', 'author_id', 'created_by', 'user_id'];
-				const filteredEntries = Object.entries(record.data)
-					.filter(([key]) => !excludedFields.includes(key));
-				
+				const excludedFields = [
+					"id",
+					"owner_id",
+					"author_id",
+					"created_by",
+					"user_id",
+				];
+				const filteredEntries = Object.entries(record.data).filter(
+					([key]) => !excludedFields.includes(key),
+				);
+
 				return (
 					<div className="flex gap-4">
-						{filteredEntries
-							.slice(0, 2)
-							.map(([key, value]) => (
-								<div key={key} className="text-sm">
-									<span className="font-medium text-nocta-700 dark:text-nocta-300">
-										{key}:
-									</span>{" "}
-									<span className="text-nocta-600 dark:text-nocta-400 truncate">
-										{formatFieldValue(value)}
-									</span>
-								</div>
-							))}
+						{filteredEntries.slice(0, 2).map(([key, value]) => (
+							<div key={key} className="text-sm">
+								<span className="font-medium text-nocta-700 dark:text-nocta-300">
+									{key}:
+								</span>{" "}
+								<span className="text-nocta-600 dark:text-nocta-400 truncate">
+									{formatFieldValue(value)}
+								</span>
+							</div>
+						))}
 						{filteredEntries.length > 2 && (
 							<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
 								+{filteredEntries.length - 2} more fields
@@ -266,8 +271,8 @@ export default function RecordsComponent() {
 			render: (_, record) => {
 				// Extract ownership fields from record.data
 				const getUserId = (value: unknown): number | undefined => {
-					if (typeof value === 'number') return value;
-					if (typeof value === 'string') {
+					if (typeof value === "number") return value;
+					if (typeof value === "string") {
 						const parsed = parseInt(value, 10);
 						return isNaN(parsed) ? undefined : parsed;
 					}
@@ -308,30 +313,64 @@ export default function RecordsComponent() {
 			title: "Actions",
 			align: "left",
 			className: "w-24",
-			render: (_, record) => (
-				<div className="flex items-center gap-1">
-					<Button
-						variant="ghost"
-						size="sm"
-						className="w-8 h-8 p-0"
-						onClick={() => handleEditRecord(record)}
-						title="Edit record"
-					>
-						<Edit3 className="w-4 h-4" />
-					</Button>
-					<Button
-						variant="ghost"
-						size="sm"
-						className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-						onClick={() =>
-							handleDeleteRecord(record.collection_name, record.id)
-						}
-						title="Delete record"
-					>
-						<Trash2 className="w-4 h-4" />
-					</Button>
-				</div>
-			),
+			render: (_, record) => {
+				// Extract current owner ID for transfer ownership
+				const getUserId = (value: unknown): number | undefined => {
+					if (typeof value === "number") return value;
+					if (typeof value === "string") {
+						const parsed = parseInt(value, 10);
+						return isNaN(parsed) ? undefined : parsed;
+					}
+					return undefined;
+				};
+
+				const currentOwnerId =
+					getUserId(record.data.owner_id) ||
+					getUserId(record.data.user_id) ||
+					getUserId(record.data.created_by) ||
+					getUserId(record.data.author_id);
+
+				return (
+					<div className="flex items-center gap-1">
+						<TransferOwnership
+							collectionName={record.collection_name}
+							recordId={record.id}
+							currentOwnerId={currentOwnerId}
+							onSuccess={() => refetch()}
+							trigger={
+								<Button
+									variant="ghost"
+									size="sm"
+									className="w-8 h-8 p-0"
+									title="Transfer ownership"
+								>
+									<UserPen className="w-4 h-4" />
+								</Button>
+							}
+						/>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="w-8 h-8 p-0"
+							onClick={() => handleEditRecord(record)}
+							title="Edit record"
+						>
+							<Edit3 className="w-4 h-4" />
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+							onClick={() =>
+								handleDeleteRecord(record.collection_name, record.id)
+							}
+							title="Delete record"
+						>
+							<Trash2 className="w-4 h-4" />
+						</Button>
+					</div>
+				);
+			},
 		},
 	];
 

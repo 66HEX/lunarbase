@@ -50,7 +50,7 @@ export function CollectionsOverviewCard({
 												variant="secondary"
 												className="px-2 py-0.5 text-xs font-medium"
 											>
-												{count} records
+												{count} {count === 1 ? "record" : "records"}
 											</Badge>
 										</div>
 									</div>

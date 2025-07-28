@@ -258,10 +258,23 @@ pub async fn check_record_ownership(
         .ownership_service
         .get_ownership_permissions(&user, &record)?;
 
+    // Extract owner_id from record data
+    let owner_id = record.data.get("owner_id")
+        .and_then(|v| v.as_i64())
+        .or_else(|| record.data.get("owner_id")
+            .and_then(|v| v.as_str())
+            .and_then(|s| s.parse::<i64>().ok()))
+        .or_else(|| record.data.get("author_id")
+            .and_then(|v| v.as_i64()))
+        .or_else(|| record.data.get("author_id")
+            .and_then(|v| v.as_str())
+            .and_then(|s| s.parse::<i64>().ok()));
+
     Ok(Json(ApiResponse::success(json!({
         "collection_name": collection_name,
         "record_id": record_id,
         "user_id": user.id,
+        "owner_id": owner_id,
         "is_owner": is_owner,
         "ownership_permissions": {
             "can_read": ownership_permissions.can_read,
@@ -343,9 +356,9 @@ pub async fn get_ownership_stats(
         .map(|r| r.count)
         .unwrap_or(0);
 
-    // Count records with ownership (have user_id)
+    // Count records with ownership (have owner_id or author_id)
     let owned_records_query = format!(
-        "SELECT COUNT(*) as count FROM {} WHERE user_id IS NOT NULL",
+        "SELECT COUNT(*) as count FROM {} WHERE owner_id IS NOT NULL OR author_id IS NOT NULL",
         table_name
     );
 

@@ -4,15 +4,15 @@ import {
 	useNavigate,
 	useParams,
 } from "@tanstack/react-router";
-import { ArrowLeft, Edit3, Trash2 } from "lucide-react";
+import { ArrowLeft, Edit3, Trash2, UserPen } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { OwnershipBadge, TransferOwnership } from "@/components/ownership";
 import {
 	CollectionRecordsEditSheet,
 	CollectionRecordsHeader,
 	DeleteRecordDialog,
 	EmptyCollectionRecordsState,
 } from "@/components/records";
-import { OwnershipBadge } from "@/components/ownership";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -25,8 +25,8 @@ import {
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useToast } from "@/hooks/useToast";
-import { useAuthStore } from "@/stores/auth-persist.store";
 import { CustomApiError, collectionsApi } from "@/lib/api";
+import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, Collection, RecordData } from "@/types/api";
 
@@ -35,8 +35,8 @@ type Record = ApiRecord;
 
 // Helper function to safely parse user ID from record data
 const getUserId = (value: unknown): number | undefined => {
-	if (typeof value === 'number') return value;
-	if (typeof value === 'string') {
+	if (typeof value === "number") return value;
+	if (typeof value === "string") {
 		const parsed = parseInt(value, 10);
 		return isNaN(parsed) ? undefined : parsed;
 	}
@@ -326,24 +326,29 @@ export default function RecordComponent() {
 									title: "Data",
 									render: (_value: unknown, record: ApiRecord) => {
 										// Filter out ownership-related fields and ID since they're shown in separate columns
-										const excludedFields = ['id', 'owner_id', 'author_id', 'created_by', 'user_id'];
-										const filteredEntries = Object.entries(record.data)
-											.filter(([key]) => !excludedFields.includes(key));
-										
+										const excludedFields = [
+											"id",
+											"owner_id",
+											"author_id",
+											"created_by",
+											"user_id",
+										];
+										const filteredEntries = Object.entries(record.data).filter(
+											([key]) => !excludedFields.includes(key),
+										);
+
 										return (
 											<div className="flex gap-4">
-												{filteredEntries
-													.slice(0, 2)
-													.map(([key, value]) => (
-														<div key={key} className="text-sm">
-															<span className="font-medium text-nocta-700 dark:text-nocta-300">
-																{key}:
-															</span>{" "}
-															<span className="text-nocta-600 dark:text-nocta-400 truncate">
-																{formatFieldValue(value)}
-															</span>
-														</div>
-													))}
+												{filteredEntries.slice(0, 2).map(([key, value]) => (
+													<div key={key} className="text-sm">
+														<span className="font-medium text-nocta-700 dark:text-nocta-300">
+															{key}:
+														</span>{" "}
+														<span className="text-nocta-600 dark:text-nocta-400 truncate">
+															{formatFieldValue(value)}
+														</span>
+													</div>
+												))}
 												{filteredEntries.length > 2 && (
 													<div className="text-xs text-nocta-500 dark:text-nocta-500 mt-1">
 														+{filteredEntries.length - 2} more fields
@@ -358,17 +363,17 @@ export default function RecordComponent() {
 									title: "Ownership",
 									className: "w-32",
 									render: (_value: unknown, record: ApiRecord) => (
-												<OwnershipBadge
-													ownership={{
-														user_id: getUserId(record.data.user_id),
-														created_by: getUserId(record.data.created_by),
-														owner_id: getUserId(record.data.owner_id),
-														author_id: getUserId(record.data.author_id),
-													}}
-													currentUserId={user?.id}
-													size="sm"
-												/>
-											),
+										<OwnershipBadge
+											ownership={{
+												user_id: getUserId(record.data.user_id),
+												created_by: getUserId(record.data.created_by),
+												owner_id: getUserId(record.data.owner_id),
+												author_id: getUserId(record.data.author_id),
+											}}
+											currentUserId={user?.id}
+											size="sm"
+										/>
+									),
 								},
 								{
 									key: "created_at",
@@ -390,28 +395,58 @@ export default function RecordComponent() {
 									title: "Actions",
 									className: "w-24",
 									align: "left",
-									render: (_value: unknown, record: ApiRecord) => (
-										<div className="flex items-center gap-1">
-											<Button
-												variant="ghost"
-												size="sm"
-												className="w-8 h-8 p-0"
-												onClick={() => handleEditRecord(record)}
-												title="Edit record"
-											>
-												<Edit3 className="w-4 h-4" />
-											</Button>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-												onClick={() => handleDeleteRecord(record.id)}
-												title="Delete record"
-											>
-												<Trash2 className="w-4 h-4" />
-											</Button>
-										</div>
-									),
+									render: (_value: unknown, record: ApiRecord) => {
+										// Extract current owner ID for transfer ownership
+										const currentOwnerId =
+											getUserId(record.data.owner_id) ||
+											getUserId(record.data.user_id) ||
+											getUserId(record.data.created_by) ||
+											getUserId(record.data.author_id);
+
+										return (
+											<div className="flex items-center gap-1">
+												<TransferOwnership
+													collectionName={collectionName || ""}
+													recordId={record.id}
+													currentOwnerId={currentOwnerId}
+													onSuccess={() => {
+														// Invalidate queries to refresh data
+														queryClient.invalidateQueries({
+															queryKey: ["collectionRecords", collectionName],
+														});
+													}}
+													trigger={
+														<Button
+															variant="ghost"
+															size="sm"
+															className="w-8 h-8 p-0"
+															title="Transfer ownership"
+														>
+															<UserPen className="w-4 h-4" />
+														</Button>
+													}
+												/>
+												<Button
+													variant="ghost"
+													size="sm"
+													className="w-8 h-8 p-0"
+													onClick={() => handleEditRecord(record)}
+													title="Edit record"
+												>
+													<Edit3 className="w-4 h-4" />
+												</Button>
+												<Button
+													variant="ghost"
+													size="sm"
+													className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+													onClick={() => handleDeleteRecord(record.id)}
+													title="Delete record"
+												>
+													<Trash2 className="w-4 h-4" />
+												</Button>
+											</div>
+										);
+									},
 								},
 							]}
 							data={records}

@@ -1,12 +1,10 @@
 // Query hooks
 export {
+	useMyOwnedRecords,
 	useOwnershipCheck,
 	useOwnershipStats,
-	useMyOwnedRecords,
 	useUserOwnedRecords,
 } from "./useOwnership";
 
 // Mutation hooks
-export {
-	useTransferOwnership,
-} from "./useOwnershipMutations";
+export { useTransferOwnership } from "./useOwnershipMutations";

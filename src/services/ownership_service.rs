@@ -23,47 +23,33 @@ impl OwnershipService {
         user: &User,
         record_data: &mut Value,
     ) -> Result<(), AuthError> {
-        // Automatically add user_id field if not present
-        if !record_data.as_object().unwrap().contains_key("user_id") {
+        // Automatically add author_id field if not present
+        if !record_data.as_object().unwrap().contains_key("author_id") {
             if let Some(obj) = record_data.as_object_mut() {
-                obj.insert("user_id".to_string(), Value::Number(user.id.into()));
+                obj.insert("author_id".to_string(), Value::Number(user.id.into()));
             }
         }
 
-        // Also add created_by field for better tracking
-        if !record_data.as_object().unwrap().contains_key("created_by") {
+        // Also add owner_id field for ownership tracking
+        if !record_data.as_object().unwrap().contains_key("owner_id") {
             if let Some(obj) = record_data.as_object_mut() {
-                obj.insert("created_by".to_string(), Value::Number(user.id.into()));
+                obj.insert("owner_id".to_string(), Value::Number(user.id.into()));
             }
         }
 
         Ok(())
     }
 
-    /// Check various ownership patterns
+    /// Check ownership patterns
     pub fn check_ownership(&self, user: &User, record: &RecordResponse) -> Result<bool, AuthError> {
-        // Pattern 1: user_id field
-        if let Some(user_id_value) = record.data.get("user_id") {
-            if self.matches_user_id(user_id_value, user.id) {
-                return Ok(true);
-            }
-        }
-
-        // Pattern 2: created_by field
-        if let Some(created_by_value) = record.data.get("created_by") {
-            if self.matches_user_id(created_by_value, user.id) {
-                return Ok(true);
-            }
-        }
-
-        // Pattern 3: owner_id field
+        // Pattern 1: owner_id field
         if let Some(owner_id_value) = record.data.get("owner_id") {
             if self.matches_user_id(owner_id_value, user.id) {
                 return Ok(true);
             }
         }
 
-        // Pattern 4: author_id field
+        // Pattern 2: author_id field
         if let Some(author_id_value) = record.data.get("author_id") {
             if self.matches_user_id(author_id_value, user.id) {
                 return Ok(true);
@@ -168,27 +154,19 @@ impl OwnershipService {
         // Update record ownership fields in the dynamic table
         let table_name = format!("records_{}", collection_name);
 
-        // Try to update user_id field if it exists
-        let update_user_id_sql = format!(
-            "UPDATE {} SET user_id = {} WHERE id = {}",
-            table_name, new_owner_id, record_id
-        );
-
         // Try to update owner_id field if it exists
         let update_owner_id_sql = format!(
             "UPDATE {} SET owner_id = {} WHERE id = {}",
             table_name, new_owner_id, record_id
         );
 
-        // Execute updates - at least one should succeed if ownership fields exist
-        let user_id_result = diesel::sql_query(&update_user_id_sql).execute(&mut conn);
-
+        // Execute update - owner_id should exist for ownership transfer
         let owner_id_result = diesel::sql_query(&update_owner_id_sql).execute(&mut conn);
 
-        // If both fail, the record might not have ownership fields
-        if user_id_result.is_err() && owner_id_result.is_err() {
+        // If update fails, the record might not have ownership fields
+        if owner_id_result.is_err() {
             return Err(AuthError::ValidationError(vec![
-                "Record does not have ownership fields (user_id or owner_id)".to_string(),
+                "Record does not have owner_id field for ownership transfer".to_string(),
             ]));
         }
 
@@ -251,41 +229,29 @@ impl OwnershipService {
         // Try multiple ownership patterns
         let mut owned_record_ids = Vec::new();
 
-        // Pattern 1: user_id field
-        let user_id_query = format!(
-            "SELECT id FROM {} WHERE user_id = {} LIMIT {} OFFSET {}",
+        // Pattern 1: owner_id field
+        let owner_id_query = format!(
+            "SELECT id FROM {} WHERE owner_id = {} LIMIT {} OFFSET {}",
             table_name, user.id, limit_clause, offset_clause
         );
 
-        if let Ok(results) = self.execute_ownership_query(&mut conn, &user_id_query) {
+        if let Ok(results) = self.execute_ownership_query(&mut conn, &owner_id_query) {
             owned_record_ids.extend(results);
         }
 
-        // Pattern 2: owner_id field (if user_id didn't return results)
+        // Pattern 2: author_id field (if owner_id didn't return results)
         if owned_record_ids.is_empty() {
-            let owner_id_query = format!(
-                "SELECT id FROM {} WHERE owner_id = {} LIMIT {} OFFSET {}",
+            let author_id_query = format!(
+                "SELECT id FROM {} WHERE author_id = {} LIMIT {} OFFSET {}",
                 table_name, user.id, limit_clause, offset_clause
             );
 
-            if let Ok(results) = self.execute_ownership_query(&mut conn, &owner_id_query) {
+            if let Ok(results) = self.execute_ownership_query(&mut conn, &author_id_query) {
                 owned_record_ids.extend(results);
             }
         }
 
-        // Pattern 3: created_by field (if others didn't return results)
-        if owned_record_ids.is_empty() {
-            let created_by_query = format!(
-                "SELECT id FROM {} WHERE created_by = {} LIMIT {} OFFSET {}",
-                table_name, user.id, limit_clause, offset_clause
-            );
-
-            if let Ok(results) = self.execute_ownership_query(&mut conn, &created_by_query) {
-                owned_record_ids.extend(results);
-            }
-        }
-
-        // Pattern 4: email-based ownership
+        // Pattern 3: email-based ownership (fallback)
         if owned_record_ids.is_empty() {
             let email_query = format!(
                 "SELECT id FROM {} WHERE email = '{}' LIMIT {} OFFSET {}",

@@ -544,26 +544,26 @@ impl PermissionService {
         user: &User,
         record: &crate::models::RecordResponse,
     ) -> Result<bool, AuthError> {
-        // Check if the record has a user_id field that matches the current user
-        if let Some(user_id_value) = record.data.get("user_id") {
-            if let Some(record_user_id) = user_id_value.as_i64() {
-                return Ok(record_user_id == user.id as i64);
+        // Check if the record has an owner_id field that matches the current user
+        if let Some(owner_id_value) = record.data.get("owner_id") {
+            if let Some(record_owner_id) = owner_id_value.as_i64() {
+                return Ok(record_owner_id == user.id as i64);
             }
-            if let Some(record_user_id_str) = user_id_value.as_str() {
-                if let Ok(record_user_id) = record_user_id_str.parse::<i32>() {
-                    return Ok(record_user_id == user.id);
+            if let Some(record_owner_id_str) = owner_id_value.as_str() {
+                if let Ok(record_owner_id) = record_owner_id_str.parse::<i32>() {
+                    return Ok(record_owner_id == user.id);
                 }
             }
         }
 
-        // Check if record has created_by field
-        if let Some(created_by_value) = record.data.get("created_by") {
-            if let Some(created_by_id) = created_by_value.as_i64() {
-                return Ok(created_by_id == user.id as i64);
+        // Check if record has author_id field
+        if let Some(author_id_value) = record.data.get("author_id") {
+            if let Some(author_id) = author_id_value.as_i64() {
+                return Ok(author_id == user.id as i64);
             }
-            if let Some(created_by_str) = created_by_value.as_str() {
-                if let Ok(created_by_id) = created_by_str.parse::<i32>() {
-                    return Ok(created_by_id == user.id);
+            if let Some(author_id_str) = author_id_value.as_str() {
+                if let Ok(author_id) = author_id_str.parse::<i32>() {
+                    return Ok(author_id == user.id);
                 }
             }
         }

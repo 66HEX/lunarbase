@@ -1,9 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { ownershipApi } from "@/lib/api";
 import type {
+	OwnedRecordsResponse,
 	OwnershipCheckResponse,
 	OwnershipStatsResponse,
-	OwnedRecordsResponse
 } from "@/types/api";
 
 /**
@@ -16,7 +16,8 @@ export const useOwnershipCheck = (
 ) => {
 	return useQuery<OwnershipCheckResponse>({
 		queryKey: ["ownership", "check", collectionName, recordId],
-		queryFn: (): Promise<OwnershipCheckResponse> => ownershipApi.checkRecordOwnership(collectionName, recordId),
+		queryFn: (): Promise<OwnershipCheckResponse> =>
+			ownershipApi.checkRecordOwnership(collectionName, recordId),
 		enabled: enabled && !!collectionName && !!recordId,
 		staleTime: 5 * 60 * 1000, // 5 minutes
 		gcTime: 10 * 60 * 1000, // 10 minutes
@@ -30,7 +31,8 @@ export const useOwnershipCheck = (
 export const useOwnershipStats = (collectionName: string, enabled = true) => {
 	return useQuery<OwnershipStatsResponse>({
 		queryKey: ["ownership", "stats", collectionName],
-		queryFn: (): Promise<OwnershipStatsResponse> => ownershipApi.getOwnershipStats(collectionName),
+		queryFn: (): Promise<OwnershipStatsResponse> =>
+			ownershipApi.getOwnershipStats(collectionName),
 		enabled: enabled && !!collectionName,
 		staleTime: 2 * 60 * 1000, // 2 minutes
 		gcTime: 5 * 60 * 1000, // 5 minutes
@@ -49,7 +51,8 @@ export const useMyOwnedRecords = (
 ) => {
 	return useQuery<OwnedRecordsResponse>({
 		queryKey: ["ownership", "my-records", collectionName, limit, offset],
-		queryFn: (): Promise<OwnedRecordsResponse> => ownershipApi.getMyOwnedRecords(collectionName, limit, offset),
+		queryFn: (): Promise<OwnedRecordsResponse> =>
+			ownershipApi.getMyOwnedRecords(collectionName, limit, offset),
 		enabled: enabled && !!collectionName,
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000, // 5 minutes
@@ -68,8 +71,16 @@ export const useUserOwnedRecords = (
 	enabled = true,
 ) => {
 	return useQuery<OwnedRecordsResponse>({
-		queryKey: ["ownership", "user-records", collectionName, userId, limit, offset],
-		queryFn: (): Promise<OwnedRecordsResponse> => ownershipApi.getUserOwnedRecords(collectionName, userId, limit, offset),
+		queryKey: [
+			"ownership",
+			"user-records",
+			collectionName,
+			userId,
+			limit,
+			offset,
+		],
+		queryFn: (): Promise<OwnedRecordsResponse> =>
+			ownershipApi.getUserOwnedRecords(collectionName, userId, limit, offset),
 		enabled: enabled && !!collectionName && !!userId,
 		staleTime: 1 * 60 * 1000, // 1 minute
 		gcTime: 5 * 60 * 1000, // 5 minutes

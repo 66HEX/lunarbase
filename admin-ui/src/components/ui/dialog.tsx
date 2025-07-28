@@ -275,13 +275,24 @@ export const DialogContent: React.FC<DialogContentProps> = ({
 
 	useEffect(() => {
 		const handleClickOutside = (e: MouseEvent) => {
-			if (
-				contentRef.current &&
-				!contentRef.current.contains(e.target as Node)
-			) {
-				onOpenChange(false);
+			const target = e.target as HTMLElement;
+
+			if (contentRef.current?.contains(target)) {
+				return;
 			}
+
+			if (target.closest("[data-dialog-portal]")) {
+				return;
+			}
+
+			onOpenChange(false);
 		};
+
+		if (open) {
+			document.addEventListener("keydown", handleKeyDown);
+			document.addEventListener("mousedown", handleClickOutside);
+			document.body.style.overflow = "hidden";
+		}
 
 		if (open) {
 			document.addEventListener("keydown", handleKeyDown);

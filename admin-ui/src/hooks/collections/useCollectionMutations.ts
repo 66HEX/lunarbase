@@ -2,12 +2,12 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/useToast";
 import { collectionsApi, permissionsApi } from "@/lib/api";
 import type {
+	BasePermissions,
 	Collection,
 	CollectionPermissions,
 	CreateCollectionRequest,
 	SetCollectionPermissionRequest,
 	UpdateCollectionRequest,
-	BasePermissions,
 } from "@/types/api";
 
 /**
@@ -208,9 +208,11 @@ export const useSaveCollectionPermissions = () => {
 		}) => {
 			// Convert CollectionPermissions to individual SetCollectionPermissionRequest calls
 			const promises: Promise<void>[] = [];
-			
+
 			// Set role permissions
-			for (const [roleName, rolePerms] of Object.entries(permissions.role_permissions)) {
+			for (const [roleName, rolePerms] of Object.entries(
+				permissions.role_permissions,
+			)) {
 				const typedRolePerms = rolePerms as BasePermissions;
 				const rolePermissionRequest: SetCollectionPermissionRequest = {
 					role_name: roleName,
@@ -221,11 +223,15 @@ export const useSaveCollectionPermissions = () => {
 					can_delete: typedRolePerms.can_delete,
 					can_list: typedRolePerms.can_list,
 				};
-				promises.push(permissionsApi.setCollectionPermission(rolePermissionRequest));
+				promises.push(
+					permissionsApi.setCollectionPermission(rolePermissionRequest),
+				);
 			}
-			
+
 			// Set user permissions
-			for (const [userId, userPerms] of Object.entries(permissions.user_permissions)) {
+			for (const [userId, userPerms] of Object.entries(
+				permissions.user_permissions,
+			)) {
 				const typedUserPerms = userPerms as {
 					can_create: boolean | null;
 					can_read: boolean | null;
@@ -242,9 +248,11 @@ export const useSaveCollectionPermissions = () => {
 					can_delete: typedUserPerms.can_delete,
 					can_list: typedUserPerms.can_list,
 				};
-				promises.push(permissionsApi.setUserCollectionPermissions(userPermissionRequest));
+				promises.push(
+					permissionsApi.setUserCollectionPermissions(userPermissionRequest),
+				);
 			}
-			
+
 			await Promise.all(promises);
 			return { collectionName, permissions };
 		},

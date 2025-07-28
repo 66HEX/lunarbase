@@ -1,9 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ownershipApi } from "@/lib/api";
 import { useToast } from "@/hooks/useToast";
-import type {
-	TransferOwnershipRequest,
-} from "@/types/api";
+import { ownershipApi } from "@/lib/api";
+import type { TransferOwnershipRequest } from "@/types/api";
 
 /**
  * Hook for transferring record ownership
@@ -40,7 +38,7 @@ export const useTransferOwnership = () => {
 				queryKey: ["record", variables.collectionName, variables.recordId],
 			});
 		},
-		onError: (error: any) => {
+		onError: (error: Error) => {
 			toast({
 				title: "Transfer failed",
 				description: error.message || "Failed to transfer ownership.",
