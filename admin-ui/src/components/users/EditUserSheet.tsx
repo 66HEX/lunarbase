@@ -1,4 +1,4 @@
-import { Save, User as UserIcon } from "lucide-react";
+import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -166,7 +166,6 @@ export function EditUserSheet({
 			<SheetContent side="right" size="lg">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
-						<UserIcon className="w-5 h-5" />
 						Edit User
 					</SheetTitle>
 					<SheetDescription>Update user account information</SheetDescription>

@@ -1,9 +1,10 @@
 use axum::{
     Extension,
-    extract::{Request, State},
+    extract::{ConnectInfo, FromRequest, Request, State},
     http::{HeaderMap, StatusCode},
     response::Json,
 };
+use std::net::SocketAddr;
 use diesel::prelude::*;
 use serde_json::Value;
 use std::time::Duration;
@@ -15,7 +16,7 @@ use crate::{
         AuthResponse, LoginRequest, LogoutRequest, LogoutResponse, NewUser, RegisterRequest, User,
     },
     schema::users,
-    utils::{ApiResponse, AuthError, Claims, CookieService, ErrorResponse},
+    utils::{client_ip::extract_client_ip, ApiResponse, AuthError, Claims, CookieService, ErrorResponse},
 };
 
 /// Register a new user
@@ -36,16 +37,25 @@ use crate::{
 )]
 pub async fn register(
     State(app_state): State<AppState>,
-    Json(payload): Json<RegisterRequest>,
+    request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+    // Extract client IP for rate limiting
+    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>().copied();
+    let client_ip = extract_client_ip(request.headers(), connect_info);
+    let rate_limit_key = format!("register:{}", client_ip);
+    
     // Rate limiting check
     if !app_state
         .auth_state
         .rate_limiter
-        .check_rate_limit("register")
+        .check_rate_limit(&rate_limit_key)
     {
         return Err(AuthError::RateLimitExceeded);
     }
+    
+    // Extract JSON payload from request
+    let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state).await
+        .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
     // Validate request payload
     payload.validate().map_err(AuthError::ValidationError)?;
@@ -208,17 +218,25 @@ pub async fn logout(
 )]
 pub async fn login(
     State(app_state): State<AppState>,
-    Json(payload): Json<LoginRequest>,
+    request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+    // Extract client IP for rate limiting
+    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>().copied();
+    let client_ip = extract_client_ip(request.headers(), connect_info);
+    let rate_limit_key = format!("login:{}", client_ip);
+    
     // Rate limiting check
-    let client_ip = "login"; // In production, get real IP
     if !app_state
         .auth_state
         .rate_limiter
-        .check_rate_limit(client_ip)
+        .check_rate_limit(&rate_limit_key)
     {
         return Err(AuthError::RateLimitExceeded);
     }
+    
+    // Extract JSON payload from request
+    let Json(payload): Json<LoginRequest> = Json::from_request(request, &app_state).await
+        .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
     // Validate request payload
     payload.validate().map_err(AuthError::ValidationError)?;
@@ -488,16 +506,25 @@ pub async fn me(
 )]
 pub async fn register_admin(
     State(app_state): State<AppState>,
-    Json(payload): Json<RegisterRequest>,
+    request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+    // Extract client IP for rate limiting
+    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>().copied();
+    let client_ip = extract_client_ip(request.headers(), connect_info);
+    let rate_limit_key = format!("register_admin:{}", client_ip);
+    
     // Rate limiting check
     if !app_state
         .auth_state
         .rate_limiter
-        .check_rate_limit("register_admin")
+        .check_rate_limit(&rate_limit_key)
     {
         return Err(AuthError::RateLimitExceeded);
     }
+    
+    // Extract JSON payload from request
+    let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state).await
+        .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
     // Validate request payload
     payload.validate().map_err(AuthError::ValidationError)?;
