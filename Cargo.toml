@@ -29,6 +29,11 @@ utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }
 sysinfo = "0.36.0"
 prometheus = "0.14.0"
 axum-prometheus = "0.8.0"
+oauth2 = "5.0.0"
+reqwest = { version = "0.12.22", features = ["json"] }
+url = "2.5.4"
+serde_urlencoded = "0.7.1"
+urlencoding = "2.1.3"
 
 [dev-dependencies]
 tower = { version = "0.5.2", features = ["util"] }

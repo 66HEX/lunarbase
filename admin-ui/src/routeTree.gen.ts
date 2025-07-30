@@ -19,6 +19,8 @@ import { Route as CollectionsRouteImport } from './routes/collections'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as RecordsIndexRouteImport } from './routes/records/index'
 import { Route as RecordsCollectionRouteImport } from './routes/records/$collection'
+import { Route as AuthSuccessRouteImport } from './routes/auth/success'
+import { Route as AuthErrorRouteImport } from './routes/auth/error'
 
 const WebsocketRoute = WebsocketRouteImport.update({
   id: '/websocket',
@@ -70,6 +72,16 @@ const RecordsCollectionRoute = RecordsCollectionRouteImport.update({
   path: '/records/$collection',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthSuccessRoute = AuthSuccessRouteImport.update({
+  id: '/auth/success',
+  path: '/auth/success',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthErrorRoute = AuthErrorRouteImport.update({
+  id: '/auth/error',
+  path: '/auth/error',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -80,6 +92,8 @@ export interface FileRoutesByFullPath {
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
+  '/auth/error': typeof AuthErrorRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/records/$collection': typeof RecordsCollectionRoute
   '/records': typeof RecordsIndexRoute
 }
@@ -92,6 +106,8 @@ export interface FileRoutesByTo {
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
+  '/auth/error': typeof AuthErrorRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/records/$collection': typeof RecordsCollectionRoute
   '/records': typeof RecordsIndexRoute
 }
@@ -105,6 +121,8 @@ export interface FileRoutesById {
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
+  '/auth/error': typeof AuthErrorRoute
+  '/auth/success': typeof AuthSuccessRoute
   '/records/$collection': typeof RecordsCollectionRoute
   '/records/': typeof RecordsIndexRoute
 }
@@ -119,6 +137,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/websocket'
+    | '/auth/error'
+    | '/auth/success'
     | '/records/$collection'
     | '/records'
   fileRoutesByTo: FileRoutesByTo
@@ -131,6 +151,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/websocket'
+    | '/auth/error'
+    | '/auth/success'
     | '/records/$collection'
     | '/records'
   id:
@@ -143,6 +165,8 @@ export interface FileRouteTypes {
     | '/settings'
     | '/users'
     | '/websocket'
+    | '/auth/error'
+    | '/auth/success'
     | '/records/$collection'
     | '/records/'
   fileRoutesById: FileRoutesById
@@ -156,6 +180,8 @@ export interface RootRouteChildren {
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
   WebsocketRoute: typeof WebsocketRoute
+  AuthErrorRoute: typeof AuthErrorRoute
+  AuthSuccessRoute: typeof AuthSuccessRoute
   RecordsCollectionRoute: typeof RecordsCollectionRoute
   RecordsIndexRoute: typeof RecordsIndexRoute
 }
@@ -232,6 +258,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RecordsCollectionRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth/success': {
+      id: '/auth/success'
+      path: '/auth/success'
+      fullPath: '/auth/success'
+      preLoaderRoute: typeof AuthSuccessRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth/error': {
+      id: '/auth/error'
+      path: '/auth/error'
+      fullPath: '/auth/error'
+      preLoaderRoute: typeof AuthErrorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -244,6 +284,8 @@ const rootRouteChildren: RootRouteChildren = {
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
   WebsocketRoute: WebsocketRoute,
+  AuthErrorRoute: AuthErrorRoute,
+  AuthSuccessRoute: AuthSuccessRoute,
   RecordsCollectionRoute: RecordsCollectionRoute,
   RecordsIndexRoute: RecordsIndexRoute,
 }

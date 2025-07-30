@@ -1,13 +1,15 @@
 use axum::{
     Extension,
-    extract::{ConnectInfo, FromRequest, Request, State},
+    extract::{ConnectInfo, FromRequest, Request, State, Query},
     http::{HeaderMap, StatusCode},
-    response::Json,
+    response::{Json, Redirect},
 };
 use std::net::SocketAddr;
 use diesel::prelude::*;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::time::Duration;
+use utoipa::ToSchema;
 
 use crate::{
     AppState,
@@ -145,6 +147,201 @@ pub async fn register(
         StatusCode::CREATED,
         headers,
         Json(ApiResponse::success(auth_response)),
+    ))
+}
+
+// OAuth DTOs
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct OAuthCallbackQuery {
+    #[schema(example = "authorization_code_here")]
+    pub code: Option<String>,
+    #[schema(example = "csrf_state_token")]
+    pub state: Option<String>,
+    pub error: Option<String>,
+    pub error_description: Option<String>,
+}
+
+#[derive(Debug, Serialize, ToSchema)]
+pub struct OAuthAuthorizationResponse {
+    #[schema(example = "https://accounts.google.com/o/oauth2/v2/auth?...")]
+    pub authorization_url: String,
+    #[schema(example = "csrf_state_token")]
+    pub state: String,
+}
+
+/// Initiate OAuth authorization
+/// 
+/// Redirects the user to the OAuth provider's authorization page.
+#[utoipa::path(
+    get,
+    path = "/auth/oauth/{provider}",
+    tag = "Authentication",
+    params(
+        ("provider" = String, Path, description = "OAuth provider (google or github)", example = "google")
+    ),
+    responses(
+        (status = 302, description = "Redirect to OAuth provider"),
+        (status = 400, description = "Invalid provider or configuration error", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
+pub async fn oauth_authorize(
+    State(app_state): State<AppState>,
+    axum::extract::Path(provider): axum::extract::Path<String>,
+) -> Result<Redirect, AuthError> {
+    let oauth_service = &app_state.oauth_service;
+
+    // Get authorization URL
+    let (auth_url, _state) = oauth_service
+        .get_authorization_url(&provider)
+        .map_err(|_| AuthError::ValidationError(vec!["Invalid OAuth provider or configuration".to_string()]))?;
+
+    Ok(Redirect::temporary(&auth_url))
+}
+
+/// Handle OAuth callback
+/// 
+/// Processes the OAuth callback from the provider and creates/logs in the user.
+#[utoipa::path(
+    get,
+    path = "/auth/oauth/{provider}/callback",
+    tag = "Authentication",
+    params(
+        ("provider" = String, Path, description = "OAuth provider (google or github)", example = "google")
+    ),
+    responses(
+        (status = 302, description = "Redirect to frontend with success"),
+        (status = 400, description = "OAuth error or validation error", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
+pub async fn oauth_callback(
+    State(app_state): State<AppState>,
+    axum::extract::Path(provider): axum::extract::Path<String>,
+    Query(query): Query<OAuthCallbackQuery>,
+) -> Result<(HeaderMap, Redirect), AuthError> {
+
+    
+    // Check for OAuth errors
+    if let Some(error) = query.error {
+        let error_msg = query.error_description.unwrap_or(error);
+        return Ok((
+            HeaderMap::new(),
+            Redirect::temporary(&format!("http://localhost:3000/admin/auth/error?message={}", 
+                urlencoding::encode(&error_msg))),
+        ));
+    }
+
+    let oauth_service = &app_state.oauth_service;
+
+    // Check for required parameters
+    let code = query.code.ok_or_else(|| {
+        AuthError::ValidationError(vec!["Missing authorization code".to_string()])
+    })?;
+    
+    let state = query.state.ok_or_else(|| {
+        AuthError::ValidationError(vec!["Missing state parameter".to_string()])
+    })?;
+
+    // Exchange code for access token
+    let access_token = oauth_service
+        .exchange_code_for_token(&provider, &code, &state)
+        .await
+        .map_err(|e| {
+            AuthError::ValidationError(vec![format!("Failed to exchange OAuth code: {}", e)])
+        })?;
+
+    // Get user info from OAuth provider
+    let oauth_user = oauth_service
+        .get_user_info(&provider, &access_token)
+        .await
+        .map_err(|_| AuthError::ValidationError(vec!["Failed to get user info from OAuth provider".to_string()]))?;
+
+    // Get database connection
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
+
+    // Check if user exists by email
+    let existing_user = users::table
+        .filter(users::email.eq(&oauth_user.email))
+        .first::<User>(&mut conn)
+        .optional()
+        .map_err(|_| AuthError::DatabaseError)?;
+
+    let user = if let Some(mut user) = existing_user {
+         // Update last login time
+         let update_user = crate::models::user::UpdateUser {
+             email: None,
+             password_hash: None,
+             username: None,
+             is_verified: None,
+             is_active: None,
+             role: None,
+             failed_login_attempts: None,
+             locked_until: None,
+             last_login_at: Some(Some(chrono::Utc::now().naive_utc())),
+         };
+         
+         diesel::update(users::table.find(user.id))
+             .set(&update_user)
+             .execute(&mut conn)
+             .map_err(|_| AuthError::DatabaseError)?;
+         
+         // Refresh user data
+         user.last_login_at = Some(chrono::Utc::now().naive_utc());
+         user
+    } else {
+        // Create new user from OAuth info
+        let username = oauth_user.name
+            .unwrap_or_else(|| format!("{}_{}", provider, &oauth_user.id[..8]));
+        
+        // Generate a random password since OAuth users don't need one
+        let random_password = uuid::Uuid::new_v4().to_string();
+        
+        let new_user = NewUser::new(
+            oauth_user.email.clone(),
+            &random_password,
+            username,
+            &app_state.password_pepper,
+        ).map_err(|e| AuthError::ValidationError(vec![e]))?;
+
+        diesel::insert_into(users::table)
+            .values(&new_user)
+            .execute(&mut conn)
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        // Get the created user
+        users::table
+            .filter(users::email.eq(&oauth_user.email))
+            .first(&mut conn)
+            .map_err(|_| AuthError::DatabaseError)?
+    };
+
+    // Generate JWT tokens
+    let jwt_access_token = app_state
+        .auth_state
+        .jwt_service
+        .generate_access_token(user.id, &user.email, &user.role)
+        .map_err(|_| AuthError::InternalError)?;
+
+    let jwt_refresh_token = app_state
+        .auth_state
+        .jwt_service
+        .generate_refresh_token(user.id)
+        .map_err(|_| AuthError::InternalError)?;
+
+    // Set tokens as httpOnly cookies
+    let cookie_service = CookieService::new();
+    let mut headers = HeaderMap::new();
+    cookie_service.set_access_token_cookie(&mut headers, &jwt_access_token);
+    cookie_service.set_refresh_token_cookie(&mut headers, &jwt_refresh_token);
+
+    // Redirect to frontend success page
+    Ok((
+        headers,
+        Redirect::temporary("http://localhost:3000/admin/auth/success"),
     ))
 }
 

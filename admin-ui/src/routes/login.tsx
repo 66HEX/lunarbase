@@ -8,6 +8,8 @@ import { useState } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
+import { FaGoogle } from "react-icons/fa";
 import {
 	Card,
 	CardContent,
@@ -29,6 +31,24 @@ import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import type { LoginRequest } from "@/types/api";
 
+const OAuthButton = ({ provider, icon, onClick, disabled }: {
+	provider: string;
+	icon: React.ReactNode;
+	onClick: () => void;
+	disabled: boolean;
+}) => (
+	<Button
+		type="button"
+		variant="secondary"
+		className="w-full"
+		onClick={onClick}
+		disabled={disabled}
+	>
+		{icon}
+		Continue with {provider}
+	</Button>
+);
+
 export default function LoginComponent() {
 	const [formData, setFormData] = useState<LoginRequest>({
 		email: "",
@@ -38,7 +58,8 @@ export default function LoginComponent() {
 	const [generalError, setGeneralError] = useState("");
 	const navigate = useNavigate();
 	const search = useSearch({ from: "/login" }) as { redirect?: string };
-	const { login, loading, error } = useAuthStore();
+	const { login, loginWithOAuth, getOAuthProviders, loading, error } = useAuthStore();
+	const oauthProviders = getOAuthProviders();
 
 	const handleInputChange = (field: keyof LoginRequest, value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
@@ -93,6 +114,20 @@ export default function LoginComponent() {
 				}
 			} else {
 				setGeneralError("An unexpected error occurred");
+			}
+		}
+	};
+
+	const handleOAuthLogin = async (provider: string) => {
+		try {
+			await loginWithOAuth(provider);
+			// The loginWithOAuth function will redirect to OAuth provider
+			// After successful OAuth, user will be redirected back to the app
+		} catch (error) {
+			if (error instanceof CustomApiError) {
+				setGeneralError(error.message);
+			} else {
+				setGeneralError("OAuth login failed");
 			}
 		}
 	};
@@ -168,17 +203,52 @@ export default function LoginComponent() {
 							</div>
 
 							<FormActions className="mt-6">
-								<Button type="submit" className="w-full" disabled={loading}>
-									{loading ? (
-										<>
-											<Spinner className="w-4 h-4 mr-2" />
-											Signing in...
-										</>
-									) : (
-										"Sign In"
-									)}
-								</Button>
-							</FormActions>
+							<Button type="submit" className="w-full" disabled={loading}>
+								{loading ? (
+									<>
+										<Spinner className="w-4 h-4 mr-2" />
+										Signing in...
+									</>
+								) : (
+									"Sign In"
+								)}
+							</Button>
+						</FormActions>
+
+						{/* OAuth Divider */}
+						<div className="relative my-6">
+							<div className="relative flex justify-center text-xs uppercase">
+								<span className="bg-background px-2 text-nocta-300 dark:text-nocta-700">
+									Or continue with
+								</span>
+							</div>
+						</div>
+
+						{/* OAuth Buttons */}
+						<div className="space-y-3">
+							{oauthProviders.map((provider) => {
+								const getProviderIcon = () => {
+									switch (provider.name) {
+										case 'google':
+											return <FaGoogle className="w-4 h-4 mr-2" />;
+										case 'github':
+											return <GitHubLogoIcon className="w-4 h-4 mr-2" />;
+										default:
+											return null;
+									}
+								};
+
+								return (
+									<OAuthButton
+										key={provider.name}
+										provider={provider.display_name}
+										icon={getProviderIcon()}
+										onClick={() => handleOAuthLogin(provider.name)}
+										disabled={loading}
+									/>
+								);
+							})}
+						</div>
 						</Form>
 					</CardContent>
 				</Card>

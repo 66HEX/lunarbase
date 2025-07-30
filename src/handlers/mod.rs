@@ -18,3 +18,6 @@ pub use permissions::*;
 pub use record_permissions::*;
 pub use users::*;
 pub use websocket::*;
+
+// Re-export OAuth handlers specifically
+pub use auth::{oauth_authorize, oauth_callback};

@@ -50,6 +50,18 @@ export interface RegisterRequest {
 	role?: "admin" | "user";
 }
 
+// OAuth Types
+export interface OAuthAuthorizationResponse {
+	authorization_url: string;
+	state: string;
+}
+
+export interface OAuthProvider {
+	name: string;
+	display_name: string;
+	icon?: string;
+}
+
 export interface CreateUserRequest {
 	email: string;
 	password: string;

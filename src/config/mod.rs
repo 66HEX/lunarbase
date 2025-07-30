@@ -7,6 +7,12 @@ pub struct Config {
     pub server_port: u16,
     pub jwt_secret: String,
     pub password_pepper: String,
+    // OAuth configuration
+    pub google_client_id: Option<String>,
+    pub google_client_secret: Option<String>,
+    pub github_client_id: Option<String>,
+    pub github_client_secret: Option<String>,
+    pub oauth_redirect_base_url: Option<String>,
     // Admin configuration
     pub admin_email: Option<String>,
     pub admin_password: Option<String>,
@@ -27,6 +33,12 @@ impl Config {
                 .unwrap_or_else(|_| "your-secret-key".to_string()),
             password_pepper: std::env::var("PASSWORD_PEPPER")
                 .unwrap_or_else(|_| "default-pepper-change-in-production".to_string()),
+            // OAuth configuration - all optional
+            google_client_id: std::env::var("GOOGLE_CLIENT_ID").ok(),
+            google_client_secret: std::env::var("GOOGLE_CLIENT_SECRET").ok(),
+            github_client_id: std::env::var("GITHUB_CLIENT_ID").ok(),
+            github_client_secret: std::env::var("GITHUB_CLIENT_SECRET").ok(),
+            oauth_redirect_base_url: std::env::var("OAUTH_REDIRECT_BASE_URL").ok(),
             // Admin configuration - all optional
             admin_email: std::env::var("LUNARBASE_ADMIN_EMAIL").ok(),
             admin_password: std::env::var("LUNARBASE_ADMIN_PASSWORD").ok(),

@@ -12,6 +12,8 @@ import type {
 	HealthResponse,
 	LoginRequest,
 	LoginResponse,
+	OAuthAuthorizationResponse,
+	OAuthProvider,
 	OwnedRecordsResponse,
 	OwnershipCheckResponse,
 	OwnershipStatsResponse,
@@ -171,6 +173,17 @@ export const authApi = {
 		const response = await apiRequest<ApiResponse<User>>("/auth/me");
 		return response.data as User;
 	},
+
+	// OAuth methods
+	oauthAuthorize: (provider: string): Promise<OAuthAuthorizationResponse> =>
+		apiRequest<OAuthAuthorizationResponse>(`/auth/oauth/${provider}`, {
+			method: "GET",
+		}),
+
+	getOAuthProviders: (): OAuthProvider[] => [
+		{ name: "google", display_name: "Google", icon: "🔍" },
+		{ name: "github", display_name: "GitHub", icon: "🐙" },
+	],
 
 	refresh: async (): Promise<LoginResponse> => {
 		const response = await apiRequest<ApiResponse<LoginResponse>>(

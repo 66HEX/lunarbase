@@ -17,7 +17,7 @@ use lunarbase::handlers::{
         list_collections, list_records, update_collection, update_record,
     },
     health::{health_check, public_health_check, simple_health_check},
-    login, logout, me,
+    login, logout, me, oauth_authorize, oauth_callback,
     metrics::{get_metrics, get_metrics_summary},
     ownership::{
         check_record_ownership, get_my_owned_records, get_ownership_stats, get_user_owned_records,
@@ -89,6 +89,9 @@ fn create_router(app_state: AppState) -> Router {
         .route("/auth/register-admin", post(register_admin))
         .route("/auth/login", post(login))
         .route("/auth/refresh", post(refresh_token))
+        // OAuth endpoints
+        .route("/auth/oauth/{provider}", get(oauth_authorize))
+        .route("/auth/oauth/{provider}/callback", get(oauth_callback))
         // Metrics endpoints
         .route("/metrics", get(get_metrics))
         .route("/metrics/summary", get(get_metrics_summary))

@@ -15,11 +15,13 @@ import { useUI, useUIActions } from "@/stores/client.store";
 export const Route = createRootRoute({
 	component: RootComponent,
 	beforeLoad: async ({ location }) => {
-		// Allow access to login page without authentication
+		// Allow access to login and auth pages without authentication
 		// Check both /login and /admin/login due to basepath configuration
 		if (
 			location.pathname === "/login" ||
-			location.pathname === "/admin/login"
+			location.pathname === "/admin/login" ||
+			location.pathname === "/admin/auth/success" ||
+			location.pathname === "/admin/auth/error"
 		) {
 			return;
 		}
@@ -55,7 +57,10 @@ function RootComponent() {
 	}, [isAuthenticated, user, fetchUser]);
 
 	const isLoginPage =
-		location.pathname === "/login" || location.pathname === "/admin/login";
+		location.pathname === "/login" || 
+		location.pathname === "/admin/login" ||
+		location.pathname === "/admin/auth/success" ||
+		location.pathname === "/admin/auth/error";
 
 	return (
 		<div className="min-h-screen">

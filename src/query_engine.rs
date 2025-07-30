@@ -548,9 +548,6 @@ mod tests {
             .build_complete_query("records_products", &schema)
             .unwrap();
 
-        println!("Generated SQL: {}", sql);
-        println!("Parameters: {:?}", params);
-
         assert!(sql.contains("SELECT id FROM"));
         assert!(sql.contains("ORDER BY"));
         assert_eq!(params.len(), 0);

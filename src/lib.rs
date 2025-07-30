@@ -37,6 +37,8 @@ pub mod utils;
         handlers::auth::refresh_token,
         handlers::auth::me,
         handlers::auth::logout,
+        handlers::auth::oauth_authorize,
+        handlers::auth::oauth_callback,
 
         // Collection endpoints
         handlers::collections::create_collection,
@@ -122,6 +124,8 @@ pub mod utils;
             models::user::AuthResponse,
             models::blacklisted_token::LogoutRequest,
             models::blacklisted_token::LogoutResponse,
+            handlers::auth::OAuthCallbackQuery,
+            handlers::auth::OAuthAuthorizationResponse,
 
             // Collection models
             models::collection::CreateCollectionRequest,
@@ -232,6 +236,7 @@ pub struct AppState {
     pub ownership_service: OwnershipService,
     pub admin_service: AdminService,
     pub websocket_service: WebSocketService,
+    pub oauth_service: utils::OAuthService,
     pub password_pepper: String,
 }
 
@@ -250,6 +255,8 @@ impl AppState {
         let collection_service = CollectionService::new(db_pool.clone())
             .with_websocket_service(websocket_service.clone())
             .with_permission_service(permission_service.clone());
+        let oauth_config = utils::oauth_service::OAuthConfig::from_env();
+        let oauth_service = utils::OAuthService::new(oauth_config);
 
         Ok(Self {
             db_pool: db_pool.clone(),
@@ -260,6 +267,7 @@ impl AppState {
             ownership_service,
             admin_service,
             websocket_service: (*websocket_service).clone(),
+            oauth_service,
             password_pepper,
         })
     }
