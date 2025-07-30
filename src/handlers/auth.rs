@@ -318,12 +318,22 @@ pub async fn oauth_callback(
             .execute(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        // Get the created user
-        users::table
+        // Get the created user and set as verified (OAuth users are automatically verified)
+        let mut created_user: User = users::table
             .filter(users::email.eq(&oauth_user.email))
             .select(User::as_select())
             .first(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        // Update the user to set is_verified = true for OAuth users
+        diesel::update(users::table.filter(users::id.eq(created_user.id)))
+            .set(users::is_verified.eq(true))
+            .execute(&mut conn)
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        // Update the local user object to reflect the change
+        created_user.is_verified = true;
+        created_user
     };
 
     // Generate JWT tokens
