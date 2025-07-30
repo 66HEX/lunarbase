@@ -103,6 +103,7 @@ diesel::table! {
         last_login_at -> Nullable<Timestamp>,
         created_at -> Timestamp,
         updated_at -> Timestamp,
+        avatar_url -> Nullable<Text>,
     }
 }
 

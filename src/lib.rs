@@ -97,6 +97,9 @@ pub mod utils;
         handlers::users::delete_user,
         handlers::users::unlock_user,
 
+        // Avatar proxy endpoint
+        handlers::avatar_proxy::proxy_avatar,
+
         // Health check endpoints
         handlers::health::health_check,
         handlers::health::public_health_check,
@@ -126,6 +129,9 @@ pub mod utils;
             models::blacklisted_token::LogoutResponse,
             handlers::auth::OAuthCallbackQuery,
             handlers::auth::OAuthAuthorizationResponse,
+
+            // Avatar proxy
+            handlers::avatar_proxy::AvatarQuery,
 
             // Collection models
             models::collection::CreateCollectionRequest,
@@ -187,6 +193,7 @@ pub mod utils;
     modifiers(&SecurityAddon),
     tags(
         (name = "Authentication", description = "User authentication and authorization"),
+        (name = "Avatar", description = "Avatar proxy for external images"),
         (name = "Collections", description = "Collection management operations"),
         (name = "Records", description = "Record CRUD operations"),
         (name = "Permissions", description = "Role and permission management"),

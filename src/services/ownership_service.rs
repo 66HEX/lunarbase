@@ -148,7 +148,8 @@ impl OwnershipService {
         use crate::schema::users;
         let _new_owner = users::table
             .filter(users::id.eq(new_owner_id))
-            .first::<User>(&mut conn)
+            .select(User::as_select())
+            .first(&mut conn)
             .map_err(|_| AuthError::NotFound("New owner user not found".to_string()))?;
 
         // Update record ownership fields in the dynamic table

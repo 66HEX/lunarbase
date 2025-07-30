@@ -132,7 +132,7 @@ impl WebSocketService {
                                 use crate::schema::users;
                                 use diesel::prelude::*;
                                 let user =
-                                    match users::table.find(sub_user_id).first::<User>(&mut conn) {
+                                    match users::table.find(sub_user_id).select(User::as_select()).first::<User>(&mut conn) {
                                         Ok(user) => user,
                                         Err(_) => continue,
                                     };
@@ -282,6 +282,7 @@ impl WebSocketService {
 
                 let user = users::table
                     .find(user_id)
+                    .select(User::as_select())
                     .first::<User>(&mut conn)
                     .map_err(|_| AuthError::InternalError)?;
 

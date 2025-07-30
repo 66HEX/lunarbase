@@ -159,6 +159,7 @@ pub async fn list_users(
 
     // Apply pagination
     let users_result: Vec<User> = query_builder
+        .select(User::as_select())
         .limit(limit)
         .offset(offset)
         .load(&mut conn)
@@ -226,6 +227,7 @@ pub async fn get_user(
     // Find user by ID
     let user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
@@ -336,7 +338,8 @@ pub async fn create_user(
     // Check if email already exists
     let existing_email = users::table
         .filter(users::email.eq(&payload.email))
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
 
@@ -349,6 +352,7 @@ pub async fn create_user(
     // Check if username already exists
     let existing_username = users::table
         .filter(users::username.eq(&payload.username))
+        .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
@@ -378,6 +382,7 @@ pub async fn create_user(
     // Get the inserted user
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
@@ -505,6 +510,7 @@ pub async fn update_user(
     // Check if user exists
     let existing_user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
@@ -514,6 +520,7 @@ pub async fn update_user(
             let email_conflict = users::table
                 .filter(users::email.eq(new_email))
                 .filter(users::id.ne(user_id))
+                .select(User::as_select())
                 .first::<User>(&mut conn)
                 .optional()
                 .map_err(|_| AuthError::DatabaseError)?;
@@ -532,7 +539,8 @@ pub async fn update_user(
             let username_conflict = users::table
                 .filter(users::username.eq(new_username))
                 .filter(users::id.ne(user_id))
-                .first::<User>(&mut conn)
+                .select(User::as_select())
+                .first(&mut conn)
                 .optional()
                 .map_err(|_| AuthError::DatabaseError)?;
 
@@ -554,6 +562,7 @@ pub async fn update_user(
         role: payload.role,
         failed_login_attempts: None,
         locked_until: None,
+        avatar_url: None,
         last_login_at: None,
     };
 
@@ -588,6 +597,7 @@ pub async fn update_user(
 
     // Get updated user
     let updated_user: User = users::table
+        .select(User::as_select())
         .find(user_id)
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
@@ -647,6 +657,7 @@ pub async fn delete_user(
     // Check if user exists
     let _existing_user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
@@ -702,6 +713,7 @@ pub async fn unlock_user(
     // Check if user exists
     let existing_user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
@@ -720,6 +732,7 @@ pub async fn unlock_user(
         role: None,
         failed_login_attempts: Some(0), // Reset failed login attempts
         locked_until: Some(None),       // Remove lock
+        avatar_url: None,
         last_login_at: None,
     };
 
@@ -732,6 +745,7 @@ pub async fn unlock_user(
     // Get updated user
     let updated_user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 

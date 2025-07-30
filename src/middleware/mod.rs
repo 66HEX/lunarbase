@@ -27,6 +27,8 @@ pub fn setup_cors() -> CorsLayer {
             "http://localhost:5173".parse().unwrap(),
             "http://127.0.0.1:3000".parse().unwrap(),
             "http://127.0.0.1:5173".parse().unwrap(),
+            "https://lh3.googleusercontent.com".parse().unwrap(),
+            "https://avatars.githubusercontent.com".parse().unwrap(),
         ])
         .allow_methods([
             axum::http::Method::GET,
@@ -38,8 +40,12 @@ pub fn setup_cors() -> CorsLayer {
             axum::http::header::CONTENT_TYPE,
             axum::http::header::AUTHORIZATION,
             axum::http::header::COOKIE,
+            axum::http::header::REFERRER_POLICY,
         ])
         .allow_credentials(true)
+        .expose_headers([
+            axum::http::header::CONTENT_SECURITY_POLICY,
+        ])
 }
 
 pub fn add_middleware(app: Router, app_state: AppState) -> Router {

@@ -36,7 +36,8 @@ impl AdminService {
         // Check if admin already exists
         let existing_admin = users::table
             .filter(users::email.eq(admin_email))
-            .first::<User>(&mut conn)
+            .select(User::as_select())
+            .first(&mut conn)
             .optional()
             .map_err(|_| AuthError::DatabaseError)?;
 
@@ -48,7 +49,8 @@ impl AdminService {
         // Check if any admin exists (to avoid creating multiple admins)
         let any_admin = users::table
             .filter(users::role.eq("admin"))
-            .first::<User>(&mut conn)
+            .select(User::as_select())
+            .first(&mut conn)
             .optional()
             .map_err(|_| AuthError::DatabaseError)?;
 
@@ -97,7 +99,8 @@ impl AdminService {
 
         let admin = users::table
             .filter(users::role.eq("admin"))
-            .first::<User>(&mut conn)
+            .select(User::as_select())
+            .first(&mut conn)
             .optional()
             .map_err(|_| AuthError::DatabaseError)?;
 

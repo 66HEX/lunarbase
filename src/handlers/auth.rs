@@ -7,7 +7,6 @@ use axum::{
 use std::net::SocketAddr;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use std::time::Duration;
 use utoipa::ToSchema;
 
@@ -15,7 +14,7 @@ use crate::{
     AppState,
     middleware::extract_user_claims,
     models::{
-        AuthResponse, LoginRequest, LogoutRequest, LogoutResponse, NewUser, RegisterRequest, User,
+        AuthResponse, LoginRequest, LogoutRequest, LogoutResponse, NewUser, RegisterRequest, User, UserResponse,
     },
     schema::users,
     utils::{client_ip::extract_client_ip, ApiResponse, AuthError, Claims, CookieService, ErrorResponse},
@@ -71,6 +70,7 @@ pub async fn register(
     // Check if user already exists (timing attack protection)
     let existing_user = users::table
         .filter(users::email.eq(&payload.email))
+        .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
@@ -86,6 +86,7 @@ pub async fn register(
     // Check username availability (timing attack protection)
     let existing_username = users::table
         .filter(users::username.eq(&payload.username))
+        .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
@@ -111,6 +112,7 @@ pub async fn register(
     // Get the inserted user
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
@@ -266,12 +268,13 @@ pub async fn oauth_callback(
     // Check if user exists by email
     let existing_user = users::table
         .filter(users::email.eq(&oauth_user.email))
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
 
     let user = if let Some(mut user) = existing_user {
-         // Update last login time
+         // Update last login time and avatar URL
          let update_user = crate::models::user::UpdateUser {
              email: None,
              password_hash: None,
@@ -282,6 +285,7 @@ pub async fn oauth_callback(
              failed_login_attempts: None,
              locked_until: None,
              last_login_at: Some(Some(chrono::Utc::now().naive_utc())),
+             avatar_url: Some(oauth_user.avatar_url.clone()),
          };
          
          diesel::update(users::table.find(user.id))
@@ -300,10 +304,12 @@ pub async fn oauth_callback(
         // Generate a random password since OAuth users don't need one
         let random_password = uuid::Uuid::new_v4().to_string();
         
-        let new_user = NewUser::new(
+        let new_user = NewUser::new_with_avatar(
             oauth_user.email.clone(),
             &random_password,
             username,
+            "user".to_string(),
+            oauth_user.avatar_url.clone(),
             &app_state.password_pepper,
         ).map_err(|e| AuthError::ValidationError(vec![e]))?;
 
@@ -315,6 +321,7 @@ pub async fn oauth_callback(
         // Get the created user
         users::table
             .filter(users::email.eq(&oauth_user.email))
+            .select(User::as_select())
             .first(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?
     };
@@ -451,6 +458,7 @@ pub async fn login(
     // Find user by email
     let user = users::table
         .filter(users::email.eq(&payload.email))
+        .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
@@ -606,7 +614,8 @@ pub async fn refresh_token(
     // Find user in database
     let user = users::table
         .find(user_id)
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
     // Check if user is still active
@@ -652,7 +661,7 @@ pub async fn refresh_token(
     path = "/auth/me",
     tag = "Authentication",
     responses(
-        (status = 200, description = "User profile retrieved successfully", body = ApiResponse<serde_json::Value>),
+        (status = 200, description = "User profile retrieved successfully", body = ApiResponse<UserResponse>),
         (status = 401, description = "Unauthorized", body = ErrorResponse)
     ),
     security(
@@ -662,7 +671,7 @@ pub async fn refresh_token(
 pub async fn me(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<UserResponse>>, AuthError> {
     // Extract user claims from request (set by auth middleware)
     let claims = extract_user_claims(&request)?;
 
@@ -677,12 +686,11 @@ pub async fn me(
     // Find user in database
     let user = users::table
         .find(user_id)
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    Ok(Json(ApiResponse::success(
-        serde_json::to_value(user.to_response()).unwrap(),
-    )))
+    Ok(Json(ApiResponse::success(user.to_response())))
 }
 
 /// Admin registration endpoint - allows creating first admin or additional admins
@@ -735,7 +743,8 @@ pub async fn register_admin(
     // Check if any admin exists
     let existing_admin = users::table
         .filter(users::role.eq("admin"))
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
 
@@ -749,7 +758,8 @@ pub async fn register_admin(
     // Check if user already exists (timing attack protection)
     let existing_user = users::table
         .filter(users::email.eq(&payload.email))
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
 
@@ -764,7 +774,8 @@ pub async fn register_admin(
     // Check username availability (timing attack protection)
     let existing_username = users::table
         .filter(users::username.eq(&payload.username))
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
 
@@ -795,6 +806,7 @@ pub async fn register_admin(
     // Get the inserted user
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 

@@ -1,5 +1,6 @@
 pub mod admin;
 pub mod auth;
+pub mod avatar_proxy;
 pub mod collections;
 pub mod health;
 pub mod metrics;
@@ -11,6 +12,7 @@ pub mod websocket;
 
 pub use admin::*;
 pub use auth::*;
+pub use avatar_proxy::*;
 pub use health::*;
 pub use metrics::*;
 pub use ownership::*;

@@ -18,6 +18,7 @@ export interface User {
 	is_active: boolean;
 	last_login_at?: string;
 	locked_until?: string;
+	avatar_url?: string;
 	created_at: string;
 	updated_at?: string;
 }

@@ -115,6 +115,7 @@ pub async fn websocket_stats(
 
     let user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
@@ -193,6 +194,7 @@ pub async fn get_connections(
 
     let user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
@@ -253,6 +255,7 @@ pub async fn disconnect_connection(
 
     let user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
@@ -310,6 +313,7 @@ pub async fn broadcast_message(
 
     let user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
@@ -373,6 +377,7 @@ pub async fn get_activity(
 
     let user: User = users::table
         .find(user_id)
+        .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 

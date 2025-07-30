@@ -23,7 +23,8 @@ async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthE
 
     users::table
         .filter(users::id.eq(user_id))
-        .first::<User>(&mut conn)
+        .select(User::as_select())
+        .first(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))
 }
 
@@ -139,7 +140,8 @@ pub async fn get_record_permissions(
 
         users::table
             .filter(users::id.eq(user_id))
-            .first::<User>(&mut conn)
+            .select(User::as_select())
+            .first(&mut conn)
             .map_err(|_| AuthError::NotFound("Target user not found".to_string()))?
     };
 

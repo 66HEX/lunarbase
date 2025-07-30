@@ -9,7 +9,7 @@ use utoipa::ToSchema;
 use crate::schema::users;
 
 // Database model
-#[derive(Debug, Queryable, Selectable, Identifiable, Serialize, ToSchema)]
+#[derive(Debug, Queryable, Selectable, Identifiable, AsChangeset, Serialize, ToSchema)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
 pub struct User {
@@ -33,6 +33,8 @@ pub struct User {
     pub locked_until: Option<NaiveDateTime>,
     #[serde(skip_serializing)]
     pub last_login_at: Option<NaiveDateTime>,
+    #[schema(example = "https://avatars.githubusercontent.com/u/123456")]
+    pub avatar_url: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -50,6 +52,7 @@ pub struct UpdateUser {
     pub failed_login_attempts: Option<i32>,
     pub locked_until: Option<Option<NaiveDateTime>>,
     pub last_login_at: Option<Option<NaiveDateTime>>,
+    pub avatar_url: Option<Option<String>>,
 }
 
 // Insert model
@@ -60,6 +63,7 @@ pub struct NewUser {
     pub password_hash: String,
     pub username: String,
     pub role: String,
+    pub avatar_url: Option<String>,
 }
 
 // Request DTOs
@@ -98,6 +102,8 @@ pub struct UserResponse {
     pub role: String,
     pub last_login_at: Option<DateTime<Utc>>,
     pub locked_until: Option<DateTime<Utc>>,
+    #[schema(example = "https://avatars.githubusercontent.com/u/123456")]
+    pub avatar_url: Option<String>,
     pub created_at: DateTime<Utc>,
 }
 
@@ -150,6 +156,7 @@ impl User {
             locked_until: self
                 .locked_until
                 .map(|dt| DateTime::from_naive_utc_and_offset(dt, Utc)),
+            avatar_url: self.avatar_url.clone(),
             created_at: DateTime::from_naive_utc_and_offset(self.created_at, Utc),
         }
     }
@@ -184,6 +191,7 @@ impl NewUser {
             password_hash,
             username,
             role: "user".to_string(),
+            avatar_url: None,
         })
     }
 
@@ -220,6 +228,45 @@ impl NewUser {
             password_hash,
             username,
             role,
+            avatar_url: None,
+        })
+    }
+
+    /// Create new user with avatar URL (for OAuth users)
+    pub fn new_with_avatar(
+        email: String,
+        password: &str,
+        username: String,
+        role: String,
+        avatar_url: Option<String>,
+        pepper: &str,
+    ) -> Result<Self, String> {
+        // Generate cryptographically secure random salt
+        let mut salt_bytes = [0u8; 32];
+        OsRng.fill_bytes(&mut salt_bytes);
+
+        let salt = SaltString::encode_b64(&salt_bytes)
+            .map_err(|e| format!("Salt generation failed: {}", e))?;
+
+        // Combine password with pepper for additional security
+        let peppered_password = format!("{}{}", password, pepper);
+
+        let argon2 = Argon2::new(
+            argon2::Algorithm::Argon2id,
+            argon2::Version::V0x13,
+            argon2::Params::new(65536, 4, 2, None).unwrap(),
+        );
+        let password_hash = argon2
+            .hash_password(peppered_password.as_bytes(), &salt)
+            .map_err(|e| format!("Password hashing failed: {}", e))?
+            .to_string();
+
+        Ok(NewUser {
+            email,
+            password_hash,
+            username,
+            role,
+            avatar_url,
         })
     }
 }

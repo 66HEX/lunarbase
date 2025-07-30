@@ -11,6 +11,7 @@ use utoipa_swagger_ui::SwaggerUi;
 use lunarbase::database::create_pool;
 use lunarbase::handlers::{
     admin::{serve_admin_assets},
+    avatar_proxy::proxy_avatar,
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
         get_collection_schema, get_collections_stats, get_record, list_all_records,
@@ -92,6 +93,8 @@ fn create_router(app_state: AppState) -> Router {
         // OAuth endpoints
         .route("/auth/oauth/{provider}", get(oauth_authorize))
         .route("/auth/oauth/{provider}/callback", get(oauth_callback))
+        // Avatar proxy endpoint
+        .route("/avatar-proxy", get(proxy_avatar))
         // Metrics endpoints
         .route("/metrics", get(get_metrics))
         .route("/metrics/summary", get(get_metrics_summary))

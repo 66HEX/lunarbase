@@ -218,6 +218,7 @@ pub async fn create_record(
 
     let user = users::table
         .filter(users::id.eq(user_id))
+        .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
@@ -319,6 +320,7 @@ pub async fn list_all_records(
 
     let user = users::table
         .filter(users::id.eq(user_id))
+        .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
@@ -491,6 +493,7 @@ pub async fn update_record(
 
     let user = users::table
         .filter(users::id.eq(user_id))
+        .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
@@ -549,6 +552,7 @@ pub async fn delete_record(
 
     let user = users::table
         .filter(users::id.eq(user_id))
+        .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
