@@ -95,8 +95,10 @@ pub mod utils;
         handlers::users::delete_user,
         handlers::users::unlock_user,
 
-        // Health check
+        // Health check endpoints
         handlers::health::health_check,
+        handlers::health::public_health_check,
+        handlers::health::simple_health_check,
 
         // Metrics endpoints
         handlers::metrics::get_metrics,
@@ -167,6 +169,15 @@ pub mod utils;
             handlers::websocket::BroadcastResponse,
             handlers::websocket::ActivityEntry,
             handlers::websocket::ActivityResponse,
+
+            // Health models
+            handlers::health::HealthResponse,
+            handlers::health::DatabaseHealth,
+            handlers::health::MemoryInfo,
+            handlers::health::SystemInfo,
+
+            // Metrics models
+            handlers::metrics::MetricsSummary,
         )
     ),
     modifiers(&SecurityAddon),
@@ -179,7 +190,8 @@ pub mod utils;
         (name = "Ownership", description = "Record ownership management"),
         (name = "WebSocket", description = "WebSocket connections and real-time features"),
         (name = "Users", description = "User management operations"),
-        (name = "Health", description = "System health checks")
+        (name = "Health", description = "System health checks"),
+        (name = "Monitoring", description = "System monitoring and metrics")
     )
 )]
 pub struct ApiDoc;

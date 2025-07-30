@@ -1,5 +1,7 @@
 use crate::AppState;
 use axum::{extract::State, http::StatusCode};
+use serde::Serialize;
+use utoipa::ToSchema;
 
 /// Prometheus metrics endpoint
 ///
@@ -35,19 +37,43 @@ pub async fn get_metrics(State(app_state): State<AppState>) -> Result<String, St
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
+/// Metrics summary response structure
+#[derive(Serialize, ToSchema)]
+pub struct MetricsSummary {
+    /// Total number of HTTP requests processed
+    pub http_requests_total: f64,
+    /// Number of active WebSocket connections
+    pub active_websocket_connections: f64,
+    /// Number of active database connections
+    pub database_connections_active: f64,
+    /// Timestamp when metrics were collected
+    pub timestamp: String,
+}
+
 /// Get metrics summary for admin dashboard
 #[utoipa::path(
     get,
     path = "/admin/metrics/summary",
     tag = "Monitoring",
+    security(
+        ("bearer_auth" = [])
+    ),
     responses(
-        (status = 200, description = "Metrics summary for dashboard"),
+        (status = 200, description = "Metrics summary for dashboard", body = MetricsSummary,
+            example = json!({
+                "http_requests_total": 1234.0,
+                "active_websocket_connections": 5.0,
+                "database_connections_active": 10.0,
+                "timestamp": "2024-01-15T10:30:00Z"
+            })
+        ),
+        (status = 401, description = "Unauthorized"),
         (status = 500, description = "Internal server error")
     )
 )]
 pub async fn get_metrics_summary(
     State(app_state): State<AppState>,
-) -> Result<axum::Json<serde_json::Value>, StatusCode> {
+) -> Result<axum::Json<MetricsSummary>, StatusCode> {
     // Update database connections metric before returning summary
     app_state
         .metrics_state
@@ -62,12 +88,12 @@ pub async fn get_metrics_summary(
     let active_connections = app_state.metrics_state.active_connections.get();
     let db_connections = app_state.metrics_state.database_connections.get();
 
-    let summary = serde_json::json!({
-        "http_requests_total": request_count,
-        "active_websocket_connections": active_connections,
-        "database_connections_active": db_connections,
-        "timestamp": chrono::Utc::now().to_rfc3339()
-    });
+    let summary = MetricsSummary {
+        http_requests_total: request_count,
+        active_websocket_connections: active_connections,
+        database_connections_active: db_connections,
+        timestamp: chrono::Utc::now().to_rfc3339(),
+    };
 
     Ok(axum::Json(summary))
 }

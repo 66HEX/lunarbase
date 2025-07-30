@@ -47,11 +47,39 @@ pub struct SystemInfo {
 /// Enhanced health check endpoint with detailed system information
 #[utoipa::path(
     get,
-    path = "/health",
+    path = "/health/admin",
     tag = "Health",
     responses(
-        (status = 200, description = "Service is healthy with detailed system information", body = HealthResponse),
+        (status = 200, description = "Service is healthy with detailed system information", body = HealthResponse,
+            example = json!({
+                "status": "healthy",
+                "message": "LunarBase health check",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "version": "0.1.0",
+                "uptime": 3600,
+                "database": {
+                    "status": "healthy",
+                    "connection_pool_size": 10,
+                    "active_connections": 2,
+                    "total_collections": 5,
+                    "total_records": 1250
+                },
+                "memory": {
+                    "used_mb": 256.5,
+                    "total_mb": 8192.0,
+                    "usage_percentage": 3.13
+                },
+                "system": {
+                    "cpu_usage": 15.2,
+                    "load_average": 0.8,
+                    "disk_usage_percentage": 45.0
+                }
+            })
+        ),
         (status = 503, description = "Service is unhealthy", body = Value)
+    ),
+    security(
+        ("bearer_auth" = [])
     )
 )]
 pub async fn health_check(
@@ -96,7 +124,25 @@ pub async fn health_check(
     path = "/health",
     tag = "Health",
     responses(
-        (status = 200, description = "Service is healthy", body = Value),
+        (status = 200, description = "Service is healthy with system information", body = Value,
+            example = json!({
+                "status": "healthy",
+                "message": "LunarBase is running",
+                "timestamp": "2024-01-15T10:30:00Z",
+                "version": "0.1.0",
+                "uptime": 3600,
+                "memory": {
+                    "used_mb": 256.5,
+                    "total_mb": 8192.0,
+                    "usage_percentage": 3.13
+                },
+                "system": {
+                    "cpu_usage": 15.2,
+                    "load_average": 0.8,
+                    "disk_usage_percentage": 45.0
+                }
+            })
+        ),
         (status = 503, description = "Service is unhealthy", body = Value)
     )
 )]
@@ -134,7 +180,12 @@ pub async fn public_health_check() -> Result<(StatusCode, Json<Value>), StatusCo
     path = "/health/simple",
     tag = "Health",
     responses(
-        (status = 200, description = "Service is healthy", body = Value),
+        (status = 200, description = "Basic health status for load balancers", body = Value,
+            example = json!({
+                "status": "ok",
+                "timestamp": "2024-01-15T10:30:00Z"
+            })
+        ),
         (status = 503, description = "Service is unhealthy", body = Value)
     )
 )]
