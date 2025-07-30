@@ -22,7 +22,8 @@ fn create_test_router() -> Router {
     // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
-    let app_state = AppState::new(db_pool, &test_jwt_secret).expect("Failed to create AppState");
+    let test_password_pepper = "test_pepper".to_string();
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper).expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()

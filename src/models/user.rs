@@ -123,11 +123,15 @@ impl User {
         }
     }
 
-    /// Verify password with timing attack protection
-    pub fn verify_password(&self, password: &str) -> Result<bool, argon2::password_hash::Error> {
+    /// Verify password with timing attack protection using pepper
+    pub fn verify_password(&self, password: &str, pepper: &str) -> Result<bool, argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(&self.password_hash)?;
+        
+        // Combine password with pepper for verification
+        let peppered_password = format!("{}{}", password, pepper);
+        
         Ok(Argon2::default()
-            .verify_password(password.as_bytes(), &parsed_hash)
+            .verify_password(peppered_password.as_bytes(), &parsed_hash)
             .is_ok())
     }
 
@@ -157,8 +161,8 @@ impl User {
 }
 
 impl NewUser {
-    /// Create new user with secure password hashing  
-    pub fn new(email: String, password: &str, username: String) -> Result<Self, String> {
+    /// Create new user with secure password hashing using pepper
+    pub fn new(email: String, password: &str, username: String, pepper: &str) -> Result<Self, String> {
         // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
@@ -166,9 +170,12 @@ impl NewUser {
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
 
+        // Combine password with pepper for additional security
+        let peppered_password = format!("{}{}", password, pepper);
+
         let argon2 = Argon2::default();
         let password_hash = argon2
-            .hash_password(password.as_bytes(), &salt)
+            .hash_password(peppered_password.as_bytes(), &salt)
             .map_err(|e| format!("Password hashing failed: {}", e))?
             .to_string();
 
@@ -180,12 +187,13 @@ impl NewUser {
         })
     }
 
-    /// Create new user with custom role and secure password hashing
+    /// Create new user with custom role and secure password hashing using pepper
     pub fn new_with_role(
         email: String,
         password: &str,
         username: String,
         role: String,
+        pepper: &str,
     ) -> Result<Self, String> {
         // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
@@ -194,13 +202,16 @@ impl NewUser {
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
 
+        // Combine password with pepper for additional security
+        let peppered_password = format!("{}{}", password, pepper);
+
         let argon2 = Argon2::new(
             argon2::Algorithm::Argon2id,
             argon2::Version::V0x13,
             argon2::Params::new(65536, 4, 2, None).unwrap(),
         );
         let password_hash = argon2
-            .hash_password(password.as_bytes(), &salt)
+            .hash_password(peppered_password.as_bytes(), &salt)
             .map_err(|e| format!("Password hashing failed: {}", e))?
             .to_string();
 

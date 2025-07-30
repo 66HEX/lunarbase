@@ -97,7 +97,7 @@ pub async fn register(
     }
 
     // Create new user with secure password hashing
-    let new_user = NewUser::new(payload.email, &payload.password, payload.username)
+    let new_user = NewUser::new(payload.email, &payload.password, payload.username, &app_state.password_pepper)
         .map_err(|_| AuthError::InternalError)?;
 
     // Insert user into database
@@ -290,7 +290,7 @@ pub async fn login(
 
     // Verify password
     let password_valid = user
-        .verify_password(&payload.password)
+        .verify_password(&payload.password, &app_state.password_pepper)
         .map_err(|_| AuthError::InternalError)?;
 
     if !password_valid {
@@ -585,6 +585,7 @@ pub async fn register_admin(
         &payload.password,
         payload.username,
         "admin".to_string(),
+        &app_state.password_pepper,
     )
     .map_err(|_| AuthError::InternalError)?;
 

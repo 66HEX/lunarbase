@@ -54,10 +54,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     info!("Database pool created successfully");
 
     // Application state creation
-    let app_state = AppState::new(pool, &config.jwt_secret)?;
+    let app_state = AppState::new(pool, &config.jwt_secret, config.password_pepper.clone())?;
 
     // Automatic admin creation from environment variables
-    if let Err(e) = app_state.admin_service.ensure_admin_exists(&config).await {
+    if let Err(e) = app_state.admin_service.ensure_admin_exists(&config, &app_state.password_pepper).await {
         warn!("Failed to create admin from environment variables: {}", e);
     }
 

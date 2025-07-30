@@ -14,6 +14,7 @@ Security isn't an afterthought in LunarBase—it's the foundation. Our multi-lay
 
 ### Advanced Authentication & Authorization
 - **Military-grade password hashing** with Argon2id (65536 memory, 4 iterations, 2 parallelism)
+- **Password pepper protection** with server-side secret salt to defend against rainbow table attacks
 - **Dual-token JWT system** with short-lived access tokens (15 min) and secure refresh tokens (7 days)
 - **HttpOnly cookies** with secure, SameSite=Lax configuration and path restrictions
 - **Comprehensive token blacklisting** for immediate session revocation

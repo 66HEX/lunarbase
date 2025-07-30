@@ -232,12 +232,14 @@ pub struct AppState {
     pub ownership_service: OwnershipService,
     pub admin_service: AdminService,
     pub websocket_service: WebSocketService,
+    pub password_pepper: String,
 }
 
 impl AppState {
     pub fn new(
         db_pool: DatabasePool,
         jwt_secret: &str,
+        password_pepper: String,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let permission_service = PermissionService::new(db_pool.clone());
         let ownership_service = OwnershipService::new(db_pool.clone());
@@ -258,6 +260,7 @@ impl AppState {
             ownership_service,
             admin_service,
             websocket_service: (*websocket_service).clone(),
+            password_pepper,
         })
     }
 }

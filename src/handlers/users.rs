@@ -359,29 +359,15 @@ pub async fn create_user(
         ]));
     }
 
-    // Hash password using the same parameters as new_with_role
-    let mut salt_bytes = [0u8; 32];
-    OsRng.fill_bytes(&mut salt_bytes);
-
-    let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| AuthError::InternalError)?;
-
-    let argon2 = Argon2::new(
-        argon2::Algorithm::Argon2id,
-        argon2::Version::V0x13,
-        argon2::Params::new(65536, 4, 2, None).unwrap(),
-    );
-    let password_hash = argon2
-        .hash_password(payload.password.as_bytes(), &salt)
-        .map_err(|_| AuthError::InternalError)?
-        .to_string();
-
-    // Create new user
-    let new_user = NewUser {
-        email: payload.email,
-        password_hash,
-        username: payload.username,
-        role: payload.role,
-    };
+    // Create new user with secure password hashing using pepper
+    let new_user = NewUser::new_with_role(
+        payload.email,
+        &payload.password,
+        payload.username,
+        payload.role,
+        &app_state.password_pepper,
+    )
+    .map_err(|_| AuthError::InternalError)?;
 
     // Insert user into database
     diesel::insert_into(users::table)
@@ -578,13 +564,16 @@ pub async fn update_user(
 
         let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| AuthError::InternalError)?;
 
+        // Combine password with pepper for additional security
+        let peppered_password = format!("{}{}", new_password, &app_state.password_pepper);
+
         let argon2 = Argon2::new(
             argon2::Algorithm::Argon2id,
             argon2::Version::V0x13,
             argon2::Params::new(65536, 4, 2, None).unwrap(),
         );
         let password_hash = argon2
-            .hash_password(new_password.as_bytes(), &salt)
+            .hash_password(peppered_password.as_bytes(), &salt)
             .map_err(|_| AuthError::InternalError)?
             .to_string();
 

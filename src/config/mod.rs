@@ -6,6 +6,7 @@ pub struct Config {
     pub server_host: String,
     pub server_port: u16,
     pub jwt_secret: String,
+    pub password_pepper: String,
     // Admin configuration
     pub admin_email: Option<String>,
     pub admin_password: Option<String>,
@@ -24,6 +25,8 @@ impl Config {
                 .parse()?,
             jwt_secret: std::env::var("JWT_SECRET")
                 .unwrap_or_else(|_| "your-secret-key".to_string()),
+            password_pepper: std::env::var("PASSWORD_PEPPER")
+                .unwrap_or_else(|_| "default-pepper-change-in-production".to_string()),
             // Admin configuration - all optional
             admin_email: std::env::var("LUNARBASE_ADMIN_EMAIL").ok(),
             admin_password: std::env::var("LUNARBASE_ADMIN_PASSWORD").ok(),
