@@ -240,6 +240,34 @@ impl JwtService {
         Ok(claims)
     }
 
+    /// Validate access token with blacklist and user verification check
+    pub fn validate_access_token_with_verification(&self, token: &str) -> Result<Claims, AuthError> {
+        let claims = self.validate_access_token_with_blacklist(token)?;
+
+        // Check if user is still verified in database
+        let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+        if !self.is_user_verified(user_id)? {
+            return Err(AuthError::AccountNotVerified);
+        }
+
+        Ok(claims)
+    }
+
+    /// Check if user is verified in database
+    pub fn is_user_verified(&self, user_id: i32) -> Result<bool, AuthError> {
+        use crate::schema::users;
+        
+        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+
+        let is_verified: bool = users::table
+            .filter(users::id.eq(user_id))
+            .select(users::is_verified)
+            .first(&mut conn)
+            .map_err(|_| AuthError::InternalError)?;
+
+        Ok(is_verified)
+    }
+
     /// Validate refresh token with blacklist check
     pub fn validate_refresh_token_with_blacklist(
         &self,

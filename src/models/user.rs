@@ -63,6 +63,7 @@ pub struct NewUser {
     pub password_hash: String,
     pub username: String,
     pub role: String,
+    pub is_verified: bool,
     pub avatar_url: Option<String>,
 }
 
@@ -191,6 +192,7 @@ impl NewUser {
             password_hash,
             username,
             role: "user".to_string(),
+            is_verified: false,
             avatar_url: None,
         })
     }
@@ -228,6 +230,7 @@ impl NewUser {
             password_hash,
             username,
             role,
+            is_verified: false,
             avatar_url: None,
         })
     }
@@ -266,7 +269,47 @@ impl NewUser {
             password_hash,
             username,
             role,
+            is_verified: false,
             avatar_url,
+        })
+    }
+
+    /// Create new user with custom verification status (for testing)
+    pub fn new_verified(
+        email: String,
+        password: &str,
+        username: String,
+        role: String,
+        is_verified: bool,
+        pepper: &str,
+    ) -> Result<Self, String> {
+        // Generate cryptographically secure random salt
+        let mut salt_bytes = [0u8; 32];
+        OsRng.fill_bytes(&mut salt_bytes);
+
+        let salt = SaltString::encode_b64(&salt_bytes)
+            .map_err(|e| format!("Salt generation failed: {}", e))?;
+
+        // Combine password with pepper for additional security
+        let peppered_password = format!("{}{}", password, pepper);
+
+        let argon2 = Argon2::new(
+            argon2::Algorithm::Argon2id,
+            argon2::Version::V0x13,
+            argon2::Params::new(65536, 4, 2, None).unwrap(),
+        );
+        let password_hash = argon2
+            .hash_password(peppered_password.as_bytes(), &salt)
+            .map_err(|e| format!("Password hashing failed: {}", e))?
+            .to_string();
+
+        Ok(NewUser {
+            email,
+            password_hash,
+            username,
+            role,
+            is_verified,
+            avatar_url: None,
         })
     }
 }

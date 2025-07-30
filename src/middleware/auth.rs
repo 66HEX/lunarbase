@@ -113,10 +113,10 @@ pub async fn auth_middleware(
         return Err(AuthError::RateLimitExceeded);
     }
 
-    // Validate token with blacklist check
+    // Validate token with blacklist and user verification check
     let claims = auth_state
         .jwt_service
-        .validate_access_token_with_blacklist(&token)?;
+        .validate_access_token_with_verification(&token)?;
 
     // Inject claims into request extensions for downstream handlers
     request.extensions_mut().insert(claims);

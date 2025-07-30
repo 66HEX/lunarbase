@@ -1156,7 +1156,6 @@ dependencies = [
  "reqwest",
  "serde",
  "serde_json",
- "serde_urlencoded",
  "sysinfo",
  "tokio",
  "tokio-tungstenite 0.27.0",

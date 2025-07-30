@@ -199,60 +199,48 @@ async fn create_admin_token(app: &Router) -> (i32, String) {
     create_test_user(app, "admin").await
 }
 
-fn create_user_token(user_id: i32) -> String {
-    create_token_for_user(user_id, "user")
-}
+async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
+    use diesel::prelude::*;
+    use lunarbase::models::NewUser;
+    use lunarbase::schema::users;
+    use lunarbase::{Config, database::create_pool};
 
-async fn create_test_user(app: &Router, role: &str) -> (i32, String) {
     let unique_email = format!("test_{}@example.com", uuid::Uuid::new_v4());
     let unique_username = format!(
         "test_{}",
         uuid::Uuid::new_v4().to_string()[0..8].to_string()
     ); // Keep username short
-    let register_payload = json!({
-        "email": unique_email,
-        "password": "Test123!@#",
-        "username": unique_username
-    });
 
-    let register_request = Request::builder()
-        .uri("/api/auth/register")
-        .method("POST")
-        .header("content-type", "application/json")
-        .body(Body::from(register_payload.to_string()))
-        .unwrap();
+    // Create user directly in database with is_verified = true
+    let config = Config::from_env().expect("Failed to load config");
+    let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
+    let mut conn = db_pool.get().expect("Failed to get database connection");
+    let test_password_pepper = "test_pepper".to_string();
 
-    let register_response = app.clone().oneshot(register_request).await.unwrap();
-    assert_eq!(register_response.status(), StatusCode::CREATED);
+    // Create new user with verification status set to true for tests
+    let new_user = NewUser::new_verified(
+        unique_email.clone(),
+        "Test123!@#",
+        unique_username,
+        role.to_string(),
+        true,
+        &test_password_pepper
+    ).expect("Failed to create new user");
 
-    let body = register_response
-        .into_body()
-        .collect()
-        .await
-        .unwrap()
-        .to_bytes();
-    let body_str = String::from_utf8(body.to_vec()).unwrap();
-    let json_response: Value = serde_json::from_str(&body_str).unwrap();
+    // Insert user into database
+    diesel::insert_into(users::table)
+        .values(&new_user)
+        .execute(&mut conn)
+        .expect("Failed to insert user");
 
-    let user_id = json_response["data"]["user"]["id"].as_i64().unwrap() as i32;
+    // Get the inserted user
+    let user: lunarbase::models::User = users::table
+        .filter(users::email.eq(&new_user.email))
+        .select(lunarbase::models::User::as_select())
+        .first(&mut conn)
+        .expect("Failed to fetch inserted user");
 
-    // If role is not "user", update the user's role in the database
-    if role != "user" {
-        use diesel::prelude::*;
-        use lunarbase::Config;
-        use lunarbase::database::create_pool;
-        use lunarbase::schema::users;
-
-        let config = Config::from_env().expect("Failed to load config");
-        let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
-        let mut conn = db_pool.get().expect("Failed to get database connection");
-
-        diesel::update(users::table.filter(users::id.eq(user_id)))
-            .set(users::role.eq(role))
-            .execute(&mut conn)
-            .expect("Failed to update user role");
-    }
-
+    let user_id = user.id;
     let token = create_token_for_user(user_id, role);
 
     (user_id, token)
@@ -341,7 +329,7 @@ async fn test_role_management_full_cycle() {
 #[tokio::test]
 async fn test_role_management_unauthorized() {
     let app = create_test_router();
-    let user_token = create_user_token(2);
+    let (_user_id, user_token) = create_test_user(&app, "user").await;
 
     // User should not be able to create roles
     let role_payload = json!({
