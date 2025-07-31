@@ -7,8 +7,11 @@ use tokio::signal;
 use tracing::{info, warn};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use lunarbase::database::create_pool;
+
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 use lunarbase::handlers::{
     admin::{serve_admin_assets},
     avatar_proxy::proxy_avatar,
@@ -53,6 +56,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Database connection pool creation
     let pool = create_pool(&config.database_url)?;
     info!("Database pool created successfully");
+
+    // Run database migrations automatically
+    {
+        let mut conn = pool.get()?;
+        conn.run_pending_migrations(MIGRATIONS)
+            .map_err(|e| format!("Failed to run migrations: {}", e))?;
+        info!("Database migrations completed successfully");
+    }
 
     // Application state creation
     let app_state = AppState::new(pool, &config.jwt_secret, config.password_pepper.clone())?;

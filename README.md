@@ -30,6 +30,7 @@ Security isn't an afterthought in LunarBase—it's the foundation. Our multi-lay
 - **Admin self-protection** mechanisms to prevent accidental privilege removal
 
 ### Data Protection & Integrity
+- **Database encryption at rest** with SQLCipher providing transparent AES-256 encryption
 - **SQL injection prevention** through parameterized queries and comprehensive input validation
 - **CSRF protection** via SameSite cookie policies
 - **XSS prevention** through httpOnly cookie storage and input sanitization
@@ -100,7 +101,7 @@ The LunarBase admin panel showcases the full potential of **Nocta UI**, our prop
 ### Backend (Rust)
 - **Axum 0.8.4** - High-performance async web framework
 - **Diesel 2.2.11** - Type-safe ORM with compile-time query validation
-- **SQLite** - Embedded database with excellent performance characteristics
+- **SQLCipher** - Encrypted embedded database with excellent performance characteristics and transparent encryption
 - **JWT + Argon2** - Industry-standard authentication with cryptographic security
 - **tokio-tungstenite** - Async WebSocket implementation
 - **Prometheus** - Production-ready metrics and monitoring

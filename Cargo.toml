@@ -9,6 +9,8 @@ async-trait = "0.1.88"
 axum = { version = "0.8.4", features = ["tokio", "ws"] }
 chrono = { version = "0.4.41", features = ["serde"] }
 diesel = { version = "2.2.11", features = ["chrono", "r2d2", "sqlite"], default-features = false }
+diesel_migrations = "2.2.0"
+libsqlite3-sys = { version = "0.35", features = ["bundled-sqlcipher"] }
 dotenvy = "0.15.7"
 futures-util = "0.3.31"
 jsonwebtoken = "9.3.1"
