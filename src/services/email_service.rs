@@ -136,34 +136,47 @@ impl EmailService {
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Verify Your Email - LunarBase</title>
+    <style>
+        @media only screen and (max-width: 600px){{
+            .mobile-padding {{ padding: 10px !important; }}
+            .mobile-content-padding {{ padding: 20px 15px !important; }}
+            .mobile-header-padding {{ padding: 25px 15px !important; }}
+            .mobile-footer-padding {{ padding: 20px 15px !important; }}
+            .mobile-inner-padding {{ padding: 12px !important; }}
+            .mobile-font-size {{ font-size: 14px !important; }}
+            .mobile-title {{ font-size: 20px !important; }}
+            .mobile-brand {{ font-size: 26px !important; }}
+            .mobile-button {{ padding: 14px 24px !important; font-size: 15px !important; }}
+        }}
+    </style>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #101010; padding: 20px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #101010; padding: 20px;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f5f5f5;" class="mobile-padding">
         <tr>
-            <td align="center">
+            <td align="center" style="padding: 20px;" class="mobile-padding">
                 <!-- Main Container -->
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; background-color: #171717; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4), 0 4px 8px rgba(0, 0, 0, 0.2); overflow: hidden; border: 1px solid #3a3a3a;">
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width: 600px; width: 100%; background-color: #ffffff; border-radius: 16px; box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1), 0 4px 8px rgba(0, 0, 0, 0.05); overflow: hidden; border: 1px solid #e5e5e5;">
                     
                     <!-- Header -->
                     <tr>
-                        <td style="background-color: #1C1C1C; padding: 40px 30px; text-align: center; border-bottom: 1px solid #3a3a3a;">
+                        <td style="background-color: #f8f8f8; padding: 40px 30px; text-align: center; border-bottom: 1px solid #e5e5e5;" class="mobile-header-padding">
                             
                             <!-- Logo Container -->
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center">
                                         <!-- Logo -->
-                                        <div style="width: 64px; height: 64px; background-color: #3a3a3a; border-radius: 16px; display: inline-block; line-height: 64px; text-align: center; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); border: 1px solid #4a4a4a;">
-                                            <img src="https://raw.githubusercontent.com/66HEX/lunarbase/master/logo.png" alt="LunarBase Logo" style="width: 48px; height: 48px; vertical-align: middle; border-radius: 4px;" />
+                                        <div style="width: 64px; height: 64px; background-color: #1c1c1c; background: linear-gradient(#1c1c1c, #1c1c1c); border-radius: 16px; display: inline-block; line-height: 64px; text-align: center; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #d0d0d0;">
+                                            <img src="https://raw.githubusercontent.com/66HEX/lunarbase/master/logo.png" alt="LunarBase Logo" style="width: 64px; height: 64px; vertical-align: middle; border-radius: 4px;" />
                                         </div>
                                         
                                         <!-- Brand Name -->
-                                        <div style="font-size: 32px; font-weight: 700; color: #ffffff; margin-bottom: 8px; letter-spacing: -0.6px;">
+                                        <div style="font-size: 32px; font-weight: 700; color: #1a1a1a; margin-bottom: 8px; letter-spacing: -0.6px;" class="mobile-brand">
                                             LunarBase
                                         </div>
                                         
                                         <!-- Tagline -->
-                                        <div style="font-size: 16px; color: #b0b0b0; font-weight: 500;">
+                                        <div style="font-size: 16px; color: #5a5a5a; font-weight: 500;">
                                             Admin Panel
                                         </div>
                                     </td>
@@ -174,15 +187,15 @@ impl EmailService {
                     
                     <!-- Content -->
                     <tr>
-                        <td style="padding: 40px 30px; background-color: #171717;">
+                        <td style="padding: 40px 30px; background-color: #ffffff;" class="mobile-content-padding">
                             
                             <!-- Greeting -->
-                            <h1 style="font-size: 24px; font-weight: 600; color: #ffffff; margin: 0 0 16px 0; text-align: center;">
+                            <h1 style="font-size: 24px; font-weight: 600; color: #1a1a1a; margin: 0 0 16px 0; text-align: center;" class="mobile-title">
                                 Welcome, {}!
                             </h1>
                             
                             <!-- Message -->
-                            <p style="font-size: 16px; color: #d0d0d0; margin: 0 0 32px 0; text-align: center; line-height: 1.7;">
+                            <p style="font-size: 16px; color: #3a3a3a; margin: 0 0 32px 0; text-align: center; line-height: 1.7;" class="mobile-font-size">
                                 Thank you for joining LunarBase. To complete your registration and access your admin panel, 
                                 please verify your email address by clicking the button below.
                             </p>
@@ -191,7 +204,7 @@ impl EmailService {
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                                 <tr>
                                     <td align="center" style="padding: 0 0 32px 0;">
-                                        <a href="{}" style="display: inline-block; background-color: #ffffff; color: #1a1a1a; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3); border: 1px solid #e0e0e0; transition: all 0.2s ease;">
+                                        <a href="{}" style="display: inline-block; background-color: #1a1a1a; color: #ffffff; padding: 16px 32px; text-decoration: none; border-radius: 12px; font-weight: 600; font-size: 16px; letter-spacing: 0.5px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); border: 1px solid #2a2a2a; transition: all 0.2s ease;" class="mobile-button">
                                             Verify Email Address
                                         </a>
                                     </td>
@@ -199,13 +212,13 @@ impl EmailService {
                             </table>
                             
                             <!-- Alternative Link -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border: 1px solid #3a3a3a; border-radius: 8px; margin: 0 0 24px 0;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f8f8; border: 1px solid #e5e5e5; border-radius: 8px; margin: 0 0 24px 0;">
                                 <tr>
-                                    <td style="padding: 20px;">
-                                        <p style="font-size: 14px; color: #b0b0b0; margin: 0 0 8px 0;">
+                                    <td style="padding: 20px;" class="mobile-inner-padding">
+                                        <p style="font-size: 14px; color: #5a5a5a; margin: 0 0 8px 0;" class="mobile-font-size">
                                             If the button doesn't work, copy and paste this link:
                                         </p>
-                                        <div style="font-size: 13px; color: #d0d0d0; word-break: break-all; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; background-color: #0f0f0f; padding: 12px; border-radius: 6px; border: 1px solid #3a3a3a;">
+                                        <div style="font-size: 13px; color: #3a3a3a; word-break: break-all; font-family: 'Monaco', 'Menlo', 'Courier New', monospace; background-color: #ffffff; padding: 12px; border-radius: 6px; border: 1px solid #e5e5e5;">
                                             {}
                                         </div>
                                     </td>
@@ -213,22 +226,22 @@ impl EmailService {
                             </table>
                             
                             <!-- Expiry Notice -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-left: 4px solid #ffa500; border-radius: 8px; margin: 0 0 24px 0; border: 1px solid #3a3a3a;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #fef8f0; border-left: 4px solid #d97706; border-radius: 8px; margin: 0 0 24px 0; border: 1px solid #f3d6a0;">
                                 <tr>
-                                    <td style="padding: 16px;">
-                                        <p style="font-size: 14px; color: #ffa500; font-weight: 500; margin: 0;">
-                                            ⏰ This verification link will expire in 24 hours for security reasons.
+                                    <td style="padding: 16px;" class="mobile-inner-padding">
+                                        <p style="font-size: 14px; color: #b45309; font-weight: 500; margin: 0;" class="mobile-font-size">
+                                            This verification link will expire in 24 hours for security reasons.
                                         </p>
                                     </td>
                                 </tr>
                             </table>
                             
                             <!-- Security Notice -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #1a1a1a; border-radius: 8px; border-left: 4px solid #4a4a4a; margin-top: 24px; border: 1px solid #3a3a3a;">
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background-color: #f8f8f8; border-radius: 8px; border-left: 4px solid #9ca3af; margin-top: 24px; border: 1px solid #e5e5e5;">
                                 <tr>
-                                    <td style="padding: 16px;">
-                                        <p style="font-size: 13px; color: #b0b0b0; line-height: 1.5; margin: 0;">
-                                            🔒 If you didn't create an account with LunarBase, you can safely ignore this email. 
+                                    <td style="padding: 16px;" class="mobile-inner-padding">
+                                        <p style="font-size: 13px; color: #5a5a5a; line-height: 1.5; margin: 0;" class="mobile-font-size">
+                                            If you didn't create an account with LunarBase, you can safely ignore this email. 
                                             Your email address will not be used without verification.
                                         </p>
                                     </td>
@@ -239,11 +252,11 @@ impl EmailService {
                     
                     <!-- Footer -->
                     <tr>
-                        <td style="background-color: #1C1C1C; padding: 30px; text-align: center; border-top: 1px solid #3a3a3a;">
-                            <p style="font-size: 14px; color: #b0b0b0; margin: 0 0 8px 0;">
+                        <td style="background-color: #f8f8f8; padding: 30px; text-align: center; border-top: 1px solid #e5e5e5;" class="mobile-footer-padding">
+                            <p style="font-size: 14px; color: #5a5a5a; margin: 0 0 8px 0;" class="mobile-font-size">
                                 This email was sent by LunarBase Admin System.
                             </p>
-                            <p style="font-size: 14px; color: #b0b0b0; margin: 0 0 16px 0;">
+                            <p style="font-size: 14px; color: #5a5a5a; margin: 0 0 16px 0;" class="mobile-font-size">
                                 Need help? Contact your system administrator.
                             </p>
                             <p style="font-size: 12px; color: #888888; margin: 0;">
