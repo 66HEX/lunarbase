@@ -51,6 +51,16 @@ const statusColors = {
 		"bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-400",
 };
 
+const getProxyUrl = (originalUrl: string): string => {
+	// Check if it's an external URL that needs proxying
+	if (originalUrl.startsWith('https://lh3.googleusercontent.com') || 
+		originalUrl.startsWith('https://avatars.githubusercontent.com')) {
+		const proxyUrl = `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
+		return proxyUrl;
+	}
+	return originalUrl;
+};
+
 export default function UsersComponent() {
 	// Local state for search and pagination
 	const [searchTerm, setSearchTerm] = useState("");
@@ -177,6 +187,7 @@ export default function UsersComponent() {
 					<Avatar
 						className="w-8 h-8"
 						size="sm"
+						src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
 						fallback={getInitials(user.email)}
 					/>
 					<div>

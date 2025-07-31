@@ -36,6 +36,16 @@ const statusVariants: Record<
 	inactive: "warning" as const,
 };
 
+const getProxyUrl = (originalUrl: string): string => {
+	// Check if it's an external URL that needs proxying
+	if (originalUrl.startsWith('https://lh3.googleusercontent.com') || 
+		originalUrl.startsWith('https://avatars.githubusercontent.com')) {
+		const proxyUrl = `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
+		return proxyUrl;
+	}
+	return originalUrl;
+};
+
 export function UserDetailsSheet({
 	isOpen,
 	onOpenChange,
@@ -124,7 +134,10 @@ export function UserDetailsSheet({
 						<div className="space-y-6">
 							{/* User Avatar and Basic Info */}
 							<div className="flex items-center gap-4 p-4 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
-								<Avatar size="lg" fallback={getInitials(user.email)} />
+								<Avatar 
+									size="lg" 
+									src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
+									fallback={getInitials(user.email)} />
 								<div className="flex-1">
 									<h3 className="text-xl font-semibold text-nocta-900 dark:text-nocta-100">
 										{user.username || user.email}
