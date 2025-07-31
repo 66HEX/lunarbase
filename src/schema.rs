@@ -51,17 +51,6 @@ diesel::table! {
 }
 
 diesel::table! {
-    email_verification_tokens (id) {
-        id -> Integer,
-        user_id -> Integer,
-        token -> Text,
-        expires_at -> Timestamp,
-        created_at -> Timestamp,
-        used_at -> Nullable<Timestamp>,
-    }
-}
-
-diesel::table! {
     record_permissions (id) {
         id -> Integer,
         record_id -> Integer,
@@ -122,7 +111,6 @@ diesel::joinable!(blacklisted_tokens -> users (user_id));
 diesel::joinable!(collection_permissions -> collections (collection_id));
 diesel::joinable!(collection_permissions -> roles (role_id));
 diesel::joinable!(collection_records -> collections (collection_id));
-diesel::joinable!(email_verification_tokens -> users (user_id));
 diesel::joinable!(record_permissions -> collections (collection_id));
 diesel::joinable!(record_permissions -> users (user_id));
 diesel::joinable!(user_collection_permissions -> collections (collection_id));
@@ -133,7 +121,6 @@ diesel::allow_tables_to_appear_in_same_query!(
     collection_permissions,
     collection_records,
     collections,
-    email_verification_tokens,
     record_permissions,
     roles,
     user_collection_permissions,

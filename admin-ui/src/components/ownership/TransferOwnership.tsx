@@ -1,5 +1,6 @@
 import { UserPen } from "lucide-react";
 import { useState } from "react";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
 	Dialog,
@@ -92,6 +93,16 @@ export function TransferOwnership({
 		</Button>
 	);
 
+	const getProxyUrl = (originalUrl: string): string => {
+	// Check if it's an external URL that needs proxying
+	if (originalUrl.startsWith('https://lh3.googleusercontent.com') || 
+		originalUrl.startsWith('https://avatars.githubusercontent.com')) {
+		const proxyUrl = `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
+		return proxyUrl;
+	}
+	return originalUrl;
+};
+
 	return (
 		<Dialog
 			open={open}
@@ -160,10 +171,15 @@ export function TransferOwnership({
 										availableUsers.map((user: User) => (
 											<SelectItem key={user.id} value={user.id.toString()}>
 												<div className="flex items-center gap-2">
-													<div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900 flex items-center justify-center text-xs font-medium text-blue-700 dark:text-blue-300">
-														{user.username?.charAt(0).toUpperCase() ||
-															user.email.charAt(0).toUpperCase()}
-													</div>
+													<Avatar
+														size="sm"
+														src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
+														fallback={
+															user?.username
+																? user.username.substring(0, 2).toUpperCase()
+																: "U"
+														}
+													/>
 													<div className="flex flex-col">
 														<span className="text-sm font-medium">
 															{user.username || user.email}

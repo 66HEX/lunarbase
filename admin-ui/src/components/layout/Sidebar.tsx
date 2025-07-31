@@ -224,15 +224,15 @@ export function Sidebar() {
 					<div className="p-4 border-t border-nocta-200 dark:border-nocta-800">
 						<div className="flex items-center space-x-3 mb-3">
 							<Avatar
-						size="md"
-						src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
-						fallback={
-							user?.username
-								? user.username.substring(0, 2).toUpperCase()
-								: "U"
-						}
-						status="online"
-					/>
+								size="md"
+								src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
+								fallback={
+									user?.username
+										? user.username.substring(0, 2).toUpperCase()
+										: "U"
+								}
+								status="online"
+							/>
 							<div className="flex-1 min-w-0">
 								<p className="text-sm font-medium text-nocta-900 dark:text-nocta-100 truncate">
 									{user?.username || "Loading..."}
