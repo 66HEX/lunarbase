@@ -288,9 +288,9 @@ please verify your email address by visiting the following link:
 
 {}
 
-⏰ IMPORTANT: This verification link will expire in 24 hours for security reasons.
+IMPORTANT: This verification link will expire in 24 hours for security reasons.
 
-🔒 SECURITY NOTE: If you didn't create an account with LunarBase, you can safely ignore 
+SECURITY NOTE: If you didn't create an account with LunarBase, you can safely ignore 
 this email. Your email address will not be used without verification.
 
 Best regards,

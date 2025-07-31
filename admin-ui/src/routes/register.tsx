@@ -2,14 +2,11 @@ import {
 	createFileRoute,
 	redirect,
 	useNavigate,
-	useSearch,
 } from "@tanstack/react-router";
 import { useState } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import { FaGoogle } from "react-icons/fa";
 import {
 	Card,
 	CardContent,
@@ -27,42 +24,24 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { CustomApiError } from "@/lib/api";
+import { CustomApiError, authApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
-import type { LoginRequest } from "@/types/api";
+import type { RegisterRequest } from "@/types/api";
 import { Link } from "@tanstack/react-router";
 
-const OAuthButton = ({ provider, icon, onClick, disabled }: {
-	provider: string;
-	icon: React.ReactNode;
-	onClick: () => void;
-	disabled: boolean;
-}) => (
-	<Button
-		type="button"
-		variant="secondary"
-		className="w-full"
-		onClick={onClick}
-		disabled={disabled}
-	>
-		{icon}
-		Continue with {provider}
-	</Button>
-);
-
-export default function LoginComponent() {
-	const [formData, setFormData] = useState<LoginRequest>({
+export default function RegisterComponent() {
+	const [formData, setFormData] = useState<RegisterRequest>({
 		email: "",
 		password: "",
+		username: "",
 	});
 	const [errors, setErrors] = useState<{ [key: string]: string }>({});
 	const [generalError, setGeneralError] = useState("");
+	const [loading, setLoading] = useState(false);
+	const [success, setSuccess] = useState(false);
 	const navigate = useNavigate();
-	const search = useSearch({ from: "/login" }) as { redirect?: string };
-	const { login, loginWithOAuth, getOAuthProviders, loading, error } = useAuthStore();
-	const oauthProviders = getOAuthProviders();
 
-	const handleInputChange = (field: keyof LoginRequest, value: string) => {
+	const handleInputChange = (field: keyof RegisterRequest, value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
 		// Clear field error when user starts typing
 		if (errors[field]) {
@@ -85,6 +64,14 @@ export default function LoginComponent() {
 			newErrors.password = "Password must be at least 8 characters";
 		}
 
+		if (!formData.username) {
+			newErrors.username = "Username is required";
+		} else if (formData.username.length < 3) {
+			newErrors.username = "Username must be at least 3 characters";
+		} else if (formData.username.length > 30) {
+			newErrors.username = "Username must be less than 30 characters";
+		}
+
 		setErrors(newErrors);
 		return Object.keys(newErrors).length === 0;
 	};
@@ -95,19 +82,23 @@ export default function LoginComponent() {
 		if (!validateForm()) return;
 
 		setGeneralError("");
+		setLoading(true);
 
 		try {
-			await login(formData.email, formData.password);
-			navigate({ to: search.redirect || "/dashboard" });
+			await authApi.register(formData);
+			setSuccess(true);
 		} catch (error) {
 			if (error instanceof CustomApiError) {
-				if (error.statusCode === 401) {
-					setGeneralError("Invalid email or password");
-				} else if (error.validationErrors) {
+				if (error.validationErrors) {
 					const fieldErrors: { [key: string]: string } = {};
 					error.validationErrors.forEach((msg) => {
-						if (msg.includes("email")) fieldErrors.email = msg;
-						else if (msg.includes("password")) fieldErrors.password = msg;
+						if (msg.includes("email") || msg.includes("Email")) {
+							fieldErrors.email = msg;
+						} else if (msg.includes("password") || msg.includes("Password")) {
+							fieldErrors.password = msg;
+						} else if (msg.includes("username") || msg.includes("Username")) {
+							fieldErrors.username = msg;
+						}
 					});
 					setErrors(fieldErrors);
 				} else {
@@ -116,22 +107,66 @@ export default function LoginComponent() {
 			} else {
 				setGeneralError("An unexpected error occurred");
 			}
+		} finally {
+			setLoading(false);
 		}
 	};
 
-	const handleOAuthLogin = async (provider: string) => {
-		try {
-			await loginWithOAuth(provider);
-			// The loginWithOAuth function will redirect to OAuth provider
-			// After successful OAuth, user will be redirected back to the app
-		} catch (error) {
-			if (error instanceof CustomApiError) {
-				setGeneralError(error.message);
-			} else {
-				setGeneralError("OAuth login failed");
-			}
-		}
-	};
+	if (success) {
+		return (
+			<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
+				<div className="w-sm space-y-8">
+					{/* Header */}
+					<div className="text-center">
+						<div className="flex justify-center mb-4">
+							<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
+								<LunarLogo className="h-10 w-10 text-white" />
+							</div>
+						</div>
+						<h1 className="text-3xl font-bold text-nocta-900 dark:text-nocta-100">
+							LunarBase
+						</h1>
+						<p className="mt-2 text-nocta-600 dark:text-nocta-400">Admin Panel</p>
+					</div>
+
+					{/* Success Message */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2 text-green-600">
+								Registration Successful
+							</CardTitle>
+							<CardDescription>
+								Your account has been created successfully!
+							</CardDescription>
+						</CardHeader>
+						<CardContent>
+							<div className="space-y-4">
+								<Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
+									<AlertDescription className="text-green-800 dark:text-green-200">
+										We've sent a verification email to <strong>{formData.email}</strong>.
+										Please check your inbox and click the verification link to activate your account.
+									</AlertDescription>
+								</Alert>
+
+								<div className="space-y-3">
+									<Button
+										type="button"
+										className="w-full"
+										onClick={() => navigate({ to: "/login" })}
+									>
+										Go to Login
+									</Button>
+									<p className="text-sm text-center text-nocta-600 dark:text-nocta-400">
+										Didn't receive the email? Check your spam folder or contact support.
+									</p>
+								</div>
+							</div>
+						</CardContent>
+					</Card>
+				</div>
+			</div>
+		);
+	}
 
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
@@ -149,20 +184,20 @@ export default function LoginComponent() {
 					<p className="mt-2 text-nocta-600 dark:text-nocta-400">Admin Panel</p>
 				</div>
 
-				{/* Login Form */}
+				{/* Registration Form */}
 				<Card>
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2">Login</CardTitle>
+						<CardTitle className="flex items-center gap-2">Create Account</CardTitle>
 						<CardDescription>
-							Sign in to access the LunarBase admin panel
+							Sign up to access the LunarBase admin panel
 						</CardDescription>
 					</CardHeader>
 					<CardContent>
 						<Form onSubmit={handleSubmit}>
 							<div className="space-y-4">
-								{(generalError || error) && (
+								{generalError && (
 									<Alert variant="destructive" className="w-full">
-										<AlertDescription>{generalError || error}</AlertDescription>
+										<AlertDescription>{generalError}</AlertDescription>
 									</Alert>
 								)}
 
@@ -179,6 +214,24 @@ export default function LoginComponent() {
 											}
 											disabled={loading}
 											variant={errors.email ? "error" : "default"}
+										/>
+									</FormControl>
+									<FormMessage />
+								</FormField>
+
+								<FormField name="username" error={errors.username}>
+									<FormLabel required>Username</FormLabel>
+									<FormControl>
+										<Input
+											type="text"
+											placeholder="john_doe"
+											className="w-full"
+											value={formData.username}
+											onChange={(e) =>
+												handleInputChange("username", e.target.value)
+											}
+											disabled={loading}
+											variant={errors.username ? "error" : "default"}
 										/>
 									</FormControl>
 									<FormMessage />
@@ -204,62 +257,27 @@ export default function LoginComponent() {
 							</div>
 
 							<FormActions className="mt-6">
-							<Button type="submit" className="w-full" disabled={loading}>
-								{loading ? (
-									<>
-										<Spinner className="w-4 h-4 mr-2" />
-										Signing in...
-									</>
-								) : (
-									"Sign In"
-								)}
-							</Button>
-						</FormActions>
+								<Button type="submit" className="w-full" disabled={loading}>
+									{loading ? (
+										<>
+											<Spinner className="w-4 h-4 mr-2" />
+											Creating account...
+										</>
+									) : (
+										"Create Account"
+									)}
+								</Button>
+							</FormActions>
 
-						{/* OAuth Divider */}
-						<div className="relative my-6">
-							<div className="relative flex justify-center text-xs uppercase">
-								<span className="bg-background px-2 text-nocta-300 dark:text-nocta-700">
-									Or continue with
-								</span>
-							</div>
-						</div>
-
-						{/* OAuth Buttons */}
-						<div className="space-y-3">
-							{oauthProviders.map((provider) => {
-								const getProviderIcon = () => {
-									switch (provider.name) {
-										case 'google':
-											return <FaGoogle className="w-4 h-4 mr-2" />;
-										case 'github':
-											return <GitHubLogoIcon className="w-4 h-4 mr-2" />;
-										default:
-											return null;
-									}
-								};
-
-								return (
-									<OAuthButton
-										key={provider.name}
-										provider={provider.display_name}
-										icon={getProviderIcon()}
-										onClick={() => handleOAuthLogin(provider.name)}
-										disabled={loading}
-									/>
-								);
-							})}
-							</div>
-
-							{/* Register Link */}
+							{/* Login Link */}
 							<div className="mt-6 text-center">
 								<p className="text-sm text-nocta-600 dark:text-nocta-400">
-									Don't have an account?{" "}
+									Already have an account?{" "}
 									<Link
-										to="/register"
+										to="/login"
 										className="font-medium text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300"
 									>
-										Sign up
+										Sign in
 									</Link>
 								</p>
 							</div>
@@ -277,11 +295,11 @@ export default function LoginComponent() {
 	);
 }
 
-export const Route = createFileRoute("/login")({
-	component: LoginComponent,
+export const Route = createFileRoute("/register")({
+	component: RegisterComponent,
 	beforeLoad: async () => {
 		// Check if already authenticated by checking if user exists in store
-		// Don't call checkAuth() here as it would cause 401 error on login page
+		// Don't call checkAuth() here as it would cause 401 error on register page
 		const { user } = useAuthStore.getState();
 		if (user) {
 			throw redirect({

@@ -288,7 +288,7 @@ export default function UsersComponent() {
 						size="sm"
 						className="w-8 h-8 p-0"
 						onClick={() => handleViewUser(user.id)}
-						title="Zobacz szczegóły użytkownika"
+						title="View User Details"
 					>
 						<Eye className="w-4 h-4" />
 					</Button>
@@ -297,7 +297,7 @@ export default function UsersComponent() {
 						size="sm"
 						className="w-8 h-8 p-0"
 						onClick={() => handleEditUser(user.id)}
-						title="Edytuj użytkownika"
+						title="Edit User"
 					>
 						<Edit3 className="w-4 h-4" />
 					</Button>

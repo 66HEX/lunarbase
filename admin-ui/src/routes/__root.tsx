@@ -15,11 +15,13 @@ import { useUI, useUIActions } from "@/stores/client.store";
 export const Route = createRootRoute({
 	component: RootComponent,
 	beforeLoad: async ({ location }) => {
-		// Allow access to login and auth pages without authentication
+		// Allow access to login, register and auth pages without authentication
 		// Check both /login and /admin/login due to basepath configuration
 		if (
 			location.pathname === "/login" ||
+			location.pathname === "/register" ||
 			location.pathname === "/admin/login" ||
+			location.pathname === "/admin/register" ||
 			location.pathname === "/admin/auth/success" ||
 			location.pathname === "/admin/auth/error"
 		) {
@@ -58,7 +60,9 @@ function RootComponent() {
 
 	const isLoginPage =
 		location.pathname === "/login" || 
+		location.pathname === "/register" ||
 		location.pathname === "/admin/login" ||
+		location.pathname === "/admin/register" ||
 		location.pathname === "/admin/auth/success" ||
 		location.pathname === "/admin/auth/error";
 
