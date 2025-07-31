@@ -25,7 +25,7 @@ fn create_test_router() -> Router {
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper).expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()

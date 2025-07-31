@@ -22,4 +22,4 @@ pub use users::*;
 pub use websocket::*;
 
 // Re-export OAuth handlers specifically
-pub use auth::{oauth_authorize, oauth_callback};
+pub use auth::{oauth_authorize, oauth_callback, verify_email_get};

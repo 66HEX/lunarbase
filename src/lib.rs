@@ -39,6 +39,8 @@ pub mod utils;
         handlers::auth::logout,
         handlers::auth::oauth_authorize,
         handlers::auth::oauth_callback,
+        handlers::auth::verify_email,
+        handlers::auth::resend_verification,
 
         // Collection endpoints
         handlers::collections::create_collection,
@@ -129,6 +131,8 @@ pub mod utils;
             models::blacklisted_token::LogoutResponse,
             handlers::auth::OAuthCallbackQuery,
             handlers::auth::OAuthAuthorizationResponse,
+            handlers::auth::VerifyEmailRequest,
+            handlers::auth::ResendVerificationRequest,
 
             // Avatar proxy
             handlers::avatar_proxy::AvatarQuery,
@@ -228,12 +232,11 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, CollectionService, OwnershipService, PermissionService, WebSocketService,
+    AdminService, CollectionService, EmailService, OwnershipService, PermissionService, WebSocketService,
 };
 use std::sync::Arc;
 
 // Application state combining all shared state
-#[derive(Clone)]
 pub struct AppState {
     pub db_pool: DatabasePool,
     pub auth_state: middleware::AuthState,
@@ -243,6 +246,7 @@ pub struct AppState {
     pub ownership_service: OwnershipService,
     pub admin_service: AdminService,
     pub websocket_service: WebSocketService,
+    pub email_service: EmailService,
     pub oauth_service: utils::OAuthService,
     pub password_pepper: String,
 }
@@ -252,6 +256,7 @@ impl AppState {
         db_pool: DatabasePool,
         jwt_secret: &str,
         password_pepper: String,
+        config: &Config,
     ) -> Result<Self, Box<dyn std::error::Error>> {
         let permission_service = PermissionService::new(db_pool.clone());
         let ownership_service = OwnershipService::new(db_pool.clone());
@@ -264,6 +269,7 @@ impl AppState {
             .with_permission_service(permission_service.clone());
         let oauth_config = utils::oauth_service::OAuthConfig::from_env();
         let oauth_service = utils::OAuthService::new(oauth_config);
+        let email_service = EmailService::new(config);
 
         Ok(Self {
             db_pool: db_pool.clone(),
@@ -274,8 +280,27 @@ impl AppState {
             ownership_service,
             admin_service,
             websocket_service: (*websocket_service).clone(),
+            email_service,
             oauth_service,
             password_pepper,
         })
+    }
+}
+
+impl Clone for AppState {
+    fn clone(&self) -> Self {
+        Self {
+            db_pool: self.db_pool.clone(),
+            auth_state: self.auth_state.clone(),
+            metrics_state: self.metrics_state.clone(),
+            collection_service: self.collection_service.clone(),
+            permission_service: self.permission_service.clone(),
+            ownership_service: self.ownership_service.clone(),
+            admin_service: self.admin_service.clone(),
+            websocket_service: self.websocket_service.clone(),
+            email_service: self.email_service.clone(),
+            oauth_service: self.oauth_service.clone(),
+            password_pepper: self.password_pepper.clone(),
+        }
     }
 }

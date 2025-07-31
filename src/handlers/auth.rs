@@ -116,6 +116,12 @@ pub async fn register(
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
+    // Send verification email (non-blocking)
+    if let Err(e) = app_state.email_service.send_verification_email(user.id, &user.email, &user.username).await {
+        // Log error but don't fail registration
+        tracing::warn!("Failed to send verification email to {}: {:?}", user.email, e);
+    }
+
     // Generate tokens
     let access_token =
         app_state
@@ -150,6 +156,146 @@ pub async fn register(
         headers,
         Json(ApiResponse::success(auth_response)),
     ))
+}
+
+/// Verify email endpoint
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct VerifyEmailRequest {
+    #[schema(example = "verification_token_here")]
+    pub token: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/verify-email",
+    tag = "Authentication",
+    request_body = VerifyEmailRequest,
+    responses(
+        (status = 200, description = "Email verified successfully", body = ApiResponse<String>),
+        (status = 400, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
+pub async fn verify_email(
+    State(app_state): State<AppState>,
+    Json(payload): Json<VerifyEmailRequest>,
+) -> Result<Json<ApiResponse<String>>, AuthError> {
+    // Verify the token
+    let user_id = app_state.email_service.verify_token(&payload.token).await?;
+    
+    // Get database connection
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
+    
+    // Update user's is_verified status
+    diesel::update(users::table.filter(users::id.eq(user_id)))
+        .set(users::is_verified.eq(true))
+        .execute(&mut conn)
+        .map_err(|_| AuthError::DatabaseError)?;
+    
+    Ok(Json(ApiResponse::success("Email verified successfully".to_string())))
+}
+
+/// Verify email via GET request (for email links)
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct VerifyEmailQuery {
+    #[schema(example = "verification_token_here")]
+    pub token: String,
+}
+
+#[utoipa::path(
+    get,
+    path = "/verify-email",
+    tag = "Authentication",
+    params(
+        ("token" = String, Query, description = "Verification token from email")
+    ),
+    responses(
+        (status = 302, description = "Redirect to frontend with verification result"),
+        (status = 400, description = "Invalid or expired token")
+    )
+)]
+pub async fn verify_email_get(
+    State(app_state): State<AppState>,
+    Query(query): Query<VerifyEmailQuery>,
+) -> Result<Redirect, AuthError> {
+    // Verify the token
+    match app_state.email_service.verify_token(&query.token).await {
+        Ok(user_id) => {
+            // Get database connection
+            let mut conn = app_state
+                .db_pool
+                .get()
+                .map_err(|_| AuthError::DatabaseError)?;
+            
+            // Update user's is_verified status
+            match diesel::update(users::table.filter(users::id.eq(user_id)))
+                .set(users::is_verified.eq(true))
+                .execute(&mut conn) {
+                Ok(_) => {
+                    // Redirect to admin panel after successful verification
+                    Ok(Redirect::to(&format!("{}/admin", app_state.email_service.get_frontend_url())))
+                },
+                Err(_) => {
+                    // Redirect to frontend with error message
+                    Ok(Redirect::to(&format!("{}/email-verified?success=false&error=database", app_state.email_service.get_frontend_url())))
+                }
+            }
+        },
+        Err(_) => {
+            // Redirect to frontend with error message
+            Ok(Redirect::to(&format!("{}/email-verified?success=false&error=invalid_token", app_state.email_service.get_frontend_url())))
+        }
+    }
+}
+
+/// Resend verification email endpoint
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ResendVerificationRequest {
+    #[schema(example = "user@example.com")]
+    pub email: String,
+}
+
+#[utoipa::path(
+    post,
+    path = "/auth/resend-verification",
+    tag = "Authentication",
+    request_body = ResendVerificationRequest,
+    responses(
+        (status = 200, description = "Verification email sent", body = ApiResponse<String>),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 400, description = "User already verified", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
+pub async fn resend_verification(
+    State(app_state): State<AppState>,
+    Json(payload): Json<ResendVerificationRequest>,
+) -> Result<Json<ApiResponse<String>>, AuthError> {
+    // Get database connection
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
+    
+    // Find user by email
+    let user: User = users::table
+        .filter(users::email.eq(&payload.email))
+        .select(User::as_select())
+        .first(&mut conn)
+        .map_err(|_| AuthError::UserNotFound)?;
+    
+    // Check if user is already verified
+    if user.is_verified {
+        return Err(AuthError::UserAlreadyVerified);
+    }
+    
+    // Send verification email
+    app_state.email_service.send_verification_email(user.id, &user.email, &user.username).await?;
+    
+    Ok(Json(ApiResponse::success("Verification email sent".to_string())))
 }
 
 // OAuth DTOs

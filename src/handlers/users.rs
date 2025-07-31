@@ -386,6 +386,13 @@ pub async fn create_user(
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
+    // Send verification email if email service is configured
+    if app_state.email_service.is_configured() {
+        if let Err(e) = app_state.email_service.send_verification_email(user.id, &user.email, &user.username).await {
+            eprintln!("Failed to send verification email to {}: {}", user.email, e);
+        }
+    }
+
     Ok((
         StatusCode::CREATED,
         Json(ApiResponse::success(

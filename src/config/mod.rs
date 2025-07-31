@@ -1,6 +1,6 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, Clone, Default)]
 pub struct Config {
     pub database_url: String,
     pub server_host: String,
@@ -17,6 +17,10 @@ pub struct Config {
     pub admin_email: Option<String>,
     pub admin_password: Option<String>,
     pub admin_username: Option<String>,
+    // Email configuration
+    pub resend_api_key: Option<String>,
+    pub email_from: Option<String>,
+    pub frontend_url: String,
 }
 
 impl Config {
@@ -43,6 +47,10 @@ impl Config {
             admin_email: std::env::var("LUNARBASE_ADMIN_EMAIL").ok(),
             admin_password: std::env::var("LUNARBASE_ADMIN_PASSWORD").ok(),
             admin_username: std::env::var("LUNARBASE_ADMIN_USERNAME").ok(),
+            // Email configuration
+            resend_api_key: std::env::var("RESEND_API_KEY").ok(),
+            email_from: std::env::var("EMAIL_FROM").ok(),
+            frontend_url: std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:3000".to_string()),
         };
 
         Ok(config)
