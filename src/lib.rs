@@ -269,7 +269,7 @@ impl AppState {
             .with_permission_service(permission_service.clone());
         let oauth_config = utils::oauth_service::OAuthConfig::from_env();
         let oauth_service = utils::OAuthService::new(oauth_config);
-        let email_service = EmailService::new(config);
+        let email_service = EmailService::new(config, db_pool.clone());
 
         Ok(Self {
             db_pool: db_pool.clone(),

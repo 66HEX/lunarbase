@@ -349,7 +349,7 @@ impl RegisterRequest {
     }
 
     fn is_valid_email(&self) -> bool {
-        // Basic email validation (in production, use proper email validation crate)
+        // TODO: Basic email validation (in production, use proper email validation crate)
         self.email.contains('@') && self.email.len() <= 255
     }
 

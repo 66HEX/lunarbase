@@ -12,7 +12,7 @@ use crate::utils::{AuthError, Claims, CookieService, JwtService};
 use diesel::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 
-/// Rate limiting storage (in production, use Redis)
+/// TODO: Rate limiting storage (in production, use Redis)
 #[derive(Clone)]
 pub struct RateLimiter {
     requests: Arc<Mutex<HashMap<String, Vec<Instant>>>>,
