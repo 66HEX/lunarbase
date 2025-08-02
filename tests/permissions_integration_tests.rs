@@ -18,12 +18,12 @@ use lunarbase::middleware::auth_middleware;
 use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
 use lunarbase::{AppState, Config};
 
-fn create_test_router() -> Router {
+async fn create_test_router() -> Router {
     let test_jwt_secret = "test_permission_secret".to_string();
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).await.expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
@@ -250,7 +250,7 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
 
 #[tokio::test]
 async fn test_role_management_full_cycle() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
 
     // 1. Create a new role with unique name
@@ -328,7 +328,7 @@ async fn test_role_management_full_cycle() {
 
 #[tokio::test]
 async fn test_role_management_unauthorized() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_user_id, user_token) = create_test_user(&app, "user").await;
 
     // User should not be able to create roles
@@ -354,7 +354,7 @@ async fn test_role_management_unauthorized() {
 
 #[tokio::test]
 async fn test_collection_permissions_full_scenario() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user_id, user_token) = create_test_user(&app, "user").await;
 
@@ -436,19 +436,25 @@ async fn test_collection_permissions_full_scenario() {
     assert_eq!(json_response["data"]["permissions"]["can_list"], true);
 
     // 4. Test user can create record (has permission)
-    let record_payload = json!({
-        "data": {
-            "title": "User Created Record",
-            "content": "This should work"
-        }
+    let record_data = json!({
+        "title": "User Created Record",
+        "content": "This should work"
     });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
 
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", user_token))
-        .body(Body::from(record_payload.to_string()))
+        .body(Body::from(body))
         .unwrap();
 
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
@@ -514,7 +520,7 @@ async fn test_collection_permissions_full_scenario() {
 
 #[tokio::test]
 async fn test_record_level_permissions() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (_user1_id, user1_token) = create_test_user(&app, "user").await;
     let (user2_id, _user2_token) = create_test_user(&app, "user").await;
@@ -568,19 +574,25 @@ async fn test_record_level_permissions() {
     assert_eq!(set_permission_response.status(), StatusCode::OK);
 
     // Create record as user1
-    let record_payload = json!({
-        "data": {
-            "title": "User1's Record",
-            "content": "Private content"
-        }
+    let record_data = json!({
+        "title": "User1's Record",
+        "content": "Private content"
     });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
 
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", user1_token))
-        .body(Body::from(record_payload.to_string()))
+        .body(Body::from(body))
         .unwrap();
 
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
@@ -697,7 +709,7 @@ async fn test_record_level_permissions() {
 
 #[tokio::test]
 async fn test_ownership_full_scenario() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user1_id, user1_token) = create_test_user(&app, "user").await;
     let (user2_id, user2_token) = create_test_user(&app, "user").await;
@@ -751,19 +763,25 @@ async fn test_ownership_full_scenario() {
     assert_eq!(set_permission_response.status(), StatusCode::OK);
 
     // User1 creates a record (automatically becomes owner)
-    let record_payload = json!({
-        "data": {
-            "title": "User1's Owned Record",
-            "content": "This belongs to user1"
-        }
+    let record_data = json!({
+        "title": "User1's Owned Record",
+        "content": "This belongs to user1"
     });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
 
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", user1_token))
-        .body(Body::from(record_payload.to_string()))
+        .body(Body::from(body))
         .unwrap();
 
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
@@ -936,7 +954,7 @@ async fn test_ownership_full_scenario() {
 
 #[tokio::test]
 async fn test_permission_error_scenarios() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user_id, user_token) = create_test_user(&app, "user").await;
 
@@ -1014,19 +1032,25 @@ async fn test_permission_error_scenarios() {
     assert_eq!(list_roles_response.status(), StatusCode::FORBIDDEN);
 
     // Test transferring ownership without being owner
-    let record_payload = json!({
-        "data": {
-            "title": "Admin Record",
-            "content": "Created by admin"
-        }
+    let record_data = json!({
+        "title": "Admin Record",
+        "content": "Created by admin"
     });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
 
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", admin_token))
-        .body(Body::from(record_payload.to_string()))
+        .body(Body::from(body))
         .unwrap();
 
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
@@ -1077,7 +1101,7 @@ async fn test_permission_error_scenarios() {
 
 #[tokio::test]
 async fn test_hierarchical_permissions() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user_id, user_token) = create_test_user(&app, "user").await;
 
@@ -1168,7 +1192,7 @@ async fn test_hierarchical_permissions() {
 
 #[tokio::test]
 async fn test_role_collection_permissions_full_cycle() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
 
     // 1. Create a custom role
@@ -1339,7 +1363,7 @@ async fn test_role_collection_permissions_full_cycle() {
 
 #[tokio::test]
 async fn test_multiple_role_permissions() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
 
     // Create multiple roles
@@ -1518,7 +1542,7 @@ async fn test_multiple_role_permissions() {
 
 #[tokio::test]
 async fn test_user_specific_permissions_override_role() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user_id, user_token) = create_test_user(&app, "user").await;
 
@@ -1637,19 +1661,25 @@ async fn test_user_specific_permissions_override_role() {
     assert_eq!(json_response["data"]["permissions"]["can_list"], true);
 
     // Test actual functionality: user should be able to create and delete records
-    let record_payload = json!({
-        "data": {
-            "title": "Test Record for Deletion",
-            "content": "This record will be deleted"
-        }
+    let record_data = json!({
+        "title": "Test Record for Deletion",
+        "content": "This record will be deleted"
     });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
 
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", user_token))
-        .body(Body::from(record_payload.to_string()))
+        .body(Body::from(body))
         .unwrap();
 
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
@@ -1687,7 +1717,7 @@ async fn test_user_specific_permissions_override_role() {
 
 #[tokio::test]
 async fn test_user_specific_permissions_null_values() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user_id, user_token) = create_test_user(&app, "user").await;
 
@@ -1783,7 +1813,7 @@ async fn test_user_specific_permissions_null_values() {
 
 #[tokio::test]
 async fn test_user_permissions_unauthorized_access() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let (user1_id, user1_token) = create_test_user(&app, "user").await;
     let (user2_id, user2_token) = create_test_user(&app, "user").await;

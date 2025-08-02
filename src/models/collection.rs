@@ -69,6 +69,20 @@ pub struct CollectionResponse {
 pub struct CreateRecordRequest {
     #[schema(example = json!({"name": "Product 1", "price": 99.99}))]
     pub data: Value,
+    /// Optional files to upload for fields of type "file"
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub files: Option<std::collections::HashMap<String, FileUpload>>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+pub struct FileUpload {
+    #[schema(example = "document.pdf")]
+    pub filename: String,
+    #[schema(example = "application/pdf")]
+    pub content_type: String,
+    /// Base64 encoded file data
+    #[schema(example = "JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwo...")]
+    pub data: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

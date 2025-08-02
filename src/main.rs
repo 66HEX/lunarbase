@@ -66,7 +66,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Application state creation
-    let app_state = AppState::new(pool, &config.jwt_secret, config.password_pepper.clone(), &config)?;
+    let app_state = AppState::new(pool, &config.jwt_secret, config.password_pepper.clone(), &config).await?;
 
     // Automatic admin creation from environment variables
     if let Err(e) = app_state.admin_service.ensure_admin_exists(&config, &app_state.password_pepper).await {

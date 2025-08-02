@@ -2,18 +2,19 @@ use crate::{
     AppState,
     models::{
         CollectionResponse, CreateCollectionRequest, CreateRecordRequest, RecordResponse,
-        UpdateCollectionRequest, UpdateRecordRequest,
+        UpdateCollectionRequest, UpdateRecordRequest, FileUpload,
     },
     utils::{ApiResponse, AuthError, Claims, ErrorResponse},
 };
 use axum::{
     Extension,
-    extract::{Path, Query, State},
+    extract::{Path, Query, State, Multipart},
     http::StatusCode,
     response::Json,
 };
-use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use serde::{Deserialize, Serialize};
+use base64::{Engine as _, engine::general_purpose};
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -191,7 +192,10 @@ pub async fn delete_collection(
     params(
         ("collection_name" = String, Path, description = "Collection name")
     ),
-    request_body = CreateRecordRequest,
+    request_body(
+        content_type = "multipart/form-data",
+        description = "Record data and optional files"
+    ),
     responses(
         (status = 201, description = "Record created successfully", body = ApiResponse<RecordResponse>),
         (status = 400, description = "Validation error", body = ErrorResponse),
@@ -206,8 +210,43 @@ pub async fn create_record(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
-    Json(mut request): Json<CreateRecordRequest>,
+    mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<ApiResponse<RecordResponse>>), AuthError> {
+    // Parse multipart data
+    let mut data = serde_json::Value::Object(serde_json::Map::new());
+    let mut files: HashMap<String, FileUpload> = HashMap::new();
+
+    while let Some(field) = multipart.next_field().await.map_err(|_| AuthError::BadRequest("Invalid multipart data".to_string()))? {
+        let name = field.name().unwrap_or("").to_string();
+        
+        if name == "data" {
+            // Parse JSON data field
+            let data_bytes = field.bytes().await.map_err(|_| AuthError::BadRequest("Failed to read data field".to_string()))?;
+            let data_str = String::from_utf8(data_bytes.to_vec()).map_err(|_| AuthError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
+            data = serde_json::from_str(&data_str).map_err(|_| AuthError::BadRequest("Invalid JSON in data field".to_string()))?;
+        } else if name.starts_with("file_") {
+            // Handle file upload
+            let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
+            let filename = field.file_name().unwrap_or("unknown").to_string();
+            let content_type = field.content_type().unwrap_or("application/octet-stream").to_string();
+            
+            let file_bytes = field.bytes().await.map_err(|_| AuthError::BadRequest("Failed to read file".to_string()))?;
+            let file_data = general_purpose::STANDARD.encode(&file_bytes);
+            
+            files.insert(field_name, FileUpload {
+                filename,
+                content_type,
+                data: file_data,
+            });
+        }
+    }
+
+    // Create request object
+    let mut request = CreateRecordRequest {
+        data,
+        files: if files.is_empty() { None } else { Some(files) },
+    };
+
     // Convert claims to user for ownership service
     use crate::schema::users;
     use diesel::prelude::*;

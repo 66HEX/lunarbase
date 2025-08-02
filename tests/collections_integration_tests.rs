@@ -17,7 +17,7 @@ use lunarbase::middleware::auth_middleware;
 use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
 use lunarbase::{AppState, Config};
 
-fn create_test_router() -> Router {
+async fn create_test_router() -> Router {
     // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
@@ -25,7 +25,7 @@ fn create_test_router() -> Router {
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).await.expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
@@ -222,7 +222,7 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
 
 #[tokio::test]
 async fn test_list_collections_public() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     let request = Request::builder()
         .uri("/api/collections")
@@ -236,7 +236,7 @@ async fn test_list_collections_public() {
 
 #[tokio::test]
 async fn test_get_nonexistent_collection() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     let request = Request::builder()
         .uri("/api/collections/nonexistent")
@@ -250,7 +250,7 @@ async fn test_get_nonexistent_collection() {
 
 #[tokio::test]
 async fn test_create_collection_without_auth() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     let schema = create_test_schema();
     let payload = json!({
@@ -274,7 +274,7 @@ async fn test_create_collection_without_auth() {
 
 #[tokio::test]
 async fn test_create_collection_with_admin_auth() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
     let schema = create_test_schema();
@@ -306,7 +306,7 @@ async fn test_create_collection_with_admin_auth() {
 
 #[tokio::test]
 async fn test_create_collection_invalid_name() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
     let schema = create_test_schema();
@@ -331,7 +331,7 @@ async fn test_create_collection_invalid_name() {
 
 #[tokio::test]
 async fn test_create_and_get_collection() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
     let schema = create_test_schema();
@@ -378,8 +378,8 @@ async fn test_create_and_get_collection() {
 
 #[tokio::test]
 async fn test_create_record_success() {
-    let app1 = create_test_router();
-    let app2 = create_test_router();
+    let app1 = create_test_router().await;
+    let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
     // First create a collection
@@ -403,23 +403,29 @@ async fn test_create_record_success() {
     let create_collection_response = app1.oneshot(create_collection_request).await.unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // Create record
-    let record_payload = json!({
-        "data": {
-            "title": "Test Article",
-            "content": "This is a test article content",
-            "published": true,
-            "views": 42,
-            "email": "test@example.com"
-        }
+    // Create record using multipart/form-data
+    let record_data = json!({
+        "title": "Test Article",
+        "content": "This is a test article content",
+        "published": true,
+        "views": 42,
+        "email": "test@example.com"
     });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
 
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", token))
-        .body(Body::from(record_payload.to_string()))
+        .body(Body::from(body))
         .unwrap();
 
     let create_record_response = app2.oneshot(create_record_request).await.unwrap();
@@ -441,8 +447,8 @@ async fn test_create_record_success() {
 
 #[tokio::test]
 async fn test_create_record_validation_error() {
-    let app1 = create_test_router();
-    let app2 = create_test_router();
+    let app1 = create_test_router().await;
+    let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
     // Create collection
@@ -466,19 +472,25 @@ async fn test_create_record_validation_error() {
     let create_collection_response = app1.oneshot(create_collection_request).await.unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // Try to create record without required field
-    let record_payload = json!({
-        "data": {
-            "content": "Missing required title field"
-        }
+    // Try to create record without required field using multipart/form-data
+    let record_data = json!({
+        "content": "Missing required title field"
     });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
 
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", token))
-        .body(Body::from(record_payload.to_string()))
+        .body(Body::from(body))
         .unwrap();
 
     let create_record_response = app2.oneshot(create_record_request).await.unwrap();
@@ -487,8 +499,8 @@ async fn test_create_record_validation_error() {
 
 #[tokio::test]
 async fn test_list_records_public() {
-    let app1 = create_test_router();
-    let app2 = create_test_router();
+    let app1 = create_test_router().await;
+    let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
     // Create collection
@@ -537,8 +549,8 @@ async fn test_list_records_public() {
 
 #[tokio::test]
 async fn test_get_collection_schema() {
-    let app1 = create_test_router();
-    let app2 = create_test_router();
+    let app1 = create_test_router().await;
+    let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
     // Create collection

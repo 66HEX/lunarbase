@@ -1,8 +1,9 @@
 use crate::models::{
     Collection, CollectionResponse, CollectionSchema, CreateCollectionRequest, CreateRecordRequest,
-    FieldDefinition, FieldType, NewCollection, RecordResponse, Role,
+    FieldDefinition, FieldType, FileUpload, NewCollection, RecordResponse, Role,
     SetCollectionPermissionRequest, UpdateCollection, UpdateCollectionRequest, UpdateRecordRequest,
 };
+use crate::services::S3Service;
 use crate::query_engine::QueryEngine;
 use crate::schema::{collections, roles};
 use crate::services::PermissionService;
@@ -10,6 +11,7 @@ use crate::utils::AuthError;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use serde_json::{Map, Value};
+use base64::Engine;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -18,6 +20,7 @@ pub struct CollectionService {
     pub pool: DbPool,
     pub websocket_service: Option<std::sync::Arc<crate::services::WebSocketService>>,
     pub permission_service: Option<PermissionService>,
+    pub s3_service: Option<S3Service>,
 }
 
 impl CollectionService {
@@ -26,6 +29,7 @@ impl CollectionService {
             pool,
             websocket_service: None,
             permission_service: None,
+            s3_service: None,
         }
     }
 
@@ -39,6 +43,11 @@ impl CollectionService {
 
     pub fn with_permission_service(mut self, permission_service: PermissionService) -> Self {
         self.permission_service = Some(permission_service);
+        self
+    }
+
+    pub fn with_s3_service(mut self, s3_service: S3Service) -> Self {
+        self.s3_service = Some(s3_service);
         self
     }
 
@@ -1180,7 +1189,20 @@ impl CollectionService {
             .get_schema()
             .map_err(|_| AuthError::InternalError)?;
 
-        let validated_data = self.validate_record_data(&schema, &request.data)?;
+        // Process file uploads if any
+        let mut data = request.data.clone();
+        if let Some(files) = &request.files {
+            let file_urls = self.process_file_uploads(&schema, files).await?;
+            
+            // Add file URLs to data
+            if let Value::Object(ref mut map) = data {
+                for (field_name, url) in file_urls {
+                    map.insert(field_name, Value::String(url));
+                }
+            }
+        }
+
+        let validated_data = self.validate_record_data(&schema, &data)?;
 
         // Build INSERT SQL for dynamic table
         let table_name = self.get_records_table_name(collection_name);
@@ -1656,6 +1678,86 @@ impl CollectionService {
         }
 
         Ok(())
+    }
+
+    /// Process file uploads for fields of type "file"
+    async fn process_file_uploads(
+        &self,
+        schema: &CollectionSchema,
+        files: &std::collections::HashMap<String, FileUpload>,
+    ) -> Result<std::collections::HashMap<String, String>, AuthError> {
+        let mut file_urls = std::collections::HashMap::new();
+        let mut uploaded_files = Vec::new();
+
+        // Check if S3 service is available
+        let s3_service = match &self.s3_service {
+            Some(service) => service,
+            None => {
+                return Err(AuthError::ValidationError(vec![
+                    "File upload is not configured. S3 service is not available.".to_string(),
+                ]));
+            }
+        };
+
+        // Validate that all file fields exist in schema and are of type "file"
+        for (field_name, _file_upload) in files {
+            let field_def = schema.fields.iter().find(|f| &f.name == field_name);
+            match field_def {
+                Some(field) if matches!(field.field_type, FieldType::File) => {
+                    // Field exists and is of type "file", proceed with upload
+                }
+                Some(_) => {
+                    return Err(AuthError::ValidationError(vec![
+                        format!("Field '{}' is not of type 'file'", field_name),
+                    ]));
+                }
+                None => {
+                    return Err(AuthError::ValidationError(vec![
+                        format!("Field '{}' does not exist in collection schema", field_name),
+                    ]));
+                }
+            }
+        }
+
+        // Upload files to S3
+        for (field_name, file_upload) in files {
+            // Decode base64 data
+            let file_data = match base64::engine::general_purpose::STANDARD.decode(&file_upload.data) {
+                Ok(data) => data,
+                Err(_) => {
+                    // Cleanup previously uploaded files
+                    s3_service.cleanup_files(uploaded_files).await;
+                    return Err(AuthError::ValidationError(vec![
+                        format!("Invalid base64 data for file field '{}'", field_name),
+                    ]));
+                }
+            };
+
+            // Upload file to S3
+            match s3_service
+                .upload_file(
+                    file_data,
+                    file_upload.filename.clone(),
+                    file_upload.content_type.clone(),
+                )
+                .await
+            {
+                Ok(result) => {
+                    uploaded_files.push(result.file_url.clone());
+                    file_urls.insert(field_name.clone(), result.file_url);
+                }
+                Err(e) => {
+                    // Cleanup previously uploaded files
+                    s3_service.cleanup_files(uploaded_files).await;
+                    tracing::error!("Failed to upload file for field '{}': {}", field_name, e);
+                    return Err(AuthError::ValidationError(vec![
+                        format!("Failed to upload file for field '{}'", field_name),
+                    ]));
+                }
+            }
+        }
+
+        Ok(file_urls)
     }
 
     fn validate_record_data(

@@ -11,7 +11,7 @@ use lunarbase::database::create_pool;
 use lunarbase::handlers::auth::*;
 use lunarbase::{AppState, Config};
 
-fn create_test_router() -> Router {
+async fn create_test_router() -> Router {
     // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
@@ -19,7 +19,7 @@ fn create_test_router() -> Router {
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).await.expect("Failed to create AppState");
 
     // OAuth routes
     let oauth_routes = Router::new()
@@ -36,7 +36,7 @@ fn create_test_router() -> Router {
 
 #[tokio::test]
 async fn test_github_oauth_authorize_redirect() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     let request = Request::builder()
         .uri("/api/auth/oauth/github")
@@ -61,7 +61,7 @@ async fn test_github_oauth_authorize_redirect() {
 
 #[tokio::test]
 async fn test_google_oauth_authorize_redirect() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     let request = Request::builder()
         .uri("/api/auth/oauth/google")
@@ -86,7 +86,7 @@ async fn test_google_oauth_authorize_redirect() {
 
 #[tokio::test]
 async fn test_oauth_authorize_invalid_provider() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     let request = Request::builder()
         .uri("/api/auth/oauth/invalid_provider")
@@ -102,7 +102,7 @@ async fn test_oauth_authorize_invalid_provider() {
 
 #[tokio::test]
 async fn test_oauth_callback_missing_code() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     let request = Request::builder()
         .uri("/api/auth/oauth/github/callback?state=test_state")
@@ -118,7 +118,7 @@ async fn test_oauth_callback_missing_code() {
 
 #[tokio::test]
 async fn test_oauth_callback_missing_state() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     let request = Request::builder()
         .uri("/api/auth/oauth/github/callback?code=test_code")
@@ -134,7 +134,7 @@ async fn test_oauth_callback_missing_state() {
 
 #[tokio::test]
 async fn test_oauth_callback_invalid_provider() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     let request = Request::builder()
         .uri("/api/auth/oauth/invalid/callback?code=test_code&state=test_state")
@@ -150,7 +150,7 @@ async fn test_oauth_callback_invalid_provider() {
 
 #[tokio::test]
 async fn test_oauth_callback_with_error_parameter() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     let request = Request::builder()
         .uri("/api/auth/oauth/github/callback?error=access_denied&error_description=User%20denied%20access")
@@ -172,7 +172,7 @@ async fn test_oauth_callback_with_error_parameter() {
 
 #[tokio::test]
 async fn test_oauth_state_parameter_security() {
-    let app = create_test_router();
+    let app = create_test_router().await;
     
     // Test GitHub OAuth authorize
     let request = Request::builder()
@@ -202,7 +202,7 @@ async fn test_oauth_state_parameter_security() {
 #[tokio::test]
 async fn test_oauth_scope_limitation() {
     // Test GitHub scopes
-    let github_app = create_test_router();
+    let github_app = create_test_router().await;
     let github_request = Request::builder()
         .uri("/api/auth/oauth/github")
         .method("GET")
@@ -218,7 +218,7 @@ async fn test_oauth_scope_limitation() {
     assert!(!github_location.contains("admin"));
     
     // Test Google scopes
-    let google_app = create_test_router();
+    let google_app = create_test_router().await;
     let google_request = Request::builder()
         .uri("/api/auth/oauth/google")
         .method("GET")

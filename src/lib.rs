@@ -150,6 +150,7 @@ pub mod utils;
             models::collection::CreateRecordRequest,
             models::collection::UpdateRecordRequest,
             models::collection::RecordResponse,
+            models::collection::FileUpload,
             handlers::collections::PaginatedRecordsResponse,
             handlers::collections::RecordWithCollection,
             handlers::collections::PaginationMeta,
@@ -233,6 +234,7 @@ pub use config::Config;
 pub use database::DatabasePool;
 use services::{
     AdminService, CollectionService, EmailService, OwnershipService, PermissionService, WebSocketService,
+    create_s3_service_from_config,
 };
 use std::sync::Arc;
 
@@ -252,7 +254,7 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(
+    pub async fn new(
         db_pool: DatabasePool,
         jwt_secret: &str,
         password_pepper: String,
@@ -264,9 +266,14 @@ impl AppState {
         let metrics_state = middleware::MetricsState::new()?;
         let websocket_service =
             Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
-        let collection_service = CollectionService::new(db_pool.clone())
+        let mut collection_service = CollectionService::new(db_pool.clone())
             .with_websocket_service(websocket_service.clone())
             .with_permission_service(permission_service.clone());
+        
+        // Add S3 service if configured
+        if let Ok(Some(s3_service)) = create_s3_service_from_config(config).await {
+            collection_service = collection_service.with_s3_service(s3_service);
+        }
         let oauth_config = utils::oauth_service::OAuthConfig::from_env();
         let oauth_service = utils::OAuthService::new(oauth_config);
         let email_service = EmailService::new(config, db_pool.clone());

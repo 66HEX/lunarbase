@@ -15,7 +15,7 @@ use lunarbase::handlers::{health_check, login, me, refresh_token, register};
 use lunarbase::middleware::auth_middleware;
 use lunarbase::{AppState, Config};
 
-fn create_test_router() -> Router {
+async fn create_test_router() -> Router {
     // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
@@ -23,7 +23,7 @@ fn create_test_router() -> Router {
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).await.expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
@@ -141,7 +141,7 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
 
 #[tokio::test]
 async fn test_websocket_connection_stats() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Get initial WebSocket stats
     let response = app
@@ -172,7 +172,7 @@ async fn test_websocket_connection_stats() {
 
 #[tokio::test]
 async fn test_websocket_admin_stats_requires_auth() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Try to access admin stats without authentication
     let response = app
@@ -190,7 +190,7 @@ async fn test_websocket_admin_stats_requires_auth() {
 
 #[tokio::test]
 async fn test_websocket_admin_stats_with_auth() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Use the same approach as permissions tests - create token for existing admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -314,7 +314,7 @@ async fn test_subscription_data_matching() {
 
 #[tokio::test]
 async fn test_get_connections_requires_admin() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
@@ -336,7 +336,7 @@ async fn test_get_connections_requires_admin() {
 
 #[tokio::test]
 async fn test_get_connections_with_admin() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -366,7 +366,7 @@ async fn test_get_connections_with_admin() {
 
 #[tokio::test]
 async fn test_disconnect_connection_requires_admin() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
@@ -390,7 +390,7 @@ async fn test_disconnect_connection_requires_admin() {
 
 #[tokio::test]
 async fn test_disconnect_nonexistent_connection() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -414,7 +414,7 @@ async fn test_disconnect_nonexistent_connection() {
 
 #[tokio::test]
 async fn test_disconnect_connection_invalid_uuid() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -437,7 +437,7 @@ async fn test_disconnect_connection_invalid_uuid() {
 
 #[tokio::test]
 async fn test_broadcast_message_requires_admin() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
@@ -467,7 +467,7 @@ async fn test_broadcast_message_requires_admin() {
 
 #[tokio::test]
 async fn test_broadcast_message_with_admin() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -506,7 +506,7 @@ async fn test_broadcast_message_with_admin() {
 
 #[tokio::test]
 async fn test_broadcast_message_with_target_users() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -544,7 +544,7 @@ async fn test_broadcast_message_with_target_users() {
 
 #[tokio::test]
 async fn test_broadcast_message_with_target_collections() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -582,7 +582,7 @@ async fn test_broadcast_message_with_target_collections() {
 
 #[tokio::test]
 async fn test_get_activity_requires_admin() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
@@ -604,7 +604,7 @@ async fn test_get_activity_requires_admin() {
 
 #[tokio::test]
 async fn test_get_activity_with_admin() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -635,7 +635,7 @@ async fn test_get_activity_with_admin() {
 
 #[tokio::test]
 async fn test_get_activity_with_pagination() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -666,7 +666,7 @@ async fn test_get_activity_with_pagination() {
 
 #[tokio::test]
 async fn test_broadcast_request_validation() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
@@ -697,7 +697,7 @@ async fn test_broadcast_request_validation() {
 
 #[tokio::test]
 async fn test_websocket_admin_endpoints_unauthorized() {
-    let app = create_test_router();
+    let app = create_test_router().await;
 
     // Test all admin endpoints without authentication
     let endpoints = vec![
