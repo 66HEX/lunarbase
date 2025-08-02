@@ -605,3 +605,118 @@ async fn test_get_collection_schema() {
     assert!(json_response["data"]["fields"].is_array());
     assert_eq!(json_response["data"]["fields"].as_array().unwrap().len(), 5);
 }
+
+#[tokio::test]
+async fn test_delete_record_with_files() {
+    let app = create_test_router().await;
+    let (_admin_id, admin_token) = create_admin_token(&app).await;
+    let unique_name = unique_collection_name("delete_files_test");
+
+    // Create collection with file field
+    let schema = CollectionSchema {
+        fields: vec![
+            FieldDefinition {
+                name: "title".to_string(),
+                field_type: FieldType::Text,
+                required: true,
+                default_value: None,
+                validation: None,
+            },
+            FieldDefinition {
+                name: "document".to_string(),
+                field_type: FieldType::File,
+                required: false,
+                default_value: None,
+                validation: None,
+            },
+        ],
+    };
+
+    let collection_payload = json!({
+        "name": unique_name,
+        "display_name": "Delete Files Test Collection",
+        "description": "Test collection for file deletion",
+        "schema": schema
+    });
+
+    let create_collection_request = Request::builder()
+        .uri("/api/collections")
+        .method("POST")
+        .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {}", admin_token))
+        .body(Body::from(collection_payload.to_string()))
+        .unwrap();
+
+    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    assert_eq!(create_collection_response.status(), StatusCode::CREATED);
+
+    // Create record with file URL (simulating S3 upload)
+    let record_data = json!({
+        "title": "Test Record with File",
+        "document": "https://test-bucket.s3.amazonaws.com/files/test-document.pdf"
+    });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
+
+    let create_record_request = Request::builder()
+        .uri(&format!("/api/collections/{}/records", unique_name))
+        .method("POST")
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
+        .header("authorization", format!("Bearer {}", admin_token))
+        .body(Body::from(body))
+        .unwrap();
+
+    let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
+    assert_eq!(create_record_response.status(), StatusCode::CREATED);
+
+    let body = create_record_response
+        .into_body()
+        .collect()
+        .await
+        .unwrap()
+        .to_bytes();
+    let body_str = String::from_utf8(body.to_vec()).unwrap();
+    let json_response: Value = serde_json::from_str(&body_str).unwrap();
+
+    let record_id: i32 = json_response["data"]["id"]
+        .as_str()
+        .unwrap()
+        .parse()
+        .unwrap();
+
+    // Delete the record (this should also attempt to delete the file from S3)
+    let delete_record_request = Request::builder()
+        .uri(&format!(
+            "/api/collections/{}/records/{}",
+            unique_name, record_id
+        ))
+        .method("DELETE")
+        .header("authorization", format!("Bearer {}", admin_token))
+        .body(Body::empty())
+        .unwrap();
+
+    let delete_record_response = app.clone().oneshot(delete_record_request).await.unwrap();
+    assert_eq!(delete_record_response.status(), StatusCode::NO_CONTENT);
+
+    // Verify record is deleted
+    let get_record_request = Request::builder()
+        .uri(&format!(
+            "/api/collections/{}/records/{}",
+            unique_name, record_id
+        ))
+        .method("GET")
+        .body(Body::empty())
+        .unwrap();
+
+    let get_record_response = app.clone().oneshot(get_record_request).await.unwrap();
+    assert_eq!(get_record_response.status(), StatusCode::NOT_FOUND);
+}

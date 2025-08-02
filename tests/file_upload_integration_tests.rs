@@ -71,6 +71,60 @@ async fn create_test_router() -> Router {
         .with_state(app_state)
 }
 
+async fn create_test_router_without_s3() -> Router {
+    // Use consistent test secret for JWT
+    let test_jwt_secret = "test_secret".to_string();
+
+    // Create config without S3 settings
+    let mut config = Config::from_env().expect("Failed to load config");
+    config.s3_bucket_name = None;
+    config.s3_region = None;
+    config.s3_access_key_id = None;
+    config.s3_secret_access_key = None;
+    config.s3_endpoint_url = None;
+
+    let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
+    let test_password_pepper = "test_pepper".to_string();
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
+        .await
+        .expect("Failed to create AppState");
+
+    // Public routes (no authentication required)
+    let public_routes = Router::new()
+        .route("/collections", get(list_collections))
+        .route("/collections/{name}", get(get_collection))
+        .route("/collections/{name}/schema", get(get_collection_schema))
+        .route("/collections/{name}/records", get(list_records))
+        .route("/collections/{name}/records/{record_id}", get(get_record))
+        .route("/auth/register", post(register))
+        .route("/auth/login", post(login));
+
+    // Protected routes (authentication required)
+    let protected_routes = Router::new()
+        .route("/collections", post(create_collection))
+        .route("/collections/{name}", put(update_collection))
+        .route("/collections/{name}", delete(delete_collection))
+        .route("/collections/stats", get(get_collections_stats))
+        .route("/collections/{name}/records", post(create_record))
+        .route(
+            "/collections/{name}/records/{record_id}",
+            put(update_record),
+        )
+        .route(
+            "/collections/{name}/records/{record_id}",
+            delete(delete_record),
+        )
+        .layer(middleware::from_fn_with_state(
+            app_state.auth_state.clone(),
+            auth_middleware,
+        ));
+
+    Router::new()
+        .merge(public_routes)
+        .nest("/api", protected_routes)
+        .with_state(app_state)
+}
+
 fn unique_collection_name(prefix: &str) -> String {
     let uuid_suffix = uuid::Uuid::new_v4().to_string();
     let short_uuid = &uuid_suffix[0..8];
@@ -187,8 +241,8 @@ fn create_test_schema() -> CollectionSchema {
 
 #[tokio::test]
 async fn test_file_upload_s3_disabled() {
-    let app1 = create_test_router().await;
-    let app2 = create_test_router().await;
+    let app1 = create_test_router_without_s3().await;
+    let app2 = create_test_router_without_s3().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
 
     let collection_name = unique_collection_name("test_files");
@@ -535,8 +589,8 @@ async fn test_nonexistent_file_field() {
 
 #[tokio::test]
 async fn test_invalid_base64_data() {
-    let app1 = create_test_router().await;
-    let app2 = create_test_router().await;
+    let app1 = create_test_router_without_s3().await;
+    let app2 = create_test_router_without_s3().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
 
     let collection_name = unique_collection_name("test_invalid_base64");

@@ -1503,6 +1503,62 @@ impl CollectionService {
             .await
     }
 
+    /// Delete files associated with a record from S3
+    async fn delete_record_files(
+        &self,
+        schema: &CollectionSchema,
+        record_data: &serde_json::Value,
+    ) -> Vec<String> {
+        let mut errors = Vec::new();
+        
+        // Check if S3 service is available
+        let s3_service = match &self.s3_service {
+            Some(service) => service,
+            None => {
+                tracing::debug!("S3 service not available, skipping file deletion");
+                return errors;
+            }
+        };
+
+        // Find all file fields in schema
+        let file_fields: Vec<&FieldDefinition> = schema.fields
+            .iter()
+            .filter(|field| matches!(field.field_type, FieldType::File))
+            .collect();
+
+        if file_fields.is_empty() {
+            return errors; // No file fields in this collection
+        }
+
+        // Extract file URLs from record data and delete them
+        for field in file_fields {
+            if let Some(file_url_value) = record_data.get(&field.name) {
+                if let Some(file_url) = file_url_value.as_str() {
+                    if !file_url.is_empty() {
+                        match s3_service.delete_file(file_url).await {
+                            Ok(_) => {
+                                tracing::info!(
+                                    "Successfully deleted file '{}' for field '{}'",
+                                    file_url, field.name
+                                );
+                            }
+                            Err(e) => {
+                                let error_msg = format!(
+                                    "Failed to delete file '{}' for field '{}': {}",
+                                    file_url, field.name, e
+                                );
+                                tracing::error!("{}", error_msg);
+                                errors.push(error_msg);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        errors
+    }
+
     pub async fn delete_record_with_events(
         &self,
         collection_name: &str,
@@ -1512,27 +1568,42 @@ impl CollectionService {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
         // Verify collection exists
-        collections::table
+        let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
+        // Get collection schema
+        let schema = collection.get_schema()
+            .map_err(|_| AuthError::InternalError)?;
+
         let table_name = self.get_records_table_name(collection_name);
 
-        // Get record before deletion for the event
+        // Get record before deletion (for files and event)
         let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
         let old_record = self
             .query_record_by_sql(&mut conn, &select_sql, collection_name)
             .ok();
 
+        // Delete record from database
         let delete_sql = format!("DELETE FROM {} WHERE id = {}", table_name, record_id);
-
         let deleted_rows = diesel::sql_query(&delete_sql)
             .execute(&mut conn)
             .map_err(|_| AuthError::InternalError)?;
 
         if deleted_rows == 0 {
             return Err(AuthError::NotFound("Record not found".to_string()));
+        }
+
+        // Delete associated files from S3 (if record existed)
+        if let Some(ref record) = old_record {
+            let file_deletion_errors = self.delete_record_files(&schema, &record.data).await;
+            if !file_deletion_errors.is_empty() {
+                tracing::warn!(
+                    "Some files could not be deleted for record {} in collection {}: {:?}",
+                    record_id, collection_name, file_deletion_errors
+                );
+            }
         }
 
         // Emit WebSocket event
