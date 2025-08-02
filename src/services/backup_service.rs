@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use tokio::fs;
 use tokio_cron_scheduler::{Job, JobScheduler};
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, Utc, Duration};
 use flate2::write::GzEncoder;
 use flate2::Compression;
 use std::io::Write;
@@ -121,6 +121,10 @@ impl BackupService {
                             "Scheduled backup completed successfully. ID: {}, Size: {} bytes",
                             result.backup_id, result.file_size
                         );
+                        
+                        // Run cleanup after successful backup
+                        info!("Running backup cleanup...");
+                        service.cleanup_old_backups().await;
                     }
                     Err(e) => {
                         error!("Scheduled backup failed: {}", e);
@@ -253,17 +257,73 @@ impl BackupService {
     }
     
     async fn cleanup_old_backups(&self) {
-        // TODO: This would require implementing S3 listing and deletion
-        // For now, just log the intention
-        info!(
-            "Cleanup old backups older than {} days (not implemented yet)",
-            self.config.retention_days
-        );
+        let s3_service = match &self.s3_service {
+            Some(service) => service,
+            None => {
+                warn!("S3 service not available, skipping backup cleanup");
+                return;
+            }
+        };
+
+        info!("Starting cleanup of backups older than {} days", self.config.retention_days);
+
+        // Calculate cutoff date
+        let cutoff_date = Utc::now() - Duration::days(self.config.retention_days as i64);
+        
+        // List all backup objects with the backup prefix
+        let backup_prefix = format!("backups/{}", self.config.backup_prefix);
+        
+        match s3_service.list_objects(&backup_prefix).await {
+            Ok(objects) => {
+                let mut deleted_count = 0;
+                let mut error_count = 0;
+                
+                for object in objects {
+                    // Check if the backup is older than retention period
+                    if object.last_modified < cutoff_date {
+                        info!("Deleting old backup: {} (created: {})", object.key, object.last_modified);
+                        
+                        match s3_service.delete_object(&object.key).await {
+                            Ok(_) => {
+                                deleted_count += 1;
+                                info!("Successfully deleted backup: {}", object.key);
+                            }
+                            Err(e) => {
+                                error_count += 1;
+                                error!("Failed to delete backup {}: {}", object.key, e);
+                            }
+                        }
+                    } else {
+                        info!("Keeping backup: {} (created: {})", object.key, object.last_modified);
+                    }
+                }
+                
+                info!(
+                    "Backup cleanup completed. Deleted: {}, Errors: {}", 
+                    deleted_count, error_count
+                );
+            }
+            Err(e) => {
+                error!("Failed to list backup objects: {}", e);
+            }
+        }
     }
     
     pub async fn manual_backup(&self) -> Result<BackupResult, BackupError> {
         info!("Manual backup requested");
-        self.create_backup().await
+        let result = self.create_backup().await?;
+        
+        // Run cleanup after successful manual backup
+        info!("Running backup cleanup after manual backup...");
+        self.cleanup_old_backups().await;
+        
+        Ok(result)
+    }
+    
+    /// Manually trigger cleanup of old backups
+    pub async fn manual_cleanup(&self) {
+        info!("Manual cleanup requested");
+        self.cleanup_old_backups().await;
     }
     
     pub fn get_config(&self) -> &BackupConfig {

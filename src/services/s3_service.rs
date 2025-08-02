@@ -1,6 +1,7 @@
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
 use uuid::Uuid;
+use chrono::{DateTime, Utc};
 
 #[derive(Clone)]
 pub struct S3Service {
@@ -15,6 +16,13 @@ pub struct FileUploadResult {
     pub original_filename: String,
     pub file_size: u64,
     pub content_type: String,
+}
+
+#[derive(Debug)]
+pub struct S3Object {
+    pub key: String,
+    pub last_modified: DateTime<Utc>,
+    pub size: u64,
 }
 
 #[derive(Debug, thiserror::Error)]
@@ -288,6 +296,55 @@ impl S3Service {
             .send()
             .await
             .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
+        Ok(())
+    }
+
+    /// List objects in S3 with a given prefix
+    pub async fn list_objects(&self, prefix: &str) -> Result<Vec<S3Object>, S3ServiceError> {
+        let response = self
+            .client
+            .list_objects_v2()
+            .bucket(&self.bucket_name)
+            .prefix(prefix)
+            .send()
+            .await
+            .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
+
+        let mut objects = Vec::new();
+        for object in response.contents() {
+            if let (Some(key), Some(last_modified), Some(size)) = (
+                object.key(),
+                object.last_modified(),
+                object.size(),
+            ) {
+                // Convert AWS DateTime to chrono DateTime
+                 let chrono_datetime = DateTime::<Utc>::from_timestamp(
+                     last_modified.secs(),
+                     last_modified.subsec_nanos(),
+                 ).unwrap_or_else(|| Utc::now());
+                 
+                 objects.push(S3Object {
+                     key: key.to_string(),
+                     last_modified: chrono_datetime,
+                     size: size as u64,
+                 });
+            }
+        }
+
+        Ok(objects)
+    }
+
+    /// Delete object by key
+    pub async fn delete_object(&self, key: &str) -> Result<(), S3ServiceError> {
+        self.client
+            .delete_object()
+            .bucket(&self.bucket_name)
+            .key(key)
+            .send()
+            .await
+            .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
+
+        tracing::info!("Successfully deleted object with key '{}' from S3", key);
         Ok(())
     }
 
