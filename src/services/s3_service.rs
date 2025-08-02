@@ -149,6 +149,46 @@ impl S3Service {
         })
     }
 
+    /// Upload file with custom key (preserving original filename)
+    pub async fn upload_file_with_key(
+        &self,
+        file_data: Vec<u8>,
+        s3_key: String,
+        original_filename: String,
+        content_type: String,
+    ) -> Result<FileUploadResult, S3ServiceError> {
+        let file_size = file_data.len() as u64;
+        let byte_stream = aws_sdk_s3::primitives::ByteStream::from(file_data);
+
+        let _result = self
+            .client
+            .put_object()
+            .bucket(&self.bucket_name)
+            .key(&s3_key)
+            .content_type(&content_type)
+            .content_length(file_size as i64)
+            .body(byte_stream)
+            .send()
+            .await
+            .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
+
+        let file_url = format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key);
+
+        tracing::info!(
+            "Successfully uploaded file '{}' to S3 with key '{}'",
+            original_filename,
+            s3_key
+        );
+
+        Ok(FileUploadResult {
+            file_id: s3_key.clone(),
+            file_url,
+            original_filename,
+            file_size,
+            content_type,
+        })
+    }
+
     /// Upload multiple files to S3
     pub async fn upload_files(
         &self,

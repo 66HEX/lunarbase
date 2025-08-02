@@ -233,8 +233,8 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, CollectionService, EmailService, OwnershipService, PermissionService,
-    WebSocketService, create_s3_service_from_config,
+    AdminService, BackupService, CollectionService, EmailService, OwnershipService, PermissionService,
+    WebSocketService, create_s3_service_from_config, create_backup_service_from_config,
 };
 use std::sync::Arc;
 
@@ -250,6 +250,7 @@ pub struct AppState {
     pub websocket_service: WebSocketService,
     pub email_service: EmailService,
     pub oauth_service: utils::OAuthService,
+    pub backup_service: Option<BackupService>,
     pub password_pepper: String,
 }
 
@@ -271,12 +272,20 @@ impl AppState {
             .with_permission_service(permission_service.clone());
 
         // Add S3 service if configured
-        if let Ok(Some(s3_service)) = create_s3_service_from_config(config).await {
-            collection_service = collection_service.with_s3_service(s3_service);
+        let s3_service_option = create_s3_service_from_config(config).await.ok().flatten();
+        if let Some(ref s3_service) = s3_service_option {
+            collection_service = collection_service.with_s3_service(s3_service.clone());
         }
         let oauth_config = utils::oauth_service::OAuthConfig::from_env();
         let oauth_service = utils::OAuthService::new(oauth_config);
         let email_service = EmailService::new(config, db_pool.clone());
+        
+        // Add backup service if configured
+        let backup_service = create_backup_service_from_config(
+            db_pool.clone(),
+            s3_service_option.map(Arc::new),
+            config
+        ).await.ok().flatten();
 
         Ok(Self {
             db_pool: db_pool.clone(),
@@ -289,6 +298,7 @@ impl AppState {
             websocket_service: (*websocket_service).clone(),
             email_service,
             oauth_service,
+            backup_service,
             password_pepper,
         })
     }
@@ -307,6 +317,7 @@ impl Clone for AppState {
             websocket_service: self.websocket_service.clone(),
             email_service: self.email_service.clone(),
             oauth_service: self.oauth_service.clone(),
+            backup_service: self.backup_service.clone(),
             password_pepper: self.password_pepper.clone(),
         }
     }
