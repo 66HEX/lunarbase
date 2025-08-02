@@ -53,8 +53,10 @@ const statusColors = {
 
 const getProxyUrl = (originalUrl: string): string => {
 	// Check if it's an external URL that needs proxying
-	if (originalUrl.startsWith('https://lh3.googleusercontent.com') || 
-		originalUrl.startsWith('https://avatars.githubusercontent.com')) {
+	if (
+		originalUrl.startsWith("https://lh3.googleusercontent.com") ||
+		originalUrl.startsWith("https://avatars.githubusercontent.com")
+	) {
 		const proxyUrl = `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
 		return proxyUrl;
 	}

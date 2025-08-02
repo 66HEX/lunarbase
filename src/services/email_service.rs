@@ -1,18 +1,16 @@
-use resend_rs::{Resend, types::CreateEmailBaseOptions};
-use uuid::Uuid;
-use chrono::{Utc, Duration};
-use tracing::{info, warn, error};
+use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use resend_rs::{Resend, types::CreateEmailBaseOptions};
+use tracing::{error, info, warn};
+use uuid::Uuid;
 
-use crate::utils::AuthError;
 use crate::Config;
 use crate::models::{NewVerificationToken, VerificationToken};
 use crate::schema::verification_tokens;
+use crate::utils::AuthError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
-
-
 
 #[derive(Clone)]
 pub struct EmailService {
@@ -25,16 +23,22 @@ pub struct EmailService {
 impl EmailService {
     pub fn new(config: &Config, pool: DbPool) -> Self {
         let resend_client = if let Some(api_key) = &config.resend_api_key {
-            info!("EmailService: Initializing with Resend API key: {}...", &api_key[..10]);
+            info!(
+                "EmailService: Initializing with Resend API key: {}...",
+                &api_key[..10]
+            );
             Some(Resend::new(api_key))
         } else {
             warn!("EmailService: No RESEND_API_KEY found in configuration");
             None
         };
-        
+
         let from_email = config.email_from.clone().unwrap_or_default();
-        info!("EmailService: Configured with from_email: {}, frontend_url: {}", from_email, config.frontend_url);
-        
+        info!(
+            "EmailService: Configured with from_email: {}, frontend_url: {}",
+            from_email, config.frontend_url
+        );
+
         Self {
             resend_client,
             from_email,
@@ -43,22 +47,19 @@ impl EmailService {
         }
     }
 
-
-
     /// Generate a verification token for a user
-    pub async fn generate_verification_token(&self, user_id: i32, email: String) -> Result<String, AuthError> {
+    pub async fn generate_verification_token(
+        &self,
+        user_id: i32,
+        email: String,
+    ) -> Result<String, AuthError> {
         let token = Uuid::new_v4().to_string();
         let expires_at = (Utc::now() + Duration::hours(24)).naive_utc(); // Token expires in 24 hours
 
-        let new_token = NewVerificationToken::new(
-            token.clone(),
-            user_id,
-            email,
-            expires_at,
-        );
+        let new_token = NewVerificationToken::new(token.clone(), user_id, email, expires_at);
 
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
-        
+
         // Insert new token
         diesel::insert_into(verification_tokens::table)
             .values(&new_token)
@@ -78,12 +79,14 @@ impl EmailService {
     /// Verify a token and return the user_id if valid
     pub async fn verify_token(&self, token: &str) -> Result<i32, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
-        
+
         // Find the token
         let verification_token: VerificationToken = verification_tokens::table
             .filter(verification_tokens::token.eq(token))
             .first(&mut conn)
-            .map_err(|_| AuthError::ValidationError(vec!["Invalid verification token".to_string()]))?;
+            .map_err(|_| {
+                AuthError::ValidationError(vec!["Invalid verification token".to_string()])
+            })?;
 
         // Check if token is expired
         if verification_token.expires_at <= Utc::now().naive_utc() {
@@ -92,11 +95,13 @@ impl EmailService {
                 .filter(verification_tokens::token.eq(token))
                 .execute(&mut conn)
                 .ok(); // Ignore errors for cleanup
-            return Err(AuthError::ValidationError(vec!["Verification token has expired".to_string()]));
+            return Err(AuthError::ValidationError(vec![
+                "Verification token has expired".to_string(),
+            ]));
         }
 
         let user_id = verification_token.user_id;
-        
+
         // Remove the token after successful verification
         diesel::delete(verification_tokens::table)
             .filter(verification_tokens::token.eq(token))
@@ -107,17 +112,27 @@ impl EmailService {
     }
 
     /// Send verification email to user
-    pub async fn send_verification_email(&self, user_id: i32, email: &str, username: &str) -> Result<(), AuthError> {
-        info!("EmailService: Attempting to send verification email to {} for user_id: {}", email, user_id);
-        
+    pub async fn send_verification_email(
+        &self,
+        user_id: i32,
+        email: &str,
+        username: &str,
+    ) -> Result<(), AuthError> {
+        info!(
+            "EmailService: Attempting to send verification email to {} for user_id: {}",
+            email, user_id
+        );
+
         let Some(ref resend_client) = self.resend_client else {
             warn!("Resend client not configured, skipping email verification");
             return Ok(());
         };
 
         // Generate verification token
-        let token = self.generate_verification_token(user_id, email.to_string()).await?;
-        
+        let token = self
+            .generate_verification_token(user_id, email.to_string())
+            .await?;
+
         // Create verification URL
         let verification_url = format!("{}/api/verify-email?token={}", self.frontend_url, token);
 

@@ -20,7 +20,11 @@ impl AdminService {
     }
 
     /// Create admin user from configuration if it doesn't exist
-    pub async fn ensure_admin_exists(&self, config: &Config, pepper: &str) -> Result<(), AuthError> {
+    pub async fn ensure_admin_exists(
+        &self,
+        config: &Config,
+        pepper: &str,
+    ) -> Result<(), AuthError> {
         // Check if admin configuration is provided
         if !config.has_admin_config() {
             info!("No admin configuration provided via environment variables");

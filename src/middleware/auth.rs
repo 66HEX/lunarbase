@@ -83,10 +83,13 @@ pub async fn auth_middleware(
 ) -> Result<Response, AuthError> {
     // Debug: log all headers
     tracing::debug!("Request headers: {:?}", request.headers());
-    
+
     // Try to get token from cookie first, then fallback to Authorization header
     let token = if let Some(cookie_token) = CookieService::extract_access_token(request.headers()) {
-        tracing::debug!("Found token in cookie: {}", &cookie_token[..std::cmp::min(10, cookie_token.len())]);
+        tracing::debug!(
+            "Found token in cookie: {}",
+            &cookie_token[..std::cmp::min(10, cookie_token.len())]
+        );
         cookie_token
     } else if let Some(auth_header) = request
         .headers()
@@ -139,7 +142,9 @@ pub async fn optional_auth_middleware(
         .and_then(|header| header.to_str().ok())
     {
         // Try to extract token from header (fallback for compatibility)
-        JwtService::extract_token_from_header(auth_header).ok().map(|s| s.to_string())
+        JwtService::extract_token_from_header(auth_header)
+            .ok()
+            .map(|s| s.to_string())
     } else {
         None
     };

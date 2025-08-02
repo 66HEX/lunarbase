@@ -241,7 +241,10 @@ impl JwtService {
     }
 
     /// Validate access token with blacklist and user verification check
-    pub fn validate_access_token_with_verification(&self, token: &str) -> Result<Claims, AuthError> {
+    pub fn validate_access_token_with_verification(
+        &self,
+        token: &str,
+    ) -> Result<Claims, AuthError> {
         let claims = self.validate_access_token_with_blacklist(token)?;
 
         // Check if user is still verified in database
@@ -256,7 +259,7 @@ impl JwtService {
     /// Check if user is verified in database
     pub fn is_user_verified(&self, user_id: i32) -> Result<bool, AuthError> {
         use crate::schema::users;
-        
+
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
         let is_verified: bool = users::table

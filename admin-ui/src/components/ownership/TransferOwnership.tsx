@@ -94,14 +94,16 @@ export function TransferOwnership({
 	);
 
 	const getProxyUrl = (originalUrl: string): string => {
-	// Check if it's an external URL that needs proxying
-	if (originalUrl.startsWith('https://lh3.googleusercontent.com') || 
-		originalUrl.startsWith('https://avatars.githubusercontent.com')) {
-		const proxyUrl = `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
-		return proxyUrl;
-	}
-	return originalUrl;
-};
+		// Check if it's an external URL that needs proxying
+		if (
+			originalUrl.startsWith("https://lh3.googleusercontent.com") ||
+			originalUrl.startsWith("https://avatars.githubusercontent.com")
+		) {
+			const proxyUrl = `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
+			return proxyUrl;
+		}
+		return originalUrl;
+	};
 
 	return (
 		<Dialog
@@ -173,7 +175,11 @@ export function TransferOwnership({
 												<div className="flex items-center gap-2">
 													<Avatar
 														size="sm"
-														src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
+														src={
+															user?.avatar_url
+																? getProxyUrl(user.avatar_url)
+																: undefined
+														}
 														fallback={
 															user?.username
 																? user.username.substring(0, 2).toUpperCase()

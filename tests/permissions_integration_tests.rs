@@ -23,7 +23,9 @@ async fn create_test_router() -> Router {
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).await.expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
+        .await
+        .expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
@@ -224,8 +226,9 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
         unique_username,
         role.to_string(),
         true,
-        &test_password_pepper
-    ).expect("Failed to create new user");
+        &test_password_pepper,
+    )
+    .expect("Failed to create new user");
 
     // Insert user into database
     diesel::insert_into(users::table)
@@ -452,7 +455,10 @@ async fn test_collection_permissions_full_scenario() {
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::from(body))
         .unwrap();
@@ -590,7 +596,10 @@ async fn test_record_level_permissions() {
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", user1_token))
         .body(Body::from(body))
         .unwrap();
@@ -779,7 +788,10 @@ async fn test_ownership_full_scenario() {
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", user1_token))
         .body(Body::from(body))
         .unwrap();
@@ -1048,7 +1060,10 @@ async fn test_permission_error_scenarios() {
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(body))
         .unwrap();
@@ -1677,7 +1692,10 @@ async fn test_user_specific_permissions_override_role() {
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::from(body))
         .unwrap();

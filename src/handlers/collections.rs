@@ -1,20 +1,20 @@
 use crate::{
     AppState,
     models::{
-        CollectionResponse, CreateCollectionRequest, CreateRecordRequest, RecordResponse,
-        UpdateCollectionRequest, UpdateRecordRequest, FileUpload,
+        CollectionResponse, CreateCollectionRequest, CreateRecordRequest, FileUpload,
+        RecordResponse, UpdateCollectionRequest, UpdateRecordRequest,
     },
     utils::{ApiResponse, AuthError, Claims, ErrorResponse},
 };
 use axum::{
     Extension,
-    extract::{Path, Query, State, Multipart},
+    extract::{Multipart, Path, Query, State},
     http::StatusCode,
     response::Json,
 };
-use std::collections::HashMap;
-use serde::{Deserialize, Serialize};
 use base64::{Engine as _, engine::general_purpose};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use utoipa::ToSchema;
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -216,28 +216,46 @@ pub async fn create_record(
     let mut data = serde_json::Value::Object(serde_json::Map::new());
     let mut files: HashMap<String, FileUpload> = HashMap::new();
 
-    while let Some(field) = multipart.next_field().await.map_err(|_| AuthError::BadRequest("Invalid multipart data".to_string()))? {
+    while let Some(field) = multipart
+        .next_field()
+        .await
+        .map_err(|_| AuthError::BadRequest("Invalid multipart data".to_string()))?
+    {
         let name = field.name().unwrap_or("").to_string();
-        
+
         if name == "data" {
             // Parse JSON data field
-            let data_bytes = field.bytes().await.map_err(|_| AuthError::BadRequest("Failed to read data field".to_string()))?;
-            let data_str = String::from_utf8(data_bytes.to_vec()).map_err(|_| AuthError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
-            data = serde_json::from_str(&data_str).map_err(|_| AuthError::BadRequest("Invalid JSON in data field".to_string()))?;
+            let data_bytes = field
+                .bytes()
+                .await
+                .map_err(|_| AuthError::BadRequest("Failed to read data field".to_string()))?;
+            let data_str = String::from_utf8(data_bytes.to_vec())
+                .map_err(|_| AuthError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
+            data = serde_json::from_str(&data_str)
+                .map_err(|_| AuthError::BadRequest("Invalid JSON in data field".to_string()))?;
         } else if name.starts_with("file_") {
             // Handle file upload
             let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
             let filename = field.file_name().unwrap_or("unknown").to_string();
-            let content_type = field.content_type().unwrap_or("application/octet-stream").to_string();
-            
-            let file_bytes = field.bytes().await.map_err(|_| AuthError::BadRequest("Failed to read file".to_string()))?;
+            let content_type = field
+                .content_type()
+                .unwrap_or("application/octet-stream")
+                .to_string();
+
+            let file_bytes = field
+                .bytes()
+                .await
+                .map_err(|_| AuthError::BadRequest("Failed to read file".to_string()))?;
             let file_data = general_purpose::STANDARD.encode(&file_bytes);
-            
-            files.insert(field_name, FileUpload {
-                filename,
-                content_type,
-                data: file_data,
-            });
+
+            files.insert(
+                field_name,
+                FileUpload {
+                    filename,
+                    content_type,
+                    data: file_data,
+                },
+            );
         }
     }
 

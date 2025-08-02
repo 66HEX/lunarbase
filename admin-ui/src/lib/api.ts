@@ -314,17 +314,19 @@ export const recordsApi = {
 		collectionName: string,
 		data: CreateRecordRequest,
 	): Promise<Record> => {
-
-		
 		const formData = new FormData();
-		
+
 		// Separate files from other data
 		const recordData: { [key: string]: unknown } = {};
 		const files: { [key: string]: File[] } = {};
-		
-// Process each field in the data
+
+		// Process each field in the data
 		for (const [key, value] of Object.entries(data.data)) {
-			if (Array.isArray(value) && value.length > 0 && value[0] instanceof File) {
+			if (
+				Array.isArray(value) &&
+				value.length > 0 &&
+				value[0] instanceof File
+			) {
 				// This is a file field
 				files[key] = value as File[];
 			} else {
@@ -332,13 +334,11 @@ export const recordsApi = {
 				recordData[key] = value;
 			}
 		}
-		
 
-		
-// Add JSON data
+		// Add JSON data
 		const jsonData = JSON.stringify(recordData);
 		formData.append("data", jsonData);
-		
+
 		// Add files
 		for (const [fieldName, fileList] of Object.entries(files)) {
 			for (const file of fileList) {
@@ -348,9 +348,7 @@ export const recordsApi = {
 			}
 		}
 
-
-
-const response = await apiRequest<ApiResponse<Record>>(
+		const response = await apiRequest<ApiResponse<Record>>(
 			`/collections/${collectionName}/records`,
 			{
 				method: "POST",

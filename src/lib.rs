@@ -233,8 +233,8 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, CollectionService, EmailService, OwnershipService, PermissionService, WebSocketService,
-    create_s3_service_from_config,
+    AdminService, CollectionService, EmailService, OwnershipService, PermissionService,
+    WebSocketService, create_s3_service_from_config,
 };
 use std::sync::Arc;
 
@@ -269,7 +269,7 @@ impl AppState {
         let mut collection_service = CollectionService::new(db_pool.clone())
             .with_websocket_service(websocket_service.clone())
             .with_permission_service(permission_service.clone());
-        
+
         // Add S3 service if configured
         if let Ok(Some(s3_service)) = create_s3_service_from_config(config).await {
             collection_service = collection_service.with_s3_service(s3_service);

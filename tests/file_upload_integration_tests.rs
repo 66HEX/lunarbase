@@ -4,22 +4,24 @@ use axum::{
     http::{Request, StatusCode},
     routing::{delete, get, post, put},
 };
+use diesel::prelude::*;
 use http_body_util::BodyExt;
-use serde_json::{json, Value};
+use jsonwebtoken::{EncodingKey, Header, encode};
+use serde_json::{Value, json};
+use std::time::{SystemTime, UNIX_EPOCH};
 use tower::ServiceExt;
 use uuid;
-use jsonwebtoken::{encode, EncodingKey, Header};
-use std::time::{SystemTime, UNIX_EPOCH};
-use diesel::prelude::*;
 
 use axum::middleware;
 use lunarbase::database::create_pool;
 use lunarbase::handlers::auth::*;
 use lunarbase::handlers::collections::*;
 use lunarbase::middleware::auth_middleware;
-use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules, NewUser, User};
-use lunarbase::{AppState, Config};
+use lunarbase::models::{
+    CollectionSchema, FieldDefinition, FieldType, NewUser, User, ValidationRules,
+};
 use lunarbase::schema::users;
+use lunarbase::{AppState, Config};
 
 async fn create_test_router() -> Router {
     // Use consistent test secret for JWT
@@ -29,7 +31,9 @@ async fn create_test_router() -> Router {
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).await.expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
+        .await
+        .expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
@@ -97,8 +101,9 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
         unique_username,
         role.to_string(),
         true,
-        &test_password_pepper
-    ).expect("Failed to create new user");
+        &test_password_pepper,
+    )
+    .expect("Failed to create new user");
 
     // Insert user into database
     diesel::insert_into(users::table)
@@ -120,7 +125,7 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
 
 fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     use lunarbase::utils::Claims;
-    
+
     let now = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .unwrap()
@@ -185,39 +190,44 @@ async fn test_file_upload_s3_disabled() {
     let app1 = create_test_router().await;
     let app2 = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
-    
+
     let collection_name = unique_collection_name("test_files");
-    
+
     // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
         "schema": schema
     });
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/api/collections")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
-        .body(Body::from(serde_json::to_string(&create_collection_request).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&create_collection_request).unwrap(),
+        ))
         .unwrap();
-    
+
     let response = app1.oneshot(request).await.unwrap();
     let status = response.status();
     if status != StatusCode::CREATED {
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let response_text = String::from_utf8_lossy(&body);
-        eprintln!("First request - Response status: {}, body: {}", status, response_text);
+        eprintln!(
+            "First request - Response status: {}, body: {}",
+            status, response_text
+        );
         panic!("Expected 201 CREATED, got {}: {}", status, response_text);
     }
     assert_eq!(status, StatusCode::CREATED);
-    
+
     // Try to upload a file when S3 is disabled
     let record_data = json!({
         "name": "Test Record"
     });
-    
+
     // Create multipart body with data field and file field
     let boundary = "test_boundary";
     let multipart_body = format!(
@@ -227,26 +237,35 @@ async fn test_file_upload_s3_disabled() {
         boundary,
         boundary
     );
-    
+
     let request = Request::builder()
         .method("POST")
         .uri(&format!("/api/collections/{}/records", collection_name))
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(multipart_body))
         .unwrap();
-    
+
     let response = app2.oneshot(request).await.unwrap();
     let status = response.status();
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let response_text = String::from_utf8_lossy(&body);
-    
+
     if status != StatusCode::BAD_REQUEST {
-        eprintln!("Second request - Response status: {}, body: {}", status, response_text);
-        panic!("Expected 400 BAD_REQUEST, got {}: {}", status, response_text);
+        eprintln!(
+            "Second request - Response status: {}, body: {}",
+            status, response_text
+        );
+        panic!(
+            "Expected 400 BAD_REQUEST, got {}: {}",
+            status, response_text
+        );
     }
-     
-     // Should fail because S3 is not configured
+
+    // Should fail because S3 is not configured
     eprintln!("Response body: {}", response_text);
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert!(response_text.contains("VALIDATION_ERROR"));
@@ -257,27 +276,29 @@ async fn test_create_record_without_files() {
     let app1 = create_test_router().await;
     let app2 = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
-    
+
     let collection_name = unique_collection_name("test_no_files");
-    
+
     // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
         "schema": schema
     });
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/api/collections")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
-        .body(Body::from(serde_json::to_string(&create_collection_request).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&create_collection_request).unwrap(),
+        ))
         .unwrap();
-    
+
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
-    
+
     // Create record without any files using multipart/form-data
     let record_data = json!({
         "name": "Test Record Without Files"
@@ -294,20 +315,26 @@ async fn test_create_record_without_files() {
     let request = Request::builder()
         .method("POST")
         .uri(&format!("/api/collections/{}/records", collection_name))
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(body))
         .unwrap();
-    
+
     let response = app2.oneshot(request).await.unwrap();
-     
-     // Should succeed
-     assert_eq!(response.status(), StatusCode::CREATED);
-    
+
+    // Should succeed
+    assert_eq!(response.status(), StatusCode::CREATED);
+
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let response_json: Value = serde_json::from_slice(&body).unwrap();
-    
-    assert_eq!(response_json["data"]["data"]["name"], "Test Record Without Files");
+
+    assert_eq!(
+        response_json["data"]["data"]["name"],
+        "Test Record Without Files"
+    );
     assert!(response_json["data"]["data"]["avatar"].is_null());
     assert!(response_json["data"]["data"]["documents"].is_null());
 }
@@ -317,30 +344,32 @@ async fn test_invalid_multipart_data() {
     let app1 = create_test_router().await;
     let app2 = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
-    
+
     let collection_name = unique_collection_name("test_invalid_multipart");
-    
+
     // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
         "schema": schema
     });
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/api/collections")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
-        .body(Body::from(serde_json::to_string(&create_collection_request).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&create_collection_request).unwrap(),
+        ))
         .unwrap();
-    
+
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
-    
+
     // Send invalid multipart data
     let invalid_multipart_body = "--boundary\r\nContent-Disposition: form-data; name=\"invalid\"\r\n\r\ninvalid data\r\n--boundary--";
-    
+
     let request = Request::builder()
         .method("POST")
         .uri(&format!("/api/collections/{}/records", collection_name))
@@ -348,11 +377,11 @@ async fn test_invalid_multipart_data() {
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(invalid_multipart_body))
         .unwrap();
-    
+
     let response = app2.oneshot(request).await.unwrap();
-     
-     // Should fail with bad request
-     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
+    // Should fail with bad request
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
 #[tokio::test]
@@ -360,34 +389,36 @@ async fn test_file_field_validation() {
     let app1 = create_test_router().await;
     let app2 = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
-    
+
     let collection_name = unique_collection_name("test_file_validation");
-    
+
     // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
         "schema": schema
     });
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/api/collections")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
-        .body(Body::from(serde_json::to_string(&create_collection_request).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&create_collection_request).unwrap(),
+        ))
         .unwrap();
-    
+
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
-    
+
     // Try to upload with invalid field types using multipart/form-data
     let file_data = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
-    
+
     let record_data = json!({
         "name": file_data, // This should be text, not a file
     });
-    
+
     let boundary = "boundary";
     let body = format!(
         "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}\r\nContent-Disposition: form-data; name=\"file_avatar\"\r\nContent-Type: text/plain\r\n\r\nregular text\r\n--{}--\r\n",
@@ -396,29 +427,35 @@ async fn test_file_field_validation() {
         boundary,
         boundary
     );
-    
+
     let request = Request::builder()
         .method("POST")
         .uri(&format!("/api/collections/{}/records", collection_name))
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(body))
         .unwrap();
-    
+
     let response = app2.oneshot(request).await.unwrap();
-    
+
     // Debug: Print response status and body
     let status = response.status();
     println!("test_file_field_validation - Response status: {}", status);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let response_text = String::from_utf8(body.to_vec()).unwrap();
-    println!("test_file_field_validation - Response body: {}", response_text);
-     
-     // Should fail - invalid data type for text field
-     assert_eq!(status, StatusCode::BAD_REQUEST);
-     
-     // Check that it's a validation error
-     assert!(response_text.contains("VALIDATION_ERROR"));
+    println!(
+        "test_file_field_validation - Response body: {}",
+        response_text
+    );
+
+    // Should fail - invalid data type for text field
+    assert_eq!(status, StatusCode::BAD_REQUEST);
+
+    // Check that it's a validation error
+    assert!(response_text.contains("VALIDATION_ERROR"));
 }
 
 #[tokio::test]
@@ -426,33 +463,35 @@ async fn test_nonexistent_file_field() {
     let app1 = create_test_router().await;
     let app2 = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
-    
+
     let collection_name = unique_collection_name("test_nonexistent_field");
-    
+
     // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
         "schema": schema
     });
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/api/collections")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
-        .body(Body::from(serde_json::to_string(&create_collection_request).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&create_collection_request).unwrap(),
+        ))
         .unwrap();
-    
+
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
-    
+
     // Try to upload to a field that doesn't exist using multipart/form-data
     let record_data = json!({
         "name": "Test Record",
         "nonexistent_file_field": "some_value"
     });
-    
+
     let boundary = "boundary";
     let body = format!(
         "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
@@ -460,32 +499,38 @@ async fn test_nonexistent_file_field() {
         serde_json::to_string(&record_data).unwrap(),
         boundary
     );
-    
+
     let request = Request::builder()
         .method("POST")
         .uri(&format!("/api/collections/{}/records", collection_name))
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(body))
         .unwrap();
-    
+
     let response = app2.oneshot(request).await.unwrap();
-    
+
     // Debug: Print response status and body
     let status = response.status();
     println!("test_nonexistent_file_field - Response status: {}", status);
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let response_text = String::from_utf8(body.to_vec()).unwrap();
-    println!("test_nonexistent_file_field - Response body: {}", response_text);
-     
-     // Should succeed - nonexistent fields are ignored
-     assert_eq!(status, StatusCode::CREATED);
-     
-     // Check that the record was created successfully
-     let response_json: Value = serde_json::from_slice(&body).unwrap();
-     assert_eq!(response_json["data"]["data"]["name"], "Test Record");
-     // nonexistent_file_field should not be present in the response
-     assert!(response_json["data"]["data"]["nonexistent_file_field"].is_null());
+    println!(
+        "test_nonexistent_file_field - Response body: {}",
+        response_text
+    );
+
+    // Should succeed - nonexistent fields are ignored
+    assert_eq!(status, StatusCode::CREATED);
+
+    // Check that the record was created successfully
+    let response_json: Value = serde_json::from_slice(&body).unwrap();
+    assert_eq!(response_json["data"]["data"]["name"], "Test Record");
+    // nonexistent_file_field should not be present in the response
+    assert!(response_json["data"]["data"]["nonexistent_file_field"].is_null());
 }
 
 #[tokio::test]
@@ -493,32 +538,34 @@ async fn test_invalid_base64_data() {
     let app1 = create_test_router().await;
     let app2 = create_test_router().await;
     let (_admin_id, admin_token) = create_admin_token(&app1).await;
-    
+
     let collection_name = unique_collection_name("test_invalid_base64");
-    
+
     // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
         "schema": schema
     });
-    
+
     let request = Request::builder()
         .method("POST")
         .uri("/api/collections")
         .header("content-type", "application/json")
         .header("authorization", format!("Bearer {}", admin_token))
-        .body(Body::from(serde_json::to_string(&create_collection_request).unwrap()))
+        .body(Body::from(
+            serde_json::to_string(&create_collection_request).unwrap(),
+        ))
         .unwrap();
-    
+
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
-    
+
     // Try to upload invalid base64 data using multipart/form-data
     let record_data = json!({
         "name": "Test Record"
     });
-    
+
     let boundary = "boundary";
     let body = format!(
         "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}\r\nContent-Disposition: form-data; name=\"file_avatar\"; filename=\"test.png\"\r\nContent-Type: image/png\r\n\r\ninvalid_base64_data!!!\r\n--{}--\r\n",
@@ -527,20 +574,23 @@ async fn test_invalid_base64_data() {
         boundary,
         boundary
     );
-    
+
     let request = Request::builder()
         .method("POST")
         .uri(&format!("/api/collections/{}/records", collection_name))
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(body))
         .unwrap();
-    
+
     let response = app2.oneshot(request).await.unwrap();
-     
-     // Should fail with bad request
-     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-    
+
+    // Should fail with bad request
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let response_text = String::from_utf8(body.to_vec()).unwrap();
     assert!(response_text.contains("VALIDATION_ERROR"));

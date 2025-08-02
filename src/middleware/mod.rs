@@ -43,9 +43,7 @@ pub fn setup_cors() -> CorsLayer {
             axum::http::header::REFERRER_POLICY,
         ])
         .allow_credentials(true)
-        .expose_headers([
-            axum::http::header::CONTENT_SECURITY_POLICY,
-        ])
+        .expose_headers([axum::http::header::CONTENT_SECURITY_POLICY])
 }
 
 pub fn add_middleware(app: Router, app_state: AppState) -> Router {

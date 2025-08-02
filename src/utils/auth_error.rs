@@ -77,11 +77,7 @@ impl IntoResponse for AuthError {
                 "User is already verified",
                 "USER_ALREADY_VERIFIED",
             ),
-            AuthError::UserNotFound => (
-                StatusCode::NOT_FOUND,
-                "User not found",
-                "USER_NOT_FOUND",
-            ),
+            AuthError::UserNotFound => (StatusCode::NOT_FOUND, "User not found", "USER_NOT_FOUND"),
             AuthError::TokenExpired => (
                 StatusCode::UNAUTHORIZED,
                 "Token has expired",

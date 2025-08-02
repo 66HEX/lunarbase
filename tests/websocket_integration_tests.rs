@@ -1,7 +1,7 @@
 use axum::{
     Router,
     http::StatusCode,
-    routing::{get, post, delete},
+    routing::{delete, get, post},
 };
 use serde_json::json;
 use tower::ServiceExt;
@@ -23,7 +23,9 @@ async fn create_test_router() -> Router {
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
-    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config).await.expect("Failed to create AppState");
+    let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
+        .await
+        .expect("Failed to create AppState");
 
     // Public routes (no authentication required)
     let public_routes = Router::new()
@@ -40,7 +42,10 @@ async fn create_test_router() -> Router {
         .route("/auth/me", get(me))
         .route("/ws/stats", get(websocket_stats))
         .route("/ws/connections", get(get_connections))
-        .route("/ws/connections/{connection_id}", delete(disconnect_connection))
+        .route(
+            "/ws/connections/{connection_id}",
+            delete(disconnect_connection),
+        )
         .route("/ws/broadcast", post(broadcast_message))
         .route("/ws/activity", get(get_activity))
         .layer(middleware::from_fn_with_state(
@@ -88,8 +93,9 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
         unique_username,
         role.to_string(),
         true,
-        &test_password_pepper
-    ).expect("Failed to create new user");
+        &test_password_pepper,
+    )
+    .expect("Failed to create new user");
 
     // Insert user into database
     diesel::insert_into(users::table)
@@ -500,7 +506,10 @@ async fn test_broadcast_message_with_admin() {
     let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
     assert!(json_response["success"].as_bool().unwrap());
-    assert_eq!(json_response["data"]["message"].as_str().unwrap(), "Test admin broadcast");
+    assert_eq!(
+        json_response["data"]["message"].as_str().unwrap(),
+        "Test admin broadcast"
+    );
     assert!(json_response["data"]["sent_to_connections"].is_number());
 }
 
@@ -539,7 +548,10 @@ async fn test_broadcast_message_with_target_users() {
     let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
     assert!(json_response["success"].as_bool().unwrap());
-    assert_eq!(json_response["data"]["message"].as_str().unwrap(), "Targeted broadcast");
+    assert_eq!(
+        json_response["data"]["message"].as_str().unwrap(),
+        "Targeted broadcast"
+    );
 }
 
 #[tokio::test]
@@ -577,7 +589,10 @@ async fn test_broadcast_message_with_target_collections() {
     let json_response: serde_json::Value = serde_json::from_slice(&body).unwrap();
 
     assert!(json_response["success"].as_bool().unwrap());
-    assert_eq!(json_response["data"]["message"].as_str().unwrap(), "Collection broadcast");
+    assert_eq!(
+        json_response["data"]["message"].as_str().unwrap(),
+        "Collection broadcast"
+    );
 }
 
 #[tokio::test]
@@ -708,7 +723,7 @@ async fn test_websocket_admin_endpoints_unauthorized() {
 
     for (endpoint, method) in endpoints {
         let mut request_builder = axum::http::Request::builder().uri(endpoint);
-        
+
         if method == "POST" {
             request_builder = request_builder
                 .method("POST")

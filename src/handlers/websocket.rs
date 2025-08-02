@@ -1,14 +1,14 @@
 use crate::utils::ErrorResponse;
 use axum::{
+    Extension,
     extract::{Path, Query, Request, State, ws::WebSocketUpgrade},
     response::Json,
     response::Response,
-    Extension,
 };
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use uuid::Uuid;
 use utoipa::ToSchema;
+use uuid::Uuid;
 
 use crate::{
     AppState,
@@ -265,14 +265,20 @@ pub async fn disconnect_connection(
     }
 
     // Parse connection ID
-    let conn_uuid = Uuid::parse_str(&connection_id)
-        .map_err(|_| AuthError::ValidationError(vec!["Invalid connection ID format".to_string()]))?;
+    let conn_uuid = Uuid::parse_str(&connection_id).map_err(|_| {
+        AuthError::ValidationError(vec!["Invalid connection ID format".to_string()])
+    })?;
 
     // Disconnect the connection
-    let success = app_state.websocket_service.disconnect_connection(conn_uuid).await;
+    let success = app_state
+        .websocket_service
+        .disconnect_connection(conn_uuid)
+        .await;
 
     if success {
-        Ok(Json(ApiResponse::success("Connection disconnected successfully".to_string())))
+        Ok(Json(ApiResponse::success(
+            "Connection disconnected successfully".to_string(),
+        )))
     } else {
         Err(AuthError::NotFound("Connection not found".to_string()))
     }
@@ -298,7 +304,6 @@ pub async fn broadcast_message(
     Extension(claims): Extension<crate::utils::Claims>,
     Json(broadcast_req): Json<BroadcastRequest>,
 ) -> Result<Json<ApiResponse<BroadcastResponse>>, AuthError> {
-
     // Get user from database to check admin status
     use crate::models::User;
     use crate::schema::users;
@@ -323,11 +328,14 @@ pub async fn broadcast_message(
     }
 
     // Broadcast the message
-    let sent_count = app_state.websocket_service.broadcast_admin_message(
-        &broadcast_req.message,
-        broadcast_req.target_users.as_ref(),
-        broadcast_req.target_collections.as_ref(),
-    ).await;
+    let sent_count = app_state
+        .websocket_service
+        .broadcast_admin_message(
+            &broadcast_req.message,
+            broadcast_req.target_users.as_ref(),
+            broadcast_req.target_collections.as_ref(),
+        )
+        .await;
 
     let response = BroadcastResponse {
         sent_to_connections: sent_count,
@@ -389,7 +397,10 @@ pub async fn get_activity(
     // Get activity log
     let limit = params.limit.unwrap_or(100);
     let offset = params.offset.unwrap_or(0);
-    let activity = app_state.websocket_service.get_activity_log(limit, offset).await;
+    let activity = app_state
+        .websocket_service
+        .get_activity_log(limit, offset)
+        .await;
 
     Ok(Json(ApiResponse::success(activity)))
 }

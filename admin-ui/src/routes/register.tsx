@@ -1,5 +1,6 @@
 import {
 	createFileRoute,
+	Link,
 	redirect,
 	useNavigate,
 } from "@tanstack/react-router";
@@ -24,10 +25,9 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { CustomApiError, authApi } from "@/lib/api";
+import { authApi, CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import type { RegisterRequest } from "@/types/api";
-import { Link } from "@tanstack/react-router";
 
 export default function RegisterComponent() {
 	const [formData, setFormData] = useState<RegisterRequest>({
@@ -126,7 +126,9 @@ export default function RegisterComponent() {
 						<h1 className="text-3xl font-bold text-nocta-900 dark:text-nocta-100">
 							LunarBase
 						</h1>
-						<p className="mt-2 text-nocta-600 dark:text-nocta-400">Admin Panel</p>
+						<p className="mt-2 text-nocta-600 dark:text-nocta-400">
+							Admin Panel
+						</p>
 					</div>
 
 					{/* Success Message */}
@@ -143,8 +145,9 @@ export default function RegisterComponent() {
 							<div className="space-y-4">
 								<Alert className="border-green-200 bg-green-50 dark:border-green-800 dark:bg-green-950">
 									<AlertDescription className="text-green-800 dark:text-green-200">
-										We've sent a verification email to <strong>{formData.email}</strong>.
-										Please check your inbox and click the verification link to activate your account.
+										We've sent a verification email to{" "}
+										<strong>{formData.email}</strong>. Please check your inbox
+										and click the verification link to activate your account.
 									</AlertDescription>
 								</Alert>
 
@@ -157,7 +160,8 @@ export default function RegisterComponent() {
 										Go to Login
 									</Button>
 									<p className="text-sm text-center text-nocta-600 dark:text-nocta-400">
-										Didn't receive the email? Check your spam folder or contact support.
+										Didn't receive the email? Check your spam folder or contact
+										support.
 									</p>
 								</div>
 							</div>
@@ -187,7 +191,9 @@ export default function RegisterComponent() {
 				{/* Registration Form */}
 				<Card>
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2">Create Account</CardTitle>
+						<CardTitle className="flex items-center gap-2">
+							Create Account
+						</CardTitle>
 						<CardDescription>
 							Sign up to access the LunarBase admin panel
 						</CardDescription>

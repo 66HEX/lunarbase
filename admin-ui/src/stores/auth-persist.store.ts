@@ -3,7 +3,7 @@ import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import { authApi } from "@/lib/api";
-import type { User, OAuthProvider } from "@/types/api";
+import type { OAuthProvider, User } from "@/types/api";
 
 interface AuthState {
 	user: User | null;
@@ -103,26 +103,26 @@ export const useAuthStore = create<AuthStore>()(
 				},
 
 				loginWithOAuth: async (provider: string) => {
-				set((state) => {
-					state.loading = true;
-					state.error = null;
-				});
-
-				try {
-					// Directly redirect to backend OAuth endpoint
-					// Backend will handle the redirect to OAuth provider
-					const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
-					window.location.href = `${API_BASE_URL}/auth/oauth/${provider}`;
-				} catch (error: unknown) {
-					const errorMessage =
-						error instanceof Error ? error.message : "OAuth login failed";
 					set((state) => {
-						state.loading = false;
-						state.error = errorMessage;
+						state.loading = true;
+						state.error = null;
 					});
-					throw error;
-				}
-			},
+
+					try {
+						// Directly redirect to backend OAuth endpoint
+						// Backend will handle the redirect to OAuth provider
+						const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
+						window.location.href = `${API_BASE_URL}/auth/oauth/${provider}`;
+					} catch (error: unknown) {
+						const errorMessage =
+							error instanceof Error ? error.message : "OAuth login failed";
+						set((state) => {
+							state.loading = false;
+							state.error = errorMessage;
+						});
+						throw error;
+					}
+				},
 
 				getOAuthProviders: () => {
 					return authApi.getOAuthProviders();

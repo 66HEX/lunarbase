@@ -1,6 +1,6 @@
 use oauth2::{
-    basic::BasicClient, AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken,
-    PkceCodeChallenge, PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl,
+    AuthUrl, AuthorizationCode, ClientId, ClientSecret, CsrfToken, PkceCodeChallenge,
+    PkceCodeVerifier, RedirectUrl, Scope, TokenResponse, TokenUrl, basic::BasicClient,
 };
 use reqwest::Client as HttpClient;
 use serde::{Deserialize, Serialize};
@@ -90,7 +90,10 @@ impl OAuthService {
         }
         .ok_or("OAuth provider not configured")?;
 
-        let redirect_url = format!("{}/api/auth/oauth/{}/callback", self.config.redirect_base_url, provider);
+        let redirect_url = format!(
+            "{}/api/auth/oauth/{}/callback",
+            self.config.redirect_base_url, provider
+        );
 
         let client = BasicClient::new(ClientId::new(provider_config.client_id.clone()))
             .set_client_secret(ClientSecret::new(provider_config.client_secret.clone()))
@@ -137,16 +140,19 @@ impl OAuthService {
         }
         .ok_or("OAuth provider not configured")?;
 
-        let redirect_url = format!("{}/api/auth/oauth/{}/callback", self.config.redirect_base_url, provider);
+        let redirect_url = format!(
+            "{}/api/auth/oauth/{}/callback",
+            self.config.redirect_base_url, provider
+        );
 
         let client = BasicClient::new(ClientId::new(provider_config.client_id.clone()))
             .set_client_secret(ClientSecret::new(provider_config.client_secret.clone()))
             .set_auth_uri(AuthUrl::new(provider_config.auth_url.clone())?)
             .set_token_uri(TokenUrl::new(provider_config.token_url.clone())?)
             .set_redirect_uri(RedirectUrl::new(redirect_url)?);
-        
+
         let mut token_request = client.exchange_code(AuthorizationCode::new(code.to_string()));
-        
+
         // Use PKCE verifier for Google OAuth
         if provider == "google" {
             if let Ok(mut verifiers) = self.pkce_verifiers.lock() {
@@ -159,9 +165,9 @@ impl OAuthService {
                 return Err("Failed to access PKCE verifiers".into());
             }
         }
-        
+
         let token_result = token_request.request_async(&self.http_client).await?;
-        
+
         Ok(token_result.access_token().secret().clone())
     }
 

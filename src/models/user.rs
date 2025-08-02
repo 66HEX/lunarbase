@@ -131,12 +131,16 @@ impl User {
     }
 
     /// Verify password with timing attack protection using pepper
-    pub fn verify_password(&self, password: &str, pepper: &str) -> Result<bool, argon2::password_hash::Error> {
+    pub fn verify_password(
+        &self,
+        password: &str,
+        pepper: &str,
+    ) -> Result<bool, argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(&self.password_hash)?;
-        
+
         // Combine password with pepper for verification
         let peppered_password = format!("{}{}", password, pepper);
-        
+
         Ok(Argon2::default()
             .verify_password(peppered_password.as_bytes(), &parsed_hash)
             .is_ok())
@@ -170,7 +174,12 @@ impl User {
 
 impl NewUser {
     /// Create new user with secure password hashing using pepper
-    pub fn new(email: String, password: &str, username: String, pepper: &str) -> Result<Self, String> {
+    pub fn new(
+        email: String,
+        password: &str,
+        username: String,
+        pepper: &str,
+    ) -> Result<Self, String> {
         // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);

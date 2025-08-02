@@ -56,7 +56,8 @@ impl Config {
             // Email configuration
             resend_api_key: std::env::var("RESEND_API_KEY").ok(),
             email_from: std::env::var("EMAIL_FROM").ok(),
-            frontend_url: std::env::var("FRONTEND_URL").unwrap_or_else(|_| "http://localhost:3000".to_string()),
+            frontend_url: std::env::var("FRONTEND_URL")
+                .unwrap_or_else(|_| "http://localhost:3000".to_string()),
             // S3 configuration
             s3_bucket_name: std::env::var("S3_BUCKET_NAME").ok(),
             s3_region: std::env::var("S3_REGION").ok(),

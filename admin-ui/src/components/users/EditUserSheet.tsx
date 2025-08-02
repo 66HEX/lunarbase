@@ -165,9 +165,7 @@ export function EditUserSheet({
 		<Sheet open={isOpen} onOpenChange={onOpenChange}>
 			<SheetContent side="right" size="lg">
 				<SheetHeader>
-					<SheetTitle className="flex items-center gap-2">
-						Edit User
-					</SheetTitle>
+					<SheetTitle className="flex items-center gap-2">Edit User</SheetTitle>
 					<SheetDescription>Update user account information</SheetDescription>
 				</SheetHeader>
 

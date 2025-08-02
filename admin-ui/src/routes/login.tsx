@@ -1,15 +1,16 @@
+import { GitHubLogoIcon } from "@radix-ui/react-icons";
 import {
 	createFileRoute,
+	Link,
 	redirect,
 	useNavigate,
 	useSearch,
 } from "@tanstack/react-router";
 import { useState } from "react";
+import { FaGoogle } from "react-icons/fa";
 import LunarLogo from "@/assets/lunar.svg";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { GitHubLogoIcon } from "@radix-ui/react-icons";
-import { FaGoogle } from "react-icons/fa";
 import {
 	Card,
 	CardContent,
@@ -30,9 +31,13 @@ import { Spinner } from "@/components/ui/spinner";
 import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import type { LoginRequest } from "@/types/api";
-import { Link } from "@tanstack/react-router";
 
-const OAuthButton = ({ provider, icon, onClick, disabled }: {
+const OAuthButton = ({
+	provider,
+	icon,
+	onClick,
+	disabled,
+}: {
 	provider: string;
 	icon: React.ReactNode;
 	onClick: () => void;
@@ -59,7 +64,8 @@ export default function LoginComponent() {
 	const [generalError, setGeneralError] = useState("");
 	const navigate = useNavigate();
 	const search = useSearch({ from: "/login" }) as { redirect?: string };
-	const { login, loginWithOAuth, getOAuthProviders, loading, error } = useAuthStore();
+	const { login, loginWithOAuth, getOAuthProviders, loading, error } =
+		useAuthStore();
 	const oauthProviders = getOAuthProviders();
 
 	const handleInputChange = (field: keyof LoginRequest, value: string) => {
@@ -204,51 +210,51 @@ export default function LoginComponent() {
 							</div>
 
 							<FormActions className="mt-6">
-							<Button type="submit" className="w-full" disabled={loading}>
-								{loading ? (
-									<>
-										<Spinner className="w-4 h-4 mr-2" />
-										Signing in...
-									</>
-								) : (
-									"Sign In"
-								)}
-							</Button>
-						</FormActions>
+								<Button type="submit" className="w-full" disabled={loading}>
+									{loading ? (
+										<>
+											<Spinner className="w-4 h-4 mr-2" />
+											Signing in...
+										</>
+									) : (
+										"Sign In"
+									)}
+								</Button>
+							</FormActions>
 
-						{/* OAuth Divider */}
-						<div className="relative my-6">
-							<div className="relative flex justify-center text-xs uppercase">
-								<span className="bg-background px-2 text-nocta-300 dark:text-nocta-700">
-									Or continue with
-								</span>
+							{/* OAuth Divider */}
+							<div className="relative my-6">
+								<div className="relative flex justify-center text-xs uppercase">
+									<span className="bg-background px-2 text-nocta-300 dark:text-nocta-700">
+										Or continue with
+									</span>
+								</div>
 							</div>
-						</div>
 
-						{/* OAuth Buttons */}
-						<div className="space-y-3">
-							{oauthProviders.map((provider) => {
-								const getProviderIcon = () => {
-									switch (provider.name) {
-										case 'google':
-											return <FaGoogle className="w-4 h-4 mr-2" />;
-										case 'github':
-											return <GitHubLogoIcon className="w-4 h-4 mr-2" />;
-										default:
-											return null;
-									}
-								};
+							{/* OAuth Buttons */}
+							<div className="space-y-3">
+								{oauthProviders.map((provider) => {
+									const getProviderIcon = () => {
+										switch (provider.name) {
+											case "google":
+												return <FaGoogle className="w-4 h-4 mr-2" />;
+											case "github":
+												return <GitHubLogoIcon className="w-4 h-4 mr-2" />;
+											default:
+												return null;
+										}
+									};
 
-								return (
-									<OAuthButton
-										key={provider.name}
-										provider={provider.display_name}
-										icon={getProviderIcon()}
-										onClick={() => handleOAuthLogin(provider.name)}
-										disabled={loading}
-									/>
-								);
-							})}
+									return (
+										<OAuthButton
+											key={provider.name}
+											provider={provider.display_name}
+											icon={getProviderIcon()}
+											onClick={() => handleOAuthLogin(provider.name)}
+											disabled={loading}
+										/>
+									);
+								})}
 							</div>
 
 							{/* Register Link */}

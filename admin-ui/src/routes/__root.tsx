@@ -59,7 +59,7 @@ function RootComponent() {
 	}, [isAuthenticated, user, fetchUser]);
 
 	const isLoginPage =
-		location.pathname === "/login" || 
+		location.pathname === "/login" ||
 		location.pathname === "/register" ||
 		location.pathname === "/admin/login" ||
 		location.pathname === "/admin/register" ||

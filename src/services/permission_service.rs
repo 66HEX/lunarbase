@@ -607,7 +607,7 @@ impl PermissionService {
                 Permission::Read | Permission::Update => return Ok(true),
                 Permission::Delete => {
                     // Delete permission for owners might be configurable per collection
-                    // For now, allow owners to delete their own records
+                    // TODO: For now, allow owners to delete their own records
                     return Ok(true);
                 }
                 _ => {} // Fall through to normal permission check

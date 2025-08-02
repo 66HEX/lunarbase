@@ -1,12 +1,12 @@
 use axum::{
     Extension,
-    extract::{ConnectInfo, FromRequest, Request, State, Query},
+    extract::{ConnectInfo, FromRequest, Query, Request, State},
     http::{HeaderMap, StatusCode},
     response::{Json, Redirect},
 };
-use std::net::SocketAddr;
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
+use std::net::SocketAddr;
 use std::time::Duration;
 use utoipa::ToSchema;
 
@@ -14,14 +14,17 @@ use crate::{
     AppState,
     middleware::extract_user_claims,
     models::{
-        AuthResponse, LoginRequest, LogoutRequest, LogoutResponse, NewUser, RegisterRequest, User, UserResponse,
+        AuthResponse, LoginRequest, LogoutRequest, LogoutResponse, NewUser, RegisterRequest, User,
+        UserResponse,
     },
     schema::users,
-    utils::{client_ip::extract_client_ip, ApiResponse, AuthError, Claims, CookieService, ErrorResponse},
+    utils::{
+        ApiResponse, AuthError, Claims, CookieService, ErrorResponse, client_ip::extract_client_ip,
+    },
 };
 
 /// Register a new user
-/// 
+///
 /// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
 /// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
@@ -41,10 +44,13 @@ pub async fn register(
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Extract client IP for rate limiting
-    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>().copied();
+    let connect_info = request
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .copied();
     let client_ip = extract_client_ip(request.headers(), connect_info);
     let rate_limit_key = format!("register:{}", client_ip);
-    
+
     // Rate limiting check
     if !app_state
         .auth_state
@@ -53,9 +59,10 @@ pub async fn register(
     {
         return Err(AuthError::RateLimitExceeded);
     }
-    
+
     // Extract JSON payload from request
-    let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state).await
+    let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
+        .await
         .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
     // Validate request payload
@@ -100,8 +107,13 @@ pub async fn register(
     }
 
     // Create new user with secure password hashing
-    let new_user = NewUser::new(payload.email, &payload.password, payload.username, &app_state.password_pepper)
-        .map_err(|_| AuthError::InternalError)?;
+    let new_user = NewUser::new(
+        payload.email,
+        &payload.password,
+        payload.username,
+        &app_state.password_pepper,
+    )
+    .map_err(|_| AuthError::InternalError)?;
 
     // Insert user into database
     diesel::insert_into(users::table)
@@ -117,9 +129,17 @@ pub async fn register(
         .map_err(|_| AuthError::DatabaseError)?;
 
     // Send verification email (non-blocking)
-    if let Err(e) = app_state.email_service.send_verification_email(user.id, &user.email, &user.username).await {
+    if let Err(e) = app_state
+        .email_service
+        .send_verification_email(user.id, &user.email, &user.username)
+        .await
+    {
         // Log error but don't fail registration
-        tracing::warn!("Failed to send verification email to {}: {:?}", user.email, e);
+        tracing::warn!(
+            "Failed to send verification email to {}: {:?}",
+            user.email,
+            e
+        );
     }
 
     // Generate tokens
@@ -143,7 +163,7 @@ pub async fn register(
     // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(), // Empty for security
+        access_token: String::new(),  // Empty for security
         refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state
@@ -182,20 +202,22 @@ pub async fn verify_email(
 ) -> Result<Json<ApiResponse<String>>, AuthError> {
     // Verify the token
     let user_id = app_state.email_service.verify_token(&payload.token).await?;
-    
+
     // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
-    
+
     // Update user's is_verified status
     diesel::update(users::table.filter(users::id.eq(user_id)))
         .set(users::is_verified.eq(true))
         .execute(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
-    
-    Ok(Json(ApiResponse::success("Email verified successfully".to_string())))
+
+    Ok(Json(ApiResponse::success(
+        "Email verified successfully".to_string(),
+    )))
 }
 
 /// Verify email via GET request (for email links)
@@ -229,24 +251,34 @@ pub async fn verify_email_get(
                 .db_pool
                 .get()
                 .map_err(|_| AuthError::DatabaseError)?;
-            
+
             // Update user's is_verified status
             match diesel::update(users::table.filter(users::id.eq(user_id)))
                 .set(users::is_verified.eq(true))
-                .execute(&mut conn) {
+                .execute(&mut conn)
+            {
                 Ok(_) => {
                     // Redirect to admin panel after successful verification
-                    Ok(Redirect::to(&format!("{}/admin", app_state.email_service.get_frontend_url())))
-                },
+                    Ok(Redirect::to(&format!(
+                        "{}/admin",
+                        app_state.email_service.get_frontend_url()
+                    )))
+                }
                 Err(_) => {
                     // Redirect to frontend with error message
-                    Ok(Redirect::to(&format!("{}/email-verified?success=false&error=database", app_state.email_service.get_frontend_url())))
+                    Ok(Redirect::to(&format!(
+                        "{}/email-verified?success=false&error=database",
+                        app_state.email_service.get_frontend_url()
+                    )))
                 }
             }
-        },
+        }
         Err(_) => {
             // Redirect to frontend with error message
-            Ok(Redirect::to(&format!("{}/email-verified?success=false&error=invalid_token", app_state.email_service.get_frontend_url())))
+            Ok(Redirect::to(&format!(
+                "{}/email-verified?success=false&error=invalid_token",
+                app_state.email_service.get_frontend_url()
+            )))
         }
     }
 }
@@ -279,23 +311,28 @@ pub async fn resend_verification(
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
-    
+
     // Find user by email
     let user: User = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::UserNotFound)?;
-    
+
     // Check if user is already verified
     if user.is_verified {
         return Err(AuthError::UserAlreadyVerified);
     }
-    
+
     // Send verification email
-    app_state.email_service.send_verification_email(user.id, &user.email, &user.username).await?;
-    
-    Ok(Json(ApiResponse::success("Verification email sent".to_string())))
+    app_state
+        .email_service
+        .send_verification_email(user.id, &user.email, &user.username)
+        .await?;
+
+    Ok(Json(ApiResponse::success(
+        "Verification email sent".to_string(),
+    )))
 }
 
 // OAuth DTOs
@@ -318,7 +355,7 @@ pub struct OAuthAuthorizationResponse {
 }
 
 /// Initiate OAuth authorization
-/// 
+///
 /// Redirects the user to the OAuth provider's authorization page.
 #[utoipa::path(
     get,
@@ -342,13 +379,15 @@ pub async fn oauth_authorize(
     // Get authorization URL
     let (auth_url, _state) = oauth_service
         .get_authorization_url(&provider)
-        .map_err(|_| AuthError::ValidationError(vec!["Invalid OAuth provider or configuration".to_string()]))?;
+        .map_err(|_| {
+            AuthError::ValidationError(vec!["Invalid OAuth provider or configuration".to_string()])
+        })?;
 
     Ok(Redirect::temporary(&auth_url))
 }
 
 /// Handle OAuth callback
-/// 
+///
 /// Processes the OAuth callback from the provider and creates/logs in the user.
 #[utoipa::path(
     get,
@@ -368,15 +407,15 @@ pub async fn oauth_callback(
     axum::extract::Path(provider): axum::extract::Path<String>,
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Result<(HeaderMap, Redirect), AuthError> {
-
-    
     // Check for OAuth errors
     if let Some(error) = query.error {
         let error_msg = query.error_description.unwrap_or(error);
         return Ok((
             HeaderMap::new(),
-            Redirect::temporary(&format!("http://localhost:3000/admin/auth/error?message={}", 
-                urlencoding::encode(&error_msg))),
+            Redirect::temporary(&format!(
+                "http://localhost:3000/admin/auth/error?message={}",
+                urlencoding::encode(&error_msg)
+            )),
         ));
     }
 
@@ -386,10 +425,10 @@ pub async fn oauth_callback(
     let code = query.code.ok_or_else(|| {
         AuthError::ValidationError(vec!["Missing authorization code".to_string()])
     })?;
-    
-    let state = query.state.ok_or_else(|| {
-        AuthError::ValidationError(vec!["Missing state parameter".to_string()])
-    })?;
+
+    let state = query
+        .state
+        .ok_or_else(|| AuthError::ValidationError(vec!["Missing state parameter".to_string()]))?;
 
     // Exchange code for access token
     let access_token = oauth_service
@@ -403,7 +442,11 @@ pub async fn oauth_callback(
     let oauth_user = oauth_service
         .get_user_info(&provider, &access_token)
         .await
-        .map_err(|_| AuthError::ValidationError(vec!["Failed to get user info from OAuth provider".to_string()]))?;
+        .map_err(|_| {
+            AuthError::ValidationError(vec![
+                "Failed to get user info from OAuth provider".to_string(),
+            ])
+        })?;
 
     // Get database connection
     let mut conn = app_state
@@ -420,36 +463,37 @@ pub async fn oauth_callback(
         .map_err(|_| AuthError::DatabaseError)?;
 
     let user = if let Some(mut user) = existing_user {
-         // Update last login time and avatar URL
-         let update_user = crate::models::user::UpdateUser {
-             email: None,
-             password_hash: None,
-             username: None,
-             is_verified: None,
-             is_active: None,
-             role: None,
-             failed_login_attempts: None,
-             locked_until: None,
-             last_login_at: Some(Some(chrono::Utc::now().naive_utc())),
-             avatar_url: Some(oauth_user.avatar_url.clone()),
-         };
-         
-         diesel::update(users::table.find(user.id))
-             .set(&update_user)
-             .execute(&mut conn)
-             .map_err(|_| AuthError::DatabaseError)?;
-         
-         // Refresh user data
-         user.last_login_at = Some(chrono::Utc::now().naive_utc());
-         user
+        // Update last login time and avatar URL
+        let update_user = crate::models::user::UpdateUser {
+            email: None,
+            password_hash: None,
+            username: None,
+            is_verified: None,
+            is_active: None,
+            role: None,
+            failed_login_attempts: None,
+            locked_until: None,
+            last_login_at: Some(Some(chrono::Utc::now().naive_utc())),
+            avatar_url: Some(oauth_user.avatar_url.clone()),
+        };
+
+        diesel::update(users::table.find(user.id))
+            .set(&update_user)
+            .execute(&mut conn)
+            .map_err(|_| AuthError::DatabaseError)?;
+
+        // Refresh user data
+        user.last_login_at = Some(chrono::Utc::now().naive_utc());
+        user
     } else {
         // Create new user from OAuth info
-        let username = oauth_user.name
+        let username = oauth_user
+            .name
             .unwrap_or_else(|| format!("{}_{}", provider, &oauth_user.id[..8]));
-        
+
         // Generate a random password since OAuth users don't need one
         let random_password = uuid::Uuid::new_v4().to_string();
-        
+
         let new_user = NewUser::new_with_avatar(
             oauth_user.email.clone(),
             &random_password,
@@ -457,7 +501,8 @@ pub async fn oauth_callback(
             "user".to_string(),
             oauth_user.avatar_url.clone(),
             &app_state.password_pepper,
-        ).map_err(|e| AuthError::ValidationError(vec![e]))?;
+        )
+        .map_err(|e| AuthError::ValidationError(vec![e]))?;
 
         diesel::insert_into(users::table)
             .values(&new_user)
@@ -531,11 +576,17 @@ pub async fn logout(
     // Since we have the claims, we can blacklist using the JTI
     let expires_at = crate::utils::jwt_service::JwtService::timestamp_to_naive_datetime(claims.exp);
     let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::InternalError)?;
-    
+
     app_state
         .auth_state
         .jwt_service
-        .blacklist_token_by_jti(&claims.jti, user_id, "access", expires_at, Some("User logout".to_string()))
+        .blacklist_token_by_jti(
+            &claims.jti,
+            user_id,
+            "access",
+            expires_at,
+            Some("User logout".to_string()),
+        )
         .map_err(|_| AuthError::InternalError)?;
 
     // Try to get refresh token from cookie and blacklist it
@@ -560,7 +611,7 @@ pub async fn logout(
 }
 
 /// User login endpoint with timing attack protection and account lockout
-/// 
+///
 /// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
 /// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
@@ -581,10 +632,13 @@ pub async fn login(
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Extract client IP for rate limiting
-    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>().copied();
+    let connect_info = request
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .copied();
     let client_ip = extract_client_ip(request.headers(), connect_info);
     let rate_limit_key = format!("login:{}", client_ip);
-    
+
     // Rate limiting check
     if !app_state
         .auth_state
@@ -593,9 +647,10 @@ pub async fn login(
     {
         return Err(AuthError::RateLimitExceeded);
     }
-    
+
     // Extract JSON payload from request
-    let Json(payload): Json<LoginRequest> = Json::from_request(request, &app_state).await
+    let Json(payload): Json<LoginRequest> = Json::from_request(request, &app_state)
+        .await
         .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
     // Validate request payload
@@ -717,7 +772,7 @@ pub async fn login(
     // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(), // Empty for security
+        access_token: String::new(),  // Empty for security
         refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state
@@ -729,7 +784,7 @@ pub async fn login(
 }
 
 /// Refresh token endpoint
-/// 
+///
 /// **Note**: Refresh token is read from httpOnly cookies, and new tokens are provided via httpOnly cookies.
 /// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
@@ -747,8 +802,8 @@ pub async fn refresh_token(
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Extract refresh token from cookie
-    let refresh_token = CookieService::extract_refresh_token(request.headers())
-        .ok_or(AuthError::TokenInvalid)?;
+    let refresh_token =
+        CookieService::extract_refresh_token(request.headers()).ok_or(AuthError::TokenInvalid)?;
 
     // Validate refresh token
     let refresh_claims = app_state
@@ -800,7 +855,7 @@ pub async fn refresh_token(
     // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(), // Empty for security
+        access_token: String::new(),  // Empty for security
         refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state
@@ -850,7 +905,7 @@ pub async fn me(
 }
 
 /// Admin registration endpoint - allows creating first admin or additional admins
-/// 
+///
 /// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
 /// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
@@ -870,10 +925,13 @@ pub async fn register_admin(
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
     // Extract client IP for rate limiting
-    let connect_info = request.extensions().get::<ConnectInfo<SocketAddr>>().copied();
+    let connect_info = request
+        .extensions()
+        .get::<ConnectInfo<SocketAddr>>()
+        .copied();
     let client_ip = extract_client_ip(request.headers(), connect_info);
     let rate_limit_key = format!("register_admin:{}", client_ip);
-    
+
     // Rate limiting check
     if !app_state
         .auth_state
@@ -882,9 +940,10 @@ pub async fn register_admin(
     {
         return Err(AuthError::RateLimitExceeded);
     }
-    
+
     // Extract JSON payload from request
-    let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state).await
+    let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
+        .await
         .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
     // Validate request payload
@@ -987,7 +1046,7 @@ pub async fn register_admin(
     // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(), // Empty for security
+        access_token: String::new(),  // Empty for security
         refresh_token: String::new(), // Empty for security
         expires_in: app_state
             .auth_state

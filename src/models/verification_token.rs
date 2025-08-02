@@ -33,12 +33,7 @@ pub struct NewVerificationToken {
 }
 
 impl NewVerificationToken {
-    pub fn new(
-        token: String,
-        user_id: i32,
-        email: String,
-        expires_at: NaiveDateTime,
-    ) -> Self {
+    pub fn new(token: String, user_id: i32, email: String, expires_at: NaiveDateTime) -> Self {
         Self {
             token,
             user_id,

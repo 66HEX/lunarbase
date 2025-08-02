@@ -218,7 +218,7 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
 
                     // Get real pool state information
                     let pool_state = state.db_pool.state();
-                    
+
                     DatabaseHealth {
                         status: "healthy".to_string(),
                         connection_pool_size: pool_state.connections + pool_state.idle_connections,

@@ -2,18 +2,18 @@ use axum::{
     Router, middleware,
     routing::{delete, get, post, put},
 };
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use std::net::SocketAddr;
 use tokio::signal;
 use tracing::{info, warn};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use diesel_migrations::{embed_migrations, EmbeddedMigrations, MigrationHarness};
 
 use lunarbase::database::create_pool;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 use lunarbase::handlers::{
-    admin::{serve_admin_assets},
+    admin::serve_admin_assets,
     avatar_proxy::proxy_avatar,
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
@@ -21,8 +21,9 @@ use lunarbase::handlers::{
         list_collections, list_records, update_collection, update_record,
     },
     health::{health_check, public_health_check, simple_health_check},
-    login, logout, me, oauth_authorize, oauth_callback, verify_email, verify_email_get, resend_verification,
+    login, logout, me,
     metrics::{get_metrics, get_metrics_summary},
+    oauth_authorize, oauth_callback,
     ownership::{
         check_record_ownership, get_my_owned_records, get_ownership_stats, get_user_owned_records,
         transfer_record_ownership,
@@ -36,9 +37,13 @@ use lunarbase::handlers::{
         get_record_permissions, list_record_permissions, remove_record_permission,
         set_record_permission,
     },
-    refresh_token, register, register_admin,
+    refresh_token, register, register_admin, resend_verification,
     users::{create_user, delete_user, get_user, list_users, unlock_user, update_user},
-    websocket::{websocket_handler, websocket_stats, websocket_status, get_connections, disconnect_connection, broadcast_message, get_activity},
+    verify_email, verify_email_get,
+    websocket::{
+        broadcast_message, disconnect_connection, get_activity, get_connections, websocket_handler,
+        websocket_stats, websocket_status,
+    },
 };
 use lunarbase::middleware::{add_middleware, auth_middleware, setup_logging};
 use lunarbase::{ApiDoc, AppState, Config};
@@ -66,10 +71,20 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Application state creation
-    let app_state = AppState::new(pool, &config.jwt_secret, config.password_pepper.clone(), &config).await?;
+    let app_state = AppState::new(
+        pool,
+        &config.jwt_secret,
+        config.password_pepper.clone(),
+        &config,
+    )
+    .await?;
 
     // Automatic admin creation from environment variables
-    if let Err(e) = app_state.admin_service.ensure_admin_exists(&config, &app_state.password_pepper).await {
+    if let Err(e) = app_state
+        .admin_service
+        .ensure_admin_exists(&config, &app_state.password_pepper)
+        .await
+    {
         warn!("Failed to create admin from environment variables: {}", e);
     }
 
@@ -213,7 +228,10 @@ fn create_router(app_state: AppState) -> Router {
         // WebSocket admin endpoints
         .route("/ws/stats", get(websocket_stats))
         .route("/ws/connections", get(get_connections))
-        .route("/ws/connections/{connection_id}", delete(disconnect_connection))
+        .route(
+            "/ws/connections/{connection_id}",
+            delete(disconnect_connection),
+        )
         .route("/ws/broadcast", post(broadcast_message))
         .route("/ws/activity", get(get_activity))
         .layer(middleware::from_fn_with_state(

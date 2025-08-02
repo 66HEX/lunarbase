@@ -64,25 +64,30 @@ impl S3Service {
         }
 
         let config = config_loader.load().await;
-        
+
         // Create S3 client with LocalStack-specific configuration
         let mut s3_config_builder = aws_sdk_s3::config::Builder::from(&config);
-        
+
         // For LocalStack, we need to use path-style addressing
         if let Some(ref _endpoint) = endpoint_url {
             s3_config_builder = s3_config_builder.force_path_style(true);
         }
-        
+
         let s3_config = s3_config_builder.build();
         let client = Client::from_conf(s3_config);
 
         // Test connection by checking if bucket exists
         match client.head_bucket().bucket(&bucket_name).send().await {
-            Ok(_) => {},
+            Ok(_) => {}
             Err(e) => {
-                tracing::warn!("Could not access S3 bucket '{}': {}. File upload will be disabled.", bucket_name, e);
+                tracing::warn!(
+                    "Could not access S3 bucket '{}': {}. File upload will be disabled.",
+                    bucket_name,
+                    e
+                );
                 return Err(S3ServiceError::ConfigError(format!(
-                    "Cannot access bucket '{}': {}", bucket_name, e
+                    "Cannot access bucket '{}': {}",
+                    bucket_name, e
                 )));
             }
         }
@@ -105,7 +110,7 @@ impl S3Service {
             .extension()
             .and_then(|ext| ext.to_str())
             .unwrap_or("");
-        
+
         let s3_key = if file_extension.is_empty() {
             format!("uploads/{}", file_id)
         } else {
@@ -127,10 +132,7 @@ impl S3Service {
             .await
             .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
 
-        let file_url = format!(
-            "https://{}.s3.amazonaws.com/{}",
-            self.bucket_name, s3_key
-        );
+        let file_url = format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key);
 
         tracing::info!(
             "Successfully uploaded file '{}' to S3 with key '{}'",
@@ -156,7 +158,10 @@ impl S3Service {
         let mut uploaded_keys = Vec::new();
 
         for (file_data, filename, content_type) in files {
-            match self.upload_file(file_data, filename.clone(), content_type).await {
+            match self
+                .upload_file(file_data, filename.clone(), content_type)
+                .await
+            {
                 Ok(result) => {
                     uploaded_keys.push(result.file_url.clone());
                     results.push(result);
@@ -204,16 +209,20 @@ impl S3Service {
         // https://bucket.s3.amazonaws.com/uploads/file.jpg
         // https://s3.amazonaws.com/bucket/uploads/file.jpg
         // http://localhost:4566/bucket/uploads/file.jpg (LocalStack)
-        
+
         if file_url.contains(&format!("{}.s3.amazonaws.com", self.bucket_name)) {
             // Format: https://bucket.s3.amazonaws.com/key
-            let parts: Vec<&str> = file_url.split(&format!("{}.s3.amazonaws.com/", self.bucket_name)).collect();
+            let parts: Vec<&str> = file_url
+                .split(&format!("{}.s3.amazonaws.com/", self.bucket_name))
+                .collect();
             if parts.len() == 2 {
                 return Ok(parts[1].to_string());
             }
         } else if file_url.contains("s3.amazonaws.com") {
             // Format: https://s3.amazonaws.com/bucket/key
-            let parts: Vec<&str> = file_url.split(&format!("s3.amazonaws.com/{}/", self.bucket_name)).collect();
+            let parts: Vec<&str> = file_url
+                .split(&format!("s3.amazonaws.com/{}/", self.bucket_name))
+                .collect();
             if parts.len() == 2 {
                 return Ok(parts[1].to_string());
             }
@@ -275,7 +284,10 @@ pub async fn create_s3_service_from_config(
             Ok(Some(service))
         }
         Err(e) => {
-            tracing::warn!("Failed to initialize S3Service: {}. File upload will be disabled.", e);
+            tracing::warn!(
+                "Failed to initialize S3Service: {}. File upload will be disabled.",
+                e
+            );
             Ok(None)
         }
     }

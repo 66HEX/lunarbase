@@ -30,8 +30,10 @@ const navigation = [
 
 const getProxyUrl = (originalUrl: string): string => {
 	// Check if it's an external URL that needs proxying
-	if (originalUrl.startsWith('https://lh3.googleusercontent.com') || 
-		originalUrl.startsWith('https://avatars.githubusercontent.com')) {
+	if (
+		originalUrl.startsWith("https://lh3.googleusercontent.com") ||
+		originalUrl.startsWith("https://avatars.githubusercontent.com")
+	) {
 		const proxyUrl = `/api/avatar-proxy?url=${encodeURIComponent(originalUrl)}`;
 		return proxyUrl;
 	}
@@ -225,7 +227,9 @@ export function Sidebar() {
 						<div className="flex items-center space-x-3 mb-3">
 							<Avatar
 								size="md"
-								src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
+								src={
+									user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined
+								}
 								fallback={
 									user?.username
 										? user.username.substring(0, 2).toUpperCase()

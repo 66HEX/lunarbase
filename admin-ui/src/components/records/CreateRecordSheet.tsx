@@ -52,7 +52,9 @@ export function CreateRecordSheet({
 	const [submitting, setSubmitting] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [formData, setFormData] = useState<RecordData>({});
-	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>({});
+	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>(
+		{},
+	);
 	const { toast } = useToast();
 	const { data: collectionsData } = useCollections();
 
@@ -107,9 +109,10 @@ export function CreateRecordSheet({
 		collection.schema?.fields?.forEach((field) => {
 			if (field.name === "id") return;
 
-			const value = field.field_type === "file" 
-				? fileData[field.name] 
-				: formData[field.name];
+			const value =
+				field.field_type === "file"
+					? fileData[field.name]
+					: formData[field.name];
 			const error = validateFieldValue(field, value);
 			if (error) {
 				newErrors[field.name] = error;
@@ -133,36 +136,34 @@ export function CreateRecordSheet({
 		setSubmitting(true);
 
 		try {
+			const submitData: RecordData = {};
 
-				const submitData: RecordData = {};
+			const fieldsToProcess =
+				collection.schema?.fields?.filter((field) => field.name !== "id") || [];
 
-				const fieldsToProcess =
-					collection.schema?.fields?.filter((field) => field.name !== "id") || [];
+			fieldsToProcess.forEach((field) => {
+				if (field.field_type === "file") {
+					const files = fileData[field.name] || [];
+					const processedValue = processFieldValue(
+						field.field_type,
+						files,
+						field.required,
+					);
+					submitData[field.name] = processedValue;
+				} else {
+					const value = formData[field.name];
+					submitData[field.name] = processFieldValue(
+						field.field_type,
+						value,
+						field.required,
+					);
+				}
+			});
 
-
-				fieldsToProcess.forEach((field) => {
-					if (field.field_type === "file") {
-						const files = fileData[field.name] || [];
-						const processedValue = processFieldValue(
-							field.field_type,
-							files,
-							field.required,
-						);
-						submitData[field.name] = processedValue;
-					} else {
-						const value = formData[field.name];
-						submitData[field.name] = processFieldValue(
-							field.field_type,
-							value,
-							field.required,
-						);
-					}
-				});
-
-				await onSubmit(submitData);
-				onOpenChange(false);
-				initializeFormData();
-				setFileData({});
+			await onSubmit(submitData);
+			onOpenChange(false);
+			initializeFormData();
+			setFileData({});
 		} catch (error) {
 			console.error("Record creation error:", error);
 		} finally {

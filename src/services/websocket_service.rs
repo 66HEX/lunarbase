@@ -1,12 +1,12 @@
 use axum::extract::ws::{Message, WebSocket};
+use chrono::{DateTime, Utc};
 use futures_util::{SinkExt, StreamExt};
+use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast, mpsc};
 use tracing::{debug, error, info, warn};
 use uuid::Uuid;
-use chrono::{DateTime, Utc};
-use serde_json::json;
 
 use crate::models::{
     ClientConnection, EventMessage, PendingEvent, Permission, SubscriptionConfirmed,
@@ -22,7 +22,16 @@ pub type SubscriptionId = String;
 pub struct WebSocketService {
     // Active connections: ConnectionId -> (sender, client_info, connected_at)
     connections: Arc<
-        RwLock<HashMap<ConnectionId, (mpsc::UnboundedSender<WebSocketMessage>, ClientConnection, DateTime<Utc>)>>,
+        RwLock<
+            HashMap<
+                ConnectionId,
+                (
+                    mpsc::UnboundedSender<WebSocketMessage>,
+                    ClientConnection,
+                    DateTime<Utc>,
+                ),
+            >,
+        >,
     >,
     // Event broadcaster
     event_sender: broadcast::Sender<PendingEvent>,
@@ -68,20 +77,21 @@ impl WebSocketService {
         let (tx, mut rx) = mpsc::unbounded_channel::<WebSocketMessage>();
 
         let connected_at = Utc::now();
-        
+
         // Store connection
         {
             let mut connections = self.connections.write().await;
             connections.insert(connection_id, (tx, client_connection.clone(), connected_at));
         }
-        
+
         // Log connection activity
         self.log_activity(
             connection_id,
             user_id,
             "connected".to_string(),
             Some(format!("User ID: {:?}", user_id)),
-        ).await;
+        )
+        .await;
 
         // Subscribe to events
         let mut event_receiver = self.event_sender.subscribe();
@@ -131,11 +141,14 @@ impl WebSocketService {
                                 use crate::models::User;
                                 use crate::schema::users;
                                 use diesel::prelude::*;
-                                let user =
-                                    match users::table.find(sub_user_id).select(User::as_select()).first::<User>(&mut conn) {
-                                        Ok(user) => user,
-                                        Err(_) => continue,
-                                    };
+                                let user = match users::table
+                                    .find(sub_user_id)
+                                    .select(User::as_select())
+                                    .first::<User>(&mut conn)
+                                {
+                                    Ok(user) => user,
+                                    Err(_) => continue,
+                                };
 
                                 // Get collection ID
                                 use crate::models::Collection;
@@ -208,13 +221,9 @@ impl WebSocketService {
         }
 
         // Log disconnection activity
-        self.log_activity(
-            connection_id,
-            user_id,
-            "disconnected".to_string(),
-            None,
-        ).await;
-        
+        self.log_activity(connection_id, user_id, "disconnected".to_string(), None)
+            .await;
+
         // Cleanup connection
         {
             let mut connections = self.connections.write().await;
@@ -411,27 +420,35 @@ impl WebSocketService {
     }
 
     /// Get detailed connection information
-    pub async fn get_connection_details(&self) -> Vec<crate::handlers::websocket::ConnectionDetails> {
+    pub async fn get_connection_details(
+        &self,
+    ) -> Vec<crate::handlers::websocket::ConnectionDetails> {
         use crate::handlers::websocket::{ConnectionDetails, SubscriptionInfo};
-        
+
         let connections = self.connections.read().await;
         let mut details = Vec::new();
 
         for (conn_id, (_, client, connected_at)) in connections.iter() {
-            let subscriptions = client.subscriptions.iter().map(|(sub_id, sub_data)| {
-                let subscription_type = match &sub_data.subscription_type {
-                    crate::models::SubscriptionType::Collection => "collection".to_string(),
-                    crate::models::SubscriptionType::Record { record_id } => format!("record:{}", record_id),
-                    crate::models::SubscriptionType::Query { .. } => "query".to_string(),
-                };
-                
-                SubscriptionInfo {
-                    subscription_id: sub_id.clone(),
-                    collection_name: sub_data.collection_name.clone(),
-                    subscription_type,
-                    filters: sub_data.filters.clone(),
-                }
-            }).collect();
+            let subscriptions = client
+                .subscriptions
+                .iter()
+                .map(|(sub_id, sub_data)| {
+                    let subscription_type = match &sub_data.subscription_type {
+                        crate::models::SubscriptionType::Collection => "collection".to_string(),
+                        crate::models::SubscriptionType::Record { record_id } => {
+                            format!("record:{}", record_id)
+                        }
+                        crate::models::SubscriptionType::Query { .. } => "query".to_string(),
+                    };
+
+                    SubscriptionInfo {
+                        subscription_id: sub_id.clone(),
+                        collection_name: sub_data.collection_name.clone(),
+                        subscription_type,
+                        filters: sub_data.filters.clone(),
+                    }
+                })
+                .collect();
 
             details.push(ConnectionDetails {
                 connection_id: conn_id.to_string(),
@@ -447,7 +464,7 @@ impl WebSocketService {
     /// Disconnect a specific connection
     pub async fn disconnect_connection(&self, connection_id: ConnectionId) -> bool {
         let mut connections = self.connections.write().await;
-        
+
         if let Some((sender, client, _)) = connections.get(&connection_id) {
             // Log disconnection activity
             self.log_activity(
@@ -455,8 +472,9 @@ impl WebSocketService {
                 client.user_id,
                 "force_disconnected".to_string(),
                 Some("Disconnected by admin".to_string()),
-            ).await;
-            
+            )
+            .await;
+
             // Send close message to trigger cleanup
             let _ = sender.send(crate::models::WebSocketMessage::Event(
                 crate::models::EventMessage {
@@ -466,9 +484,9 @@ impl WebSocketService {
                         record_id: "disconnect".to_string(),
                         record: json!({"reason": "disconnected_by_admin"}),
                     },
-                }
+                },
             ));
-            
+
             connections.remove(&connection_id);
             true
         } else {
@@ -499,17 +517,18 @@ impl WebSocketService {
             }
 
             // Filter by target collections if specified
-             if should_send {
-                 if let Some(target_collections) = target_collections {
-                     should_send = client.subscriptions.values().any(|sub| {
-                         target_collections.contains(&sub.collection_name)
-                     });
-                 }
-             }
+            if should_send {
+                if let Some(target_collections) = target_collections {
+                    should_send = client
+                        .subscriptions
+                        .values()
+                        .any(|sub| target_collections.contains(&sub.collection_name));
+                }
+            }
 
             if should_send {
-                let admin_message = crate::models::WebSocketMessage::Event(
-                    crate::models::EventMessage {
+                let admin_message =
+                    crate::models::WebSocketMessage::Event(crate::models::EventMessage {
                         subscription_id: "admin_broadcast".to_string(),
                         collection_name: "system".to_string(),
                         event: crate::models::RecordEvent::Created {
@@ -520,19 +539,19 @@ impl WebSocketService {
                                 "timestamp": Utc::now().to_rfc3339()
                             }),
                         },
-                    }
-                );
+                    });
 
                 if sender.send(admin_message).is_ok() {
                     sent_count += 1;
-                    
+
                     // Log broadcast activity
                     self.log_activity(
                         *conn_id,
                         client.user_id,
                         "admin_message_received".to_string(),
                         Some(format!("Message: {}", message)),
-                    ).await;
+                    )
+                    .await;
                 }
             }
         }
@@ -541,12 +560,16 @@ impl WebSocketService {
     }
 
     /// Get activity log
-    pub async fn get_activity_log(&self, limit: usize, offset: usize) -> crate::handlers::websocket::ActivityResponse {
+    pub async fn get_activity_log(
+        &self,
+        limit: usize,
+        offset: usize,
+    ) -> crate::handlers::websocket::ActivityResponse {
         use crate::handlers::websocket::{ActivityEntry, ActivityResponse};
-        
+
         let activity_log = self.activity_log.read().await;
         let total_count = activity_log.len();
-        
+
         let activities = activity_log
             .iter()
             .rev() // Most recent first
@@ -576,7 +599,7 @@ impl WebSocketService {
         details: Option<String>,
     ) {
         let mut activity_log = self.activity_log.write().await;
-        
+
         let entry = ActivityLogEntry {
             timestamp: Utc::now(),
             connection_id,
@@ -584,9 +607,9 @@ impl WebSocketService {
             action,
             details,
         };
-        
+
         activity_log.push(entry);
-        
+
         // Keep only last 1000 entries
         if activity_log.len() > 1000 {
             activity_log.remove(0);

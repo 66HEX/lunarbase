@@ -1,4 +1,8 @@
-import { createFileRoute, useNavigate, useSearch } from "@tanstack/react-router";
+import {
+	createFileRoute,
+	useNavigate,
+	useSearch,
+} from "@tanstack/react-router";
 import { useEffect } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Alert, AlertDescription } from "@/components/ui/alert";
@@ -53,7 +57,7 @@ export default function AuthErrorComponent() {
 							<p className="text-sm text-nocta-600 dark:text-nocta-400">
 								You will be redirected to the login page in 10 seconds.
 							</p>
-							<Button 
+							<Button
 								onClick={() => navigate({ to: "/login" })}
 								className="w-full"
 							>
@@ -67,6 +71,6 @@ export default function AuthErrorComponent() {
 	);
 }
 
-export const Route = createFileRoute("/auth/error")({ 
+export const Route = createFileRoute("/auth/error")({
 	component: AuthErrorComponent,
 });

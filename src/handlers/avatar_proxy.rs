@@ -27,12 +27,12 @@ pub struct AvatarQuery {
 )]
 pub async fn proxy_avatar(Query(params): Query<AvatarQuery>) -> Result<Response, StatusCode> {
     let url = &params.url;
-    
+
     // Validate that the URL is from allowed domains
     if !is_allowed_avatar_domain(url) {
         return Err(StatusCode::FORBIDDEN);
     }
-    
+
     // Fetch the image from the external URL
     let client = reqwest::Client::new();
     let response = client
@@ -41,29 +41,29 @@ pub async fn proxy_avatar(Query(params): Query<AvatarQuery>) -> Result<Response,
         .send()
         .await
         .map_err(|_| StatusCode::BAD_GATEWAY)?;
-    
+
     if !response.status().is_success() {
         return Err(StatusCode::NOT_FOUND);
     }
-    
+
     let content_type = response
         .headers()
         .get("content-type")
         .and_then(|ct| ct.to_str().ok())
         .unwrap_or("image/jpeg")
         .to_string();
-    
+
     let bytes = response
         .bytes()
         .await
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)?;
-    
+
     let response_builder = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", content_type)
         .header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
         .header("Access-Control-Allow-Origin", "*");
-    
+
     response_builder
         .body(bytes.into())
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
@@ -76,6 +76,6 @@ fn is_allowed_avatar_domain(url: &str) -> bool {
         "graph.facebook.com",
         "pbs.twimg.com", // Twitter avatars
     ];
-    
+
     allowed_domains.iter().any(|domain| url.contains(domain))
 }

@@ -1,8 +1,8 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect } from "react";
-import { useAuthStore } from "@/stores/auth-persist.store";
-import { Spinner } from "@/components/ui/spinner";
 import LunarLogo from "@/assets/lunar.svg";
+import { Spinner } from "@/components/ui/spinner";
+import { useAuthStore } from "@/stores/auth-persist.store";
 
 export default function AuthSuccessComponent() {
 	const navigate = useNavigate();
@@ -70,6 +70,6 @@ export default function AuthSuccessComponent() {
 	);
 }
 
-export const Route = createFileRoute("/auth/success")({ 
+export const Route = createFileRoute("/auth/success")({
 	component: AuthSuccessComponent,
 });

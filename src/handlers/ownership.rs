@@ -261,16 +261,25 @@ pub async fn check_record_ownership(
         .get_ownership_permissions(&user, &record)?;
 
     // Extract owner_id from record data
-    let owner_id = record.data.get("owner_id")
+    let owner_id = record
+        .data
+        .get("owner_id")
         .and_then(|v| v.as_i64())
-        .or_else(|| record.data.get("owner_id")
-            .and_then(|v| v.as_str())
-            .and_then(|s| s.parse::<i64>().ok()))
-        .or_else(|| record.data.get("author_id")
-            .and_then(|v| v.as_i64()))
-        .or_else(|| record.data.get("author_id")
-            .and_then(|v| v.as_str())
-            .and_then(|s| s.parse::<i64>().ok()));
+        .or_else(|| {
+            record
+                .data
+                .get("owner_id")
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<i64>().ok())
+        })
+        .or_else(|| record.data.get("author_id").and_then(|v| v.as_i64()))
+        .or_else(|| {
+            record
+                .data
+                .get("author_id")
+                .and_then(|v| v.as_str())
+                .and_then(|s| s.parse::<i64>().ok())
+        });
 
     Ok(Json(ApiResponse::success(json!({
         "collection_name": collection_name,
