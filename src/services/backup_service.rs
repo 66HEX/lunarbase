@@ -29,6 +29,8 @@ pub struct BackupConfig {
     pub retention_days: u32,
     pub compression_enabled: bool,
     pub backup_prefix: String,
+    /// Minimum backup size in bytes to consider valid before cleaning up old backups
+    pub min_backup_size_bytes: u64,
 }
 
 #[derive(Debug)]
@@ -64,6 +66,7 @@ impl Default for BackupConfig {
             retention_days: 30,
             compression_enabled: true,
             backup_prefix: "lunarbase-backup".to_string(),
+            min_backup_size_bytes: 1024, // 1KB minimum
         }
     }
 }
@@ -76,6 +79,7 @@ impl BackupConfig {
             retention_days: config.backup_retention_days,
             compression_enabled: config.backup_compression,
             backup_prefix: config.backup_prefix.clone(),
+            min_backup_size_bytes: config.backup_min_size_bytes,
         }
     }
 }
@@ -163,7 +167,7 @@ impl BackupService {
                         
                         // Run cleanup after successful backup
                         info!("Running backup cleanup...");
-                        service.cleanup_old_backups().await;
+                        service.cleanup_old_backups(result.file_size).await;
                     }
                     Err(e) => {
                         error!("Scheduled backup failed: {}", e);
@@ -278,9 +282,9 @@ impl BackupService {
             warn!("Failed to remove temporary backup file: {}", e);
         }
         
-        // Clean up old backups
+        // Clean up old backups only if new backup was successfully uploaded
         if s3_url.is_some() {
-            self.cleanup_old_backups().await;
+            self.cleanup_old_backups(file_size).await;
         }
         
         Ok(BackupResult {
@@ -317,7 +321,7 @@ impl BackupService {
             .map_err(|e| BackupError::CompressionError(e.to_string()))
     }
     
-    async fn cleanup_old_backups(&self) {
+    async fn cleanup_old_backups(&self, new_backup_size: u64) {
         let s3_service = match &self.s3_service {
             Some(service) => service,
             None => {
@@ -326,7 +330,20 @@ impl BackupService {
             }
         };
 
-        info!("Starting cleanup of backups older than {} days", self.config.retention_days);
+        // Check if new backup has a sensible size before cleaning up old backups
+        // Skip size check if new_backup_size is 0 (manual cleanup)
+        if new_backup_size > 0 && new_backup_size < self.config.min_backup_size_bytes {
+            warn!(
+                "New backup size ({} bytes) is below minimum threshold ({} bytes). Skipping cleanup to preserve old backups.",
+                new_backup_size, self.config.min_backup_size_bytes
+            );
+            return;
+        }
+        
+        info!(
+            "Starting cleanup of backups older than {} days (new backup size: {} bytes)", 
+            self.config.retention_days, new_backup_size
+        );
 
         // Calculate cutoff date
         let cutoff_date = Utc::now() - Duration::days(self.config.retention_days as i64);
@@ -397,7 +414,7 @@ impl BackupService {
         
         // Run cleanup after successful manual backup
         info!("Running backup cleanup after manual backup...");
-        self.cleanup_old_backups().await;
+        self.cleanup_old_backups(result.file_size).await;
         
         Ok(result)
     }
@@ -405,7 +422,8 @@ impl BackupService {
     /// Manually trigger cleanup of old backups
     pub async fn manual_cleanup(&self) {
         info!("Manual cleanup requested");
-        self.cleanup_old_backups().await;
+        // For manual cleanup, bypass size check by passing 0 (which will skip the check)
+        self.cleanup_old_backups(0).await;
     }
     
     pub fn get_config(&self) -> &BackupConfig {

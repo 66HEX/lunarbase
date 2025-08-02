@@ -33,6 +33,7 @@ pub struct Config {
     pub backup_retention_days: u32,
     pub backup_compression: bool,
     pub backup_prefix: String,
+    pub backup_min_size_bytes: u64,
 }
 
 impl Config {
@@ -87,6 +88,10 @@ impl Config {
                 .unwrap_or(true),
             backup_prefix: std::env::var("BACKUP_PREFIX")
                 .unwrap_or_else(|_| "lunarbase-backup".to_string()),
+            backup_min_size_bytes: std::env::var("BACKUP_MIN_SIZE_BYTES")
+                .unwrap_or_else(|_| "1024".to_string())
+                .parse()
+                .unwrap_or(1024),
         };
 
         Ok(config)
