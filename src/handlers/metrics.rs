@@ -49,6 +49,14 @@ pub struct MetricsSummary {
     pub active_websocket_connections: f64,
     /// Number of active database connections
     pub database_connections_active: f64,
+    /// Total number of backup operations
+    pub backup_operations_total: f64,
+    /// Total number of backup failures
+    pub backup_failures_total: f64,
+    /// Total number of backup cleanup operations
+    pub backup_cleanup_operations_total: f64,
+    /// Total number of backup files deleted
+    pub backup_files_deleted_total: f64,
     /// Timestamp when metrics were collected
     pub timestamp: String,
 }
@@ -67,6 +75,10 @@ pub struct MetricsSummary {
                 "http_requests_total": 1234.0,
                 "active_websocket_connections": 5.0,
                 "database_connections_active": 10.0,
+                "backup_operations_total": 42.0,
+                "backup_failures_total": 2.0,
+                "backup_cleanup_operations_total": 15.0,
+                "backup_files_deleted_total": 128.0,
                 "timestamp": "2024-01-15T10:30:00Z"
             })
         ),
@@ -94,10 +106,33 @@ pub async fn get_metrics_summary(
     let active_connections = app_state.metrics_state.active_connections.get();
     let db_connections = app_state.metrics_state.database_connections.get();
 
+    // Get backup metrics from custom metrics
+    let custom_metrics = app_state.metrics_state.custom_metrics.read().await;
+    let backup_operations = custom_metrics
+        .get("backup_operations_total")
+        .map(|c| c.get())
+        .unwrap_or(0.0);
+    let backup_failures = custom_metrics
+        .get("backup_failures_total")
+        .map(|c| c.get())
+        .unwrap_or(0.0);
+    let backup_cleanup_operations = custom_metrics
+        .get("backup_cleanup_operations_total")
+        .map(|c| c.get())
+        .unwrap_or(0.0);
+    let backup_files_deleted = custom_metrics
+        .get("backup_files_deleted_total")
+        .map(|c| c.get())
+        .unwrap_or(0.0);
+
     let summary = MetricsSummary {
         http_requests_total: request_count,
         active_websocket_connections: active_connections,
         database_connections_active: db_connections,
+        backup_operations_total: backup_operations,
+        backup_failures_total: backup_failures,
+        backup_cleanup_operations_total: backup_cleanup_operations,
+        backup_files_deleted_total: backup_files_deleted,
         timestamp: chrono::Utc::now().to_rfc3339(),
     };
 

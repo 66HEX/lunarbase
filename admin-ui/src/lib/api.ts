@@ -12,6 +12,7 @@ import type {
 	HealthResponse,
 	LoginRequest,
 	LoginResponse,
+	MetricsSummary,
 	OAuthAuthorizationResponse,
 	OAuthProvider,
 	OwnedRecordsResponse,
@@ -687,18 +688,8 @@ export const metricsApi = {
 		}
 		return await response.text();
 	},
-	getSummary: async (): Promise<{
-		http_requests_total: number;
-		active_websocket_connections: number;
-		database_connections_active: number;
-		timestamp: string;
-	}> => {
-		const response = await apiRequest<{
-			http_requests_total: number;
-			active_websocket_connections: number;
-			database_connections_active: number;
-			timestamp: string;
-		}>("/metrics/summary");
+	getSummary: async (): Promise<MetricsSummary> => {
+		const response = await apiRequest<MetricsSummary>("/metrics/summary");
 		return response;
 	},
 };

@@ -11,6 +11,7 @@ use uuid::Uuid;
 use crate::database::DatabasePool;
 use crate::services::S3Service;
 use crate::config::Config;
+use crate::middleware::MetricsState;
 
 #[derive(Clone)]
 pub struct BackupService {
@@ -18,6 +19,7 @@ pub struct BackupService {
     s3_service: Option<Arc<S3Service>>,
     scheduler: Arc<JobScheduler>,
     config: BackupConfig,
+    metrics_state: Option<Arc<MetricsState>>,
 }
 
 #[derive(Clone, Debug)]
@@ -83,6 +85,7 @@ impl BackupService {
         db_pool: DatabasePool,
         s3_service: Option<Arc<S3Service>>,
         config: &Config,
+        metrics_state: Option<Arc<MetricsState>>,
     ) -> Result<Self, BackupError> {
         let scheduler = JobScheduler::new()
             .await
@@ -95,7 +98,43 @@ impl BackupService {
             s3_service,
             scheduler: Arc::new(scheduler),
             config: backup_config,
+            metrics_state,
         };
+        
+        // Initialize backup metrics to ensure they appear in Prometheus metrics endpoint
+        if let Some(ref metrics) = service.metrics_state {
+            // Initialize all backup metrics with 0 values
+            let _ = metrics.increment_custom_metric(
+                "backup_operations_total",
+                "Total number of backup operations"
+            ).await;
+            let _ = metrics.increment_custom_metric(
+                "backup_failures_total",
+                "Total number of backup failures"
+            ).await;
+            let _ = metrics.increment_custom_metric(
+                "backup_cleanup_operations_total",
+                "Total number of backup cleanup operations"
+            ).await;
+            let _ = metrics.increment_custom_metric(
+                "backup_files_deleted_total",
+                "Total number of backup files deleted"
+            ).await;
+            
+            // Reset all metrics back to 0 to initialize them properly
+            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_operations_total").cloned() {
+                custom_metrics.reset();
+            }
+            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_failures_total").cloned() {
+                custom_metrics.reset();
+            }
+            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_cleanup_operations_total").cloned() {
+                custom_metrics.reset();
+            }
+            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_files_deleted_total").cloned() {
+                custom_metrics.reset();
+            }
+        }
         
         if service.config.enabled {
             service.setup_scheduled_backup().await?;
@@ -200,10 +239,32 @@ impl BackupService {
             ).await {
                 Ok(upload_result) => {
                     info!("Backup uploaded to S3: {}", upload_result.file_url);
+                    
+                    // Log backup success metric
+                    if let Some(ref metrics) = self.metrics_state {
+                        if let Err(e) = metrics.increment_custom_metric(
+                            "backup_operations_total",
+                            "Total number of backup operations"
+                        ).await {
+                            warn!("Failed to update backup metrics: {}", e);
+                        }
+                    }
+                    
                     Some(upload_result.file_url)
                 }
                 Err(e) => {
                     error!("Failed to upload backup to S3: {}", e);
+                    
+                    // Log backup failure metric
+                    if let Some(ref metrics) = self.metrics_state {
+                        if let Err(e) = metrics.increment_custom_metric(
+                            "backup_failures_total",
+                            "Total number of backup failures"
+                        ).await {
+                            warn!("Failed to update backup failure metrics: {}", e);
+                        }
+                    }
+                    
                     None
                 }
             }
@@ -302,6 +363,27 @@ impl BackupService {
                     "Backup cleanup completed. Deleted: {}, Errors: {}", 
                     deleted_count, error_count
                 );
+                
+                // Log cleanup metrics
+                if let Some(ref metrics) = self.metrics_state {
+                    if let Err(e) = metrics.increment_custom_metric(
+                        "backup_cleanup_operations_total",
+                        "Total number of backup cleanup operations"
+                    ).await {
+                        warn!("Failed to update cleanup metrics: {}", e);
+                    }
+                    
+                    // Log deleted backups count as a custom metric
+                    for _ in 0..deleted_count {
+                        if let Err(e) = metrics.increment_custom_metric(
+                            "backup_files_deleted_total",
+                            "Total number of backup files deleted"
+                        ).await {
+                            warn!("Failed to update deleted files metrics: {}", e);
+                            break;
+                        }
+                    }
+                }
             }
             Err(e) => {
                 error!("Failed to list backup objects: {}", e);
@@ -356,19 +438,20 @@ pub async fn create_backup_service_from_config(
     db_pool: DatabasePool,
     s3_service: Option<Arc<S3Service>>,
     config: &Config,
+    metrics_state: Option<Arc<MetricsState>>,
 ) -> Result<Option<BackupService>, BackupError> {
     let backup_config = BackupConfig::from_config(config);
     
     if !backup_config.enabled {
-        info!("Backup service disabled in configuration");
+        info!("Backup service is disabled");
         return Ok(None);
     }
     
     if s3_service.is_none() {
-        warn!("Backup service enabled but S3 service not available");
+        warn!("S3 service not configured, backup service will be disabled");
         return Ok(None);
     }
     
-    let service = BackupService::new(db_pool, s3_service, config).await?;
+    let service = BackupService::new(db_pool, s3_service, config, metrics_state).await?;
     Ok(Some(service))
 }

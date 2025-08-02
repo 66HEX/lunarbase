@@ -284,7 +284,8 @@ impl AppState {
         let backup_service = create_backup_service_from_config(
             db_pool.clone(),
             s3_service_option.map(Arc::new),
-            config
+            config,
+            Some(Arc::new(metrics_state.clone()))
         ).await.ok().flatten();
 
         Ok(Self {

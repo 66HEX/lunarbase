@@ -434,3 +434,15 @@ export interface SystemInfo {
 	load_average: number;
 	disk_usage_percentage: number;
 }
+
+// Metrics Types
+export interface MetricsSummary {
+	http_requests_total: number;
+	active_websocket_connections: number;
+	database_connections_active: number;
+	backup_operations_total: number;
+	backup_failures_total: number;
+	backup_cleanup_operations_total: number;
+	backup_files_deleted_total: number;
+	timestamp: string;
+}
