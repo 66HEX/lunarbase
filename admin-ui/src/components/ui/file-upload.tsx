@@ -23,7 +23,7 @@ const fileUploadVariants = cva(
 				],
 			},
 			size: {
-				sm: "p-4 w-sm",
+				sm: "p-4",
 				md: "p-6 w-md",
 				lg: "p-8 w-lg",
 			},

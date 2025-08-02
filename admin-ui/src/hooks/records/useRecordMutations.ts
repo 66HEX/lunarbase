@@ -22,7 +22,8 @@ export const useCreateRecord = () => {
 			collectionName: string;
 			data: CreateRecordRequest;
 		}) => {
-			return await recordsApi.create(collectionName, data);
+			const result = await recordsApi.create(collectionName, data);
+			return result;
 		},
 		onSuccess: (_, { collectionName }) => {
 			// Invalidate records queries for this collection

@@ -52,6 +52,8 @@ export const getDefaultFieldValue = (
 			return false;
 		case "number":
 			return "";
+		case "file":
+			return [];
 		default:
 			return "";
 	}
@@ -82,6 +84,13 @@ export const processFieldValue = (
 				}
 			}
 			return value;
+		case "file":
+			// For file fields, we expect an array of FileUploadFile objects
+			// Extract the actual File objects for form submission
+			if (Array.isArray(value)) {
+				return value.map((fileUpload: any) => fileUpload.file).filter(Boolean);
+			}
+			return isRequired ? [] : null;
 		default:
 			return value;
 	}
@@ -93,6 +102,14 @@ export const validateFieldValue = (
 	field: { name: string; field_type: string; required: boolean },
 	value: unknown,
 ): string | null => {
+	// Special handling for file fields
+	if (field.field_type === "file") {
+		if (field.required && (!Array.isArray(value) || value.length === 0)) {
+			return fieldValidationMessages.required(field.name);
+		}
+		return null;
+	}
+
 	if (
 		field.required &&
 		(value === "" || value === null || value === undefined)

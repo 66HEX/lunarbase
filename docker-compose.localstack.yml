@@ -13,13 +13,14 @@ services:
       - SERVICES=s3
       - DOCKER_HOST=unix:///var/run/docker.sock
       - HOSTNAME_EXTERNAL=localhost
-      - DATA_DIR=/tmp/localstack/data
+      - DATA_DIR=/var/lib/localstack/data
+      - TMPDIR=/var/lib/localstack/tmp
       # AWS configuration
       - AWS_DEFAULT_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
     volumes:
-      - "/tmp/localstack:/tmp/localstack"
+      - "./tmp/localstack:/var/lib/localstack"
       - "/var/run/docker.sock:/var/run/docker.sock"
     networks:
       - lunarbase-network
@@ -27,4 +28,3 @@ services:
 networks:
   lunarbase-network:
     driver: bridge
-```

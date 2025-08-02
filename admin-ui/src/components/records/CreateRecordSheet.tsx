@@ -3,6 +3,7 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
 import { Form, FormControl, FormField, FormLabel } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { JsonEditor } from "@/components/ui/json-editor";
@@ -51,6 +52,7 @@ export function CreateRecordSheet({
 	const [submitting, setSubmitting] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [formData, setFormData] = useState<RecordData>({});
+	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>({});
 	const { toast } = useToast();
 	const { data: collectionsData } = useCollections();
 
@@ -76,6 +78,7 @@ export function CreateRecordSheet({
 		if (open && collection) {
 			initializeFormData();
 			setFieldErrors({});
+			setFileData({});
 		}
 	}, [open, collection, initializeFormData]);
 
@@ -89,6 +92,13 @@ export function CreateRecordSheet({
 		}));
 	};
 
+	const updateFileData = (fieldName: string, files: FileUploadFile[]) => {
+		setFileData((prev) => ({
+			...prev,
+			[fieldName]: files,
+		}));
+	};
+
 	const validateForm = (): boolean => {
 		if (!collection) return false;
 
@@ -97,7 +107,9 @@ export function CreateRecordSheet({
 		collection.schema?.fields?.forEach((field) => {
 			if (field.name === "id") return;
 
-			const value = formData[field.name];
+			const value = field.field_type === "file" 
+				? fileData[field.name] 
+				: formData[field.name];
 			const error = validateFieldValue(field, value);
 			if (error) {
 				newErrors[field.name] = error;
@@ -121,23 +133,36 @@ export function CreateRecordSheet({
 		setSubmitting(true);
 
 		try {
-			const submitData: RecordData = {};
 
-			const fieldsToProcess =
-				collection.schema?.fields?.filter((field) => field.name !== "id") || [];
+				const submitData: RecordData = {};
 
-			fieldsToProcess.forEach((field) => {
-				const value = formData[field.name];
-				submitData[field.name] = processFieldValue(
-					field.field_type,
-					value,
-					field.required,
-				);
-			});
+				const fieldsToProcess =
+					collection.schema?.fields?.filter((field) => field.name !== "id") || [];
 
-			await onSubmit(submitData);
-			onOpenChange(false);
-			initializeFormData();
+
+				fieldsToProcess.forEach((field) => {
+					if (field.field_type === "file") {
+						const files = fileData[field.name] || [];
+						const processedValue = processFieldValue(
+							field.field_type,
+							files,
+							field.required,
+						);
+						submitData[field.name] = processedValue;
+					} else {
+						const value = formData[field.name];
+						submitData[field.name] = processFieldValue(
+							field.field_type,
+							value,
+							field.required,
+						);
+					}
+				});
+
+				await onSubmit(submitData);
+				onOpenChange(false);
+				initializeFormData();
+				setFileData({});
 		} catch (error) {
 			console.error("Record creation error:", error);
 		} finally {
@@ -210,6 +235,19 @@ export function CreateRecordSheet({
 								))}
 							</SelectContent>
 						</Select>
+					) : field.field_type === "file" ? (
+						<FileUpload
+							multiple={true}
+							accept="*/*"
+							maxSize={10 * 1024 * 1024} // 10MB
+							maxFiles={5}
+							files={fileData[field.name] || []}
+							onFilesChange={(files) => updateFileData(field.name, files)}
+							uploadText={`Click to upload files for ${field.name}`}
+							dragText={`Drop files here for ${field.name}`}
+							size="sm"
+							showPreview={true}
+						/>
 					) : (
 						<Input
 							type={

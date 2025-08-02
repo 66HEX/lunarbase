@@ -47,7 +47,7 @@ impl S3Service {
         }
 
         // Set custom endpoint if provided (for LocalStack)
-        if let Some(endpoint) = endpoint_url {
+        if let Some(endpoint) = endpoint_url.clone() {
             config_loader = config_loader.endpoint_url(endpoint);
         }
 
@@ -64,7 +64,17 @@ impl S3Service {
         }
 
         let config = config_loader.load().await;
-        let client = Client::new(&config);
+        
+        // Create S3 client with LocalStack-specific configuration
+        let mut s3_config_builder = aws_sdk_s3::config::Builder::from(&config);
+        
+        // For LocalStack, we need to use path-style addressing
+        if let Some(ref _endpoint) = endpoint_url {
+            s3_config_builder = s3_config_builder.force_path_style(true);
+        }
+        
+        let s3_config = s3_config_builder.build();
+        let client = Client::from_conf(s3_config);
 
         // Test connection by checking if bucket exists
         match client.head_bucket().bucket(&bucket_name).send().await {

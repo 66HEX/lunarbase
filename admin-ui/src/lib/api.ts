@@ -69,18 +69,25 @@ async function apiRequest<T>(
 	options: RequestInit = {},
 	isRetry: boolean = false,
 ): Promise<T> {
+	// Don't set Content-Type for FormData - let browser set it with boundary
 	const headers: { [key: string]: string } = {
-		"Content-Type": "application/json",
 		...(options.headers as { [key: string]: string }),
 	};
 
-	// Include credentials to send httpOnly cookies
+	// Only set Content-Type if body is not FormData
+	if (!(options.body instanceof FormData)) {
+		headers["Content-Type"] = "application/json";
+	}
 
-	const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+	// Include credentials to send httpOnly cookies
+	const url = `${API_BASE_URL}${endpoint}`;
+	const config = {
 		...options,
 		headers,
-		credentials: "include", // This ensures cookies are sent with requests
-	});
+		credentials: "include" as RequestCredentials, // This ensures cookies are sent with requests
+	};
+
+	const response = await fetch(url, config);
 
 	if (!response.ok) {
 		// Handle 401 Unauthorized - try to refresh token
@@ -307,11 +314,48 @@ export const recordsApi = {
 		collectionName: string,
 		data: CreateRecordRequest,
 	): Promise<Record> => {
-		const response = await apiRequest<ApiResponse<Record>>(
+
+		
+		const formData = new FormData();
+		
+		// Separate files from other data
+		const recordData: { [key: string]: unknown } = {};
+		const files: { [key: string]: File[] } = {};
+		
+// Process each field in the data
+		for (const [key, value] of Object.entries(data.data)) {
+			if (Array.isArray(value) && value.length > 0 && value[0] instanceof File) {
+				// This is a file field
+				files[key] = value as File[];
+			} else {
+				// This is regular data
+				recordData[key] = value;
+			}
+		}
+		
+
+		
+// Add JSON data
+		const jsonData = JSON.stringify(recordData);
+		formData.append("data", jsonData);
+		
+		// Add files
+		for (const [fieldName, fileList] of Object.entries(files)) {
+			for (const file of fileList) {
+				// Backend expects file fields to be prefixed with "file_"
+				const backendFieldName = `file_${fieldName}`;
+				formData.append(backendFieldName, file);
+			}
+		}
+
+
+
+const response = await apiRequest<ApiResponse<Record>>(
 			`/collections/${collectionName}/records`,
 			{
 				method: "POST",
-				body: JSON.stringify(data),
+				body: formData,
+				headers: {}, // Let browser set Content-Type with boundary
 			},
 		);
 		return response.data;
