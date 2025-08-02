@@ -720,3 +720,120 @@ async fn test_delete_record_with_files() {
     let get_record_response = app.clone().oneshot(get_record_request).await.unwrap();
     assert_eq!(get_record_response.status(), StatusCode::NOT_FOUND);
 }
+
+#[tokio::test]
+async fn test_delete_collection_with_files() {
+    let app = create_test_router().await;
+    let (_admin_id, admin_token) = create_admin_token(&app).await;
+    let unique_name = unique_collection_name("delete_collection_files_test");
+
+    // Create collection with file field
+    let schema = CollectionSchema {
+        fields: vec![
+            FieldDefinition {
+                name: "title".to_string(),
+                field_type: FieldType::Text,
+                required: true,
+                default_value: None,
+                validation: None,
+            },
+            FieldDefinition {
+                name: "document".to_string(),
+                field_type: FieldType::File,
+                required: false,
+                default_value: None,
+                validation: None,
+            },
+        ],
+    };
+
+    let create_collection_request = Request::builder()
+        .uri("/api/collections")
+        .method("POST")
+        .header("content-type", "application/json")
+        .header("authorization", format!("Bearer {}", admin_token))
+        .body(Body::from(
+            serde_json::to_string(&json!({
+                "name": unique_name,
+                "display_name": "Test Collection with Files",
+                "description": "Test collection for file deletion",
+                "schema": schema
+            }))
+            .unwrap(),
+        ))
+        .unwrap();
+
+    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    assert_eq!(create_collection_response.status(), StatusCode::CREATED);
+
+    // Create a record with a file URL (simulating S3 file)
+    let record_data = json!({
+        "title": "Test Document",
+        "document": "https://test-bucket.s3.amazonaws.com/files/test-document.pdf"
+    });
+
+    let boundary = "boundary";
+    let body = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary,
+        serde_json::to_string(&record_data).unwrap(),
+        boundary
+    );
+
+    let create_record_request = Request::builder()
+        .uri(&format!("/api/collections/{}/records", unique_name))
+        .method("POST")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header("authorization", format!("Bearer {}", admin_token))
+        .body(Body::from(body))
+        .unwrap();
+
+    let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
+    assert_eq!(create_record_response.status(), StatusCode::CREATED);
+
+    // Create another record with a file URL
+    let record_data2 = json!({
+        "title": "Test Document 2",
+        "document": "https://test-bucket.s3.amazonaws.com/files/test-document-2.pdf"
+    });
+
+    let boundary2 = "boundary2";
+    let body2 = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\nContent-Type: application/json\r\n\r\n{}\r\n--{}--\r\n",
+        boundary2,
+        serde_json::to_string(&record_data2).unwrap(),
+        boundary2
+    );
+
+    let create_record_request2 = Request::builder()
+        .uri(&format!("/api/collections/{}/records", unique_name))
+        .method("POST")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary2))
+        .header("authorization", format!("Bearer {}", admin_token))
+        .body(Body::from(body2))
+        .unwrap();
+
+    let create_record_response2 = app.clone().oneshot(create_record_request2).await.unwrap();
+    assert_eq!(create_record_response2.status(), StatusCode::CREATED);
+
+    // Delete the entire collection (this should also attempt to delete all files from S3)
+    let delete_collection_request = Request::builder()
+        .uri(&format!("/api/collections/{}", unique_name))
+        .method("DELETE")
+        .header("authorization", format!("Bearer {}", admin_token))
+        .body(Body::empty())
+        .unwrap();
+
+    let delete_collection_response = app.clone().oneshot(delete_collection_request).await.unwrap();
+    assert_eq!(delete_collection_response.status(), StatusCode::NO_CONTENT);
+
+    // Verify the collection is deleted
+    let get_collection_request = Request::builder()
+        .uri(&format!("/api/collections/{}", unique_name))
+        .method("GET")
+        .body(Body::empty())
+        .unwrap();
+
+    let get_collection_response = app.clone().oneshot(get_collection_request).await.unwrap();
+    assert_eq!(get_collection_response.status(), StatusCode::NOT_FOUND);
+}

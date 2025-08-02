@@ -1179,6 +1179,18 @@ impl CollectionService {
             }
         }
 
+        // Delete all files associated with records in this collection before dropping the table
+        let schema = collection.get_schema()
+            .map_err(|_| AuthError::InternalError)?;
+        let file_deletion_errors = self.delete_collection_files(name, &schema).await;
+        if !file_deletion_errors.is_empty() {
+            tracing::warn!(
+                "Some files could not be deleted for collection {}: {:?}",
+                name,
+                file_deletion_errors
+            );
+        }
+
         // Drop records table
         self.drop_records_table(&mut conn, name)?;
 
@@ -1501,6 +1513,36 @@ impl CollectionService {
     ) -> Result<(), AuthError> {
         self.delete_record_with_events(collection_name, record_id, None)
             .await
+    }
+
+    /// Delete all files associated with records in a collection from S3
+    async fn delete_collection_files(
+        &self,
+        collection_name: &str,
+        schema: &CollectionSchema,
+    ) -> Vec<String> {
+        let mut errors = Vec::new();
+        
+        // Check if there are any file fields in the schema
+        let has_file_fields = schema.fields.iter().any(|field| field.field_type == FieldType::File);
+        if !has_file_fields {
+            return errors; // No file fields, nothing to delete
+        }
+        
+        // Get all records from the collection
+        match self.list_records(collection_name, None, None, None, None, None).await {
+            Ok(records) => {
+                for record in records {
+                    let file_deletion_errors = self.delete_record_files(schema, &record.data).await;
+                    errors.extend(file_deletion_errors);
+                }
+            }
+            Err(e) => {
+                errors.push(format!("Failed to retrieve records for collection {}: {:?}", collection_name, e));
+            }
+        }
+        
+        errors
     }
 
     /// Delete files associated with a record from S3

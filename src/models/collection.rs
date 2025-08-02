@@ -121,7 +121,7 @@ pub struct FieldDefinition {
     pub validation: Option<ValidationRules>,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]
+#[derive(Debug, Clone, Serialize, Deserialize, ToSchema, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum FieldType {
     Text,
