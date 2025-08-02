@@ -96,6 +96,11 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 - **Activity logging** with detailed audit trails and pagination
 - **Resource usage tracking** with memory and connection pool monitoring
 
+### External Integrations
+- **OAuth Authentication** with Google and GitHub providers for seamless social login
+- **Resend Email Service** for reliable verification email delivery
+- **S3 File Storage** with secure file upload capabilities
+
 ## Technology Stack
 
 ### Backend (Rust)
