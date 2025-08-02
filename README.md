@@ -2,18 +2,18 @@
 
 # LunarBase
 
-A next-generation, security-first database management platform that combines the power of Rust's performance with React's flexibility. LunarBase delivers enterprise-grade data management through an intuitive admin interface built entirely with the proprietary **Nocta UI** component library.
+A security-first database management platform that combines the power of Rust's performance with React's flexibility. LunarBase delivers reliable data management through an intuitive admin interface built entirely with the proprietary **Nocta UI** component library.
 
 ## Why LunarBase?
 
-LunarBase isn't just another database management system—it's a comprehensive platform designed for organizations that refuse to compromise on security while demanding modern, real-time capabilities. Built from the ground up with a security-first mindset, every component has been engineered to protect your data while providing the flexibility and performance modern applications require.
+LunarBase is a comprehensive platform designed for organizations that prioritize security while requiring modern, real-time capabilities. Built with a security-first mindset, every component has been designed to protect your data while providing the flexibility and performance modern applications require.
 
 ## Security at the Core
 
 Security isn't an afterthought in LunarBase—it's the foundation. Our multi-layered security architecture ensures your data remains protected at every level:
 
 ### Advanced Authentication & Authorization
-- **Military-grade password hashing** with Argon2id (65536 memory, 4 iterations, 2 parallelism)
+- **Secure password hashing** with Argon2id (65536 memory, 4 iterations, 2 parallelism)
 - **Password pepper protection** with server-side secret salt to defend against rainbow table attacks
 - **Dual-token JWT system** with short-lived access tokens (15 min) and secure refresh tokens (7 days)
 - **HttpOnly cookies** with secure, SameSite=Lax configuration and path restrictions
@@ -39,9 +39,9 @@ Security isn't an afterthought in LunarBase—it's the foundation. Our multi-lay
 
 ## Powered by Nocta UI
 
-The LunarBase admin panel showcases the full potential of **Nocta UI**, our proprietary component library that redefines what's possible in web interfaces:
+The LunarBase admin panel showcases **Nocta UI**, our proprietary component library designed for modern web interfaces:
 
-### Revolutionary Component Architecture
+### Modern Component Architecture
 - **Copy-paste philosophy** - Components are copied directly into your project for complete customization control
 - **WCAG 2.1 AA compliance** with full keyboard navigation and screen reader support
 - **First-class dark mode** with automatic system detection and manual override
@@ -132,7 +132,7 @@ The admin interface will be available at `http://localhost:5173`.
 ## Architecture Highlights
 
 ### Security-First Design
-Every component has been designed with security as the primary concern. From the Argon2id password hashing to the comprehensive permission system, LunarBase ensures your data remains protected against modern threats.
+Every component has been designed with security as a primary concern. From the Argon2id password hashing to the comprehensive permission system, LunarBase helps protect your data against modern threats.
 
 ### Real-time Capabilities
 Built-in WebSocket support provides real-time updates across the entire system. Whether it's live data synchronization or instant permission changes, LunarBase keeps all clients synchronized without compromising security.
@@ -145,7 +145,7 @@ With comprehensive TypeScript support, automatic API documentation, and the intu
 
 ---
 
-LunarBase represents the future of secure, real-time database management—where enterprise-grade security meets modern user experience, all powered by the innovative Nocta UI component library.
+LunarBase provides secure, real-time database management—where robust security meets modern user experience, all powered by the Nocta UI component library.
 
 ## Contributing
 
@@ -171,8 +171,20 @@ cd lunarbase
 cargo build
 cd admin-ui && npm install
 
+# Start LocalStack for S3 testing (required for file upload functionality)
+./start-with-localstack.sh
+
+# Start the backend server
+cargo run
+
+# In a separate terminal, start the admin interface
+cd admin-ui && npm run dev
+
 # Run tests
- cargo test -- --test-threads=1  
+cargo test -- --test-threads=1
+
+# Stop LocalStack when done
+./stop-localstack.sh
 ```
 
 ### Code of Conduct
