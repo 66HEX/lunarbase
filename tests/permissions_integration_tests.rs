@@ -497,11 +497,12 @@ async fn test_collection_permissions_full_scenario() {
         .unwrap();
 
     // 5. Test user cannot update record (no permission)
-    let update_payload = json!({
-        "data": {
-            "title": "Updated Title"
-        }
-    });
+    // Create multipart form data for update
+    let boundary = "----formdata-test-boundary";
+    let form_data = format!(
+        "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\n\r\n{{\"title\": \"Updated Title\"}}\r\n--{}--\r\n",
+        boundary, boundary
+    );
 
     let update_record_request = Request::builder()
         .uri(&format!(
@@ -509,12 +510,14 @@ async fn test_collection_permissions_full_scenario() {
             unique_name, record_id
         ))
         .method("PUT")
-        .header("content-type", "application/json")
+        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
         .header("authorization", format!("Bearer {}", user_token))
-        .body(Body::from(update_payload.to_string()))
+        .body(Body::from(form_data))
         .unwrap();
 
     let update_record_response = app.clone().oneshot(update_record_request).await.unwrap();
+    // Debug: Print the actual status code
+    println!("Update record response status: {:?}", update_record_response.status());
     // This should fail due to lack of update permission
     assert!(
         update_record_response.status() == StatusCode::FORBIDDEN

@@ -3,6 +3,7 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
 import {
 	Form,
 	FormControl,
@@ -65,6 +66,9 @@ export function EditRecordSheet({
 	const [submitting, setSubmitting] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [formData, setFormData] = useState<RecordData>({});
+	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>(
+		{},
+	);
 
 	// Get available collections for relation fields
 	const availableCollections = collectionsData?.collections || [];
@@ -73,20 +77,55 @@ export function EditRecordSheet({
 		if (!record || !collection) return;
 
 		const initialData: RecordData = {};
+		const initialFileData: { [key: string]: FileUploadFile[] } = {};
+
 		collection.schema?.fields?.forEach((field) => {
 			if (field.name !== "id") {
 				const value = record.data[field.name];
-				if (value !== null && value !== undefined) {
-					initialData[field.name] =
-						field.field_type === "json" && typeof value === "object"
-							? JSON.stringify(value, null, 2)
-							: value;
+
+				if (field.field_type === "file") {
+					// Handle file fields - convert URLs to FileUploadFile objects
+					if (value && typeof value === "string") {
+						// Single file URL
+						const fileName = value.split("/").pop() || "file";
+						initialFileData[field.name] = [
+							{
+								id: `existing-${Date.now()}`,
+								file: new File([], fileName), // Empty file object for existing files
+								preview: value, // Use URL as preview
+								status: "success" as const,
+							},
+						];
+					} else if (Array.isArray(value)) {
+						// Multiple file URLs
+						initialFileData[field.name] = value.map((url, index) => {
+							const fileName = url.split("/").pop() || `file-${index}`;
+							return {
+								id: `existing-${Date.now()}-${index}`,
+								file: new File([], fileName),
+								preview: url,
+								status: "success" as const,
+							};
+						});
+					} else {
+						initialFileData[field.name] = [];
+					}
 				} else {
-					initialData[field.name] = getDefaultFieldValue(field.field_type);
+					// Handle non-file fields
+					if (value !== null && value !== undefined) {
+						initialData[field.name] =
+							field.field_type === "json" && typeof value === "object"
+								? JSON.stringify(value, null, 2)
+								: value;
+					} else {
+						initialData[field.name] = getDefaultFieldValue(field.field_type);
+					}
 				}
 			}
 		});
+
 		setFormData(initialData);
+		setFileData(initialFileData);
 	}, [record, collection]);
 
 	useEffect(() => {
@@ -106,6 +145,13 @@ export function EditRecordSheet({
 		}));
 	};
 
+	const updateFileData = (fieldName: string, files: FileUploadFile[]) => {
+		setFileData((prev) => ({
+			...prev,
+			[fieldName]: files,
+		}));
+	};
+
 	const validateForm = (): boolean => {
 		if (!collection) return false;
 
@@ -114,7 +160,10 @@ export function EditRecordSheet({
 		collection.schema?.fields?.forEach((field) => {
 			if (field.name === "id") return;
 
-			const value = formData[field.name];
+			const value =
+				field.field_type === "file"
+					? fileData[field.name]
+					: formData[field.name];
 			const error = validateFieldValue(field, value);
 			if (error) {
 				newErrors[field.name] = error;
@@ -122,6 +171,7 @@ export function EditRecordSheet({
 		});
 
 		setFieldErrors(newErrors);
+
 		return Object.keys(newErrors).length === 0;
 	};
 
@@ -139,12 +189,22 @@ export function EditRecordSheet({
 				collection.schema?.fields?.filter((field) => field.name !== "id") || [];
 
 			fieldsToProcess.forEach((field) => {
-				const value = formData[field.name];
-				submitData[field.name] = processFieldValue(
-					field.field_type,
-					value,
-					field.required,
-				);
+				if (field.field_type === "file") {
+					const files = fileData[field.name] || [];
+					const processedValue = processFieldValue(
+						field.field_type,
+						files,
+						field.required,
+					);
+					submitData[field.name] = processedValue;
+				} else {
+					const value = formData[field.name];
+					submitData[field.name] = processFieldValue(
+						field.field_type,
+						value,
+						field.required,
+					);
+				}
 			});
 
 			await onSubmit(submitData);
@@ -225,6 +285,19 @@ export function EditRecordSheet({
 								))}
 							</SelectContent>
 						</Select>
+					) : field.field_type === "file" ? (
+						<FileUpload
+							multiple={false}
+							accept="*/*"
+							maxSize={10 * 1024 * 1024} // 10MB
+							maxFiles={2}
+							files={fileData[field.name] || []}
+							onFilesChange={(files) => updateFileData(field.name, files)}
+							uploadText={`Click to upload files for ${field.name}`}
+							dragText={`Drop files here for ${field.name}`}
+							size="sm"
+							showPreview={false}
+						/>
 					) : (
 						<Input
 							type={

@@ -89,6 +89,7 @@ pub struct FileUpload {
 pub struct UpdateRecordRequest {
     #[schema(example = json!({"name": "Updated Product", "price": 149.99}))]
     pub data: Value,
+    pub files: Option<std::collections::HashMap<String, FileUpload>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

@@ -364,11 +364,46 @@ export const recordsApi = {
 		id: number,
 		data: UpdateRecordRequest,
 	): Promise<Record> => {
+		const formData = new FormData();
+
+		// Separate files from other data
+		const recordData: { [key: string]: unknown } = {};
+		const files: { [key: string]: File[] } = {};
+
+		// Process each field in the data
+		for (const [key, value] of Object.entries(data.data)) {
+			if (
+				Array.isArray(value) &&
+				value.length > 0 &&
+				value[0] instanceof File
+			) {
+				// This is a file field
+				files[key] = value as File[];
+			} else {
+				// This is regular data
+				recordData[key] = value;
+			}
+		}
+
+		// Add JSON data
+		const jsonData = JSON.stringify(recordData);
+		formData.append("data", jsonData);
+
+		// Add files
+		for (const [fieldName, fileList] of Object.entries(files)) {
+			for (const file of fileList) {
+				// Backend expects file fields to be prefixed with "file_"
+				const backendFieldName = `file_${fieldName}`;
+				formData.append(backendFieldName, file);
+			}
+		}
+
 		const response = await apiRequest<ApiResponse<Record>>(
 			`/collections/${collectionName}/records/${id}`,
 			{
 				method: "PUT",
-				body: JSON.stringify(data),
+				body: formData,
+				headers: {}, // Let browser set Content-Type with boundary
 			},
 		);
 		return response.data;

@@ -1180,7 +1180,8 @@ impl CollectionService {
         }
 
         // Delete all files associated with records in this collection before dropping the table
-        let schema = collection.get_schema()
+        let schema = collection
+            .get_schema()
             .map_err(|_| AuthError::InternalError)?;
         let file_deletion_errors = self.delete_collection_files(name, &schema).await;
         if !file_deletion_errors.is_empty() {
@@ -1436,7 +1437,63 @@ impl CollectionService {
             .get_schema()
             .map_err(|_| AuthError::InternalError)?;
 
-        let validated_data = self.validate_record_data(&schema, &request.data)?;
+        // Get the current record to check for existing files that need to be deleted
+        let table_name = self.get_records_table_name(collection_name);
+        let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
+        let old_record = self
+            .query_record_by_sql(&mut conn, &select_sql, collection_name)
+            .ok();
+
+        // Process file uploads if any
+        let mut data = request.data.clone();
+        if let Some(files) = &request.files {
+            // Delete old files for fields that are being updated with new files
+            if let Some(ref old_rec) = old_record {
+                if let Some(s3_service) = &self.s3_service {
+                    for (field_name, _) in files {
+                        // Check if this field is a file field in the schema
+                        if let Some(field_def) =
+                            schema.fields.iter().find(|f| f.name == *field_name)
+                        {
+                            if field_def.field_type == FieldType::File {
+                                // Get the old file URL and delete it
+                                if let Some(old_url) = old_rec.data.get(field_name) {
+                                    if let Some(url_str) = old_url.as_str() {
+                                        if !url_str.is_empty() {
+                                            if let Err(e) = s3_service.delete_file(url_str).await {
+                                                tracing::warn!(
+                                                    "Failed to delete old file '{}' for field '{}': {}",
+                                                    url_str,
+                                                    field_name,
+                                                    e
+                                                );
+                                            } else {
+                                                tracing::info!(
+                                                    "Deleted old file '{}' for field '{}'",
+                                                    url_str,
+                                                    field_name
+                                                );
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            let file_urls = self.process_file_uploads(&schema, files).await?;
+
+            // Add file URLs to data
+            if let Value::Object(ref mut map) = data {
+                for (field_name, url) in file_urls {
+                    map.insert(field_name, Value::String(url));
+                }
+            }
+        }
+
+        let validated_data = self.validate_record_data(&schema, &data)?;
 
         // Build UPDATE SQL for dynamic table
         let table_name = self.get_records_table_name(collection_name);
@@ -1450,10 +1507,10 @@ impl CollectionService {
             }
         }
 
-        // Add ownership fields from request.data (if being updated)
+        // Add ownership fields from data (if being updated)
         let ownership_fields = ["owner_id", "author_id"];
         for field_name in &ownership_fields {
-            if let Some(field_value) = request.data.get(field_name) {
+            if let Some(field_value) = data.get(field_name) {
                 // Check if this field wasn't already processed from schema
                 let already_processed = schema.fields.iter().any(|f| f.name == *field_name);
                 if !already_processed {
@@ -1469,11 +1526,7 @@ impl CollectionService {
             ]));
         }
 
-        // Get record before update for the event
-        let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
-        let old_record = self
-            .query_record_by_sql(&mut conn, &select_sql, collection_name)
-            .ok();
+        // Note: old_record was already fetched earlier for file deletion
 
         // Apply the update
         let update_sql = format!(
@@ -1522,15 +1575,21 @@ impl CollectionService {
         schema: &CollectionSchema,
     ) -> Vec<String> {
         let mut errors = Vec::new();
-        
+
         // Check if there are any file fields in the schema
-        let has_file_fields = schema.fields.iter().any(|field| field.field_type == FieldType::File);
+        let has_file_fields = schema
+            .fields
+            .iter()
+            .any(|field| field.field_type == FieldType::File);
         if !has_file_fields {
             return errors; // No file fields, nothing to delete
         }
-        
+
         // Get all records from the collection
-        match self.list_records(collection_name, None, None, None, None, None).await {
+        match self
+            .list_records(collection_name, None, None, None, None, None)
+            .await
+        {
             Ok(records) => {
                 for record in records {
                     let file_deletion_errors = self.delete_record_files(schema, &record.data).await;
@@ -1538,10 +1597,13 @@ impl CollectionService {
                 }
             }
             Err(e) => {
-                errors.push(format!("Failed to retrieve records for collection {}: {:?}", collection_name, e));
+                errors.push(format!(
+                    "Failed to retrieve records for collection {}: {:?}",
+                    collection_name, e
+                ));
             }
         }
-        
+
         errors
     }
 
@@ -1552,7 +1614,7 @@ impl CollectionService {
         record_data: &serde_json::Value,
     ) -> Vec<String> {
         let mut errors = Vec::new();
-        
+
         // Check if S3 service is available
         let s3_service = match &self.s3_service {
             Some(service) => service,
@@ -1563,7 +1625,8 @@ impl CollectionService {
         };
 
         // Find all file fields in schema
-        let file_fields: Vec<&FieldDefinition> = schema.fields
+        let file_fields: Vec<&FieldDefinition> = schema
+            .fields
             .iter()
             .filter(|field| matches!(field.field_type, FieldType::File))
             .collect();
@@ -1581,7 +1644,8 @@ impl CollectionService {
                             Ok(_) => {
                                 tracing::info!(
                                     "Successfully deleted file '{}' for field '{}'",
-                                    file_url, field.name
+                                    file_url,
+                                    field.name
                                 );
                             }
                             Err(e) => {
@@ -1616,7 +1680,8 @@ impl CollectionService {
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
         // Get collection schema
-        let schema = collection.get_schema()
+        let schema = collection
+            .get_schema()
             .map_err(|_| AuthError::InternalError)?;
 
         let table_name = self.get_records_table_name(collection_name);
@@ -1643,7 +1708,9 @@ impl CollectionService {
             if !file_deletion_errors.is_empty() {
                 tracing::warn!(
                     "Some files could not be deleted for record {} in collection {}: {:?}",
-                    record_id, collection_name, file_deletion_errors
+                    record_id,
+                    collection_name,
+                    file_deletion_errors
                 );
             }
         }

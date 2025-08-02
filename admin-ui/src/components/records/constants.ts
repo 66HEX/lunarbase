@@ -89,7 +89,9 @@ export const processFieldValue = (
 			// For file fields, we expect an array of FileUploadFile objects
 			// Extract the actual File objects for form submission
 			if (Array.isArray(value)) {
-				return value.map((fileUpload: FileUploadFile) => fileUpload.file).filter(Boolean);
+				return value
+					.map((fileUpload: FileUploadFile) => fileUpload.file)
+					.filter(Boolean);
 			}
 			return isRequired ? [] : null;
 		default:

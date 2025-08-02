@@ -602,8 +602,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
 						<h4 className="text-sm font-medium text-nocta-900 dark:text-nocta-100">
-							Files ({files.length}
-							{maxFiles ? `/${maxFiles}` : ""})
+							File
 						</h4>
 						{(pendingFiles.length > 0 || isUploading) && onUpload && (
 							<button

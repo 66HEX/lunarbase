@@ -647,7 +647,11 @@ async fn test_delete_record_with_files() {
         .body(Body::from(collection_payload.to_string()))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Create record with file URL (simulating S3 upload)
@@ -763,7 +767,11 @@ async fn test_delete_collection_with_files() {
         ))
         .unwrap();
 
-    let create_collection_response = app.clone().oneshot(create_collection_request).await.unwrap();
+    let create_collection_response = app
+        .clone()
+        .oneshot(create_collection_request)
+        .await
+        .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
     // Create a record with a file URL (simulating S3 file)
@@ -783,7 +791,10 @@ async fn test_delete_collection_with_files() {
     let create_record_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(body))
         .unwrap();
@@ -808,7 +819,10 @@ async fn test_delete_collection_with_files() {
     let create_record_request2 = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("POST")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary2))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary2),
+        )
         .header("authorization", format!("Bearer {}", admin_token))
         .body(Body::from(body2))
         .unwrap();
@@ -824,7 +838,11 @@ async fn test_delete_collection_with_files() {
         .body(Body::empty())
         .unwrap();
 
-    let delete_collection_response = app.clone().oneshot(delete_collection_request).await.unwrap();
+    let delete_collection_response = app
+        .clone()
+        .oneshot(delete_collection_request)
+        .await
+        .unwrap();
     assert_eq!(delete_collection_response.status(), StatusCode::NO_CONTENT);
 
     // Verify the collection is deleted

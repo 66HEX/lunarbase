@@ -160,21 +160,21 @@ export function CreateCollectionSheet({
 	}, [isOpen]);
 
 	return (
-			<Sheet 
-				open={isOpen} 
-				onOpenChange={(newOpen) => {
-					// Only allow closing if explicitly allowed and not submitting
-					if (!newOpen && (!allowClose || submitting)) {
-						// Prevent closing - do nothing
-						return;
-					}
-					// Allow opening or closing when conditions are met
-					onOpenChange(newOpen);
-					if (newOpen) {
-						setAllowClose(true); // Allow closing when opening
-					}
-				}}
-			>
+		<Sheet
+			open={isOpen}
+			onOpenChange={(newOpen) => {
+				// Only allow closing if explicitly allowed and not submitting
+				if (!newOpen && (!allowClose || submitting)) {
+					// Prevent closing - do nothing
+					return;
+				}
+				// Allow opening or closing when conditions are met
+				onOpenChange(newOpen);
+				if (newOpen) {
+					setAllowClose(true); // Allow closing when opening
+				}
+			}}
+		>
 			<SheetContent side="right" size="xl">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
@@ -291,29 +291,31 @@ export function CreateCollectionSheet({
 															</FormLabel>
 															<FormControl>
 																<Select
-															portalProps={{
-																"data-sheet-portal": "true",
-															} as React.HTMLAttributes<HTMLDivElement>}
-															value={field.field_type}
-															onValueChange={(value) => {
-																// Prevent sheet from closing during value change
-																setAllowClose(false);
-																updateField(index, {
-																	field_type:
-																		value as FieldDefinition["field_type"],
-																});
-																// Allow closing after a longer delay
-																setTimeout(() => setAllowClose(true), 300);
-															}}
-															onOpenChange={(isOpen) => {
-																// Prevent sheet from closing when select is open
-																if (isOpen) {
-																	setAllowClose(false);
-																}
-																// Don't restore allowClose here - let onValueChange handle it
-															}}
-															disabled={index === 0}
-														>
+																	portalProps={
+																		{
+																			"data-sheet-portal": "true",
+																		} as React.HTMLAttributes<HTMLDivElement>
+																	}
+																	value={field.field_type}
+																	onValueChange={(value) => {
+																		// Prevent sheet from closing during value change
+																		setAllowClose(false);
+																		updateField(index, {
+																			field_type:
+																				value as FieldDefinition["field_type"],
+																		});
+																		// Allow closing after a longer delay
+																		setTimeout(() => setAllowClose(true), 300);
+																	}}
+																	onOpenChange={(isOpen) => {
+																		// Prevent sheet from closing when select is open
+																		if (isOpen) {
+																			setAllowClose(false);
+																		}
+																		// Don't restore allowClose here - let onValueChange handle it
+																	}}
+																	disabled={index === 0}
+																>
 																	<SelectTrigger className="w-full">
 																		<SelectValue />
 																	</SelectTrigger>
