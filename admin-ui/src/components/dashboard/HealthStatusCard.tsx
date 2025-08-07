@@ -23,9 +23,9 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 					</div>
 					System Health
 					{isHealthy ? (
-						<CheckCircle className="w-4 h-4 text-green-500" />
+						<CheckCircle className="w-4 h-4 text-green-600" />
 					) : (
-						<AlertTriangle className="w-4 h-4 text-red-500" />
+						<AlertTriangle className="w-4 h-4 text-red-600" />
 					)}
 				</CardTitle>
 			</CardHeader>

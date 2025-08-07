@@ -2,8 +2,8 @@
 
 import { cva } from "class-variance-authority";
 import { gsap } from "gsap";
-import type React from "react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import React from "react";
+import { useCallback, useEffect, useRef, useState, useMemo } from "react";
 import { cn } from "@/lib/utils";
 import { ToastContext } from "./toast-context";
 import {
@@ -42,7 +42,7 @@ interface ToastItemProps {
 	onRemove: (id: string) => void;
 }
 
-const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
+const ToastItem: React.FC<ToastItemProps> = React.memo(({ toast, onRemove }) => {
 	const toastRef = useRef<HTMLDivElement>(null);
 	const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 	const isExiting = useRef(false);
@@ -64,7 +64,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
 
 	const shouldOverrrideBackground = hasBackgroundColor(className);
 
-	const positionConfig = {
+	const positionConfig = useMemo(() => ({
 		"top-left": {
 			animateIn: { x: -100, y: -20 },
 			animateOut: { x: -100, y: -20 },
@@ -89,11 +89,11 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
 			animateIn: { x: 100, y: 20 },
 			animateOut: { x: 100, y: 100 },
 		},
-	};
+	}), []);
 
 	const config = positionConfig[position as keyof typeof positionConfig];
 
-	const getFocusableElements = () => {
+	const getFocusableElements = useCallback(() => {
 		if (!toastRef.current) return [];
 
 		const focusableSelectors = [
@@ -108,7 +108,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
 		return Array.from(
 			toastRef.current.querySelectorAll(focusableSelectors),
 		) as HTMLElement[];
-	};
+	}, []);
 
 	const handleClose = useCallback(() => {
 		if (!toastRef.current || isExiting.current) return;
@@ -353,7 +353,7 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
 								className="
                 inline-flex items-center justify-center rounded-md
                 px-3 py-1.5 text-sm font-medium
-                bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-white dark:to-nocta-300
+                bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-nocta-50 dark:to-nocta-300
                 text-nocta-50 dark:text-nocta-900
                 hover:bg-nocta-900 dark:hover:bg-nocta-200
                 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nocta-500/50
@@ -368,7 +368,15 @@ const ToastItem: React.FC<ToastItemProps> = ({ toast, onRemove }) => {
 			</div>
 		</div>
 	);
-};
+}, (prevProps, nextProps) => {
+	// Optymalizacja porównania dla React.memo
+	return (
+		prevProps.toast.id === nextProps.toast.id &&
+		prevProps.toast.index === nextProps.toast.index &&
+		prevProps.toast.shouldClose === nextProps.toast.shouldClose &&
+		prevProps.toast.total === nextProps.toast.total
+	);
+});
 
 const ToastManager: React.FC<{
 	toasts: (ToastData & { index: number; total: number })[];

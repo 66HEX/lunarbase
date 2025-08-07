@@ -2,9 +2,9 @@
 
 @font-face {
 	font-family: "TomatoGrotesk";
-	src: url("/fonts/Tomato Grotesk VF.woff2") format("woff2");
+	src: url("/fonts/TomatoGrotesk.woff2") format("woff2");
 	font-style: normal;
-	font-weight: 400;
+	font-weight: 1 1000;
 	font-display: swap;
 }
 
