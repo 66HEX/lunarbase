@@ -1,11 +1,17 @@
-import { Save, Plus, X, AlertTriangle } from "lucide-react";
-import { useState, useEffect } from "react";
+import { AlertTriangle, Plus, Save, X } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Form,
+	FormControl,
+	FormDescription,
+	FormField,
+	FormLabel,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Form, FormField, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/spinner";
-import { Badge } from "@/components/ui/badge";
 import { useSettingsByCategory } from "@/hooks/configuration/useConfiguration";
 import { useUpdateSetting } from "@/hooks/configuration/useConfigurationMutations";
 import type { SystemSetting } from "@/types/api";
@@ -13,8 +19,10 @@ import type { SystemSetting } from "@/types/api";
 export function ApiSettingsPanel() {
 	const { data: settings, isLoading } = useSettingsByCategory("api");
 	const updateSettingMutation = useUpdateSetting();
-	
-	const [localSettings, setLocalSettings] = useState<Record<string, string>>({});
+
+	const [localSettings, setLocalSettings] = useState<Record<string, string>>(
+		{},
+	);
 	const [corsOrigins, setCorsOrigins] = useState<string[]>([]);
 	const [hasChanges, setHasChanges] = useState(false);
 
@@ -23,10 +31,13 @@ export function ApiSettingsPanel() {
 
 	useEffect(() => {
 		if (settings && Array.isArray(settings)) {
-			const settingsMap = settings.reduce((acc, setting) => {
-				acc[setting.setting_key] = setting.setting_value;
-				return acc;
-			}, {} as Record<string, string>);
+			const settingsMap = settings.reduce(
+				(acc, setting) => {
+					acc[setting.setting_key] = setting.setting_value;
+					return acc;
+				},
+				{} as Record<string, string>,
+			);
 			setLocalSettings(settingsMap);
 
 			// Parse CORS origins and filter out required ones for display
@@ -36,7 +47,9 @@ export function ApiSettingsPanel() {
 					const parsed = JSON.parse(corsValue);
 					if (Array.isArray(parsed)) {
 						// Only show origins that are not in the required list
-						const userOrigins = parsed.filter(origin => !requiredOrigins.includes(origin));
+						const userOrigins = parsed.filter(
+							(origin) => !requiredOrigins.includes(origin),
+						);
 						setCorsOrigins(userOrigins);
 					}
 				} catch {
@@ -48,7 +61,9 @@ export function ApiSettingsPanel() {
 	}, [settings]);
 
 	const getSetting = (key: string): SystemSetting | undefined => {
-		return settings && Array.isArray(settings) ? settings.find(s => s.setting_key === key) : undefined;
+		return settings && Array.isArray(settings)
+			? settings.find((s) => s.setting_key === key)
+			: undefined;
 	};
 
 	const getSettingValue = (key: string): string => {
@@ -62,22 +77,24 @@ export function ApiSettingsPanel() {
 	};
 
 	const handleInputChange = (key: string, value: string) => {
-		setLocalSettings(prev => ({ ...prev, [key]: value }));
+		setLocalSettings((prev) => ({ ...prev, [key]: value }));
 		setHasChanges(true);
 	};
 
 	const addCorsOrigin = () => {
-		setCorsOrigins(prev => [...prev, ""]);
+		setCorsOrigins((prev) => [...prev, ""]);
 		setHasChanges(true);
 	};
 
 	const removeCorsOrigin = (index: number) => {
-		setCorsOrigins(prev => prev.filter((_, i) => i !== index));
+		setCorsOrigins((prev) => prev.filter((_, i) => i !== index));
 		setHasChanges(true);
 	};
 
 	const updateCorsOrigin = (index: number, value: string) => {
-		setCorsOrigins(prev => prev.map((origin, i) => i === index ? value : origin));
+		setCorsOrigins((prev) =>
+			prev.map((origin, i) => (i === index ? value : origin)),
+		);
 		setHasChanges(true);
 	};
 
@@ -85,7 +102,10 @@ export function ApiSettingsPanel() {
 		if (!settings) return;
 
 		// Prepare CORS origins by combining required origins with user-defined ones
-		const allCorsOrigins = [...requiredOrigins, ...corsOrigins.filter(origin => origin.trim())];
+		const allCorsOrigins = [
+			...requiredOrigins,
+			...corsOrigins.filter((origin) => origin.trim()),
+		];
 		const corsValue = JSON.stringify(allCorsOrigins);
 
 		// Update CORS setting
@@ -94,7 +114,7 @@ export function ApiSettingsPanel() {
 			await updateSettingMutation.mutateAsync({
 				category: "api",
 				settingKey: "cors_allowed_origins",
-				data: { setting_value: corsValue }
+				data: { setting_value: corsValue },
 			});
 		}
 
@@ -106,7 +126,7 @@ export function ApiSettingsPanel() {
 					await updateSettingMutation.mutateAsync({
 						category: "api",
 						settingKey: setting.setting_key,
-						data: { setting_value: newValue }
+						data: { setting_value: newValue },
 					});
 				}
 			}
@@ -127,12 +147,15 @@ export function ApiSettingsPanel() {
 	return (
 		<Card>
 			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					API Settings
-				</CardTitle>
+				<CardTitle className="flex items-center gap-2">API Settings</CardTitle>
 			</CardHeader>
 			<CardContent>
-				<Form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+				<Form
+					onSubmit={(e) => {
+						e.preventDefault();
+						handleSave();
+					}}
+				>
 					<div className="space-y-6">
 						{/* Rate Limit */}
 						<FormField name="rate_limit_requests_per_minute">
@@ -143,13 +166,19 @@ export function ApiSettingsPanel() {
 									min="1"
 									max="10000"
 									value={getSettingValue("rate_limit_requests_per_minute")}
-									onChange={(e) => handleInputChange("rate_limit_requests_per_minute", e.target.value)}
+									onChange={(e) =>
+										handleInputChange(
+											"rate_limit_requests_per_minute",
+											e.target.value,
+										)
+									}
 									placeholder="100"
 									className="w-48"
 								/>
 							</FormControl>
 							<FormDescription>
-								{getSetting("rate_limit_requests_per_minute")?.description || "Rate limit requests per minute per IP"}
+								{getSetting("rate_limit_requests_per_minute")?.description ||
+									"Rate limit requests per minute per IP"}
 							</FormDescription>
 						</FormField>
 
@@ -158,14 +187,18 @@ export function ApiSettingsPanel() {
 							<div className="flex items-center gap-2">
 								<FormLabel>CORS Allowed Origins</FormLabel>
 								{requiresRestart("cors_allowed_origins") && (
-									<Badge variant="destructive" className="flex items-center gap-1 text-xs">
+									<Badge
+										variant="destructive"
+										className="flex items-center gap-1 text-xs"
+									>
 										<AlertTriangle className="w-3 h-3" />
 										Restart Required
 									</Badge>
 								)}
 							</div>
 							<FormDescription className="mb-3">
-								{getSetting("cors_allowed_origins")?.description || "Additional CORS allowed origins (localhost origins are automatically included)"}
+								{getSetting("cors_allowed_origins")?.description ||
+									"Additional CORS allowed origins (localhost origins are automatically included)"}
 							</FormDescription>
 							<div className="space-y-2">
 								{corsOrigins.map((origin, index) => (

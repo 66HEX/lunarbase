@@ -9,7 +9,9 @@ use utoipa::ToSchema;
 
 use crate::{
     AppState,
-    models::system_setting::{SettingCategory, SettingDataType, SystemSettingRequest, SystemSettingResponse},
+    models::system_setting::{
+        SettingCategory, SettingDataType, SystemSettingRequest, SystemSettingResponse,
+    },
     services::ConfigurationService,
     utils::auth_error::ApiResponse,
     utils::{AuthError, Claims, ErrorResponse},
@@ -74,14 +76,20 @@ pub async fn get_all_settings(
     }
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
-    
+
     let settings = if let Some(category_str) = query.category {
         // Validate category
         match category_str.as_str() {
-            "database" | "auth" | "api" => {},
-            _ => return Err(AuthError::ValidationError(vec!["Invalid category".to_string()])),
+            "database" | "auth" | "api" => {}
+            _ => {
+                return Err(AuthError::ValidationError(vec![
+                    "Invalid category".to_string(),
+                ]));
+            }
         };
-        config_service.get_settings_by_category(&category_str).await?
+        config_service
+            .get_settings_by_category(&category_str)
+            .await?
     } else {
         config_service.get_all_settings().await?
     };
@@ -123,12 +131,18 @@ pub async fn get_settings_by_category(
 
     // Validate category
     match category_str.as_str() {
-        "database" | "auth" | "api" => {},
-        _ => return Err(AuthError::ValidationError(vec!["Invalid category".to_string()])),
+        "database" | "auth" | "api" => {}
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid category".to_string(),
+            ]));
+        }
     };
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
-    let settings = config_service.get_settings_by_category(&category_str).await?;
+    let settings = config_service
+        .get_settings_by_category(&category_str)
+        .await?;
 
     let response = ConfigurationResponse {
         settings: settings.into_iter().map(|s| s.into()).collect(),
@@ -168,13 +182,24 @@ pub async fn get_setting(
 
     // Validate category
     match category_str.as_str() {
-        "database" | "auth" | "api" => {},
-        _ => return Err(AuthError::ValidationError(vec!["Invalid category".to_string()])),
+        "database" | "auth" | "api" => {}
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid category".to_string(),
+            ]));
+        }
     };
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
-    let setting = config_service.get_setting(&category_str, &setting_key).await?
-        .ok_or_else(|| AuthError::NotFound(format!("Setting {}:{} not found", category_str, setting_key)))?;
+    let setting = config_service
+        .get_setting(&category_str, &setting_key)
+        .await?
+        .ok_or_else(|| {
+            AuthError::NotFound(format!(
+                "Setting {}:{} not found",
+                category_str, setting_key
+            ))
+        })?;
 
     Ok(Json(ApiResponse::success(setting)))
 }
@@ -212,17 +237,23 @@ pub async fn update_setting(
 
     // Validate category
     match category_str.as_str() {
-        "database" | "auth" | "api" => {},
-        _ => return Err(AuthError::ValidationError(vec!["Invalid category".to_string()])),
+        "database" | "auth" | "api" => {}
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid category".to_string(),
+            ]));
+        }
     };
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
-    let updated_setting = config_service.update_setting(
-        &category_str,
-        &setting_key,
-        &payload.setting_value,
-        payload.updated_by,
-    ).await?;
+    let updated_setting = config_service
+        .update_setting(
+            &category_str,
+            &setting_key,
+            &payload.setting_value,
+            payload.updated_by,
+        )
+        .await?;
 
     Ok(Json(ApiResponse::success(updated_setting)))
 }
@@ -258,7 +289,11 @@ pub async fn create_setting(
         "database" => SettingCategory::Database,
         "auth" => SettingCategory::Auth,
         "api" => SettingCategory::Api,
-        _ => return Err(AuthError::ValidationError(vec!["Invalid category".to_string()])),
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid category".to_string(),
+            ]));
+        }
     };
 
     let data_type = match payload.data_type.as_str() {
@@ -267,25 +302,28 @@ pub async fn create_setting(
         "boolean" => SettingDataType::Boolean,
         "json" => SettingDataType::Json,
         "float" => SettingDataType::Float,
-        _ => return Err(AuthError::ValidationError(vec!["Invalid data type".to_string()])),
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid data type".to_string(),
+            ]));
+        }
     };
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
-    let new_setting = config_service.create_setting(
-        category,
-        payload.setting_key,
-        payload.setting_value,
-        data_type,
-        payload.description,
-        payload.default_value.unwrap_or_default(),
-        payload.is_sensitive.unwrap_or(false),
-        payload.requires_restart.unwrap_or(false),
-    ).await?;
+    let new_setting = config_service
+        .create_setting(
+            category,
+            payload.setting_key,
+            payload.setting_value,
+            data_type,
+            payload.description,
+            payload.default_value.unwrap_or_default(),
+            payload.is_sensitive.unwrap_or(false),
+            payload.requires_restart.unwrap_or(false),
+        )
+        .await?;
 
-    Ok((
-        StatusCode::CREATED,
-        Json(ApiResponse::success(new_setting))
-    ))
+    Ok((StatusCode::CREATED, Json(ApiResponse::success(new_setting))))
 }
 
 /// Delete a setting (admin only)
@@ -319,12 +357,18 @@ pub async fn delete_setting(
 
     // Validate category
     match category_str.as_str() {
-        "database" | "auth" | "api" => {},
-        _ => return Err(AuthError::ValidationError(vec!["Invalid category".to_string()])),
+        "database" | "auth" | "api" => {}
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid category".to_string(),
+            ]));
+        }
     };
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
-    config_service.delete_setting(&category_str, &setting_key).await?;
+    config_service
+        .delete_setting(&category_str, &setting_key)
+        .await?;
 
     Ok(Json(ApiResponse::success(())))
 }
@@ -360,12 +404,18 @@ pub async fn reset_setting(
 
     // Validate category
     match category_str.as_str() {
-        "database" | "auth" | "api" => {},
-        _ => return Err(AuthError::ValidationError(vec!["Invalid category".to_string()])),
+        "database" | "auth" | "api" => {}
+        _ => {
+            return Err(AuthError::ValidationError(vec![
+                "Invalid category".to_string(),
+            ]));
+        }
     };
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
-    let reset_setting = config_service.reset_setting_to_default(&category_str, &setting_key, None).await?;
+    let reset_setting = config_service
+        .reset_setting_to_default(&category_str, &setting_key, None)
+        .await?;
 
     Ok(Json(ApiResponse::success(reset_setting)))
 }

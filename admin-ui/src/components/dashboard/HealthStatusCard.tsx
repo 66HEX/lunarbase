@@ -16,24 +16,24 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 
 	return (
 		<Card className="dashboard-card">
-			<CardHeader className="pb-4 p-4">
-				<CardTitle className="flex items-center gap-2 text-lg">
-					<div className="p-1.5 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
-						<Server className="w-4 h-4 text-nocta-700 dark:text-nocta-300" />
+			<CardHeader className="pb-3 p-3">
+				<CardTitle className="flex items-center gap-2 text-base">
+					<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
+						<Server className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 					</div>
 					System Health
 					{isHealthy ? (
-						<CheckCircle className="w-4 h-4 text-green-600" />
+						<CheckCircle className="w-3.5 h-3.5 text-green-600" />
 					) : (
-						<AlertTriangle className="w-4 h-4 text-red-600" />
+						<AlertTriangle className="w-3.5 h-3.5 text-red-600" />
 					)}
 				</CardTitle>
 			</CardHeader>
-			<CardContent className="p-4">
-				<div className="space-y-4">
+			<CardContent className="p-3 pt-0">
+				<div className="space-y-3">
 					{/* API Server Status */}
-					<div className="flex items-center justify-between p-3 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
-						<div className="flex items-center gap-3">
+					<div className="flex items-center justify-between p-2 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
+						<div className="flex items-center gap-2.5">
 							<div
 								className={`w-2 h-2 rounded-full ${isHealthy ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
 							></div>
@@ -50,8 +50,8 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 					</div>
 
 					{/* Database Status */}
-					<div className="flex items-center justify-between p-3 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
-						<div className="flex items-center gap-3">
+					<div className="flex items-center justify-between p-2 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
+						<div className="flex items-center gap-2.5">
 							<div
 								className={`w-2 h-2 rounded-full ${dbHealthy ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
 							></div>
@@ -68,9 +68,9 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 					</div>
 
 					{/* System Metrics */}
-					<div className="space-y-3 pt-3 border-t border-nocta-200 dark:border-nocta-800/50">
+					<div className="space-y-2.5 pt-2.5 border-t border-nocta-200 dark:border-nocta-800/50">
 						{/* Memory Usage */}
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<div className="flex items-center justify-between">
 								<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
 									Memory Usage
@@ -92,7 +92,7 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 						</div>
 
 						{/* CPU Usage */}
-						<div className="space-y-2">
+						<div className="space-y-1.5">
 							<div className="flex items-center justify-between">
 								<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
 									CPU Usage
@@ -108,8 +108,8 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 						</div>
 
 						{/* Additional Metrics */}
-						<div className="grid grid-cols-2 gap-3 pt-2">
-							<div className="text-center p-2 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
+						<div className="grid grid-cols-2 gap-2.5 pt-1.5">
+							<div className="text-center p-1.5 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
 								<div className="text-xs text-nocta-500 dark:text-nocta-500">
 									Uptime
 								</div>
@@ -119,7 +119,7 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 										: "0h 0m"}
 								</div>
 							</div>
-							<div className="text-center p-2 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
+							<div className="text-center p-1.5 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
 								<div className="text-xs text-nocta-500 dark:text-nocta-500">
 									Version
 								</div>

@@ -4,11 +4,11 @@ use axum::{
     http::{Request, StatusCode},
     routing::{delete, get, post, put},
 };
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use http_body_util::BodyExt;
 use serde_json::{Value, json};
 use tower::ServiceExt;
 use uuid;
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 
 use axum::middleware;
 use lunarbase::database::create_pool;
@@ -26,14 +26,14 @@ async fn create_test_router() -> Router {
     // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
-    
+
     // Run database migrations
     {
         let mut conn = db_pool.get().expect("Failed to get database connection");
         conn.run_pending_migrations(MIGRATIONS)
             .expect("Failed to run migrations");
     }
-    
+
     let test_password_pepper = "test_pepper".to_string();
     let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
         .await
@@ -47,12 +47,27 @@ async fn create_test_router() -> Router {
     // Protected routes (authentication required)
     let protected_routes = Router::new()
         .route("/admin/configuration", get(get_all_settings))
-        .route("/admin/configuration/{category}", get(get_settings_by_category))
-        .route("/admin/configuration/{category}/{setting_key}", get(get_setting))
-        .route("/admin/configuration/{category}/{setting_key}", put(update_setting))
+        .route(
+            "/admin/configuration/{category}",
+            get(get_settings_by_category),
+        )
+        .route(
+            "/admin/configuration/{category}/{setting_key}",
+            get(get_setting),
+        )
+        .route(
+            "/admin/configuration/{category}/{setting_key}",
+            put(update_setting),
+        )
         .route("/admin/configuration", post(create_setting))
-        .route("/admin/configuration/{category}/{setting_key}", delete(delete_setting))
-        .route("/admin/configuration/{category}/{setting_key}/reset", post(reset_setting))
+        .route(
+            "/admin/configuration/{category}/{setting_key}",
+            delete(delete_setting),
+        )
+        .route(
+            "/admin/configuration/{category}/{setting_key}/reset",
+            post(reset_setting),
+        )
         .layer(middleware::from_fn_with_state(
             app_state.auth_state.clone(),
             auth_middleware,
@@ -193,7 +208,7 @@ async fn cleanup_test_setting(category: &str, key: &str) {
     diesel::delete(
         system_settings::table
             .filter(system_settings::category.eq(category))
-            .filter(system_settings::setting_key.eq(key))
+            .filter(system_settings::setting_key.eq(key)),
     )
     .execute(&mut conn)
     .ok(); // Ignore errors in cleanup
@@ -239,7 +254,10 @@ async fn test_create_setting_success() {
     let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
-    let unique_key = format!("test_key_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_key = format!(
+        "test_key_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     let payload = json!({
         "category": "database",
         "setting_key": unique_key,
@@ -261,7 +279,7 @@ async fn test_create_setting_success() {
 
     let response = app.oneshot(request).await.unwrap();
     let status = response.status();
-    
+
     if status != StatusCode::CREATED {
         let body = response.into_body().collect().await.unwrap().to_bytes();
         let body_str = String::from_utf8(body.to_vec()).unwrap();
@@ -269,7 +287,7 @@ async fn test_create_setting_success() {
         println!("Response body: {}", body_str);
         panic!("Expected status 201, got {}", status);
     }
-    
+
     assert_eq!(status, StatusCode::CREATED);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -287,7 +305,10 @@ async fn test_get_setting_success() {
     let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
-    let unique_key = format!("get_test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_key = format!(
+        "get_test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     create_test_setting("database", &unique_key, "test_value").await;
 
     let request = Request::builder()
@@ -331,7 +352,10 @@ async fn test_update_setting_success() {
     let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
-    let unique_key = format!("update_test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_key = format!(
+        "update_test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     create_test_setting("database", &unique_key, "original_value").await;
 
     let payload = json!({
@@ -364,7 +388,10 @@ async fn test_delete_setting_success() {
     let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
-    let unique_key = format!("delete_test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_key = format!(
+        "delete_test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     create_test_setting("database", &unique_key, "to_be_deleted").await;
 
     let request = Request::builder()
@@ -383,7 +410,10 @@ async fn test_get_settings_by_category() {
     let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
-    let unique_key = format!("category_test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_key = format!(
+        "category_test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     create_test_setting("database", &unique_key, "category_value").await;
 
     let request = Request::builder()
@@ -410,11 +440,17 @@ async fn test_reset_setting_success() {
     let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
-    let unique_key = format!("reset_test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_key = format!(
+        "reset_test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     create_test_setting("database", &unique_key, "modified_value").await;
 
     let request = Request::builder()
-        .uri(&format!("/api/admin/configuration/database/{}/reset", unique_key))
+        .uri(&format!(
+            "/api/admin/configuration/database/{}/reset",
+            unique_key
+        ))
         .method("POST")
         .header("authorization", format!("Bearer {}", token))
         .body(Body::empty())
@@ -460,7 +496,10 @@ async fn test_create_setting_duplicate_key() {
     let app = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app).await;
 
-    let unique_key = format!("duplicate_test_{}", uuid::Uuid::new_v4().to_string()[0..8].to_string());
+    let unique_key = format!(
+        "duplicate_test_{}",
+        uuid::Uuid::new_v4().to_string()[0..8].to_string()
+    );
     create_test_setting("database", &unique_key, "existing_value").await;
 
     let payload = json!({

@@ -1,7 +1,7 @@
+use crate::schema::system_settings;
 use chrono::{DateTime, NaiveDateTime, Utc};
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use crate::schema::system_settings;
 
 #[derive(Debug, Clone, Queryable, Selectable, Serialize, Deserialize)]
 #[diesel(table_name = system_settings)]
@@ -172,7 +172,6 @@ impl SystemSetting {
             requires_restart: self.requires_restart,
             created_at: DateTime::from_naive_utc_and_offset(self.created_at, Utc),
             updated_at: DateTime::from_naive_utc_and_offset(self.updated_at, Utc),
-
         }
     }
 }

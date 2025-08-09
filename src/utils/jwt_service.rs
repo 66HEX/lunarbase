@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::AuthError;
 use crate::schema::blacklisted_tokens;
-use crate::services::{ConfigurationManager, ConfigurationAccess};
+use crate::services::{ConfigurationAccess, ConfigurationManager};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
@@ -35,7 +35,11 @@ pub struct JwtService {
 }
 
 impl JwtService {
-    pub fn new(secret: &str, pool: Pool<ConnectionManager<SqliteConnection>>, config_manager: ConfigurationManager) -> Self {
+    pub fn new(
+        secret: &str,
+        pool: Pool<ConnectionManager<SqliteConnection>>,
+        config_manager: ConfigurationManager,
+    ) -> Self {
         Self {
             encoding_key: EncodingKey::from_secret(secret.as_ref()),
             decoding_key: DecodingKey::from_secret(secret.as_ref()),

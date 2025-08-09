@@ -717,7 +717,9 @@ export const metricsApi = {
 export const configurationApi = {
 	// Get all system settings
 	getAllSettings: async (): Promise<SystemSetting[]> => {
-		const response = await apiRequest<ApiResponse<{settings: SystemSetting[]}>>("/admin/configuration");
+		const response = await apiRequest<
+			ApiResponse<{ settings: SystemSetting[] }>
+		>("/admin/configuration");
 		return response.data.settings;
 	},
 
@@ -725,9 +727,9 @@ export const configurationApi = {
 	getSettingsByCategory: async (
 		category: "database" | "auth" | "api",
 	): Promise<SystemSetting[]> => {
-		const response = await apiRequest<ApiResponse<{settings: SystemSetting[]}>>(
-			`/admin/configuration/${category}`,
-		);
+		const response = await apiRequest<
+			ApiResponse<{ settings: SystemSetting[] }>
+		>(`/admin/configuration/${category}`);
 		return response.data.settings;
 	},
 
@@ -743,11 +745,16 @@ export const configurationApi = {
 	},
 
 	// Create a new setting
-	createSetting: async (data: CreateSystemSettingRequest): Promise<SystemSetting> => {
-		const response = await apiRequest<ApiResponse<SystemSetting>>("/admin/configuration", {
-			method: "POST",
-			body: JSON.stringify(data),
-		});
+	createSetting: async (
+		data: CreateSystemSettingRequest,
+	): Promise<SystemSetting> => {
+		const response = await apiRequest<ApiResponse<SystemSetting>>(
+			"/admin/configuration",
+			{
+				method: "POST",
+				body: JSON.stringify(data),
+			},
+		);
 		return response.data;
 	},
 

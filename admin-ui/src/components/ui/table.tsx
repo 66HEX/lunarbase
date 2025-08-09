@@ -56,7 +56,7 @@ const tableRowVariants = cva("", {
 		{
 			variant: "striped",
 			isOdd: true,
-			class: "bg-nocta-200/50 dark:bg-nocta-800/30",
+			class: "bg-nocta-200/50 dark:bg-nocta-800/20",
 		},
 	],
 	defaultVariants: {
@@ -265,6 +265,25 @@ export const Table = <T extends Record<string, unknown>>({
 
 	return (
 		<div className="not-prose relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl">
+			<span
+				aria-hidden
+				className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b to-transparent opacity-60"
+				style={{
+					maskImage:
+						"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+					WebkitMaskImage:
+						"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+				}}
+			/>
+
+			<span
+				aria-hidden
+				className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-xl opacity-60"
+				style={{
+					background:
+						"linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+				}}
+			/>
 			<div
 				className={cn(
 					tableContainerVariants({ variant }),
@@ -365,7 +384,7 @@ export const Table = <T extends Record<string, unknown>>({
 				</div>
 
 				{pagination && (
-					<div className="px-6 py-4 bg-nocta-200/50 dark:bg-nocta-800/30 border-t border-nocta-200 dark:border-nocta-800/50 flex items-center justify-between">
+					<div className="px-6 py-4 bg-nocta-200/50 dark:bg-nocta-800/20 border-t border-nocta-200 dark:border-nocta-800/50 flex items-center justify-between">
 						<div className="text-sm text-nocta-600 dark:text-nocta-400">
 							Showing{" "}
 							{Math.min(
@@ -427,7 +446,7 @@ export const TableHeader: React.FC<TableHeaderProps> = ({
 	return (
 		<thead
 			className={cn(
-				"bg-nocta-200/50 dark:bg-nocta-800/30 border-b border-nocta-200 dark:border-nocta-800/50",
+				"bg-nocta-200/50 dark:bg-nocta-800/20 border-b border-nocta-200 dark:border-nocta-800/50",
 				className,
 			)}
 			{...props}
@@ -577,7 +596,7 @@ export const TableFooter: React.FC<TableFooterProps> = ({
 	return (
 		<tfoot
 			className={cn(
-				"bg-nocta-200/50 dark:bg-nocta-800/30 border-t border-nocta-200 dark:border-nocta-800/50 font-medium",
+				"bg-nocta-200/50 dark:bg-nocta-800/20 border-t border-nocta-200 dark:border-nocta-800/50 font-medium",
 				className,
 			)}
 			{...props}

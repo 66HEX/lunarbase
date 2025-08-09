@@ -66,8 +66,7 @@ function DashboardComponent() {
 				stats.health?.database?.total_collections ||
 				0,
 			icon: Database,
-			href: "/collections",
-			detail: "Manage your data collections",
+			description: "Total number of data collections in the system",
 		},
 		{
 			title: "Total Records",
@@ -76,22 +75,19 @@ function DashboardComponent() {
 				stats.health?.database?.total_records ||
 				0,
 			icon: FileText,
-			href: "/records",
-			detail: "Browse all stored records",
+			description: "Total number of records stored across all collections",
 		},
 		{
 			title: "Active Connections",
 			value: stats.websocket?.total_connections || 0,
 			icon: Globe,
-			href: "/websocket",
-			detail: "Real-time WebSocket activity",
+			description: "Current number of active WebSocket connections",
 		},
 		{
 			title: "System Health",
 			value: stats.health?.status === "healthy" ? "Healthy" : "Issues",
 			icon: Activity,
-			href: "/health",
-			detail: "Overall system status",
+			description: "Current overall system health status",
 		},
 	];
 

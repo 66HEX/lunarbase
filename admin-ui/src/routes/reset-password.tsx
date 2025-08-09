@@ -159,7 +159,6 @@ export default function ResetPasswordComponent() {
 						<h1 className="text-3xl font-medium text-nocta-900 dark:text-nocta-100">
 							LunarBase
 						</h1>
-
 					</div>
 
 					{/* Success Card */}

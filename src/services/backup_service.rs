@@ -11,7 +11,7 @@ use uuid::Uuid;
 use crate::database::DatabasePool;
 use crate::middleware::MetricsState;
 use crate::services::S3Service;
-use crate::services::configuration_manager::{ConfigurationManager, ConfigurationAccess};
+use crate::services::configuration_manager::{ConfigurationAccess, ConfigurationManager};
 
 #[derive(Clone)]
 pub struct BackupService {
@@ -21,8 +21,6 @@ pub struct BackupService {
     config_manager: Arc<ConfigurationManager>,
     metrics_state: Option<Arc<MetricsState>>,
 }
-
-
 
 #[derive(Debug)]
 pub struct BackupResult {
@@ -48,8 +46,6 @@ pub enum BackupError {
     #[error("Compression error: {0}")]
     CompressionError(String),
 }
-
-
 
 impl ConfigurationAccess for BackupService {
     fn config_manager(&self) -> &ConfigurationManager {
@@ -144,10 +140,7 @@ impl BackupService {
         if backup_enabled {
             service.setup_scheduled_backup().await?;
             let schedule = service.get_backup_schedule().await;
-            info!(
-                "Backup service initialized with schedule: {}",
-                schedule
-            );
+            info!("Backup service initialized with schedule: {}", schedule);
         } else {
             info!("Backup service initialized but disabled");
         }
@@ -212,11 +205,7 @@ impl BackupService {
             "{}-{}.sqlite{}",
             backup_prefix,
             timestamp.format("%Y%m%d_%H%M%S"),
-            if compression_enabled {
-                ".gz"
-            } else {
-                ""
-            }
+            if compression_enabled { ".gz" } else { "" }
         );
 
         info!("Creating backup with ID: {}", backup_id);
@@ -496,7 +485,11 @@ pub async fn create_backup_service_from_config(
     let temp_service = BackupService {
         db_pool: db_pool.clone(),
         s3_service: s3_service.clone(),
-        scheduler: Arc::new(JobScheduler::new().await.map_err(|e| BackupError::SchedulerError(e.to_string()))?),
+        scheduler: Arc::new(
+            JobScheduler::new()
+                .await
+                .map_err(|e| BackupError::SchedulerError(e.to_string()))?,
+        ),
         config_manager: config_manager.clone(),
         metrics_state: metrics_state.clone(),
     };

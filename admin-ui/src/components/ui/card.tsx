@@ -45,6 +45,25 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 				ref={ref}
 				className="relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl w-full"
 			>
+				<span
+					aria-hidden
+					className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b to-transparent opacity-60"
+					style={{
+						maskImage:
+							"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+						WebkitMaskImage:
+							"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+					}}
+				/>
+
+				<span
+					aria-hidden
+					className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-xl opacity-60"
+					style={{
+						background:
+							"linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+					}}
+				/>
 				<div
 					className={cn(
 						"bg-nocta-100 dark:bg-nocta-900 rounded-xl shadow-sm dark:shadow-lg transition-all duration-300 ease-out backdrop-blur-sm overflow-hidden not-prose",
@@ -89,7 +108,7 @@ export const CardTitle: React.FC<CardTitleProps> = ({
 		Component,
 		{
 			className: cn(
-				"text-lg font-medium text-nocta-900 dark:text-nocta-100 tracking-tight leading-tight not-prose",
+				"text-lg font-semibold text-nocta-900 dark:text-nocta-100 tracking-tight leading-tight not-prose",
 				className,
 			),
 			...props,

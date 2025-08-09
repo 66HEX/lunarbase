@@ -254,8 +254,8 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, BackupService, CollectionService, ConfigurationManager, EmailService, OwnershipService,
-    PermissionService, WebSocketService, create_backup_service_from_config,
+    AdminService, BackupService, CollectionService, ConfigurationManager, EmailService,
+    OwnershipService, PermissionService, WebSocketService, create_backup_service_from_config,
     create_s3_service_from_config,
 };
 use std::sync::Arc;
@@ -320,7 +320,12 @@ impl AppState {
 
         Ok(Self {
             db_pool: db_pool.clone(),
-            auth_state: middleware::AuthState::new(jwt_secret, db_pool.clone(), configuration_manager.clone()).await,
+            auth_state: middleware::AuthState::new(
+                jwt_secret,
+                db_pool.clone(),
+                configuration_manager.clone(),
+            )
+            .await,
             metrics_state,
             collection_service,
             permission_service,

@@ -21,7 +21,9 @@ export const useAllSettings = () => {
 /**
  * Hook for fetching settings by category
  */
-export const useSettingsByCategory = (category: "database" | "auth" | "api") => {
+export const useSettingsByCategory = (
+	category: "database" | "auth" | "api",
+) => {
 	return useQuery({
 		queryKey: ["settings", category],
 		queryFn: async (): Promise<SystemSetting[]> => {

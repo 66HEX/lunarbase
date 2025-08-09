@@ -1,11 +1,11 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { configurationApi, CustomApiError } from "@/lib/api";
+import { useToast } from "@/hooks/useToast";
+import { type CustomApiError, configurationApi } from "@/lib/api";
 import type {
 	CreateSystemSettingRequest,
 	SystemSetting,
 	UpdateSystemSettingRequest,
 } from "@/types/api";
-import { useToast } from "@/hooks/useToast";
 
 /**
  * Hook for creating a new system setting
@@ -15,14 +15,16 @@ export const useCreateSetting = () => {
 	const { toast } = useToast();
 
 	return useMutation({
-		mutationFn: async (data: CreateSystemSettingRequest): Promise<SystemSetting> => {
+		mutationFn: async (
+			data: CreateSystemSettingRequest,
+		): Promise<SystemSetting> => {
 			return await configurationApi.createSetting(data);
 		},
 		onSuccess: (data) => {
 			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
 			queryClient.invalidateQueries({ queryKey: ["settings", data.category] });
-			
+
 			toast({
 				title: "Setting Created",
 				description: `Setting '${data.setting_key}' has been created successfully.`,
@@ -61,11 +63,13 @@ export const useUpdateSetting = () => {
 		onSuccess: (_, variables) => {
 			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
-			queryClient.invalidateQueries({ queryKey: ["settings", variables.category] });
+			queryClient.invalidateQueries({
+				queryKey: ["settings", variables.category],
+			});
 			queryClient.invalidateQueries({
 				queryKey: ["settings", variables.category, variables.settingKey],
 			});
-			
+
 			toast({
 				title: "Setting Updated",
 				description: `Setting '${variables.settingKey}' has been updated successfully.`,
@@ -102,11 +106,13 @@ export const useDeleteSetting = () => {
 		onSuccess: (_, variables) => {
 			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
-			queryClient.invalidateQueries({ queryKey: ["settings", variables.category] });
+			queryClient.invalidateQueries({
+				queryKey: ["settings", variables.category],
+			});
 			queryClient.removeQueries({
 				queryKey: ["settings", variables.category, variables.settingKey],
 			});
-			
+
 			toast({
 				title: "Setting Deleted",
 				description: `Setting '${variables.settingKey}' has been deleted successfully.`,
@@ -143,11 +149,13 @@ export const useResetSetting = () => {
 		onSuccess: (_, variables) => {
 			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
-			queryClient.invalidateQueries({ queryKey: ["settings", variables.category] });
+			queryClient.invalidateQueries({
+				queryKey: ["settings", variables.category],
+			});
 			queryClient.invalidateQueries({
 				queryKey: ["settings", variables.category, variables.settingKey],
 			});
-			
+
 			toast({
 				title: "Setting Reset",
 				description: `Setting '${variables.settingKey}' has been reset to default value.`,

@@ -105,8 +105,20 @@ function RootComponent() {
 					)}
 
 					{/* Page content */}
-					<main className={isLoginPage ? "flex-1" : "flex-1 p-4 bg-nocta-100 dark:bg-nocta-900"}>
-						<div className="bg-nocta-950 rounded-2xl p-4 h-[96svh] overflow-y-auto">
+					<main
+						className={
+							isLoginPage
+								? "flex-1"
+								: "flex-1 p-4 bg-nocta-100 dark:bg-nocta-900"
+						}
+					>
+						<div
+							className={
+								isLoginPage
+									? "bg-nocta-950"
+									: "bg-nocta-950 rounded-2xl p-4 h-[96svh] overflow-y-auto"
+							}
+						>
 							<Outlet />
 						</div>
 					</main>

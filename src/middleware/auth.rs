@@ -8,8 +8,8 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
+use crate::services::{ConfigurationAccess, ConfigurationManager};
 use crate::utils::{AuthError, Claims, CookieService, JwtService};
-use crate::services::{ConfigurationManager, ConfigurationAccess};
 use diesel::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 
@@ -65,13 +65,23 @@ pub struct AuthState {
 }
 
 impl AuthState {
-    pub async fn new(jwt_secret: &str, pool: Pool<ConnectionManager<SqliteConnection>>, config_manager: ConfigurationManager) -> Self {
+    pub async fn new(
+        jwt_secret: &str,
+        pool: Pool<ConnectionManager<SqliteConnection>>,
+        config_manager: ConfigurationManager,
+    ) -> Self {
         // Get rate limit configuration from database
-        let requests_per_minute = config_manager.get_u32_or_default("api", "rate_limit_requests_per_minute", 100).await;
+        let requests_per_minute = config_manager
+            .get_u32_or_default("api", "rate_limit_requests_per_minute", 100)
+            .await;
         let window_seconds = 60; // 1 minute window
-        
+
         Self {
-            jwt_service: Arc::new(JwtService::new(jwt_secret, pool.clone(), config_manager.clone())),
+            jwt_service: Arc::new(JwtService::new(
+                jwt_secret,
+                pool.clone(),
+                config_manager.clone(),
+            )),
             rate_limiter: RateLimiter::new(requests_per_minute as usize, window_seconds),
             config_manager,
         }
@@ -81,7 +91,8 @@ impl AuthState {
     pub async fn update_rate_limiter(&mut self) {
         let requests_per_minute = self.get_rate_limit_requests_per_minute().await;
         let window_seconds = 60; // 1 minute window
-        self.rate_limiter.update_limits(requests_per_minute as usize, window_seconds);
+        self.rate_limiter
+            .update_limits(requests_per_minute as usize, window_seconds);
     }
 }
 

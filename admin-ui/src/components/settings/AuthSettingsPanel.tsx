@@ -1,9 +1,15 @@
 import { Save } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+	Form,
+	FormControl,
+	FormDescription,
+	FormField,
+	FormLabel,
+} from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Form, FormField, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/spinner";
 import { useSettingsByCategory } from "@/hooks/configuration/useConfiguration";
 import { useUpdateSetting } from "@/hooks/configuration/useConfigurationMutations";
@@ -12,22 +18,29 @@ import type { SystemSetting } from "@/types/api";
 export function AuthSettingsPanel() {
 	const { data: settings, isLoading } = useSettingsByCategory("auth");
 	const updateSettingMutation = useUpdateSetting();
-	
-	const [localSettings, setLocalSettings] = useState<Record<string, string>>({});
+
+	const [localSettings, setLocalSettings] = useState<Record<string, string>>(
+		{},
+	);
 	const [hasChanges, setHasChanges] = useState(false);
 
 	useEffect(() => {
 		if (settings && Array.isArray(settings)) {
-			const settingsMap = settings.reduce((acc, setting) => {
-				acc[setting.setting_key] = setting.setting_value;
-				return acc;
-			}, {} as Record<string, string>);
+			const settingsMap = settings.reduce(
+				(acc, setting) => {
+					acc[setting.setting_key] = setting.setting_value;
+					return acc;
+				},
+				{} as Record<string, string>,
+			);
 			setLocalSettings(settingsMap);
 		}
 	}, [settings]);
 
 	const getSetting = (key: string): SystemSetting | undefined => {
-		return settings && Array.isArray(settings) ? settings.find(s => s.setting_key === key) : undefined;
+		return settings && Array.isArray(settings)
+			? settings.find((s) => s.setting_key === key)
+			: undefined;
 	};
 
 	const getSettingValue = (key: string): string => {
@@ -35,10 +48,9 @@ export function AuthSettingsPanel() {
 	};
 
 	const handleInputChange = (key: string, value: string) => {
-		setLocalSettings(prev => ({ ...prev, [key]: value }));
+		setLocalSettings((prev) => ({ ...prev, [key]: value }));
 		setHasChanges(true);
 	};
-
 
 	const handleSave = async () => {
 		if (!settings) return;
@@ -49,7 +61,7 @@ export function AuthSettingsPanel() {
 				await updateSettingMutation.mutateAsync({
 					category: "auth",
 					settingKey: setting.setting_key,
-					data: { setting_value: newValue }
+					data: { setting_value: newValue },
 				});
 			}
 		}
@@ -74,7 +86,12 @@ export function AuthSettingsPanel() {
 				</CardTitle>
 			</CardHeader>
 			<CardContent>
-				<Form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
+				<Form
+					onSubmit={(e) => {
+						e.preventDefault();
+						handleSave();
+					}}
+				>
 					<div className="space-y-6">
 						{/* JWT Lifetime */}
 						<FormField name="jwt_lifetime_hours">
@@ -83,7 +100,9 @@ export function AuthSettingsPanel() {
 								<Input
 									type="number"
 									value={getSettingValue("jwt_lifetime_hours")}
-									onChange={(e) => handleInputChange("jwt_lifetime_hours", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("jwt_lifetime_hours", e.target.value)
+									}
 									placeholder="Token lifetime in hours"
 									className="w-48"
 									min="1"
@@ -91,7 +110,8 @@ export function AuthSettingsPanel() {
 								/>
 							</FormControl>
 							<FormDescription>
-								{getSetting("jwt_lifetime_hours")?.description || "How long JWT tokens remain valid (1-168 hours)"}
+								{getSetting("jwt_lifetime_hours")?.description ||
+									"How long JWT tokens remain valid (1-168 hours)"}
 							</FormDescription>
 						</FormField>
 
@@ -102,7 +122,12 @@ export function AuthSettingsPanel() {
 								<Input
 									type="number"
 									value={getSettingValue("lockout_duration_minutes")}
-									onChange={(e) => handleInputChange("lockout_duration_minutes", e.target.value)}
+									onChange={(e) =>
+										handleInputChange(
+											"lockout_duration_minutes",
+											e.target.value,
+										)
+									}
 									placeholder="Account lockout duration"
 									className="w-48"
 									min="1"
@@ -110,7 +135,8 @@ export function AuthSettingsPanel() {
 								/>
 							</FormControl>
 							<FormDescription>
-								{getSetting("lockout_duration_minutes")?.description || "How long accounts remain locked after failed login attempts (1-1440 minutes)"}
+								{getSetting("lockout_duration_minutes")?.description ||
+									"How long accounts remain locked after failed login attempts (1-1440 minutes)"}
 							</FormDescription>
 						</FormField>
 
@@ -121,7 +147,9 @@ export function AuthSettingsPanel() {
 								<Input
 									type="number"
 									value={getSettingValue("max_login_attempts")}
-									onChange={(e) => handleInputChange("max_login_attempts", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("max_login_attempts", e.target.value)
+									}
 									placeholder="Maximum login attempts"
 									className="w-48"
 									min="1"
@@ -129,7 +157,8 @@ export function AuthSettingsPanel() {
 								/>
 							</FormControl>
 							<FormDescription>
-								{getSetting("max_login_attempts")?.description || "Maximum failed login attempts before account lockout (1-20 attempts)"}
+								{getSetting("max_login_attempts")?.description ||
+									"Maximum failed login attempts before account lockout (1-20 attempts)"}
 							</FormDescription>
 						</FormField>
 
