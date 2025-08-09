@@ -89,7 +89,7 @@ export const CardTitle: React.FC<CardTitleProps> = ({
 		Component,
 		{
 			className: cn(
-				"text-lg font-semibold text-nocta-900 dark:text-nocta-100 tracking-tight leading-tight not-prose",
+				"text-lg font-medium text-nocta-900 dark:text-nocta-100 tracking-tight leading-tight not-prose",
 				className,
 			),
 			...props,

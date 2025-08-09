@@ -1,15 +1,23 @@
 @import "tailwindcss";
 
 @font-face {
-	font-family: "TomatoGrotesk";
-	src: url("/fonts/TomatoGrotesk.woff2") format("woff2");
+	font-family: "PPNeueMontreal";
+	src: url("/fonts/PPNeueMontreal-Regular.woff2") format("woff2");
 	font-style: normal;
-	font-weight: 1 1000;
+	font-weight: 400;
+	font-display: swap;
+}
+
+@font-face {
+	font-family: "PPNeueMontreal";
+	src: url("/fonts/PPNeueMontreal-Medium.woff2") format("woff2");
+	font-style: normal;
+	font-weight: 500;
 	font-display: swap;
 }
 
 @theme {
-	--font-tomato-grotesk: "TomatoGrotesk";
+	--font-pp-neue-montreal: "PPNeueMontreal";
 	--color-nocta-50: oklch(0.985 0 0);
 	--color-nocta-100: oklch(0.97 0 0);
 	--color-nocta-200: oklch(0.922 0 0);
@@ -25,7 +33,7 @@
 
 @layer base {
 	body {
-		@apply bg-nocta-100 dark:bg-nocta-950 font-tomato-grotesk;
+		@apply bg-nocta-100 dark:bg-nocta-900 font-pp-neue-montreal;
 	}
 }
 

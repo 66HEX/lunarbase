@@ -544,7 +544,7 @@ export const TableCell: React.FC<TableCellProps> = ({
 				"px-6 py-4",
 				getAlignmentClass(),
 				header
-					? "font-semibold text-nocta-900 dark:text-nocta-100 tracking-tight"
+					? "font-medium text-nocta-900 dark:text-nocta-100 tracking-tight"
 					: "text-nocta-700 dark:text-nocta-300",
 				sortable
 					? "cursor-pointer hover:bg-nocta-100 dark:hover:bg-nocta-800/50 select-none transition-colors duration-200 ease-in-out"
@@ -577,7 +577,7 @@ export const TableFooter: React.FC<TableFooterProps> = ({
 	return (
 		<tfoot
 			className={cn(
-				"bg-nocta-200/50 dark:bg-nocta-800/30 border-t border-nocta-200 dark:border-nocta-800/50 font-semibold",
+				"bg-nocta-200/50 dark:bg-nocta-800/30 border-t border-nocta-200 dark:border-nocta-800/50 font-medium",
 				className,
 			)}
 			{...props}

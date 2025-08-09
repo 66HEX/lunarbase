@@ -134,22 +134,20 @@ export function AuthSettingsPanel() {
 						</FormField>
 
 						{/* Save Button */}
-						{hasChanges && (
-							<div className="flex justify-end pt-4">
-								<Button
-									type="submit"
-									disabled={updateSettingMutation.isPending}
-									className="flex items-center gap-2"
-								>
-									{updateSettingMutation.isPending ? (
-										<Spinner className="w-4 h-4" />
-									) : (
-										<Save className="w-4 h-4" />
-									)}
-									Save Changes
-								</Button>
-							</div>
-						)}
+						<div className="flex justify-end pt-4">
+							<Button
+								type="submit"
+								disabled={!hasChanges || updateSettingMutation.isPending}
+								className="flex items-center gap-2"
+							>
+								{updateSettingMutation.isPending ? (
+									<Spinner className="w-4 h-4" />
+								) : (
+									<Save className="w-4 h-4" />
+								)}
+								Save Changes
+							</Button>
+						</div>
 					</div>
 				</Form>
 			</CardContent>

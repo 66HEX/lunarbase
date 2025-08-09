@@ -717,8 +717,8 @@ export const metricsApi = {
 export const configurationApi = {
 	// Get all system settings
 	getAllSettings: async (): Promise<SystemSetting[]> => {
-		const response = await apiRequest<ApiResponse<SystemSetting[]>>("/admin/configuration");
-		return response.data;
+		const response = await apiRequest<ApiResponse<{settings: SystemSetting[]}>>("/admin/configuration");
+		return response.data.settings;
 	},
 
 	// Get settings by category

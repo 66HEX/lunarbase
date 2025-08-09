@@ -1,5 +1,4 @@
 import { Clock, TrendingUp } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
 interface DashboardHeaderProps {
@@ -13,15 +12,9 @@ export function DashboardHeader({ onRefresh, loading }: DashboardHeaderProps) {
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-nocta-900 dark:text-nocta-100">
 							Dashboard
 						</h1>
-						<Badge
-							variant="secondary"
-							className="px-2 py-0.5 text-xs font-medium w-fit"
-						>
-							Live
-						</Badge>
 					</div>
 					<p className="text-sm sm:text-base lg:text-lg text-nocta-600 dark:text-nocta-400">
 						Monitor and manage your LunarBase instance

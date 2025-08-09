@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { Save, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,9 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Form, FormField, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
 import { Switch } from "@/components/ui/switch";
 import { Spinner } from "@/components/ui/spinner";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
 import { useSettingsByCategory } from "@/hooks/configuration/useConfiguration";
 import { useUpdateSetting } from "@/hooks/configuration/useConfigurationMutations";
 import type { SystemSetting } from "@/types/api";
+
+// Predefined backup schedule options
+const BACKUP_SCHEDULE_OPTIONS = [
+	{ value: "0 0 2 * * *", label: "Daily at 2:00 AM" },
+	{ value: "0 0 */12 * * *", label: "Every 12 hours" },
+	{ value: "0 0 */6 * * *", label: "Every 6 hours" },
+	{ value: "0 0 */3 * * *", label: "Every 3 hours" },
+	{ value: "0 0 0 * * 0", label: "Weekly (Sunday at midnight)" },
+	{ value: "0 0 0 1 * *", label: "Monthly (1st day at midnight)" },
+	{ value: "custom", label: "Custom cron expression" }
+];
 
 export function DatabaseSettingsPanel() {
 	const { data: settings, isLoading } = useSettingsByCategory("database");
@@ -17,6 +30,7 @@ export function DatabaseSettingsPanel() {
 	// Local state for form values
 	const [formValues, setFormValues] = useState<Record<string, string>>({});
 	const [hasChanges, setHasChanges] = useState(false);
+	const [isCustomSchedule, setIsCustomSchedule] = useState(false);
 
 	// Initialize form values when settings are loaded
 	useEffect(() => {
@@ -26,6 +40,11 @@ export function DatabaseSettingsPanel() {
 				return acc;
 			}, {} as Record<string, string>);
 			setFormValues(settingsMap);
+			
+			// Check if current backup schedule is a custom one
+			const currentSchedule = settingsMap.backup_schedule;
+			const isPredefined = BACKUP_SCHEDULE_OPTIONS.some(option => option.value === currentSchedule && option.value !== "custom");
+			setIsCustomSchedule(!isPredefined);
 		}
 	}, [settings]);
 
@@ -68,6 +87,12 @@ export function DatabaseSettingsPanel() {
 		return settings && Array.isArray(settings) ? settings.find((s) => s.setting_key === key) : undefined;
 	};
 
+	// Check if setting requires restart
+	const requiresRestart = (key: string): boolean => {
+		const setting = getSetting(key);
+		return setting?.requires_restart || false;
+	};
+
 	if (isLoading) {
 		return (
 			<Card>
@@ -87,43 +112,9 @@ export function DatabaseSettingsPanel() {
 			</CardHeader>
 			<CardContent>
 				<Form onSubmit={(e) => { e.preventDefault(); handleSave(); }}>
-					<div className="space-y-6">
-						{/* Connection Pooling */}
-						<FormField name="connection_pool_size">
-							<FormLabel>Connection Pool Size</FormLabel>
-							<FormControl>
-								<Input
-									type="number"
-									value={getSettingValue("connection_pool_size")}
-									onChange={(e) => handleInputChange("connection_pool_size", e.target.value)}
-									placeholder="Maximum database connections"
-									className="w-48"
-								/>
-							</FormControl>
-							<FormDescription>
-								{getSetting("connection_pool_size")?.description || "Maximum number of database connections in the pool"}
-							</FormDescription>
-						</FormField>
-
-						{/* Backup Interval */}
-						<FormField name="backup_interval_hours">
-							<FormLabel>Backup Interval (hours)</FormLabel>
-							<FormControl>
-								<Input
-									type="number"
-									value={getSettingValue("backup_interval_hours")}
-									onChange={(e) => handleInputChange("backup_interval_hours", e.target.value)}
-									placeholder="Backup interval in hours"
-									className="w-48"
-								/>
-							</FormControl>
-							<FormDescription>
-								{getSetting("backup_interval_hours")?.description || "How often to create database backups"}
-							</FormDescription>
-						</FormField>
-
-						{/* Backup Enabled */}
-						<FormField name="backup_enabled">
+					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+{/* Backup Enabled */}
+						<FormField className="w-96" name="backup_enabled">
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
 									<FormLabel>Enable Backups</FormLabel>
@@ -140,42 +131,8 @@ export function DatabaseSettingsPanel() {
 							</div>
 						</FormField>
 
-						{/* Backup Retention Days */}
-						<FormField name="backup_retention_days">
-							<FormLabel>Backup Retention (days)</FormLabel>
-							<FormControl>
-								<Input
-									type="number"
-									value={getSettingValue("backup_retention_days")}
-									onChange={(e) => handleInputChange("backup_retention_days", e.target.value)}
-									placeholder="Days to keep backups"
-									className="w-48"
-								/>
-							</FormControl>
-							<FormDescription>
-								{getSetting("backup_retention_days")?.description || "Number of days to keep backup files"}
-							</FormDescription>
-						</FormField>
-
-						{/* Backup Schedule */}
-						<FormField name="backup_schedule">
-							<FormLabel>Backup Schedule (Cron)</FormLabel>
-							<FormControl>
-								<Input
-									type="text"
-									value={getSettingValue("backup_schedule")}
-									onChange={(e) => handleInputChange("backup_schedule", e.target.value)}
-									placeholder="0 0 2 * * *"
-									className="w-48"
-								/>
-							</FormControl>
-							<FormDescription>
-								{getSetting("backup_schedule")?.description || "Cron expression for backup schedule (sec min hour day month dayofweek)"}
-							</FormDescription>
-						</FormField>
-
 						{/* Backup Compression */}
-						<FormField name="backup_compression">
+						<FormField className="w-96"  name="backup_compression">
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
 									<FormLabel>Enable Compression</FormLabel>
@@ -192,8 +149,96 @@ export function DatabaseSettingsPanel() {
 							</div>
 						</FormField>
 
+						{/* Connection Pooling */}
+						<FormField className="w-96"  name="connection_pool_size">
+							<div className="flex items-center gap-2">
+								<FormLabel>Connection Pool Size</FormLabel>
+								{requiresRestart("connection_pool_size") && (
+									<Badge variant="destructive" className="flex items-center gap-1 text-xs">
+										<AlertTriangle className="w-3 h-3" />
+										Restart Required
+									</Badge>
+								)}
+							</div>
+							<FormControl>
+								<Input
+									type="number"
+									value={getSettingValue("connection_pool_size")}
+									onChange={(e) => handleInputChange("connection_pool_size", e.target.value)}
+									placeholder="Maximum database connections"
+									className="w-48"
+								/>
+							</FormControl>
+							<FormDescription>
+								{getSetting("connection_pool_size")?.description || "Maximum number of database connections in the pool"}
+							</FormDescription>
+						</FormField>
+
+
+
+						{/* Backup Retention Days */}
+						<FormField className="w-96"  name="backup_retention_days">
+							<FormLabel>Backup Retention (days)</FormLabel>
+							<FormControl>
+								<Input
+									type="number"
+									value={getSettingValue("backup_retention_days")}
+									onChange={(e) => handleInputChange("backup_retention_days", e.target.value)}
+									placeholder="Days to keep backups"
+									className="w-48"
+								/>
+							</FormControl>
+							<FormDescription>
+								{getSetting("backup_retention_days")?.description || "Number of days to keep backup files"}
+							</FormDescription>
+						</FormField>
+
+						{/* Backup Schedule */}
+						<FormField className="w-96" name="backup_schedule">
+							<FormLabel>Backup Schedule (Cron)</FormLabel>
+							<FormControl>
+								<div className="space-y-2">
+									<Select
+							value={isCustomSchedule ? "custom" : getSettingValue("backup_schedule")}
+							onValueChange={(value) => {
+								if (value === "custom") {
+									setIsCustomSchedule(true);
+								} else {
+									setIsCustomSchedule(false);
+									handleInputChange("backup_schedule", value);
+								}
+							}}
+						>
+							<SelectTrigger className="w-48">
+								<SelectValue placeholder="Select backup schedule" />
+							</SelectTrigger>
+							<SelectContent>
+								{BACKUP_SCHEDULE_OPTIONS.map((option) => (
+									<SelectItem key={option.value} value={option.value}>
+										{option.label}
+									</SelectItem>
+								))}
+							</SelectContent>
+						</Select>
+						{isCustomSchedule && (
+							<Input
+								type="text"
+								value={getSettingValue("backup_schedule")}
+								onChange={(e) => handleInputChange("backup_schedule", e.target.value)}
+								placeholder="0 0 2 * * *"
+								className="w-48"
+							/>
+						)}
+								</div>
+							</FormControl>
+							<FormDescription>
+								{getSetting("backup_schedule")?.description || "Cron expression for backup schedule (sec min hour day month dayofweek)"}
+							</FormDescription>
+						</FormField>
+
+
 						{/* Backup Prefix */}
-						<FormField name="backup_prefix">
+						<FormField className="w-96"  name="backup_prefix">
 							<FormLabel>Backup Prefix</FormLabel>
 							<FormControl>
 								<Input
@@ -210,7 +255,7 @@ export function DatabaseSettingsPanel() {
 						</FormField>
 
 						{/* Backup Minimum Size */}
-						<FormField name="backup_min_size_bytes">
+						<FormField className="w-96"  name="backup_min_size_bytes">
 							<FormLabel>Minimum Backup Size (bytes)</FormLabel>
 							<FormControl>
 								<Input
@@ -226,23 +271,22 @@ export function DatabaseSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Save Button */}
-						{hasChanges && (
-							<div className="flex justify-end pt-4">
-								<Button
-									type="submit"
-									disabled={updateSettingMutation.isPending}
-									className="flex items-center gap-2"
-								>
-									{updateSettingMutation.isPending ? (
-										<Spinner className="w-4 h-4" />
-									) : (
-										<Save className="w-4 h-4" />
-									)}
-									Save Changes
-								</Button>
-							</div>
-						)}
+					</div>
+					
+					{/* Save Button */}
+					<div className="flex justify-end pt-6">
+						<Button
+							type="submit"
+							disabled={!hasChanges || updateSettingMutation.isPending}
+							className="flex items-center gap-2"
+						>
+							{updateSettingMutation.isPending ? (
+								<Spinner className="w-4 h-4" />
+							) : (
+								<Save className="w-4 h-4" />
+							)}
+							Save Changes
+						</Button>
 					</div>
 				</Form>
 

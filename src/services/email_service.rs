@@ -401,7 +401,7 @@ impl EmailService {
     /// Create plain text content for verification email
     fn create_verification_email_text(&self, username: &str, verification_url: &str) -> String {
         format!(
-            r#"🌙 LunarBase Admin Panel
+            r#"LunarBase
 
 Welcome, {}!
 
@@ -580,7 +580,7 @@ Need help? Contact your system administrator.
     /// Create plain text content for password reset email
     fn create_password_reset_email_text(&self, username: &str, reset_url: &str) -> String {
         format!(
-            r#"🌙 LunarBase Admin Panel
+            r#" LunarBase Admin Panel
 
 Password Reset Request
 

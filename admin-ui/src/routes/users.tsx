@@ -334,7 +334,7 @@ export default function UsersComponent() {
 					<div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 w-fit mx-auto mb-4">
 						<UserIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
 					</div>
-					<h3 className="text-lg font-semibold text-nocta-900 dark:text-nocta-100 mb-2">
+					<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
 						Error loading users
 					</h3>
 					<p className="text-nocta-600 dark:text-nocta-400 mb-4">
@@ -391,7 +391,7 @@ export default function UsersComponent() {
 							<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
 								<UserIcon className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
 							</div>
-							<h3 className="text-lg font-semibold text-nocta-900 dark:text-nocta-100 mb-2">
+							<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
 								{searchTerm ? "No users found" : "No users yet"}
 							</h3>
 							<p className="text-nocta-600 dark:text-nocta-400 mb-4 max-w-sm mx-auto">

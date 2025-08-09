@@ -1,10 +1,11 @@
-import { Save, Plus, X } from "lucide-react";
+import { Save, Plus, X, AlertTriangle } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Form, FormField, FormLabel, FormControl, FormDescription } from "@/components/ui/form";
 import { Spinner } from "@/components/ui/spinner";
+import { Badge } from "@/components/ui/badge";
 import { useSettingsByCategory } from "@/hooks/configuration/useConfiguration";
 import { useUpdateSetting } from "@/hooks/configuration/useConfigurationMutations";
 import type { SystemSetting } from "@/types/api";
@@ -52,6 +53,12 @@ export function ApiSettingsPanel() {
 
 	const getSettingValue = (key: string): string => {
 		return localSettings[key] || "";
+	};
+
+	// Check if setting requires restart
+	const requiresRestart = (key: string): boolean => {
+		const setting = getSetting(key);
+		return setting?.requires_restart || false;
 	};
 
 	const handleInputChange = (key: string, value: string) => {
@@ -148,7 +155,15 @@ export function ApiSettingsPanel() {
 
 						{/* CORS Allowed Origins */}
 						<FormField name="cors_allowed_origins">
-							<FormLabel>CORS Allowed Origins</FormLabel>
+							<div className="flex items-center gap-2">
+								<FormLabel>CORS Allowed Origins</FormLabel>
+								{requiresRestart("cors_allowed_origins") && (
+									<Badge variant="destructive" className="flex items-center gap-1 text-xs">
+										<AlertTriangle className="w-3 h-3" />
+										Restart Required
+									</Badge>
+								)}
+							</div>
 							<FormDescription className="mb-3">
 								{getSetting("cors_allowed_origins")?.description || "Additional CORS allowed origins (localhost origins are automatically included)"}
 							</FormDescription>
@@ -187,22 +202,20 @@ export function ApiSettingsPanel() {
 						</FormField>
 
 						{/* Save Button */}
-						{hasChanges && (
-							<div className="flex justify-end pt-4">
-								<Button
-									type="submit"
-									disabled={updateSettingMutation.isPending}
-									className="flex items-center gap-2"
-								>
-									{updateSettingMutation.isPending ? (
-										<Spinner className="w-4 h-4" />
-									) : (
-										<Save className="w-4 h-4" />
-									)}
-									Save Changes
-								</Button>
-							</div>
-						)}
+						<div className="flex justify-end pt-4">
+							<Button
+								type="submit"
+								disabled={!hasChanges || updateSettingMutation.isPending}
+								className="flex items-center gap-2"
+							>
+								{updateSettingMutation.isPending ? (
+									<Spinner className="w-4 h-4" />
+								) : (
+									<Save className="w-4 h-4" />
+								)}
+								Save Changes
+							</Button>
+						</div>
 					</div>
 				</Form>
 			</CardContent>

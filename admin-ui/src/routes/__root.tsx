@@ -96,7 +96,7 @@ function RootComponent() {
 								>
 									<Menu className="w-6 h-6" />
 								</Button>
-								<h1 className="text-lg font-semibold text-nocta-900 dark:text-nocta-100">
+								<h1 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 									LunarBase
 								</h1>
 								<div className="w-10" /> {/* Spacer for centering */}
@@ -105,8 +105,10 @@ function RootComponent() {
 					)}
 
 					{/* Page content */}
-					<main className={isLoginPage ? "flex-1" : "flex-1 p-4"}>
-						<Outlet />
+					<main className={isLoginPage ? "flex-1" : "flex-1 p-4 bg-nocta-100 dark:bg-nocta-900"}>
+						<div className="bg-nocta-950 rounded-2xl p-4 h-[96svh] overflow-y-auto">
+							<Outlet />
+						</div>
 					</main>
 				</div>
 			</div>

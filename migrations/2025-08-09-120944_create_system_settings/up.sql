@@ -25,7 +25,6 @@ INSERT INTO system_settings (category, setting_key, setting_value, data_type, de
 -- Database settings
 ('database', 'connection_pool_size', '10', 'integer', 'Maximum number of database connections in pool', '10', FALSE, TRUE),
 ('database', 'backup_enabled', 'false', 'boolean', 'Enable automatic database backups', 'false', FALSE, FALSE),
-('database', 'backup_interval_hours', '24', 'integer', 'Backup interval in hours', '24', FALSE, FALSE),
 ('database', 'backup_retention_days', '30', 'integer', 'Backup retention period in days', '30', FALSE, FALSE),
 
 -- Auth settings

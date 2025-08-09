@@ -144,7 +144,7 @@ export function UserDetailsSheet({
 									fallback={getInitials(user.email)}
 								/>
 								<div className="flex-1">
-									<h3 className="text-xl font-semibold text-nocta-900 dark:text-nocta-100">
+									<h3 className="text-xl font-medium text-nocta-900 dark:text-nocta-100">
 										{user.username || user.email}
 									</h3>
 									<div className="flex items-center gap-2 mt-2">

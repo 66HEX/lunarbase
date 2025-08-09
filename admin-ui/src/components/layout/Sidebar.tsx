@@ -160,7 +160,7 @@ export function Sidebar() {
 			<div
 				ref={sidebarRef}
 				className={cn(
-					"fixed inset-y-0 left-0 overflow-hidden z-40 w-72 bg-white/80 dark:bg-nocta-900/80 p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent transition-transform duration-300 ease-in-out",
+					"fixed inset-y-0 left-0 overflow-hidden z-40 w-72 transition-transform duration-300 ease-in-out",
 					sidebar.isOpen ? "translate-x-0" : "-translate-x-full",
 					"lg:translate-x-0",
 				)}
@@ -173,7 +173,7 @@ export function Sidebar() {
 								<LunarLogo className="h-6 w-6 text-white" />
 							</div>
 							<div>
-								<h1 className="text-lg font-semibold text-nocta-900 dark:text-nocta-100">
+								<h1 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 									LunarBase
 								</h1>
 							</div>

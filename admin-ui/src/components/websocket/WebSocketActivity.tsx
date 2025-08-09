@@ -70,7 +70,7 @@ export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 						<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
 							<webSocketEmptyStates.activity.icon className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
 						</div>
-						<h3 className="text-lg font-semibold text-nocta-900 dark:text-nocta-100 mb-2">
+						<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
 							{webSocketEmptyStates.activity.title}
 						</h3>
 						<p className="text-nocta-600 dark:text-nocta-400">

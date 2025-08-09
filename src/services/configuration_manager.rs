@@ -258,13 +258,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get backup interval in hours
-    fn get_backup_interval_hours(&self) -> impl std::future::Future<Output = u32> + Send {
-        async {
-            self.config_manager().get_u32_or_default("database", "backup_interval_hours", 24).await
-        }
-    }
-
     /// Get backup retention in days
     fn get_backup_retention_days(&self) -> impl std::future::Future<Output = u32> + Send {
         async {
