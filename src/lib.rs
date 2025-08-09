@@ -107,9 +107,18 @@ pub mod utils;
         handlers::health::public_health_check,
         handlers::health::simple_health_check,
 
-        // Metrics endpoints
+        // Monitoring endpoints
         handlers::metrics::get_metrics,
         handlers::metrics::get_metrics_summary,
+
+        // Configuration endpoints
+        handlers::configuration::get_all_settings,
+        handlers::configuration::get_settings_by_category,
+        handlers::configuration::get_setting,
+        handlers::configuration::update_setting,
+        handlers::configuration::create_setting,
+        handlers::configuration::delete_setting,
+        handlers::configuration::reset_setting,
     ),
     components(
         schemas(
@@ -191,8 +200,19 @@ pub mod utils;
             handlers::health::MemoryInfo,
             handlers::health::SystemInfo,
 
-            // Metrics models
+            // Metrics
             handlers::metrics::MetricsSummary,
+
+            // Configuration
+            models::system_setting::SystemSettingResponse,
+            models::system_setting::SystemSettingRequest,
+            models::system_setting::SettingCategory,
+            models::system_setting::SettingDataType,
+            handlers::configuration::ConfigurationResponse,
+            handlers::configuration::ListSettingsQuery,
+            utils::ApiResponse<models::system_setting::SystemSettingResponse>,
+            utils::ApiResponse<Vec<models::system_setting::SystemSettingResponse>>,
+            utils::ApiResponse<handlers::configuration::ConfigurationResponse>,
         )
     ),
     modifiers(&SecurityAddon),
@@ -207,7 +227,8 @@ pub mod utils;
         (name = "WebSocket", description = "WebSocket connections and real-time features"),
         (name = "Users", description = "User management operations"),
         (name = "Health", description = "System health checks"),
-        (name = "Monitoring", description = "System monitoring and metrics")
+        (name = "Monitoring", description = "System monitoring and metrics"),
+        (name = "Configuration", description = "System configuration management")
     )
 )]
 pub struct ApiDoc;
@@ -233,7 +254,7 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, BackupService, CollectionService, EmailService, OwnershipService,
+    AdminService, BackupService, CollectionService, ConfigurationManager, EmailService, OwnershipService,
     PermissionService, WebSocketService, create_backup_service_from_config,
     create_s3_service_from_config,
 };
@@ -252,6 +273,7 @@ pub struct AppState {
     pub email_service: EmailService,
     pub oauth_service: utils::OAuthService,
     pub backup_service: Option<BackupService>,
+    pub configuration_manager: ConfigurationManager,
     pub password_pepper: String,
 }
 
@@ -281,11 +303,15 @@ impl AppState {
         let oauth_service = utils::OAuthService::new(oauth_config);
         let email_service = EmailService::new(config, db_pool.clone());
 
+        // Initialize configuration manager
+        let configuration_manager = ConfigurationManager::new(db_pool.clone());
+        configuration_manager.initialize().await?;
+
         // Add backup service if configured
         let backup_service = create_backup_service_from_config(
             db_pool.clone(),
             s3_service_option.map(Arc::new),
-            config,
+            Arc::new(configuration_manager.clone()),
             Some(Arc::new(metrics_state.clone())),
         )
         .await
@@ -294,7 +320,7 @@ impl AppState {
 
         Ok(Self {
             db_pool: db_pool.clone(),
-            auth_state: middleware::AuthState::new(jwt_secret, db_pool.clone()),
+            auth_state: middleware::AuthState::new(jwt_secret, db_pool.clone(), configuration_manager.clone()).await,
             metrics_state,
             collection_service,
             permission_service,
@@ -304,6 +330,7 @@ impl AppState {
             email_service,
             oauth_service,
             backup_service,
+            configuration_manager,
             password_pepper,
         })
     }
@@ -323,6 +350,7 @@ impl Clone for AppState {
             email_service: self.email_service.clone(),
             oauth_service: self.oauth_service.clone(),
             backup_service: self.backup_service.clone(),
+            configuration_manager: self.configuration_manager.clone(),
             password_pepper: self.password_pepper.clone(),
         }
     }

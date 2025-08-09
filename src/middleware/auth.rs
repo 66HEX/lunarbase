@@ -9,6 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::utils::{AuthError, Claims, CookieService, JwtService};
+use crate::services::{ConfigurationManager, ConfigurationAccess};
 use diesel::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 
@@ -27,6 +28,11 @@ impl RateLimiter {
             max_requests,
             window: Duration::from_secs(window_seconds),
         }
+    }
+
+    pub fn update_limits(&mut self, max_requests: usize, window_seconds: u64) {
+        self.max_requests = max_requests;
+        self.window = Duration::from_secs(window_seconds);
     }
 
     pub fn check_rate_limit(&self, identifier: &str) -> bool {
@@ -55,14 +61,33 @@ impl RateLimiter {
 pub struct AuthState {
     pub jwt_service: Arc<JwtService>,
     pub rate_limiter: RateLimiter,
+    pub config_manager: ConfigurationManager,
 }
 
 impl AuthState {
-    pub fn new(jwt_secret: &str, pool: Pool<ConnectionManager<SqliteConnection>>) -> Self {
+    pub async fn new(jwt_secret: &str, pool: Pool<ConnectionManager<SqliteConnection>>, config_manager: ConfigurationManager) -> Self {
+        // Get rate limit configuration from database
+        let requests_per_minute = config_manager.get_u32_or_default("api", "rate_limit_requests_per_minute", 100).await;
+        let window_seconds = 60; // 1 minute window
+        
         Self {
-            jwt_service: Arc::new(JwtService::new(jwt_secret, pool)),
-            rate_limiter: RateLimiter::new(1000, 300), // 1000 requests per 5 minutes
+            jwt_service: Arc::new(JwtService::new(jwt_secret, pool.clone(), config_manager.clone())),
+            rate_limiter: RateLimiter::new(requests_per_minute as usize, window_seconds),
+            config_manager,
         }
+    }
+
+    /// Update rate limiter settings from configuration
+    pub async fn update_rate_limiter(&mut self) {
+        let requests_per_minute = self.get_rate_limit_requests_per_minute().await;
+        let window_seconds = 60; // 1 minute window
+        self.rate_limiter.update_limits(requests_per_minute as usize, window_seconds);
+    }
+}
+
+impl ConfigurationAccess for AuthState {
+    fn config_manager(&self) -> &ConfigurationManager {
+        &self.config_manager
     }
 }
 

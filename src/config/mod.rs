@@ -27,13 +27,7 @@ pub struct Config {
     pub s3_access_key_id: Option<String>,
     pub s3_secret_access_key: Option<String>,
     pub s3_endpoint_url: Option<String>, // For LocalStack or custom S3-compatible services
-    // Backup configuration
-    pub backup_enabled: bool,
-    pub backup_schedule: String,
-    pub backup_retention_days: u32,
-    pub backup_compression: bool,
-    pub backup_prefix: String,
-    pub backup_min_size_bytes: u64,
+
 }
 
 impl Config {
@@ -71,27 +65,7 @@ impl Config {
             s3_access_key_id: std::env::var("S3_ACCESS_KEY_ID").ok(),
             s3_secret_access_key: std::env::var("S3_SECRET_ACCESS_KEY").ok(),
             s3_endpoint_url: std::env::var("S3_ENDPOINT_URL").ok(),
-            // Backup configuration
-            backup_enabled: std::env::var("BACKUP_ENABLED")
-                .unwrap_or_else(|_| "false".to_string())
-                .parse()
-                .unwrap_or(false),
-            backup_schedule: std::env::var("BACKUP_SCHEDULE")
-                .unwrap_or_else(|_| "0 0 2 * * *".to_string()),
-            backup_retention_days: std::env::var("BACKUP_RETENTION_DAYS")
-                .unwrap_or_else(|_| "30".to_string())
-                .parse()
-                .unwrap_or(30),
-            backup_compression: std::env::var("BACKUP_COMPRESSION")
-                .unwrap_or_else(|_| "true".to_string())
-                .parse()
-                .unwrap_or(true),
-            backup_prefix: std::env::var("BACKUP_PREFIX")
-                .unwrap_or_else(|_| "lunarbase-backup".to_string()),
-            backup_min_size_bytes: std::env::var("BACKUP_MIN_SIZE_BYTES")
-                .unwrap_or_else(|_| "1024".to_string())
-                .parse()
-                .unwrap_or(1024),
+
         };
 
         Ok(config)

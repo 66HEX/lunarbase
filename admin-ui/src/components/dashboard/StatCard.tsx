@@ -32,7 +32,7 @@ export function StatCard({
 							<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400 uppercase tracking-wide">
 								{title}
 							</p>
-							<p className="text-3xl font-bold text-nocta-900 dark:text-nocta-100 leading-none">
+							<p className="text-3xl font-semibold text-nocta-900 dark:text-nocta-100 leading-none">
 								{value}
 							</p>
 						</div>

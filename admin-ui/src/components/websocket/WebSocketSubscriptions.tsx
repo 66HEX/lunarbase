@@ -40,7 +40,7 @@ export function WebSocketSubscriptions({ stats }: WebSocketSubscriptionsProps) {
 										</p>
 									</div>
 									<div className="text-right">
-										<div className="text-2xl font-bold text-nocta-900 dark:text-nocta-100">
+										<div className="text-2xl font-semibold text-nocta-900 dark:text-nocta-100">
 											{count}
 										</div>
 										<div className="text-xs text-nocta-500 dark:text-nocta-500">

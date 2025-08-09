@@ -40,7 +40,7 @@ export const useSetCollectionPermission = () => {
 			toast({
 				title: "Success",
 				description: "Collection permission updated successfully",
-				variant: "default",
+				variant: "success",
 			});
 		},
 		onError: (error: Error) => {

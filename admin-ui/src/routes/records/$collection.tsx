@@ -256,7 +256,7 @@ export default function RecordComponent() {
 					>
 						<ArrowLeft className="w-4 h-4" />
 					</Button>
-					<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">
+					<h1 className="text-4xl font-semibold text-nocta-900 dark:text-nocta-100">
 						Records - {collectionName}
 					</h1>
 				</div>
@@ -280,7 +280,7 @@ export default function RecordComponent() {
 					>
 						<ArrowLeft className="w-4 h-4" />
 					</Button>
-					<h1 className="text-4xl font-bold text-nocta-900 dark:text-nocta-100">
+					<h1 className="text-4xl font-semibold text-nocta-900 dark:text-nocta-100">
 						Records - {collectionName}
 					</h1>
 				</div>

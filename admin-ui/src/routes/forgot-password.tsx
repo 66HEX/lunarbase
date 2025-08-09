@@ -84,7 +84,7 @@ export default function ForgotPasswordComponent() {
 								<LunarLogo className="h-10 w-10 text-white" />
 							</div>
 						</div>
-						<h1 className="text-3xl font-bold text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-3xl font-semibold text-nocta-900 dark:text-nocta-100">
 							LunarBase
 						</h1>
 						<p className="mt-2 text-nocta-600 dark:text-nocta-400">
@@ -138,7 +138,7 @@ export default function ForgotPasswordComponent() {
 							<LunarLogo className="h-10 w-10 text-white" />
 						</div>
 					</div>
-					<h1 className="text-3xl font-bold text-nocta-900 dark:text-nocta-100">
+					<h1 className="text-3xl font-semibold text-nocta-900 dark:text-nocta-100">
 						LunarBase
 					</h1>
 					<p className="mt-2 text-nocta-600 dark:text-nocta-400">Admin Panel</p>

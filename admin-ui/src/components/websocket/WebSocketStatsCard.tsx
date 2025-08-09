@@ -50,7 +50,7 @@ export function WebSocketStatsCard({
 			<CardContent>
 				<div className="space-y-2">
 					<div className="flex items-baseline space-x-2">
-						<div className="text-2xl font-bold text-nocta-900 dark:text-nocta-100">
+						<div className="text-2xl font-semibold text-nocta-900 dark:text-nocta-100">
 							{value}
 						</div>
 						{unit && (

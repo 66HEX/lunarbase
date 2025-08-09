@@ -455,3 +455,34 @@ export interface MetricsSummary {
 	backup_files_deleted_total: number;
 	timestamp: string;
 }
+
+// Configuration Types
+export interface SystemSetting {
+	id: number;
+	category: "database" | "auth" | "api";
+	setting_key: string;
+	setting_value: string;
+	data_type: "string" | "integer" | "boolean" | "json" | "float";
+	description?: string;
+	default_value: string;
+	is_sensitive: boolean;
+	requires_restart: boolean;
+	created_at: string;
+	updated_at: string;
+	updated_by?: string;
+}
+
+export interface CreateSystemSettingRequest {
+	category: "database" | "auth" | "api";
+	setting_key: string;
+	setting_value: string;
+	data_type: "string" | "integer" | "boolean" | "json" | "float";
+	description?: string;
+	default_value: string;
+	is_sensitive?: boolean;
+	requires_restart?: boolean;
+}
+
+export interface UpdateSystemSettingRequest {
+	setting_value: string;
+}

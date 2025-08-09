@@ -8,30 +8,21 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use tracing::{error, info, warn};
 use uuid::Uuid;
 
-use crate::config::Config;
 use crate::database::DatabasePool;
 use crate::middleware::MetricsState;
 use crate::services::S3Service;
+use crate::services::configuration_manager::{ConfigurationManager, ConfigurationAccess};
 
 #[derive(Clone)]
 pub struct BackupService {
     db_pool: DatabasePool,
     s3_service: Option<Arc<S3Service>>,
     scheduler: Arc<JobScheduler>,
-    config: BackupConfig,
+    config_manager: Arc<ConfigurationManager>,
     metrics_state: Option<Arc<MetricsState>>,
 }
 
-#[derive(Clone, Debug)]
-pub struct BackupConfig {
-    pub enabled: bool,
-    pub schedule: String, // Cron expression
-    pub retention_days: u32,
-    pub compression_enabled: bool,
-    pub backup_prefix: String,
-    /// Minimum backup size in bytes to consider valid before cleaning up old backups
-    pub min_backup_size_bytes: u64,
-}
+
 
 #[derive(Debug)]
 pub struct BackupResult {
@@ -58,29 +49,11 @@ pub enum BackupError {
     CompressionError(String),
 }
 
-impl Default for BackupConfig {
-    fn default() -> Self {
-        Self {
-            enabled: false,
-            schedule: "0 0 2 * * *".to_string(), // Daily at 2 AM
-            retention_days: 30,
-            compression_enabled: true,
-            backup_prefix: "lunarbase-backup".to_string(),
-            min_backup_size_bytes: 1024, // 1KB minimum
-        }
-    }
-}
 
-impl BackupConfig {
-    pub fn from_config(config: &Config) -> Self {
-        Self {
-            enabled: config.backup_enabled,
-            schedule: config.backup_schedule.clone(),
-            retention_days: config.backup_retention_days,
-            compression_enabled: config.backup_compression,
-            backup_prefix: config.backup_prefix.clone(),
-            min_backup_size_bytes: config.backup_min_size_bytes,
-        }
+
+impl ConfigurationAccess for BackupService {
+    fn config_manager(&self) -> &ConfigurationManager {
+        &self.config_manager
     }
 }
 
@@ -88,20 +61,18 @@ impl BackupService {
     pub async fn new(
         db_pool: DatabasePool,
         s3_service: Option<Arc<S3Service>>,
-        config: &Config,
+        config_manager: Arc<ConfigurationManager>,
         metrics_state: Option<Arc<MetricsState>>,
     ) -> Result<Self, BackupError> {
         let scheduler = JobScheduler::new()
             .await
             .map_err(|e| BackupError::SchedulerError(e.to_string()))?;
 
-        let backup_config = BackupConfig::from_config(config);
-
         let service = Self {
             db_pool,
             s3_service,
             scheduler: Arc::new(scheduler),
-            config: backup_config,
+            config_manager,
             metrics_state,
         };
 
@@ -169,11 +140,13 @@ impl BackupService {
             }
         }
 
-        if service.config.enabled {
+        let backup_enabled = service.get_backup_enabled().await;
+        if backup_enabled {
             service.setup_scheduled_backup().await?;
+            let schedule = service.get_backup_schedule().await;
             info!(
                 "Backup service initialized with schedule: {}",
-                service.config.schedule
+                schedule
             );
         } else {
             info!("Backup service initialized but disabled");
@@ -184,7 +157,7 @@ impl BackupService {
 
     async fn setup_scheduled_backup(&self) -> Result<(), BackupError> {
         let service_clone = self.clone();
-        let schedule = self.config.schedule.clone();
+        let schedule = self.get_backup_schedule().await;
 
         let job = Job::new_async(schedule.as_str(), move |_uuid, _l| {
             let service = service_clone.clone();
@@ -226,17 +199,20 @@ impl BackupService {
     }
 
     pub async fn create_backup(&self) -> Result<BackupResult, BackupError> {
-        if !self.config.enabled {
+        let backup_enabled = self.get_backup_enabled().await;
+        if !backup_enabled {
             return Err(BackupError::BackupDisabled);
         }
 
         let backup_id = Uuid::new_v4().to_string();
         let timestamp = Utc::now();
+        let backup_prefix = self.get_backup_prefix().await;
+        let compression_enabled = self.get_backup_compression().await;
         let filename = format!(
             "{}-{}.sqlite{}",
-            self.config.backup_prefix,
+            backup_prefix,
             timestamp.format("%Y%m%d_%H%M%S"),
-            if self.config.compression_enabled {
+            if compression_enabled {
                 ".gz"
             } else {
                 ""
@@ -254,7 +230,7 @@ impl BackupService {
         let _original_size = backup_data.len() as u64;
 
         // Compress if enabled
-        let (final_data, compression_ratio) = if self.config.compression_enabled {
+        let (final_data, compression_ratio) = if compression_enabled {
             let compressed = self.compress_data(&backup_data)?;
             let ratio = compressed.len() as f64 / backup_data.len() as f64;
             (compressed, Some(ratio))
@@ -375,26 +351,30 @@ impl BackupService {
             }
         };
 
+        let min_backup_size_bytes = self.get_backup_min_size_bytes().await;
+        let retention_days = self.get_backup_retention_days().await;
+        let backup_prefix_config = self.get_backup_prefix().await;
+
         // Check if new backup has a sensible size before cleaning up old backups
         // Skip size check if new_backup_size is 0 (manual cleanup)
-        if new_backup_size > 0 && new_backup_size < self.config.min_backup_size_bytes {
+        if new_backup_size > 0 && new_backup_size < min_backup_size_bytes {
             warn!(
                 "New backup size ({} bytes) is below minimum threshold ({} bytes). Skipping cleanup to preserve old backups.",
-                new_backup_size, self.config.min_backup_size_bytes
+                new_backup_size, min_backup_size_bytes
             );
             return;
         }
 
         info!(
             "Starting cleanup of backups older than {} days (new backup size: {} bytes)",
-            self.config.retention_days, new_backup_size
+            retention_days, new_backup_size
         );
 
         // Calculate cutoff date
-        let cutoff_date = Utc::now() - Duration::days(self.config.retention_days as i64);
+        let cutoff_date = Utc::now() - Duration::days(retention_days as i64);
 
         // List all backup objects with the backup prefix
-        let backup_prefix = format!("backups/{}", self.config.backup_prefix);
+        let backup_prefix = format!("backups/{}", backup_prefix_config);
 
         match s3_service.list_objects(&backup_prefix).await {
             Ok(objects) => {
@@ -483,12 +463,9 @@ impl BackupService {
         self.cleanup_old_backups(0).await;
     }
 
-    pub fn get_config(&self) -> &BackupConfig {
-        &self.config
-    }
-
     pub async fn health_check(&self) -> bool {
-        if !self.config.enabled {
+        let backup_enabled = self.get_backup_enabled().await;
+        if !backup_enabled {
             return true; // Service is "healthy" when disabled
         }
 
@@ -508,16 +485,24 @@ impl BackupService {
     }
 }
 
-// Helper function to create backup service from config
+// Helper function to create backup service from config manager
 pub async fn create_backup_service_from_config(
     db_pool: DatabasePool,
     s3_service: Option<Arc<S3Service>>,
-    config: &Config,
+    config_manager: Arc<ConfigurationManager>,
     metrics_state: Option<Arc<MetricsState>>,
 ) -> Result<Option<BackupService>, BackupError> {
-    let backup_config = BackupConfig::from_config(config);
+    // Create a temporary service to check if backup is enabled
+    let temp_service = BackupService {
+        db_pool: db_pool.clone(),
+        s3_service: s3_service.clone(),
+        scheduler: Arc::new(JobScheduler::new().await.map_err(|e| BackupError::SchedulerError(e.to_string()))?),
+        config_manager: config_manager.clone(),
+        metrics_state: metrics_state.clone(),
+    };
 
-    if !backup_config.enabled {
+    let backup_enabled = temp_service.get_backup_enabled().await;
+    if !backup_enabled {
         info!("Backup service is disabled");
         return Ok(None);
     }
@@ -527,6 +512,6 @@ pub async fn create_backup_service_from_config(
         return Ok(None);
     }
 
-    let service = BackupService::new(db_pool, s3_service, config, metrics_state).await?;
+    let service = BackupService::new(db_pool, s3_service, config_manager, metrics_state).await?;
     Ok(Some(service))
 }

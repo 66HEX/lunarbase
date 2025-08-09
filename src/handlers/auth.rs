@@ -18,6 +18,7 @@ use crate::{
         UserResponse,
     },
     schema::users,
+    services::configuration_manager::ConfigurationAccess,
     utils::{
         ApiResponse, AuthError, Claims, CookieService, ErrorResponse, client_ip::extract_client_ip,
     },
@@ -147,12 +148,12 @@ pub async fn register(
         app_state
             .auth_state
             .jwt_service
-            .generate_access_token(user.id, &user.email, &user.role)?;
+            .generate_access_token(user.id, &user.email, &user.role).await?;
 
     let refresh_token = app_state
         .auth_state
         .jwt_service
-        .generate_refresh_token(user.id)?;
+        .generate_refresh_token(user.id).await?;
 
     // Set tokens as httpOnly cookies
     let cookie_service = CookieService::new();
@@ -168,7 +169,7 @@ pub async fn register(
         expires_in: app_state
             .auth_state
             .jwt_service
-            .access_token_duration_seconds(),
+            .access_token_duration_seconds().await,
     };
 
     Ok((
@@ -691,13 +692,13 @@ pub async fn oauth_callback(
     let jwt_access_token = app_state
         .auth_state
         .jwt_service
-        .generate_access_token(user.id, &user.email, &user.role)
+        .generate_access_token(user.id, &user.email, &user.role).await
         .map_err(|_| AuthError::InternalError)?;
 
     let jwt_refresh_token = app_state
         .auth_state
         .jwt_service
-        .generate_refresh_token(user.id)
+        .generate_refresh_token(user.id).await
         .map_err(|_| AuthError::InternalError)?;
 
     // Set tokens as httpOnly cookies
@@ -870,10 +871,14 @@ pub async fn login(
         .map_err(|_| AuthError::InternalError)?;
 
     if !password_valid {
+        // Get configuration values
+        let max_login_attempts = app_state.auth_state.get_max_login_attempts().await;
+        let lockout_duration_minutes = app_state.auth_state.get_lockout_duration_minutes().await;
+        
         // Increment failed login attempts
         let new_attempts = user.failed_login_attempts + 1;
-        let locked_until = if new_attempts >= 5 {
-            Some(chrono::Utc::now().naive_utc() + chrono::Duration::hours(1))
+        let locked_until = if new_attempts >= max_login_attempts {
+            Some(chrono::Utc::now().naive_utc() + chrono::Duration::minutes(lockout_duration_minutes as i64))
         } else {
             None
         };
@@ -910,12 +915,12 @@ pub async fn login(
         app_state
             .auth_state
             .jwt_service
-            .generate_access_token(user.id, &user.email, &user.role)?;
+            .generate_access_token(user.id, &user.email, &user.role).await?;
 
     let refresh_token = app_state
         .auth_state
         .jwt_service
-        .generate_refresh_token(user.id)?;
+        .generate_refresh_token(user.id).await?;
 
     // Set tokens as httpOnly cookies
     let cookie_service = CookieService::new();
@@ -937,7 +942,7 @@ pub async fn login(
         expires_in: app_state
             .auth_state
             .jwt_service
-            .access_token_duration_seconds(),
+            .access_token_duration_seconds().await,
     };
 
     Ok((headers, Json(ApiResponse::success(auth_response))))
@@ -999,12 +1004,12 @@ pub async fn refresh_token(
         app_state
             .auth_state
             .jwt_service
-            .generate_access_token(user.id, &user.email, &user.role)?;
+            .generate_access_token(user.id, &user.email, &user.role).await?;
 
     let new_refresh_token = app_state
         .auth_state
         .jwt_service
-        .generate_refresh_token(user.id)?;
+        .generate_refresh_token(user.id).await?;
 
     // Set new tokens as httpOnly cookies
     let cookie_service = CookieService::new();
@@ -1020,7 +1025,7 @@ pub async fn refresh_token(
         expires_in: app_state
             .auth_state
             .jwt_service
-            .access_token_duration_seconds(),
+            .access_token_duration_seconds().await,
     };
 
     Ok((headers, Json(ApiResponse::success(auth_response))))
@@ -1190,12 +1195,12 @@ pub async fn register_admin(
         app_state
             .auth_state
             .jwt_service
-            .generate_access_token(user.id, &user.email, &user.role)?;
+            .generate_access_token(user.id, &user.email, &user.role).await?;
 
     let refresh_token = app_state
         .auth_state
         .jwt_service
-        .generate_refresh_token(user.id)?;
+        .generate_refresh_token(user.id).await?;
 
     // Set tokens as httpOnly cookies
     let cookie_service = CookieService::new();
@@ -1211,7 +1216,7 @@ pub async fn register_admin(
         expires_in: app_state
             .auth_state
             .jwt_service
-            .access_token_duration_seconds(),
+            .access_token_duration_seconds().await,
     };
 
     Ok((

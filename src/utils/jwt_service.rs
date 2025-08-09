@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 
 use super::AuthError;
 use crate::schema::blacklisted_tokens;
+use crate::services::{ConfigurationManager, ConfigurationAccess};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Claims {
@@ -29,31 +30,30 @@ pub struct RefreshClaims {
 pub struct JwtService {
     encoding_key: EncodingKey,
     decoding_key: DecodingKey,
-    access_token_duration: Duration,
-    refresh_token_duration: Duration,
     pool: Pool<ConnectionManager<SqliteConnection>>,
+    config_manager: ConfigurationManager,
 }
 
 impl JwtService {
-    pub fn new(secret: &str, pool: Pool<ConnectionManager<SqliteConnection>>) -> Self {
+    pub fn new(secret: &str, pool: Pool<ConnectionManager<SqliteConnection>>, config_manager: ConfigurationManager) -> Self {
         Self {
             encoding_key: EncodingKey::from_secret(secret.as_ref()),
             decoding_key: DecodingKey::from_secret(secret.as_ref()),
-            access_token_duration: Duration::minutes(15), // Short-lived access tokens
-            refresh_token_duration: Duration::days(7),    // Longer-lived refresh tokens
             pool,
+            config_manager,
         }
     }
 
     /// Generate access token with short expiration
-    pub fn generate_access_token(
+    pub async fn generate_access_token(
         &self,
         user_id: i32,
         email: &str,
         role: &str,
     ) -> Result<String, AuthError> {
         let now = Utc::now();
-        let exp = now + self.access_token_duration;
+        let jwt_lifetime_hours = self.get_jwt_lifetime_hours().await;
+        let exp = now + Duration::hours(jwt_lifetime_hours as i64);
 
         let claims = Claims {
             sub: user_id.to_string(),
@@ -69,9 +69,11 @@ impl JwtService {
     }
 
     /// Generate refresh token with longer expiration
-    pub fn generate_refresh_token(&self, user_id: i32) -> Result<String, AuthError> {
+    pub async fn generate_refresh_token(&self, user_id: i32) -> Result<String, AuthError> {
         let now = Utc::now();
-        let exp = now + self.refresh_token_duration;
+        let jwt_lifetime_hours = self.get_jwt_lifetime_hours().await;
+        // Refresh tokens live 7 times longer than access tokens
+        let exp = now + Duration::hours((jwt_lifetime_hours * 7) as i64);
 
         let claims = RefreshClaims {
             sub: user_id.to_string(),
@@ -135,8 +137,9 @@ impl JwtService {
     }
 
     /// Get access token duration in seconds
-    pub fn access_token_duration_seconds(&self) -> i64 {
-        self.access_token_duration.num_seconds()
+    pub async fn access_token_duration_seconds(&self) -> i64 {
+        let jwt_lifetime_hours = self.get_jwt_lifetime_hours().await;
+        Duration::hours(jwt_lifetime_hours as i64).num_seconds()
     }
 
     /// Decode token without validation (for extracting claims from potentially expired tokens)
@@ -316,5 +319,11 @@ impl JwtService {
         DateTime::from_timestamp(timestamp, 0)
             .map(|dt| dt.naive_utc())
             .unwrap_or_else(|| DateTime::from_timestamp(0, 0).unwrap().naive_utc())
+    }
+}
+
+impl ConfigurationAccess for JwtService {
+    fn config_manager(&self) -> &ConfigurationManager {
+        &self.config_manager
     }
 }

@@ -2,6 +2,8 @@
 
 export * from "./collections/useCollectionMutations";
 export * from "./collections/useCollections";
+export * from "./configuration/useConfiguration";
+export * from "./configuration/useConfigurationMutations";
 export * from "./permissions/usePermissionMutations";
 export * from "./permissions/usePermissions";
 export * from "./permissions/useRoleMutations";

@@ -8,6 +8,7 @@ import type {
 	CreateCollectionRequest,
 	CreateRecordRequest,
 	CreateRoleRequest,
+	CreateSystemSettingRequest,
 	CreateUserRequest,
 	ForgotPasswordRequest,
 	HealthResponse,
@@ -30,10 +31,12 @@ import type {
 	Role,
 	SetCollectionPermissionRequest,
 	SetUserCollectionPermissionRequest,
+	SystemSetting,
 	TransferOwnershipRequest,
 	UpdateCollectionRequest,
 	UpdateRecordRequest,
 	UpdateRoleRequest,
+	UpdateSystemSettingRequest,
 	UpdateUserRequest,
 	User,
 	UserCollectionPermission,
@@ -707,6 +710,85 @@ export const metricsApi = {
 	getSummary: async (): Promise<MetricsSummary> => {
 		const response = await apiRequest<MetricsSummary>("/metrics/summary");
 		return response;
+	},
+};
+
+// Configuration API
+export const configurationApi = {
+	// Get all system settings
+	getAllSettings: async (): Promise<SystemSetting[]> => {
+		const response = await apiRequest<ApiResponse<SystemSetting[]>>("/admin/configuration");
+		return response.data;
+	},
+
+	// Get settings by category
+	getSettingsByCategory: async (
+		category: "database" | "auth" | "api",
+	): Promise<SystemSetting[]> => {
+		const response = await apiRequest<ApiResponse<{settings: SystemSetting[]}>>(
+			`/admin/configuration/${category}`,
+		);
+		return response.data.settings;
+	},
+
+	// Get a specific setting
+	getSetting: async (
+		category: "database" | "auth" | "api",
+		settingKey: string,
+	): Promise<SystemSetting> => {
+		const response = await apiRequest<ApiResponse<SystemSetting>>(
+			`/admin/configuration/${category}/${settingKey}`,
+		);
+		return response.data;
+	},
+
+	// Create a new setting
+	createSetting: async (data: CreateSystemSettingRequest): Promise<SystemSetting> => {
+		const response = await apiRequest<ApiResponse<SystemSetting>>("/admin/configuration", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+		return response.data;
+	},
+
+	// Update a setting
+	updateSetting: async (
+		category: "database" | "auth" | "api",
+		settingKey: string,
+		data: UpdateSystemSettingRequest,
+	): Promise<SystemSetting> => {
+		const response = await apiRequest<ApiResponse<SystemSetting>>(
+			`/admin/configuration/${category}/${settingKey}`,
+			{
+				method: "PUT",
+				body: JSON.stringify(data),
+			},
+		);
+		return response.data;
+	},
+
+	// Delete a setting
+	deleteSetting: async (
+		category: "database" | "auth" | "api",
+		settingKey: string,
+	): Promise<void> => {
+		await apiRequest<void>(`/admin/configuration/${category}/${settingKey}`, {
+			method: "DELETE",
+		});
+	},
+
+	// Reset setting to default value
+	resetSetting: async (
+		category: "database" | "auth" | "api",
+		settingKey: string,
+	): Promise<SystemSetting> => {
+		const response = await apiRequest<ApiResponse<SystemSetting>>(
+			`/admin/configuration/${category}/${settingKey}/reset`,
+			{
+				method: "POST",
+			},
+		);
+		return response.data;
 	},
 };
 

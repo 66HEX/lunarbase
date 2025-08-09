@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 const inputVariants = cva(
 	[
-		"w-fit rounded-lg border transition-all duration-200 ease-in-out",
+		"relative w-fit rounded-lg border transition-all duration-200 ease-in-out",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
 		"focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50",
 		"disabled:opacity-50 disabled:cursor-not-allowed",
@@ -126,74 +126,123 @@ export interface InputProps
 	containerClassName?: string;
 }
 
+// ...twój importy bez zmian
+
 export const Input: React.FC<InputProps> = ({
-	variant = "default",
-	size = "md",
-	label,
-	helperText,
-	successMessage,
-	errorMessage,
-	leftIcon,
-	rightIcon,
-	className = "",
-	containerClassName = "",
-	disabled,
-	...props
+  variant = "default",
+  size = "md",
+  label,
+  helperText,
+  successMessage,
+  errorMessage,
+  leftIcon,
+  rightIcon,
+  className = "",
+  containerClassName = "",
+  disabled,
+  type,
+  ...props
 }) => {
-	const hasLeftIcon = !!leftIcon;
-	const hasRightIcon = !!rightIcon;
-	const displayErrorMessage = variant === "error" && errorMessage;
+  const hasLeftIcon = !!leftIcon;
+  const hasRightIcon = !!rightIcon || type === "number"; // dla number dodamy własne strzałki
+  const displayErrorMessage = variant === "error" && errorMessage;
 
-	return (
-		<div className={`not-prose ${containerClassName}`}>
-			{label && <label className={labelVariants({ variant })}>{label}</label>}
+  const handleStep = (direction: 1 | -1) => {
+    if (disabled) return;
+    const current = Number(props.value) || 0;
+    props.onChange?.({
+      target: { value: String(current + direction) },
+    } as any);
+  };
 
-			<div className="relative">
-				{leftIcon && (
-					<div
-						className={iconVariants({
-							position: "left",
-							size,
-							disabled: !!disabled,
-						})}
-					>
-						{leftIcon}
-					</div>
-				)}
+  return (
+    <div className={`not-prose ${containerClassName}`}>
+      {label && <label className={labelVariants({ variant })}>{label}</label>}
 
-				<input
-					className={cn(
-						inputVariants({ variant, size, hasLeftIcon, hasRightIcon }),
-						className,
-					)}
-					disabled={disabled}
-					{...props}
-				/>
+      <div className="relative">
+        {leftIcon && (
+          <div
+            className={iconVariants({
+              position: "left",
+              size,
+              disabled: !!disabled,
+            })}
+          >
+            {leftIcon}
+          </div>
+        )}
 
-				{rightIcon && (
-					<div
-						className={iconVariants({
-							position: "right",
-							size,
-							disabled: !!disabled,
-						})}
-					>
-						{rightIcon}
-					</div>
-				)}
-			</div>
+        <div className="w-fit relative">
+			<input
+          type={type}
+          className={cn(
+            inputVariants({ variant, size, hasLeftIcon, hasRightIcon }),
+            type === "number" && [
+              "[&::-webkit-inner-spin-button]:appearance-none",
+              "[&::-webkit-outer-spin-button]:appearance-none",
+              "[&::-webkit-inner-spin-button]:m-0",
+              "[&::-webkit-outer-spin-button]:m-0",
+              "[appearance:textfield]",
+              "pr-8", // miejsce na nasze strzałki
+            ],
+            className
+          )}
+          disabled={disabled}
+          {...props}
+        />
 
-			{displayErrorMessage && (
-				<p className={messageVariants({ type: "error" })}>{errorMessage}</p>
-			)}
+        {/* Własne spin buttony tylko dla type="number" */}
+        {type === "number" && (
+          <div className="absolute right-2 top-0 bottom-0 flex flex-col gap-1.5 justify-center">
+            <button
+              type="button"
+              onClick={() => handleStep(1)}
+              className="px-1 text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 disabled:opacity-50"
+              disabled={disabled}
+            >
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 0L9 6H1L5 0Z" fill="currentColor"/>
+              </svg>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleStep(-1)}
+              className="px-1 text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 disabled:opacity-50"
+              disabled={disabled}
+            >
+              <svg width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M5 6L1 0H9L5 6Z" fill="currentColor"/>
+              </svg>
+            </button>
+          </div>
+        )}
 
-			{!displayErrorMessage && successMessage && (
-				<p className={messageVariants({ type: "success" })}>{successMessage}</p>
-			)}
 
-			{helperText && (
-				<p className={messageVariants({ type: "helper" })}>{helperText}</p>
-			)}
+        {rightIcon && type !== "number" && (
+          <div
+            className={iconVariants({
+              position: "right",
+              size,
+              disabled: !!disabled,
+            })}
+          >
+            {rightIcon}
+          </div>
+        )}
+      </div>
 		</div>
-	);
+
+      {displayErrorMessage && (
+        <p className={messageVariants({ type: "error" })}>{errorMessage}</p>
+      )}
+
+      {!displayErrorMessage && successMessage && (
+        <p className={messageVariants({ type: "success" })}>{successMessage}</p>
+      )}
+
+      {helperText && (
+        <p className={messageVariants({ type: "helper" })}>{helperText}</p>
+      )}
+    </div>
+  );
 };

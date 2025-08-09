@@ -21,6 +21,7 @@ pub enum AuthError {
     RateLimitExceeded,
     ValidationError(Vec<String>),
     BadRequest(String),
+    Conflict(String),
     DatabaseError,
     InternalError,
     NotFound(String),
@@ -50,6 +51,7 @@ impl fmt::Display for AuthError {
                 write!(f, "Validation error: {}", errors.join(", "))
             }
             AuthError::BadRequest(msg) => write!(f, "Bad request: {}", msg),
+            AuthError::Conflict(msg) => write!(f, "Conflict: {}", msg),
             AuthError::DatabaseError => write!(f, "Database error"),
             AuthError::InternalError => write!(f, "Internal server error"),
             AuthError::NotFound(msg) => write!(f, "Not found: {}", msg),
@@ -130,6 +132,7 @@ impl IntoResponse for AuthError {
                 "VALIDATION_ERROR",
             ),
             AuthError::BadRequest(_) => (StatusCode::BAD_REQUEST, "Bad request", "BAD_REQUEST"),
+            AuthError::Conflict(_) => (StatusCode::CONFLICT, "Resource already exists", "CONFLICT"),
             AuthError::DatabaseError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "A database error occurred. Please try again later",
@@ -157,7 +160,7 @@ impl IntoResponse for AuthError {
 }
 
 // Helper type for consistent API responses
-#[derive(serde::Serialize)]
+#[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct ApiResponse<T> {
     pub success: bool,
     pub data: Option<T>,

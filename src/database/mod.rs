@@ -6,8 +6,13 @@ use std::env;
 pub type DatabasePool = Pool<ConnectionManager<SqliteConnection>>;
 
 pub fn create_pool(database_url: &str) -> Result<DatabasePool, PoolError> {
+    create_pool_with_size(database_url, 10)
+}
+
+pub fn create_pool_with_size(database_url: &str, max_size: u32) -> Result<DatabasePool, PoolError> {
     let manager = ConnectionManager::<SqliteConnection>::new(database_url);
     let pool = Pool::builder()
+        .max_size(max_size)
         .connection_customizer(Box::new(SqlCipherCustomizer))
         .build(manager)?;
     Ok(pool)

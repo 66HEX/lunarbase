@@ -75,6 +75,23 @@ diesel::table! {
 }
 
 diesel::table! {
+    system_settings (id) {
+        id -> Integer,
+        category -> Text,
+        setting_key -> Text,
+        setting_value -> Text,
+        data_type -> Text,
+        description -> Nullable<Text>,
+        default_value -> Nullable<Text>,
+        is_sensitive -> Bool,
+        requires_restart -> Bool,
+        created_at -> Timestamp,
+        updated_at -> Timestamp,
+        updated_by -> Nullable<Text>,
+    }
+}
+
+diesel::table! {
     user_collection_permissions (id) {
         id -> Integer,
         user_id -> Integer,
@@ -135,6 +152,7 @@ diesel::allow_tables_to_appear_in_same_query!(
     collections,
     record_permissions,
     roles,
+    system_settings,
     user_collection_permissions,
     users,
     verification_tokens,

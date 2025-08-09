@@ -9,7 +9,8 @@ use tracing::{info, warn};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
-use lunarbase::database::create_pool;
+use lunarbase::database::{create_pool, create_pool_with_size};
+use lunarbase::services::{ConfigurationManager, ConfigurationAccess};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 use lunarbase::handlers::{
@@ -19,6 +20,10 @@ use lunarbase::handlers::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
         get_collection_schema, get_collections_stats, get_record, list_all_records,
         list_collections, list_records, update_collection, update_record,
+    },
+    configuration::{
+        get_all_settings, get_settings_by_category, get_setting, update_setting,
+        create_setting, delete_setting, reset_setting,
     },
     forgot_password,
     health::{health_check, public_health_check, simple_health_check},
@@ -59,17 +64,40 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = Config::from_env()?;
     info!("Configuration loaded successfully");
 
-    // Database connection pool creation
-    let pool = create_pool(&config.database_url)?;
-    info!("Database pool created successfully");
+    // Database connection pool creation (initial pool for migrations)
+    let initial_pool = create_pool(&config.database_url)?;
+    info!("Initial database pool created successfully");
 
     // Run database migrations automatically
     {
-        let mut conn = pool.get()?;
+        let mut conn = initial_pool.get()?;
         conn.run_pending_migrations(MIGRATIONS)
             .map_err(|e| format!("Failed to run migrations: {}", e))?;
         info!("Database migrations completed successfully");
     }
+
+    // Initialize configuration manager to get connection pool size
+    let config_manager = ConfigurationManager::new(initial_pool.clone());
+    config_manager.initialize().await?;
+    
+    // Create a temporary struct that implements ConfigurationAccess to get the pool size
+    struct TempConfigAccess {
+        config_manager: ConfigurationManager,
+    }
+    
+    impl ConfigurationAccess for TempConfigAccess {
+        fn config_manager(&self) -> &ConfigurationManager {
+            &self.config_manager
+        }
+    }
+    
+    let temp_access = TempConfigAccess { config_manager: config_manager.clone() };
+    let connection_pool_size = temp_access.get_connection_pool_size().await;
+    info!("Using connection pool size: {}", connection_pool_size);
+
+    // Create final pool with configured size
+    let pool = create_pool_with_size(&config.database_url, connection_pool_size)?;
+    info!("Final database pool created with size: {}", connection_pool_size);
 
     // Application state creation
     let app_state = AppState::new(
@@ -90,7 +118,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Routing creation
-    let app = create_router(app_state);
+    let app = create_router(app_state).await;
 
     // Server address configuration
     let addr = config.server_address().parse::<SocketAddr>()?;
@@ -108,7 +136,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-fn create_router(app_state: AppState) -> Router {
+async fn create_router(app_state: AppState) -> Router {
     // Public routes (no authentication)
     let public_routes = Router::new()
         .route("/health", get(public_health_check))
@@ -237,6 +265,15 @@ fn create_router(app_state: AppState) -> Router {
         )
         .route("/ws/broadcast", post(broadcast_message))
         .route("/ws/activity", get(get_activity))
+        // Configuration management endpoints (admin only)
+        .route("/admin/configuration", get(get_all_settings))
+        .route("/admin/configuration/{category}", get(get_settings_by_category))
+        .route("/admin/configuration/{category}/{setting_key}", get(get_setting))
+        .route("/admin/configuration/{category}/{setting_key}", put(update_setting))
+        .route("/admin/configuration", post(create_setting))
+        .route("/admin/configuration/{category}/{setting_key}", delete(delete_setting))
+        .route("/admin/configuration/{category}/{setting_key}/reset", post(reset_setting))
+
         .layer(middleware::from_fn_with_state(
             app_state.auth_state.clone(),
             auth_middleware,
@@ -257,7 +294,7 @@ fn create_router(app_state: AppState) -> Router {
         .with_state(app_state.clone());
 
     // Middleware application
-    add_middleware(app, app_state)
+    add_middleware(app, app_state).await
 }
 
 async fn shutdown_signal() {

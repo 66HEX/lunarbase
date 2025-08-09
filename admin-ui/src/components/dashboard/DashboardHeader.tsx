@@ -13,7 +13,7 @@ export function DashboardHeader({ onRefresh, loading }: DashboardHeaderProps) {
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-semibold text-nocta-900 dark:text-nocta-100">
 							Dashboard
 						</h1>
 						<Badge
