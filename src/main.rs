@@ -20,6 +20,7 @@ use lunarbase::handlers::{
         get_collection_schema, get_collections_stats, get_record, list_all_records,
         list_collections, list_records, update_collection, update_record,
     },
+    forgot_password,
     health::{health_check, public_health_check, simple_health_check},
     login, logout, me,
     metrics::{get_metrics, get_metrics_summary},
@@ -37,7 +38,7 @@ use lunarbase::handlers::{
         get_record_permissions, list_record_permissions, remove_record_permission,
         set_record_permission,
     },
-    refresh_token, register, register_admin, resend_verification,
+    refresh_token, register, register_admin, resend_verification, reset_password,
     users::{create_user, delete_user, get_user, list_users, unlock_user, update_user},
     verify_email, verify_email_get,
     websocket::{
@@ -119,6 +120,8 @@ fn create_router(app_state: AppState) -> Router {
         .route("/auth/verify-email", post(verify_email))
         .route("/verify-email", get(verify_email_get))
         .route("/auth/resend-verification", post(resend_verification))
+        .route("/auth/forgot-password", post(forgot_password))
+        .route("/auth/reset-password", post(reset_password))
         // OAuth endpoints
         .route("/auth/oauth/{provider}", get(oauth_authorize))
         .route("/auth/oauth/{provider}/callback", get(oauth_callback))

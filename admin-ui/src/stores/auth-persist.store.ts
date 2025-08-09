@@ -26,6 +26,8 @@ interface AuthActions {
 	checkAuth: () => Promise<boolean>;
 	startTokenRefresh: (expiresIn: number) => void;
 	stopTokenRefresh: () => void;
+	forgotPassword: (email: string) => Promise<void>;
+	resetPassword: (token: string, newPassword: string) => Promise<void>;
 }
 
 type AuthStore = AuthState & AuthActions;
@@ -227,6 +229,54 @@ export const useAuthStore = create<AuthStore>()(
 						set((state) => {
 							state.refreshTimer = null;
 						});
+					}
+				},
+
+				forgotPassword: async (email: string) => {
+					set((state) => {
+						state.loading = true;
+						state.error = null;
+					});
+
+					try {
+						await authApi.forgotPassword({ email });
+						set((state) => {
+							state.loading = false;
+						});
+					} catch (error: unknown) {
+						const errorMessage =
+							error instanceof Error
+								? error.message
+								: "Failed to send reset email";
+						set((state) => {
+							state.loading = false;
+							state.error = errorMessage;
+						});
+						throw error;
+					}
+				},
+
+				resetPassword: async (token: string, newPassword: string) => {
+					set((state) => {
+						state.loading = true;
+						state.error = null;
+					});
+
+					try {
+						await authApi.resetPassword({ token, new_password: newPassword });
+						set((state) => {
+							state.loading = false;
+						});
+					} catch (error: unknown) {
+						const errorMessage =
+							error instanceof Error
+								? error.message
+								: "Failed to reset password";
+						set((state) => {
+							state.loading = false;
+							state.error = errorMessage;
+						});
+						throw error;
 					}
 				},
 			})),

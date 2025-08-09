@@ -1,17 +1,17 @@
+use chrono::{DateTime, Duration, Utc};
+use flate2::Compression;
+use flate2::write::GzEncoder;
+use std::io::Write;
 use std::sync::Arc;
 use tokio::fs;
 use tokio_cron_scheduler::{Job, JobScheduler};
-use chrono::{DateTime, Utc, Duration};
-use flate2::write::GzEncoder;
-use flate2::Compression;
-use std::io::Write;
-use tracing::{info, error, warn};
+use tracing::{error, info, warn};
 use uuid::Uuid;
 
-use crate::database::DatabasePool;
-use crate::services::S3Service;
 use crate::config::Config;
+use crate::database::DatabasePool;
 use crate::middleware::MetricsState;
+use crate::services::S3Service;
 
 #[derive(Clone)]
 pub struct BackupService {
@@ -94,9 +94,9 @@ impl BackupService {
         let scheduler = JobScheduler::new()
             .await
             .map_err(|e| BackupError::SchedulerError(e.to_string()))?;
-        
+
         let backup_config = BackupConfig::from_config(config);
-        
+
         let service = Self {
             db_pool,
             s3_service,
@@ -104,56 +104,88 @@ impl BackupService {
             config: backup_config,
             metrics_state,
         };
-        
+
         // Initialize backup metrics to ensure they appear in Prometheus metrics endpoint
         if let Some(ref metrics) = service.metrics_state {
             // Initialize all backup metrics with 0 values
-            let _ = metrics.increment_custom_metric(
-                "backup_operations_total",
-                "Total number of backup operations"
-            ).await;
-            let _ = metrics.increment_custom_metric(
-                "backup_failures_total",
-                "Total number of backup failures"
-            ).await;
-            let _ = metrics.increment_custom_metric(
-                "backup_cleanup_operations_total",
-                "Total number of backup cleanup operations"
-            ).await;
-            let _ = metrics.increment_custom_metric(
-                "backup_files_deleted_total",
-                "Total number of backup files deleted"
-            ).await;
-            
+            let _ = metrics
+                .increment_custom_metric(
+                    "backup_operations_total",
+                    "Total number of backup operations",
+                )
+                .await;
+            let _ = metrics
+                .increment_custom_metric("backup_failures_total", "Total number of backup failures")
+                .await;
+            let _ = metrics
+                .increment_custom_metric(
+                    "backup_cleanup_operations_total",
+                    "Total number of backup cleanup operations",
+                )
+                .await;
+            let _ = metrics
+                .increment_custom_metric(
+                    "backup_files_deleted_total",
+                    "Total number of backup files deleted",
+                )
+                .await;
+
             // Reset all metrics back to 0 to initialize them properly
-            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_operations_total").cloned() {
+            if let Some(custom_metrics) = metrics
+                .custom_metrics
+                .read()
+                .await
+                .get("backup_operations_total")
+                .cloned()
+            {
                 custom_metrics.reset();
             }
-            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_failures_total").cloned() {
+            if let Some(custom_metrics) = metrics
+                .custom_metrics
+                .read()
+                .await
+                .get("backup_failures_total")
+                .cloned()
+            {
                 custom_metrics.reset();
             }
-            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_cleanup_operations_total").cloned() {
+            if let Some(custom_metrics) = metrics
+                .custom_metrics
+                .read()
+                .await
+                .get("backup_cleanup_operations_total")
+                .cloned()
+            {
                 custom_metrics.reset();
             }
-            if let Some(custom_metrics) = metrics.custom_metrics.read().await.get("backup_files_deleted_total").cloned() {
+            if let Some(custom_metrics) = metrics
+                .custom_metrics
+                .read()
+                .await
+                .get("backup_files_deleted_total")
+                .cloned()
+            {
                 custom_metrics.reset();
             }
         }
-        
+
         if service.config.enabled {
             service.setup_scheduled_backup().await?;
-            info!("Backup service initialized with schedule: {}", service.config.schedule);
+            info!(
+                "Backup service initialized with schedule: {}",
+                service.config.schedule
+            );
         } else {
             info!("Backup service initialized but disabled");
         }
-        
+
         Ok(service)
     }
-    
+
     async fn setup_scheduled_backup(&self) -> Result<(), BackupError> {
         let service_clone = self.clone();
         let schedule = self.config.schedule.clone();
-        
+
         let job = Job::new_async(schedule.as_str(), move |_uuid, _l| {
             let service = service_clone.clone();
             Box::pin(async move {
@@ -164,7 +196,7 @@ impl BackupService {
                             "Scheduled backup completed successfully. ID: {}, Size: {} bytes",
                             result.backup_id, result.file_size
                         );
-                        
+
                         // Run cleanup after successful backup
                         info!("Running backup cleanup...");
                         service.cleanup_old_backups(result.file_size).await;
@@ -179,48 +211,48 @@ impl BackupService {
             error!("Failed to create backup job: {}", e);
             BackupError::SchedulerError(e.to_string())
         })?;
-        
-        self.scheduler.add(job)
-            .await
-            .map_err(|e| {
-                error!("Failed to add backup job to scheduler: {}", e);
-                BackupError::SchedulerError(e.to_string())
-            })?;
-        
-        self.scheduler.start()
-            .await
-            .map_err(|e| {
-                error!("Failed to start backup scheduler: {}", e);
-                BackupError::SchedulerError(e.to_string())
-            })?;
-        
+
+        self.scheduler.add(job).await.map_err(|e| {
+            error!("Failed to add backup job to scheduler: {}", e);
+            BackupError::SchedulerError(e.to_string())
+        })?;
+
+        self.scheduler.start().await.map_err(|e| {
+            error!("Failed to start backup scheduler: {}", e);
+            BackupError::SchedulerError(e.to_string())
+        })?;
+
         Ok(())
     }
-    
+
     pub async fn create_backup(&self) -> Result<BackupResult, BackupError> {
         if !self.config.enabled {
             return Err(BackupError::BackupDisabled);
         }
-        
+
         let backup_id = Uuid::new_v4().to_string();
         let timestamp = Utc::now();
         let filename = format!(
             "{}-{}.sqlite{}",
             self.config.backup_prefix,
             timestamp.format("%Y%m%d_%H%M%S"),
-            if self.config.compression_enabled { ".gz" } else { "" }
+            if self.config.compression_enabled {
+                ".gz"
+            } else {
+                ""
+            }
         );
-        
+
         info!("Creating backup with ID: {}", backup_id);
-        
+
         // Create database backup using SQLCipher VACUUM INTO
         let temp_backup_path = format!("/tmp/backup_{}.db", backup_id);
         self.create_database_backup(&temp_backup_path).await?;
-        
+
         // Read the backup file
         let backup_data = fs::read(&temp_backup_path).await?;
         let _original_size = backup_data.len() as u64;
-        
+
         // Compress if enabled
         let (final_data, compression_ratio) = if self.config.compression_enabled {
             let compressed = self.compress_data(&backup_data)?;
@@ -229,46 +261,55 @@ impl BackupService {
         } else {
             (backup_data, None)
         };
-        
+
         let file_size = final_data.len() as u64;
-        
+
         // Upload to S3 if available
         let s3_url = if let Some(s3_service) = &self.s3_service {
             let s3_key = format!("backups/{}", filename);
-            match s3_service.upload_file_with_key(
-                final_data,
-                s3_key,
-                filename.clone(),
-                "application/octet-stream".to_string(),
-            ).await {
+            match s3_service
+                .upload_file_with_key(
+                    final_data,
+                    s3_key,
+                    filename.clone(),
+                    "application/octet-stream".to_string(),
+                )
+                .await
+            {
                 Ok(upload_result) => {
                     info!("Backup uploaded to S3: {}", upload_result.file_url);
-                    
+
                     // Log backup success metric
                     if let Some(ref metrics) = self.metrics_state {
-                        if let Err(e) = metrics.increment_custom_metric(
-                            "backup_operations_total",
-                            "Total number of backup operations"
-                        ).await {
+                        if let Err(e) = metrics
+                            .increment_custom_metric(
+                                "backup_operations_total",
+                                "Total number of backup operations",
+                            )
+                            .await
+                        {
                             warn!("Failed to update backup metrics: {}", e);
                         }
                     }
-                    
+
                     Some(upload_result.file_url)
                 }
                 Err(e) => {
                     error!("Failed to upload backup to S3: {}", e);
-                    
+
                     // Log backup failure metric
                     if let Some(ref metrics) = self.metrics_state {
-                        if let Err(e) = metrics.increment_custom_metric(
-                            "backup_failures_total",
-                            "Total number of backup failures"
-                        ).await {
+                        if let Err(e) = metrics
+                            .increment_custom_metric(
+                                "backup_failures_total",
+                                "Total number of backup failures",
+                            )
+                            .await
+                        {
                             warn!("Failed to update backup failure metrics: {}", e);
                         }
                     }
-                    
+
                     None
                 }
             }
@@ -276,17 +317,17 @@ impl BackupService {
             warn!("S3 service not available, backup not uploaded");
             None
         };
-        
+
         // Clean up temporary file
         if let Err(e) = fs::remove_file(&temp_backup_path).await {
             warn!("Failed to remove temporary backup file: {}", e);
         }
-        
+
         // Clean up old backups only if new backup was successfully uploaded
         if s3_url.is_some() {
             self.cleanup_old_backups(file_size).await;
         }
-        
+
         Ok(BackupResult {
             backup_id,
             file_size,
@@ -295,32 +336,36 @@ impl BackupService {
             compression_ratio,
         })
     }
-    
+
     async fn create_database_backup(&self, backup_path: &str) -> Result<(), BackupError> {
         use diesel::prelude::*;
         use diesel::sql_query;
-        
-        let mut conn = self.db_pool.get()
+
+        let mut conn = self
+            .db_pool
+            .get()
             .map_err(|e| BackupError::DatabaseError(e.to_string()))?;
-        
+
         // Use SQLCipher's VACUUM INTO for atomic backup
         let query = format!("VACUUM INTO '{}'", backup_path);
         sql_query(query)
             .execute(&mut conn)
             .map_err(|e| BackupError::DatabaseError(e.to_string()))?;
-        
+
         info!("Database backup created at: {}", backup_path);
         Ok(())
     }
-    
+
     fn compress_data(&self, data: &[u8]) -> Result<Vec<u8>, BackupError> {
         let mut encoder = GzEncoder::new(Vec::new(), Compression::default());
-        encoder.write_all(data)
+        encoder
+            .write_all(data)
             .map_err(|e| BackupError::CompressionError(e.to_string()))?;
-        encoder.finish()
+        encoder
+            .finish()
             .map_err(|e| BackupError::CompressionError(e.to_string()))
     }
-    
+
     async fn cleanup_old_backups(&self, new_backup_size: u64) {
         let s3_service = match &self.s3_service {
             Some(service) => service,
@@ -339,28 +384,31 @@ impl BackupService {
             );
             return;
         }
-        
+
         info!(
-            "Starting cleanup of backups older than {} days (new backup size: {} bytes)", 
+            "Starting cleanup of backups older than {} days (new backup size: {} bytes)",
             self.config.retention_days, new_backup_size
         );
 
         // Calculate cutoff date
         let cutoff_date = Utc::now() - Duration::days(self.config.retention_days as i64);
-        
+
         // List all backup objects with the backup prefix
         let backup_prefix = format!("backups/{}", self.config.backup_prefix);
-        
+
         match s3_service.list_objects(&backup_prefix).await {
             Ok(objects) => {
                 let mut deleted_count = 0;
                 let mut error_count = 0;
-                
+
                 for object in objects {
                     // Check if the backup is older than retention period
                     if object.last_modified < cutoff_date {
-                        info!("Deleting old backup: {} (created: {})", object.key, object.last_modified);
-                        
+                        info!(
+                            "Deleting old backup: {} (created: {})",
+                            object.key, object.last_modified
+                        );
+
                         match s3_service.delete_object(&object.key).await {
                             Ok(_) => {
                                 deleted_count += 1;
@@ -372,30 +420,39 @@ impl BackupService {
                             }
                         }
                     } else {
-                        info!("Keeping backup: {} (created: {})", object.key, object.last_modified);
+                        info!(
+                            "Keeping backup: {} (created: {})",
+                            object.key, object.last_modified
+                        );
                     }
                 }
-                
+
                 info!(
-                    "Backup cleanup completed. Deleted: {}, Errors: {}", 
+                    "Backup cleanup completed. Deleted: {}, Errors: {}",
                     deleted_count, error_count
                 );
-                
+
                 // Log cleanup metrics
                 if let Some(ref metrics) = self.metrics_state {
-                    if let Err(e) = metrics.increment_custom_metric(
-                        "backup_cleanup_operations_total",
-                        "Total number of backup cleanup operations"
-                    ).await {
+                    if let Err(e) = metrics
+                        .increment_custom_metric(
+                            "backup_cleanup_operations_total",
+                            "Total number of backup cleanup operations",
+                        )
+                        .await
+                    {
                         warn!("Failed to update cleanup metrics: {}", e);
                     }
-                    
+
                     // Log deleted backups count as a custom metric
                     for _ in 0..deleted_count {
-                        if let Err(e) = metrics.increment_custom_metric(
-                            "backup_files_deleted_total",
-                            "Total number of backup files deleted"
-                        ).await {
+                        if let Err(e) = metrics
+                            .increment_custom_metric(
+                                "backup_files_deleted_total",
+                                "Total number of backup files deleted",
+                            )
+                            .await
+                        {
                             warn!("Failed to update deleted files metrics: {}", e);
                             break;
                         }
@@ -407,34 +464,34 @@ impl BackupService {
             }
         }
     }
-    
+
     pub async fn manual_backup(&self) -> Result<BackupResult, BackupError> {
         info!("Manual backup requested");
         let result = self.create_backup().await?;
-        
+
         // Run cleanup after successful manual backup
         info!("Running backup cleanup after manual backup...");
         self.cleanup_old_backups(result.file_size).await;
-        
+
         Ok(result)
     }
-    
+
     /// Manually trigger cleanup of old backups
     pub async fn manual_cleanup(&self) {
         info!("Manual cleanup requested");
         // For manual cleanup, bypass size check by passing 0 (which will skip the check)
         self.cleanup_old_backups(0).await;
     }
-    
+
     pub fn get_config(&self) -> &BackupConfig {
         &self.config
     }
-    
+
     pub async fn health_check(&self) -> bool {
         if !self.config.enabled {
             return true; // Service is "healthy" when disabled
         }
-        
+
         // Check if S3 service is available
         if let Some(s3_service) = &self.s3_service {
             s3_service.health_check().await.is_ok()
@@ -442,7 +499,7 @@ impl BackupService {
             false
         }
     }
-    
+
     pub async fn stop(&self) -> Result<(), BackupError> {
         // Note: JobScheduler doesn't support shutdown through Arc
         // The scheduler will be dropped when the service is dropped
@@ -459,17 +516,17 @@ pub async fn create_backup_service_from_config(
     metrics_state: Option<Arc<MetricsState>>,
 ) -> Result<Option<BackupService>, BackupError> {
     let backup_config = BackupConfig::from_config(config);
-    
+
     if !backup_config.enabled {
         info!("Backup service is disabled");
         return Ok(None);
     }
-    
+
     if s3_service.is_none() {
         warn!("S3 service not configured, backup service will be disabled");
         return Ok(None);
     }
-    
+
     let service = BackupService::new(db_pool, s3_service, config, metrics_state).await?;
     Ok(Some(service))
 }

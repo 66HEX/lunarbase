@@ -1,7 +1,7 @@
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
-use uuid::Uuid;
 use chrono::{DateTime, Utc};
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct S3Service {
@@ -312,22 +312,21 @@ impl S3Service {
 
         let mut objects = Vec::new();
         for object in response.contents() {
-            if let (Some(key), Some(last_modified), Some(size)) = (
-                object.key(),
-                object.last_modified(),
-                object.size(),
-            ) {
+            if let (Some(key), Some(last_modified), Some(size)) =
+                (object.key(), object.last_modified(), object.size())
+            {
                 // Convert AWS DateTime to chrono DateTime
-                 let chrono_datetime = DateTime::<Utc>::from_timestamp(
-                     last_modified.secs(),
-                     last_modified.subsec_nanos(),
-                 ).unwrap_or_else(|| Utc::now());
-                 
-                 objects.push(S3Object {
-                     key: key.to_string(),
-                     last_modified: chrono_datetime,
-                     size: size as u64,
-                 });
+                let chrono_datetime = DateTime::<Utc>::from_timestamp(
+                    last_modified.secs(),
+                    last_modified.subsec_nanos(),
+                )
+                .unwrap_or_else(|| Utc::now());
+
+                objects.push(S3Object {
+                    key: key.to_string(),
+                    last_modified: chrono_datetime,
+                    size: size as u64,
+                });
             }
         }
 

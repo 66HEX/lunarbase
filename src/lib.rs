@@ -233,8 +233,9 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, BackupService, CollectionService, EmailService, OwnershipService, PermissionService,
-    WebSocketService, create_s3_service_from_config, create_backup_service_from_config,
+    AdminService, BackupService, CollectionService, EmailService, OwnershipService,
+    PermissionService, WebSocketService, create_backup_service_from_config,
+    create_s3_service_from_config,
 };
 use std::sync::Arc;
 
@@ -279,14 +280,17 @@ impl AppState {
         let oauth_config = utils::oauth_service::OAuthConfig::from_env();
         let oauth_service = utils::OAuthService::new(oauth_config);
         let email_service = EmailService::new(config, db_pool.clone());
-        
+
         // Add backup service if configured
         let backup_service = create_backup_service_from_config(
             db_pool.clone(),
             s3_service_option.map(Arc::new),
             config,
-            Some(Arc::new(metrics_state.clone()))
-        ).await.ok().flatten();
+            Some(Arc::new(metrics_state.clone())),
+        )
+        .await
+        .ok()
+        .flatten();
 
         Ok(Self {
             db_pool: db_pool.clone(),

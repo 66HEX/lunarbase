@@ -510,14 +510,20 @@ async fn test_collection_permissions_full_scenario() {
             unique_name, record_id
         ))
         .method("PUT")
-        .header("content-type", format!("multipart/form-data; boundary={}", boundary))
+        .header(
+            "content-type",
+            format!("multipart/form-data; boundary={}", boundary),
+        )
         .header("authorization", format!("Bearer {}", user_token))
         .body(Body::from(form_data))
         .unwrap();
 
     let update_record_response = app.clone().oneshot(update_record_request).await.unwrap();
     // Debug: Print the actual status code
-    println!("Update record response status: {:?}", update_record_response.status());
+    println!(
+        "Update record response status: {:?}",
+        update_record_response.status()
+    );
     // This should fail due to lack of update permission
     assert!(
         update_record_response.status() == StatusCode::FORBIDDEN

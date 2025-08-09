@@ -8,7 +8,9 @@ pub mod s3_service;
 pub mod websocket_service;
 
 pub use admin_service::AdminService;
-pub use backup_service::{BackupService, BackupConfig, BackupResult, BackupError, create_backup_service_from_config};
+pub use backup_service::{
+    BackupConfig, BackupError, BackupResult, BackupService, create_backup_service_from_config,
+};
 pub use collection_service::CollectionService;
 pub use email_service::EmailService;
 pub use ownership_service::OwnershipService;

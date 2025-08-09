@@ -9,6 +9,7 @@ import type {
 	CreateRecordRequest,
 	CreateRoleRequest,
 	CreateUserRequest,
+	ForgotPasswordRequest,
 	HealthResponse,
 	LoginRequest,
 	LoginResponse,
@@ -25,6 +26,7 @@ import type {
 	Record,
 	RecordWithCollection,
 	RegisterRequest,
+	ResetPasswordRequest,
 	Role,
 	SetCollectionPermissionRequest,
 	SetUserCollectionPermissionRequest,
@@ -206,6 +208,20 @@ export const authApi = {
 	logout: async (): Promise<void> => {
 		await apiRequest<void>("/auth/logout", {
 			method: "POST",
+		});
+	},
+
+	forgotPassword: async (data: ForgotPasswordRequest): Promise<void> => {
+		await apiRequest<void>("/auth/forgot-password", {
+			method: "POST",
+			body: JSON.stringify(data),
+		});
+	},
+
+	resetPassword: async (data: ResetPasswordRequest): Promise<void> => {
+		await apiRequest<void>("/auth/reset-password", {
+			method: "POST",
+			body: JSON.stringify(data),
 		});
 	},
 };

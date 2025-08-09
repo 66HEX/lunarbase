@@ -290,6 +290,20 @@ pub struct ResendVerificationRequest {
     pub email: String,
 }
 
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ForgotPasswordRequest {
+    #[schema(example = "user@example.com")]
+    pub email: String,
+}
+
+#[derive(Debug, Deserialize, ToSchema)]
+pub struct ResetPasswordRequest {
+    #[schema(example = "550e8400-e29b-41d4-a716-446655440000")]
+    pub token: String,
+    #[schema(example = "NewSecurePassword123!", min_length = 8)]
+    pub new_password: String,
+}
+
 #[utoipa::path(
     post,
     path = "/auth/resend-verification",
@@ -332,6 +346,152 @@ pub async fn resend_verification(
 
     Ok(Json(ApiResponse::success(
         "Verification email sent".to_string(),
+    )))
+}
+
+/// Forgot password endpoint - sends password reset email
+#[utoipa::path(
+    post,
+    path = "/auth/forgot-password",
+    tag = "Authentication",
+    request_body = ForgotPasswordRequest,
+    responses(
+        (status = 200, description = "Password reset email sent", body = ApiResponse<String>),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
+pub async fn forgot_password(
+    State(app_state): State<AppState>,
+    Json(payload): Json<ForgotPasswordRequest>,
+) -> Result<Json<ApiResponse<String>>, AuthError> {
+    // Add artificial delay to prevent timing attacks
+    let start_time = std::time::Instant::now();
+    let base_delay = std::time::Duration::from_millis(500);
+
+    // Get database connection
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
+
+    // Find user by email
+    let user_result: Result<User, _> = users::table
+        .filter(users::email.eq(&payload.email))
+        .select(User::as_select())
+        .first(&mut conn);
+
+    match user_result {
+        Ok(user) => {
+            // Only send reset email for active users
+            if user.is_active {
+                // Send password reset email
+                if let Err(e) = app_state
+                    .email_service
+                    .send_password_reset_email(user.id, &user.email, &user.username)
+                    .await
+                {
+                    tracing::warn!(
+                        "Failed to send password reset email to {}: {:?}",
+                        user.email,
+                        e
+                    );
+                }
+            }
+        }
+        Err(_) => {
+            // User not found - but we don't reveal this for security
+            tracing::info!(
+                "Password reset requested for non-existent email: {}",
+                payload.email
+            );
+        }
+    }
+
+    // Ensure minimum delay to prevent timing attacks
+    let elapsed = start_time.elapsed();
+    if elapsed < base_delay {
+        tokio::time::sleep(base_delay - elapsed).await;
+    }
+
+    // Always return success to prevent email enumeration
+    Ok(Json(ApiResponse::success(
+        "If an account with that email exists, a password reset link has been sent".to_string(),
+    )))
+}
+
+/// Reset password endpoint - resets password using token
+#[utoipa::path(
+    post,
+    path = "/auth/reset-password",
+    tag = "Authentication",
+    request_body = ResetPasswordRequest,
+    responses(
+        (status = 200, description = "Password reset successfully", body = ApiResponse<String>),
+        (status = 400, description = "Invalid or expired token", body = ErrorResponse),
+        (status = 404, description = "User not found", body = ErrorResponse),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
+pub async fn reset_password(
+    State(app_state): State<AppState>,
+    Json(payload): Json<ResetPasswordRequest>,
+) -> Result<Json<ApiResponse<String>>, AuthError> {
+    use crate::models::verification_token::TokenType;
+    use argon2::password_hash::SaltString;
+    use argon2::{Argon2, PasswordHasher};
+    use diesel::prelude::*;
+    use rand::rngs::OsRng;
+
+    // Validate password strength
+    if payload.new_password.len() < 8 {
+        return Err(AuthError::WeakPassword);
+    }
+
+    // Get database connection
+    let mut conn = app_state
+        .db_pool
+        .get()
+        .map_err(|_| AuthError::DatabaseError)?;
+
+    // Verify the reset token
+    let user_id = app_state
+        .email_service
+        .verify_token_with_type(&payload.token, TokenType::PasswordReset)
+        .await
+        .map_err(|_| AuthError::PasswordResetTokenInvalid)?;
+
+    // Find user by id
+    let user: User = users::table
+        .filter(users::id.eq(user_id))
+        .select(User::as_select())
+        .first(&mut conn)
+        .map_err(|_| AuthError::UserNotFound)?;
+
+    // Hash the new password using the same method as in User model
+    let salt = SaltString::generate(&mut OsRng);
+    let peppered_password = format!("{}{}", payload.new_password, app_state.password_pepper);
+    let argon2 = Argon2::default();
+    let password_hash = argon2
+        .hash_password(peppered_password.as_bytes(), &salt)
+        .map_err(|_| AuthError::InternalError)?
+        .to_string();
+
+    // Update user's password and clear any account locks
+    diesel::update(users::table.filter(users::id.eq(user.id)))
+        .set((
+            users::password_hash.eq(&password_hash),
+            users::failed_login_attempts.eq(0),
+            users::locked_until.eq::<Option<chrono::NaiveDateTime>>(None),
+            users::updated_at.eq(chrono::Utc::now().naive_utc()),
+        ))
+        .execute(&mut conn)
+        .map_err(|_| AuthError::DatabaseError)?;
+
+    tracing::info!("Password reset successfully for user: {}", user.email);
+
+    Ok(Json(ApiResponse::success(
+        "Password has been reset successfully".to_string(),
     )))
 }
 

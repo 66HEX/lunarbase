@@ -52,6 +52,15 @@ export interface RegisterRequest {
 	role?: "admin" | "user";
 }
 
+export interface ForgotPasswordRequest {
+	email: string;
+}
+
+export interface ResetPasswordRequest {
+	token: string;
+	new_password: string;
+}
+
 // OAuth Types
 export interface OAuthAuthorizationResponse {
 	authorization_url: string;

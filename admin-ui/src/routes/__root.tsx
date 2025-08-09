@@ -20,8 +20,12 @@ export const Route = createRootRoute({
 		if (
 			location.pathname === "/login" ||
 			location.pathname === "/register" ||
+			location.pathname === "/forgot-password" ||
+			location.pathname === "/reset-password" ||
 			location.pathname === "/admin/login" ||
 			location.pathname === "/admin/register" ||
+			location.pathname === "/admin/forgot-password" ||
+			location.pathname === "/admin/reset-password" ||
 			location.pathname === "/admin/auth/success" ||
 			location.pathname === "/admin/auth/error"
 		) {
@@ -61,8 +65,12 @@ function RootComponent() {
 	const isLoginPage =
 		location.pathname === "/login" ||
 		location.pathname === "/register" ||
+		location.pathname === "/forgot-password" ||
+		location.pathname === "/reset-password" ||
 		location.pathname === "/admin/login" ||
 		location.pathname === "/admin/register" ||
+		location.pathname === "/admin/forgot-password" ||
+		location.pathname === "/admin/reset-password" ||
 		location.pathname === "/admin/auth/success" ||
 		location.pathname === "/admin/auth/error";
 

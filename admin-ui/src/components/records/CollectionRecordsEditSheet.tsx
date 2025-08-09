@@ -3,6 +3,7 @@ import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
 import {
 	Form,
 	FormControl,
@@ -11,7 +12,6 @@ import {
 	FormLabel,
 	FormMessage,
 } from "@/components/ui/form";
-import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
 import { Input } from "@/components/ui/input";
 import { JsonEditor } from "@/components/ui/json-editor";
 import {

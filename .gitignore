@@ -5,3 +5,4 @@
 .env.*.local
 *.db
 *.sqlite
+tmp/

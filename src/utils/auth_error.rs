@@ -25,6 +25,9 @@ pub enum AuthError {
     InternalError,
     NotFound(String),
     Forbidden(String),
+    PasswordResetTokenInvalid,
+    PasswordResetTokenExpired,
+    WeakPassword,
 }
 
 impl fmt::Display for AuthError {
@@ -38,6 +41,9 @@ impl fmt::Display for AuthError {
             AuthError::TokenExpired => write!(f, "Token expired"),
             AuthError::TokenInvalid => write!(f, "Invalid token"),
             AuthError::TokenMissing => write!(f, "Token missing"),
+            AuthError::PasswordResetTokenInvalid => write!(f, "Invalid password reset token"),
+            AuthError::PasswordResetTokenExpired => write!(f, "Password reset token expired"),
+            AuthError::WeakPassword => write!(f, "Password does not meet security requirements"),
             AuthError::InsufficientPermissions => write!(f, "Insufficient permissions"),
             AuthError::RateLimitExceeded => write!(f, "Rate limit exceeded"),
             AuthError::ValidationError(errors) => {
@@ -97,6 +103,21 @@ impl IntoResponse for AuthError {
                 StatusCode::FORBIDDEN,
                 "You don't have permission to access this resource",
                 "INSUFFICIENT_PERMISSIONS",
+            ),
+            AuthError::PasswordResetTokenInvalid => (
+                StatusCode::BAD_REQUEST,
+                "Invalid or expired password reset token",
+                "PASSWORD_RESET_TOKEN_INVALID",
+            ),
+            AuthError::PasswordResetTokenExpired => (
+                StatusCode::BAD_REQUEST,
+                "Password reset token has expired",
+                "PASSWORD_RESET_TOKEN_EXPIRED",
+            ),
+            AuthError::WeakPassword => (
+                StatusCode::BAD_REQUEST,
+                "Password does not meet security requirements",
+                "WEAK_PASSWORD",
             ),
             AuthError::RateLimitExceeded => (
                 StatusCode::TOO_MANY_REQUESTS,

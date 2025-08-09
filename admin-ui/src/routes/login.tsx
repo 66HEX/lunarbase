@@ -207,6 +207,16 @@ export default function LoginComponent() {
 									</FormControl>
 									<FormMessage />
 								</FormField>
+
+								{/* Forgot Password Link */}
+								<div className="text-right">
+									<Link
+										to="/forgot-password"
+										className="text-sm text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300 transition-colors duration-300"
+									>
+										Forgot your password?
+									</Link>
+								</div>
 							</div>
 
 							<FormActions className="mt-6">
