@@ -25,8 +25,8 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useCollections } from "@/hooks/collections/useCollections";
 import { toast } from "@/components/ui/toast";
+import { useCollections } from "@/hooks/collections/useCollections";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
 import {
 	fieldTypeIcons,

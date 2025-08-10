@@ -105,12 +105,12 @@ export function CollectionDetailsSheet({
 															</Badge>
 														)}
 														{field.default_value !== undefined &&
-														field.default_value !== null && (
-															<div className="text-sm text-nocta-600 dark:text-nocta-400 ml-4">
-																<span className="font-medium">Default:</span>{" "}
-																{String(field.default_value)}
-															</div>
-														)}
+															field.default_value !== null && (
+																<div className="text-sm text-nocta-600 dark:text-nocta-400 ml-4">
+																	<span className="font-medium">Default:</span>{" "}
+																	{String(field.default_value)}
+																</div>
+															)}
 													</div>
 													<div className="flex justify-between items-center gap-2">
 														<Badge

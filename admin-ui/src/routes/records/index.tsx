@@ -13,13 +13,13 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
+import { toast } from "@/components/ui/toast";
 import {
 	useDeleteRecord,
 	useUpdateRecord,
 } from "@/hooks/records/useRecordMutations";
 import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
 import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
-import { toast } from "@/components/ui/toast";
 import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";

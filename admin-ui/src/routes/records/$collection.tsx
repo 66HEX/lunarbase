@@ -17,6 +17,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Table } from "@/components/ui/table";
+import { toast } from "@/components/ui/toast";
 import {
 	useCreateRecord,
 	useDeleteRecord,
@@ -28,7 +29,6 @@ import { CustomApiError, collectionsApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, Collection, RecordData } from "@/types/api";
-import { toast } from "@/components/ui/toast";
 
 // Use ApiRecord instead of Record to avoid conflict with TypeScript's built-in Record type
 type Record = ApiRecord;

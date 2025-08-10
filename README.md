@@ -15,12 +15,13 @@ Security isn't an afterthought in LunarBase—it's the foundation. Our multi-lay
 ### Advanced Authentication & Authorization
 - **Secure password hashing** with Argon2id (65536 memory, 4 iterations, 2 parallelism)
 - **Password pepper protection** with server-side secret salt to defend against rainbow table attacks
-- **Dual-token JWT system** with short-lived access tokens (15 min) and secure refresh tokens (7 days)
+- **Dynamic JWT system** with configurable token lifetime and refresh token duration
 - **HttpOnly cookies** with secure, SameSite=Lax configuration and path restrictions
 - **Comprehensive token blacklisting** for immediate session revocation
-- **Intelligent brute force protection** with account lockout after 5 failed attempts
-- **Rate limiting** (1000 requests per 5 minutes per IP) to prevent abuse
+- **Configurable brute force protection** with customizable lockout duration and maximum login attempts
+- **Dynamic rate limiting** with configurable request limits per IP
 - **Timing attack protection** with consistent response delays
+- **Real-time configuration management** allowing administrators to adjust security settings without server restart
 
 ### Granular Permission System
 - **Multi-level access control** spanning collections, records, and individual fields
@@ -89,6 +90,16 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 - **Custom dashboard** with live statistics and health indicators
 - **Activity logging** with detailed audit trails and pagination
 - **Resource usage tracking** with memory and connection pool monitoring
+
+### Dynamic Configuration System
+- **Real-time settings management** with immediate effect without server restart
+- **Database-backed configuration** with automatic caching and cache invalidation
+- **Authentication settings control** including JWT lifetime (1-168 hours), lockout duration (1-1440 minutes), and max login attempts (1-20)
+- **API rate limiting configuration** with customizable requests per minute per IP
+- **CORS settings management** with dynamic allowed origins configuration
+- **Admin interface integration** providing intuitive controls for all configurable parameters
+- **Fallback to secure defaults** ensuring system stability even with missing configuration
+- **Configuration validation** with type checking and range constraints
 
 ### External Integrations
 - **OAuth Authentication** with Google and GitHub providers for seamless social login

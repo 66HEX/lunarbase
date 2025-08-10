@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { toast } from "@/components/ui/toast";
 import {
 	BroadcastDialog,
 	WebSocketActivity,
@@ -13,7 +14,6 @@ import {
 	WebSocketStats,
 	WebSocketSubscriptions,
 } from "@/components/websocket";
-import { toast } from "@/components/ui/toast";
 import { useWebSocketData } from "@/hooks/useWebSocketQueries";
 import { webSocketApi } from "@/lib/api";
 import { useUI, useUIActions } from "@/stores/client.store";

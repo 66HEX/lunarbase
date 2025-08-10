@@ -35,9 +35,7 @@ const badgeVariants = cva(
 					"bg-green-600/30 text-green-600 dark:bg-green-600/20 border border-green-500 dark:border-green-600/30",
 				],
 				warning: [
-					"bg-yellow-500 dark:bg-yellow-600/50",
-					"text-nocta-50 dark:text-nocta-50",
-					"hover:bg-yellow-600 dark:hover:bg-yellow-700",
+					"bg-yellow-600/30 text-yellow-600 dark:bg-yellow-600/20 border border-yellow-500 dark:border-yellow-600/30",
 				],
 				outline: [
 					"bg-transparent",

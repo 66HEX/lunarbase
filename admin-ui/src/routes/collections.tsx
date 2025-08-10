@@ -30,9 +30,9 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
 import { useDeleteCollection } from "@/hooks/collections/useCollectionMutations";
 import { useCollections } from "@/hooks/collections/useCollections";
-import { toast } from "@/components/ui/toast";
 import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 
@@ -63,7 +63,6 @@ export default function CollectionsComponent() {
 	const [selectedCollectionName, setSelectedCollectionName] = useState<
 		string | null
 	>(null);
-
 
 	// Handle opening collection details
 	const handleOpenDetails = (collectionName: string) => {
@@ -194,7 +193,9 @@ export default function CollectionsComponent() {
 											<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
 												<Database className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 											</div>
-											<span className="truncate max-w-40">{collection.name}</span>
+											<span className="truncate max-w-40">
+												{collection.name}
+											</span>
 										</CardTitle>
 										<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 											<Button
@@ -279,7 +280,8 @@ export default function CollectionsComponent() {
 												{(collection.schema?.fields?.length || 0) > 3 && (
 													<div className="pt-1.5">
 														<p className="text-xs text-nocta-500 dark:text-nocta-500 text-center">
-															+{(collection.schema?.fields?.length || 0) - 3} more fields
+															+{(collection.schema?.fields?.length || 0) - 3}{" "}
+															more fields
 														</p>
 													</div>
 												)}
@@ -294,7 +296,10 @@ export default function CollectionsComponent() {
 													<div className="flex items-center gap-1">
 														<Calendar className="w-3 h-3" />
 														<span>
-															Created {new Date(collection.created_at).toLocaleDateString()}
+															Created{" "}
+															{new Date(
+																collection.created_at,
+															).toLocaleDateString()}
 														</span>
 													</div>
 												</div>

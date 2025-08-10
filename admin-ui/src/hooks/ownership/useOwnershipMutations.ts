@@ -8,7 +8,6 @@ import type { TransferOwnershipRequest } from "@/types/api";
  */
 export const useTransferOwnership = () => {
 	const queryClient = useQueryClient();
-	
 
 	return useMutation({
 		mutationFn: ({

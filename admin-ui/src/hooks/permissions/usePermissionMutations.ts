@@ -93,7 +93,6 @@ export const useSetUserCollectionPermissions = () => {
 
 // Check collection permission
 export const useCheckCollectionPermission = () => {
-
 	return useMutation({
 		mutationFn: ({
 			userId,

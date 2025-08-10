@@ -36,7 +36,7 @@ function App() {
 			<QueryClientProvider client={queryClient}>
 				<ThemeProvider defaultTheme="dark">
 					<RouterProvider router={router} />
-      <Toaster />
+					<Toaster />
 				</ThemeProvider>
 			</QueryClientProvider>
 		</StrictMode>
