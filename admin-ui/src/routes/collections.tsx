@@ -187,43 +187,21 @@ export default function CollectionsComponent() {
 						{filteredCollections.map((collection) => (
 							<Card
 								key={collection.name}
-								className="group hover:shadow-lg transition-all duration-200 h-full"
+								className="dashboard-card group hover:shadow-lg transition-all duration-200 h-full min-h-80"
 							>
-								<CardHeader className="pb-4">
-									<div className="flex items-start justify-between">
-										<div className="flex items-start gap-3">
-											<div className="p-2 rounded-lg bg-nocta-100 dark:bg-nocta-800/30">
-												<Database className="w-5 h-5 text-nocta-700 dark:text-nocta-300" />
+								<CardHeader className="pb-3 p-3">
+									<div className="flex items-center justify-between">
+										<CardTitle className="flex items-center gap-2 text-base">
+											<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
+												<Database className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 											</div>
-											<div>
-												<CardTitle className="text-lg font-medium text-nocta-900 dark:text-nocta-100 truncate max-w-48">
-													{collection.name}
-												</CardTitle>
-												<p className="text-sm text-nocta-600 dark:text-nocta-400 mt-1">
-													{collection.schema?.fields?.length || 0} fields
-													{collectionRecordCounts[collection.name] !==
-														undefined && (
-														<span
-															className={`ml-2 text-xs ${
-																hasRecords(collection.name)
-																	? "text-orange-600 dark:text-orange-400"
-																	: "text-green-600 dark:text-green-400"
-															}`}
-														>
-															• {collectionRecordCounts[collection.name]}{" "}
-															records
-															{hasRecords(collection.name) &&
-																" (editing disabled)"}
-														</span>
-													)}
-												</p>
-											</div>
-										</div>
+											<span className="truncate max-w-40">{collection.name}</span>
+										</CardTitle>
 										<div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
 											<Button
 												variant="ghost"
 												size="sm"
-												className={`w-8 h-8 p-0 ${hasRecords(collection.name) ? "opacity-50 cursor-not-allowed" : ""}`}
+												className={`w-7 h-7 p-0 ${hasRecords(collection.name) ? "opacity-50 cursor-not-allowed" : ""}`}
 												disabled={hasRecords(collection.name)}
 												onClick={() => handleOpenEdit(collection.name)}
 												title={
@@ -232,77 +210,106 @@ export default function CollectionsComponent() {
 														: "Edit collection"
 												}
 											>
-												<Edit3 className="w-4 h-4" />
+												<Edit3 className="w-3.5 h-3.5" />
 											</Button>
 											<Button
 												variant="ghost"
 												size="sm"
-												className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+												className="w-7 h-7 p-0"
+												onClick={() => handleOpenPermissions(collection.name)}
+											>
+												<Settings className="w-3.5 h-3.5" />
+											</Button>
+											<Button
+												variant="ghost"
+												size="sm"
+												className="w-7 h-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
 												onClick={() => handleDeleteCollection(collection.name)}
 											>
-												<Trash2 className="w-4 h-4" />
+												<Trash2 className="w-3.5 h-3.5" />
 											</Button>
 										</div>
 									</div>
+									<div className="text-xs text-nocta-600 dark:text-nocta-400 mt-1.5">
+										{collection.schema?.fields?.length || 0} fields
+										{collectionRecordCounts[collection.name] !== undefined && (
+											<span
+												className={`ml-2 ${
+													hasRecords(collection.name)
+														? "text-orange-600 dark:text-orange-400"
+														: "text-green-600 dark:text-green-400"
+												}`}
+											>
+												• {collectionRecordCounts[collection.name]} records
+												{hasRecords(collection.name) && " (editing disabled)"}
+											</span>
+										)}
+									</div>
 								</CardHeader>
-								<CardContent className="flex flex-col h-72">
+								<CardContent className="p-3 pt-0 flex flex-col h-64">
 									<div className="flex flex-col h-full">
 										{/* Schema Preview */}
-										<div className="space-y-2 ">
+										<div className="space-y-2">
 											<h4 className="text-sm font-medium text-nocta-900 dark:text-nocta-100">
 												Schema Fields
 											</h4>
-											<div className="space-y-1">
+											<div className="space-y-1.5">
 												{collection.schema?.fields
 													?.slice(0, 3)
 													.map((field, index) => (
 														<div
 															key={`${collection.name}-field-${field.name}-${index}`}
-															className="flex items-center justify-between text-sm"
+															className="p-2 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg transition-all duration-200"
 														>
-															<span className="text-nocta-700 dark:text-nocta-300">
-																{field.name}
-															</span>
-															<Badge variant="secondary" className="text-xs">
-																{field.field_type}
-															</Badge>
+															<div className="flex items-center justify-between">
+																<div className="flex items-center gap-2">
+																	<div className="w-1.5 h-1.5 rounded-full bg-nocta-400 dark:bg-nocta-500"></div>
+																	<span className="font-medium text-xs text-nocta-900 dark:text-nocta-100">
+																		{field.name}
+																	</span>
+																</div>
+																<Badge
+																	variant="secondary"
+																	className="px-1.5 py-0.5 text-xs font-medium"
+																>
+																	{field.field_type}
+																</Badge>
+															</div>
 														</div>
 													))}
 												{(collection.schema?.fields?.length || 0) > 3 && (
-													<p className="text-xs text-nocta-500 dark:text-nocta-500">
-														+{(collection.schema?.fields?.length || 0) - 3} more
-														fields
-													</p>
+													<div className="pt-1.5">
+														<p className="text-xs text-nocta-500 dark:text-nocta-500 text-center">
+															+{(collection.schema?.fields?.length || 0) - 3} more fields
+														</p>
+													</div>
 												)}
 											</div>
 										</div>
 
 										{/* Footer - always at bottom */}
-										<div className="mt-auto space-y-3">
+										<div className="mt-auto space-y-2.5">
 											{/* Metadata */}
-											<div className="pt-3 border-t border-nocta-200 dark:border-nocta-800/50">
-												<div className="flex items-center justify-between text-xs text-nocta-500 dark:text-nocta-500">
+											<div className="pt-2.5 border-t border-nocta-200 dark:border-nocta-800/50">
+												<div className="flex items-center justify-center text-xs text-nocta-500 dark:text-nocta-500">
 													<div className="flex items-center gap-1">
 														<Calendar className="w-3 h-3" />
 														<span>
-															Created{" "}
-															{new Date(
-																collection.created_at,
-															).toLocaleDateString()}
+															Created {new Date(collection.created_at).toLocaleDateString()}
 														</span>
 													</div>
 												</div>
 											</div>
 
 											{/* Actions */}
-											<div className="flex items-center gap-2">
+											<div className="flex items-center gap-1.5">
 												<Button
 													variant="primary"
 													size="sm"
-													className="w-full flex-1"
+													className="flex-1 px-2 py-1"
 													onClick={() => handleOpenDetails(collection.name)}
 												>
-													<FileText className="w-4 h-4 mr-2" />
+													<FileText className="w-3.5 h-3.5 mr-1.5" />
 													Details
 												</Button>
 												<Link
@@ -313,20 +320,12 @@ export default function CollectionsComponent() {
 													<Button
 														variant="secondary"
 														size="sm"
-														className="w-full"
+														className="w-full px-2 py-1"
 													>
-														<Database className="w-4 h-4 mr-2" />
+														<Database className="w-3.5 h-3.5 mr-1.5" />
 														Records
 													</Button>
 												</Link>
-												<Button
-													variant="ghost"
-													size="sm"
-													className="w-8 h-8 p-0"
-													onClick={() => handleOpenPermissions(collection.name)}
-												>
-													<Settings className="w-4 h-4" />
-												</Button>
 											</div>
 										</div>
 									</div>
@@ -334,7 +333,6 @@ export default function CollectionsComponent() {
 							</Card>
 						))}
 					</div>
-					{/* Subtle loading indicator for data refresh */}
 					{loading && data && (
 						<div className="flex items-center justify-center py-2">
 							<div className="flex items-center gap-2 text-sm text-nocta-500 dark:text-nocta-400">

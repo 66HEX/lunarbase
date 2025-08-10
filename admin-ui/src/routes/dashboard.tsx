@@ -40,7 +40,7 @@ function DashboardComponent() {
 		},
 		{
 			name: "View Users",
-			href: "/users/new",
+			href: "/users",
 			icon: Users,
 			color: "bg-green-500",
 		},

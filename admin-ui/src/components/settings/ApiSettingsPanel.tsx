@@ -188,6 +188,7 @@ export function ApiSettingsPanel() {
 								<FormLabel>CORS Allowed Origins</FormLabel>
 								{requiresRestart("cors_allowed_origins") && (
 									<Badge
+										size="sm"
 										variant="destructive"
 										className="flex items-center gap-1 text-xs"
 									>

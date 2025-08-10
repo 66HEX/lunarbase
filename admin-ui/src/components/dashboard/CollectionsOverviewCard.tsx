@@ -32,7 +32,7 @@ export function CollectionsOverviewCard({
 				{hasCollections ? (
 					<div className="space-y-2">
 						{Object.entries(collections.records_per_collection)
-							.slice(0, 4)
+							.slice(0, 3)
 							.map(([name, count]) => (
 								<div
 									key={name}
@@ -64,7 +64,7 @@ export function CollectionsOverviewCard({
 										className="text-sm text-nocta-600 dark:text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 font-medium flex items-center gap-1 transition-colors duration-200 w-fit"
 									>
 										View{" "}
-										{Object.keys(collections.records_per_collection).length - 5}{" "}
+										{Object.keys(collections.records_per_collection).length - 3}{" "}
 										more collections
 										<ArrowUpRight className="w-3 h-3" />
 									</Link>

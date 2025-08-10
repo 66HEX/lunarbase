@@ -209,6 +209,7 @@ export default function UsersComponent() {
 			render: (_, user) => {
 				return (
 					<Badge
+						size="sm"
 						variant={roleVariants[user.role] || "default"}
 						className="inline-flex items-center gap-1"
 					>
@@ -221,7 +222,7 @@ export default function UsersComponent() {
 			key: "status",
 			title: "Status",
 			render: (_, user) => (
-				<Badge className={statusColors[user.status || "active"]}>
+				<Badge size="sm" className={statusColors[user.status || "active"]}>
 					{user.status || "active"}
 				</Badge>
 			),
@@ -230,7 +231,7 @@ export default function UsersComponent() {
 			key: "is_verified",
 			title: "Verified",
 			render: (_, user) => (
-				<Badge variant={user.is_verified ? "success" : "secondary"}>
+				<Badge size="sm" variant={user.is_verified ? "success" : "secondary"}>
 					{user.is_verified ? "Verified" : "Unverified"}
 				</Badge>
 			),
@@ -239,7 +240,7 @@ export default function UsersComponent() {
 			key: "locked",
 			title: "Locked",
 			render: (_, user) => (
-				<Badge variant={user.locked ? "destructive" : "secondary"}>
+				<Badge size="sm" variant={user.locked ? "destructive" : "secondary"}>
 					{user.locked ? "Locked" : "Unlocked"}
 				</Badge>
 			),

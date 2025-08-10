@@ -219,6 +219,7 @@ export default function RecordsComponent() {
 			render: (_, record) => (
 				<Link to={`/collections`}>
 					<Badge
+						size="sm"
 						variant="secondary"
 						className="cursor-pointer hover:bg-nocta-200 dark:hover:bg-nocta-700"
 					>
@@ -245,7 +246,7 @@ export default function RecordsComponent() {
 
 				return (
 					<div className="flex gap-4">
-						{filteredEntries.slice(0, 2).map(([key, value]) => (
+						{filteredEntries.slice(0, 1).map(([key, value]) => (
 							<div key={key} className="text-sm">
 								<span className="font-medium text-nocta-700 dark:text-nocta-300">
 									{key}:

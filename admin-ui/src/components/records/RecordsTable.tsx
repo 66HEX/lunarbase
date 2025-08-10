@@ -62,6 +62,7 @@ export function RecordsTable({
 									<TableCell>
 										<Link to={`/collections`}>
 											<Badge
+												size="sm"
 												variant="secondary"
 												className="cursor-pointer hover:bg-nocta-200 dark:hover:bg-nocta-700"
 											>

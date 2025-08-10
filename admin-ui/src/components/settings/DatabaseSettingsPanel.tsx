@@ -186,6 +186,7 @@ export function DatabaseSettingsPanel() {
 								<FormLabel>Connection Pool Size</FormLabel>
 								{requiresRestart("connection_pool_size") && (
 									<Badge
+										size="sm"
 										variant="destructive"
 										className="flex items-center gap-1 text-xs"
 									>

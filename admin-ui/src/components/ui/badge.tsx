@@ -29,14 +29,10 @@ const badgeVariants = cva(
 					"hover:bg-nocta-200 dark:hover:bg-nocta-800",
 				],
 				destructive: [
-					"bg-red-500 dark:bg-red-600/50",
-					"text-nocta-50 dark:text-nocta-50",
-					"hover:bg-red-600 dark:hover:bg-red-700",
+					"bg-red-600/30 text-red-600 dark:bg-red-600/20 border border-red-500 dark:border-red-600/30",
 				],
 				success: [
-					"bg-green-500 dark:bg-green-600/50",
-					"text-nocta-50 dark:text-nocta-50",
-					"hover:bg-green-600 dark:hover:bg-green-700",
+					"bg-green-600/30 text-green-600 dark:bg-green-600/20 border border-green-500 dark:border-green-600/30",
 				],
 				warning: [
 					"bg-yellow-500 dark:bg-yellow-600/50",

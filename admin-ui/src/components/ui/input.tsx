@@ -10,6 +10,8 @@ const inputVariants = cva(
 		"disabled:opacity-50 disabled:cursor-not-allowed",
 		"placeholder:text-nocta-400 dark:placeholder:text-nocta-500",
 		"not-prose",
+		"[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
+		"[&[type=number]]:[-moz-appearance:textfield]",
 	],
 	{
 		variants: {

@@ -264,7 +264,7 @@ export const Table = <T extends Record<string, unknown>>({
 	);
 
 	return (
-		<div className="not-prose relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl">
+		<div className="not-prose relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl overflow-hidden">
 			<span
 				aria-hidden
 				className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b to-transparent opacity-60"

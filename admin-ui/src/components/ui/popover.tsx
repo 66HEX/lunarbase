@@ -485,6 +485,25 @@ export const PopoverContent: React.FC<PopoverContentProps> = ({
 				popoverAnimationVariants({ side: actualSide, state: animationState }),
 			)}
 		>
+			<span
+					aria-hidden
+					className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b to-transparent opacity-60"
+					style={{
+						maskImage:
+							"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+						WebkitMaskImage:
+							"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+					}}
+				/>
+
+				<span
+					aria-hidden
+					className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-xl opacity-60"
+					style={{
+						background:
+							"linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+					}}
+				/>
 			<div className={cn(popoverContentVariants({ size }), className)}>
 				{children}
 			</div>

@@ -82,6 +82,7 @@ export function WebSocketConnections({
 						{hasSubscriptions ? (
 							connection.subscriptions.map((sub) => (
 								<Badge
+									size="sm"
 									key={sub.subscription_id}
 									variant={getSubscriptionBadgeVariant(hasSubscriptions)}
 									className="text-xs"
@@ -123,7 +124,7 @@ export function WebSocketConnections({
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2">
 					Active Connections
-					<Badge variant="secondary" className="ml-auto">
+					<Badge size="sm" variant="secondary" className="ml-auto">
 						{connections?.connections?.length || 0}
 					</Badge>
 				</CardTitle>

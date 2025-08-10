@@ -21,7 +21,7 @@ export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2">
 					Recent Activity
-					<Badge variant="secondary" className="ml-auto">
+					<Badge size="sm" variant="secondary" className="ml-auto">
 						{activity?.activities?.length || 0}
 					</Badge>
 				</CardTitle>

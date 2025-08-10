@@ -42,7 +42,7 @@ export function CollectionRecordsHeader({
 					<h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-nocta-900 dark:text-nocta-100 truncate">
 						{collection?.display_name || collectionName}
 					</h1>
-					<Badge variant="secondary" className="">
+					<Badge size="sm" variant="secondary" className="">
 						{totalCount} records
 					</Badge>
 				</div>

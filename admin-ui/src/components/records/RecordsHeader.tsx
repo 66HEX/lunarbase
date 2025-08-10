@@ -21,7 +21,7 @@ export function RecordsHeader({
 						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-nocta-900 dark:text-nocta-100">
 							All Records
 						</h1>
-						<Badge variant="secondary" className="">
+						<Badge size="sm" variant="secondary" className="">
 							{totalRecords} records
 						</Badge>
 					</div>
