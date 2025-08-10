@@ -32,7 +32,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { useDeleteCollection } from "@/hooks/collections/useCollectionMutations";
 import { useCollections } from "@/hooks/collections/useCollections";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 
@@ -64,7 +64,6 @@ export default function CollectionsComponent() {
 		string | null
 	>(null);
 
-	const { toast } = useToast();
 
 	// Handle opening collection details
 	const handleOpenDetails = (collectionName: string) => {

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { ownershipApi } from "@/lib/api";
 import type { TransferOwnershipRequest } from "@/types/api";
 
@@ -8,7 +8,7 @@ import type { TransferOwnershipRequest } from "@/types/api";
  */
 export const useTransferOwnership = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
+	
 
 	return useMutation({
 		mutationFn: ({

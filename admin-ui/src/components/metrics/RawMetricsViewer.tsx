@@ -5,12 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { useRawMetricsQuery } from "@/hooks/useMetricsQuery";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 
 export function RawMetricsViewer() {
 	const { data: rawMetrics, isLoading, error, refetch } = useRawMetricsQuery();
 	const [searchTerm, setSearchTerm] = useState("");
-	const { toast } = useToast();
 
 	const handleCopy = async () => {
 		if (!rawMetrics) return;

@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
-import { ToastProvider } from "@/components/ui/toast";
+import { Toaster } from "@/components/ui/toast";
 import { ThemeProvider } from "./components/layout/ThemeProvider";
 
 // Import the generated route tree
@@ -35,9 +35,8 @@ function App() {
 		<StrictMode>
 			<QueryClientProvider client={queryClient}>
 				<ThemeProvider defaultTheme="dark">
-					<ToastProvider>
-						<RouterProvider router={router} />
-					</ToastProvider>
+					<RouterProvider router={router} />
+      <Toaster />
 				</ThemeProvider>
 			</QueryClientProvider>
 		</StrictMode>

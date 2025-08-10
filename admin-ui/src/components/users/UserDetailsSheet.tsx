@@ -135,7 +135,7 @@ export function UserDetailsSheet({
 					) : user ? (
 						<div className="space-y-6">
 							{/* User Avatar and Basic Info */}
-							<div className="flex items-center gap-4 p-4 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
+							<div className="flex items-center gap-4 p-3 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
 								<Avatar
 									size="lg"
 									src={
@@ -172,8 +172,8 @@ export function UserDetailsSheet({
 								</h4>
 
 								{/* Email */}
-								<div className="flex items-center gap-3 p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Mail className="h-6 w-6 text-nocta-500" />
+								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
+									<Mail className="size-4 text-nocta-500" />
 									<div>
 										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 											Email
@@ -185,8 +185,8 @@ export function UserDetailsSheet({
 								</div>
 
 								{/* Role */}
-								<div className="flex items-center gap-3 p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Shield className="h-6 w-6 text-nocta-500" />
+								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
+									<Shield className="size-4 text-nocta-500" />
 									<div>
 										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 											Role
@@ -198,8 +198,8 @@ export function UserDetailsSheet({
 								</div>
 
 								{/* Last Login */}
-								<div className="flex items-center gap-3 p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Clock className="h-6 w-6 text-nocta-500" />
+								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
+									<Clock className="size-4 text-nocta-500" />
 									<div>
 										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 											Last Login
@@ -213,8 +213,8 @@ export function UserDetailsSheet({
 								</div>
 
 								{/* Created At */}
-								<div className="flex items-center gap-3 p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Calendar className="h-6 w-6 text-nocta-500" />
+								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
+									<Calendar className="size-4 text-nocta-500" />
 									<div>
 										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 											Created At
@@ -228,7 +228,7 @@ export function UserDetailsSheet({
 								{/* Updated At */}
 								{user.updated_at && (
 									<div className="flex items-center gap-3">
-										<Calendar className="h-6 w-6 text-nocta-500" />
+										<Calendar className="size-4 text-nocta-500" />
 										<div>
 											<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 												Last Updated
@@ -241,8 +241,8 @@ export function UserDetailsSheet({
 								)}
 
 								{user.locked_until && (
-									<div className="flex items-center gap-3 p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-										<Lock className="h-6 w-6 text-nocta-500" />
+									<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
+										<Lock className="size-4 text-nocta-500" />
 										<div>
 											<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 												Locked Until

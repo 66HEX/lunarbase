@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { rolesApi } from "@/lib/api";
 import type { CreateRoleRequest, Role, UpdateRoleRequest } from "@/types/api";
 import { permissionKeys } from "./usePermissions";
@@ -7,7 +7,6 @@ import { permissionKeys } from "./usePermissions";
 // Create role mutation
 export const useCreateRole = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: (data: CreateRoleRequest) => rolesApi.create(data),
@@ -34,7 +33,6 @@ export const useCreateRole = () => {
 // Update role mutation
 export const useUpdateRole = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: ({
@@ -72,7 +70,6 @@ export const useUpdateRole = () => {
 // Delete role mutation
 export const useDeleteRole = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: (roleName: string) => rolesApi.delete(roleName),

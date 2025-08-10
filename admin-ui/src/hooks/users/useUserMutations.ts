@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { usersApi } from "@/lib/api";
 import type { CreateUserRequest, UpdateUserRequest, User } from "@/types/api";
 import { userKeys } from "./useUsers";
@@ -7,7 +7,6 @@ import { userKeys } from "./useUsers";
 // Create user mutation
 export const useCreateUser = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: (data: CreateUserRequest) => usersApi.create(data),
@@ -34,7 +33,6 @@ export const useCreateUser = () => {
 // Update user mutation
 export const useUpdateUser = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: ({ id, data }: { id: number; data: UpdateUserRequest }) =>
@@ -65,7 +63,6 @@ export const useUpdateUser = () => {
 // Delete user mutation
 export const useDeleteUser = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: (id: number) => usersApi.delete(id),
@@ -96,7 +93,6 @@ export const useDeleteUser = () => {
 // Unlock user mutation
 export const useUnlockUser = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: (id: number) => usersApi.unlock(id),

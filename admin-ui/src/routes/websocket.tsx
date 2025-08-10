@@ -13,7 +13,7 @@ import {
 	WebSocketStats,
 	WebSocketSubscriptions,
 } from "@/components/websocket";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { useWebSocketData } from "@/hooks/useWebSocketQueries";
 import { webSocketApi } from "@/lib/api";
 import { useUI, useUIActions } from "@/stores/client.store";
@@ -33,7 +33,6 @@ function WebSocketComponent() {
 
 	const [broadcastMessage, setBroadcastMessage] = useState("");
 	const [isBroadcasting, setIsBroadcasting] = useState(false);
-	const { toast } = useToast();
 
 	const handleBroadcast = async () => {
 		if (!broadcastMessage.trim()) {

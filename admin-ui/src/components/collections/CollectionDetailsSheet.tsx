@@ -91,7 +91,7 @@ export function CollectionDetailsSheet({
 											<div className="flex items-center justify-between">
 												<div className="flex justify-between items-center gap-2 w-full">
 													<div className="flex items-center gap-2">
-														<IconComponent className="h-6 w-6 text-nocta-500" />
+														<IconComponent className="size-4 text-nocta-500" />
 														<span className="text-nocta-900 dark:text-nocta-100">
 															{field.name}
 														</span>
@@ -104,6 +104,13 @@ export function CollectionDetailsSheet({
 																Required
 															</Badge>
 														)}
+														{field.default_value !== undefined &&
+														field.default_value !== null && (
+															<div className="text-sm text-nocta-600 dark:text-nocta-400 ml-4">
+																<span className="font-medium">Default:</span>{" "}
+																{String(field.default_value)}
+															</div>
+														)}
 													</div>
 													<div className="flex justify-between items-center gap-2">
 														<Badge
@@ -115,13 +122,6 @@ export function CollectionDetailsSheet({
 													</div>
 												</div>
 											</div>
-											{field.default_value !== undefined &&
-												field.default_value !== null && (
-													<div className="text-sm text-nocta-600 dark:text-nocta-400">
-														<span className="font-medium">Default:</span>{" "}
-														{String(field.default_value)}
-													</div>
-												)}
 										</div>
 									);
 								})}

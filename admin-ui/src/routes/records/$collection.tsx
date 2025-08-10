@@ -24,11 +24,11 @@ import {
 } from "@/hooks/records/useRecordMutations";
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
 import { useDebounce } from "@/hooks/useDebounce";
-import { useToast } from "@/hooks/useToast";
 import { CustomApiError, collectionsApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, Collection, RecordData } from "@/types/api";
+import { toast } from "@/components/ui/toast";
 
 // Use ApiRecord instead of Record to avoid conflict with TypeScript's built-in Record type
 type Record = ApiRecord;
@@ -66,7 +66,6 @@ export default function RecordComponent() {
 		from: "/records/$collection",
 	});
 	const navigate = useNavigate({ from: "/records/$collection" });
-	const { toast } = useToast();
 	const { user } = useAuthStore();
 	const queryClient = useQueryClient();
 

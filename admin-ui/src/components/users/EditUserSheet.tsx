@@ -29,7 +29,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useUnlockUser, useUpdateUser } from "@/hooks/users/useUserMutations";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import type { UpdateUserRequest, User } from "@/types/api";
 import {
 	userFieldDescriptions,
@@ -49,7 +49,6 @@ export function EditUserSheet({
 	onOpenChange,
 	user,
 }: EditUserSheetProps) {
-	const { toast } = useToast();
 	const updateUserMutation = useUpdateUser();
 	const unlockUserMutation = useUnlockUser();
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});

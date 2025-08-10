@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { recordsApi } from "@/lib/api";
 import type {
 	CreateRecordRequest,
@@ -12,7 +12,6 @@ import type {
  */
 export const useCreateRecord = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async ({
@@ -58,7 +57,6 @@ export const useCreateRecord = () => {
  */
 export const useUpdateRecord = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async ({
@@ -107,7 +105,6 @@ export const useUpdateRecord = () => {
  */
 export const useDeleteRecord = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async ({
@@ -158,7 +155,6 @@ export const useDeleteRecord = () => {
  */
 export const useBulkDeleteRecords = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async ({

@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { type CustomApiError, configurationApi } from "@/lib/api";
 import type {
 	CreateSystemSettingRequest,
@@ -12,7 +12,6 @@ import type {
  */
 export const useCreateSetting = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async (
@@ -46,7 +45,6 @@ export const useCreateSetting = () => {
  */
 export const useUpdateSetting = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async ({
@@ -91,7 +89,6 @@ export const useUpdateSetting = () => {
  */
 export const useDeleteSetting = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async ({
@@ -134,7 +131,6 @@ export const useDeleteSetting = () => {
  */
 export const useResetSetting = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async ({

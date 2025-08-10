@@ -19,7 +19,7 @@ import {
 } from "@/hooks/records/useRecordMutations";
 import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
 import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
@@ -60,8 +60,6 @@ export default function RecordsComponent() {
 	const [editingCollection, setEditingCollection] = useState<Collection | null>(
 		null,
 	);
-
-	const { toast } = useToast();
 
 	// React Query mutations
 	const deleteRecordMutation = useDeleteRecord();

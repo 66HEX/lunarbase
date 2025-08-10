@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { useCollections } from "@/hooks/collections/useCollections";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
 import {
 	fieldTypeIcons,
@@ -55,7 +55,6 @@ export function CreateRecordSheet({
 	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>(
 		{},
 	);
-	const { toast } = useToast();
 	const { data: collectionsData } = useCollections();
 
 	// Get available collections for relation fields

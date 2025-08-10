@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateUser } from "@/hooks/users/useUserMutations";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import type { CreateUserRequest } from "@/types/api";
 import {
 	defaultUserFormData,
@@ -47,7 +47,6 @@ export function CreateUserSheet({
 	isOpen,
 	onOpenChange,
 }: CreateUserSheetProps) {
-	const { toast } = useToast();
 	const createUserMutation = useCreateUser();
 
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});

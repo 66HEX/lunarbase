@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { permissionsApi } from "@/lib/api";
 import type { SetCollectionPermissionRequest } from "@/types/api";
 
@@ -23,7 +23,6 @@ const permissionKeys = {
 // Set collection permission
 export const useSetCollectionPermission = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: (data: SetCollectionPermissionRequest) =>
@@ -56,7 +55,6 @@ export const useSetCollectionPermission = () => {
 // Set user collection permissions
 export const useSetUserCollectionPermissions = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: (
@@ -95,7 +93,6 @@ export const useSetUserCollectionPermissions = () => {
 
 // Check collection permission
 export const useCheckCollectionPermission = () => {
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: ({

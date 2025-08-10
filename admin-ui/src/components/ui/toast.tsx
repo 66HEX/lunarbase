@@ -1,27 +1,185 @@
 "use client";
 
-import { cva } from "class-variance-authority";
+import { cva, type VariantProps } from "class-variance-authority";
 import { gsap } from "gsap";
 import React, {
 	useCallback,
 	useEffect,
+	useLayoutEffect,
 	useMemo,
 	useRef,
 	useState,
 } from "react";
 import { cn } from "@/lib/utils";
-import { ToastContext } from "./toast-context";
-import {
-	type ToastData,
-	type ToastPosition,
-	toastContainerVariants,
-} from "./toast-types";
 
-export type { ToastPosition };
-
+const BACKGROUND_COLOR_REGEX = /bg-(?!linear|gradient|none)\w+/;
 const hasBackgroundColor = (className: string = "") => {
-	return /bg-(?!linear|gradient|none)\w+/.test(className);
+	return BACKGROUND_COLOR_REGEX.test(className);
 };
+
+const POSITION_CONFIGS = {
+	"top-left": {
+		animateIn: { x: -100, y: -20 },
+		animateOut: { x: -100, y: -20 },
+	},
+	"top-center": {
+		animateIn: { x: 0, y: -100 },
+		animateOut: { x: 0, y: -100 },
+	},
+	"top-right": {
+		animateIn: { x: 100, y: -20 },
+		animateOut: { x: 100, y: -20 },
+	},
+	"bottom-left": {
+		animateIn: { x: -100, y: 20 },
+		animateOut: { x: -100, y: 100 },
+	},
+	"bottom-center": {
+		animateIn: { x: 0, y: 100 },
+		animateOut: { x: 0, y: 100 },
+	},
+	"bottom-right": {
+		animateIn: { x: 100, y: 20 },
+		animateOut: { x: 100, y: 100 },
+	},
+} as const;
+
+const FOCUSABLE_SELECTORS = [
+	"button:not([disabled])",
+	"input:not([disabled])",
+	"textarea:not([disabled])",
+	"select:not([disabled])",
+	"a[href]",
+	'[tabindex]:not([tabindex="-1"])',
+].join(", ");
+
+const ANIMATION_CONFIG = {
+	ENTER_DURATION: 0.6,
+	EXIT_DURATION: 0.4,
+	STACK_DURATION: 0.4,
+	STACK_OFFSET: 16,
+	SCALE_FACTOR: 0.04,
+	MIN_SCALE: 0.92,
+	MAX_VISIBLE_TOASTS: 3,
+	Z_INDEX_BASE: 50,
+} as const;
+
+// Observer Pattern - ToastState
+type ToastSubscriber = (toasts: ToastData[]) => void;
+
+class ToastState {
+	private toasts: ToastData[] = [];
+	private subscribers: Set<ToastSubscriber> = new Set();
+	private idCounter = 0;
+
+	subscribe(callback: ToastSubscriber): () => void {
+		this.subscribers.add(callback);
+		return () => {
+			this.subscribers.delete(callback);
+		};
+	}
+
+	private notify(): void {
+		this.subscribers.forEach((callback) => callback([...this.toasts]));
+	}
+
+	private generateId(): string {
+		return `toast-${Date.now()}-${++this.idCounter}`;
+	}
+
+	add(data: Omit<ToastData, "id">): string {
+		const id = this.generateId();
+		const newToast: ToastData = { ...data, id };
+		this.toasts = [newToast, ...this.toasts];
+		this.notify();
+		return id;
+	}
+
+	remove(id: string): void {
+		this.toasts = this.toasts.filter((toast) => toast.id !== id);
+		this.notify();
+	}
+
+	update(id: string, data: Partial<ToastData>): void {
+		this.toasts = this.toasts.map((toast) =>
+			toast.id === id ? { ...toast, ...data } : toast,
+		);
+		this.notify();
+	}
+
+	dismissAll(): void {
+		this.toasts = this.toasts.map((toast) => ({
+			...toast,
+			shouldClose: true,
+			duration: 0,
+		}));
+		this.notify();
+	}
+
+	getToasts(): ToastData[] {
+		return [...this.toasts];
+	}
+}
+
+const toastState = new ToastState();
+
+// Single instance management for Toaster
+class ToasterInstanceManager {
+	private activeInstanceId: string | null = null;
+	private instanceCounter = 0;
+
+	registerInstance(): string {
+		const instanceId = `toaster-${++this.instanceCounter}`;
+		if (!this.activeInstanceId) {
+			this.activeInstanceId = instanceId;
+		}
+		return instanceId;
+	}
+
+	unregisterInstance(instanceId: string): void {
+		if (this.activeInstanceId === instanceId) {
+			this.activeInstanceId = null;
+		}
+	}
+
+	isActiveInstance(instanceId: string): boolean {
+		return this.activeInstanceId === instanceId;
+	}
+}
+
+const toasterInstanceManager = new ToasterInstanceManager();
+
+const toastContainerVariants = cva(
+	"fixed p-[1px] rounded-lg shadow-lg dark:shadow-xl not-prose pointer-events-auto will-change-transform",
+	{
+		variants: {
+			position: {
+				"top-left": "top-4 left-4 max-w-sm w-full",
+				"top-center":
+					"top-4 left-1/2 transform -translate-x-1/2 max-w-sm w-full",
+				"top-right": "top-4 right-4 max-w-sm w-full",
+				"bottom-left": "bottom-4 left-4 max-w-sm w-full",
+				"bottom-center":
+					"bottom-4 left-1/2 transform -translate-x-1/2 max-w-sm w-full",
+				"bottom-right": "bottom-4 right-4 max-w-sm w-full",
+			},
+			variant: {
+				default:
+					"bg-linear-to-b from-nocta-300 dark:from-nocta-100/20 to-transparent",
+				success:
+					"bg-linear-to-b from-green-200 dark:from-green-600/50 to-transparent",
+				warning:
+					"bg-linear-to-b from-yellow-200 dark:from-yellow-600/50 to-transparent",
+				destructive:
+					"bg-linear-to-b from-red-200 dark:from-red-600/50 to-transparent",
+			},
+		},
+		defaultVariants: {
+			position: "bottom-center",
+			variant: "default",
+		},
+	},
+);
 
 const toastContentVariants = cva(
 	"rounded-lg backdrop-blur-sm overflow-hidden",
@@ -41,6 +199,64 @@ const toastContentVariants = cva(
 		},
 	},
 );
+
+export type ToastPosition =
+	| "top-left"
+	| "top-center"
+	| "top-right"
+	| "bottom-left"
+	| "bottom-center"
+	| "bottom-right";
+
+export interface ToastData extends VariantProps<typeof toastContainerVariants> {
+	id: string;
+	title?: string;
+	description?: string;
+	className?: string;
+	duration?: number;
+	action?: {
+		label: string;
+		onClick: () => void;
+	};
+	onClose?: () => void;
+	shouldClose?: boolean;
+}
+
+export const toast = (data: Omit<ToastData, "id"> | string): string => {
+	if (typeof data === "string") {
+		return toastState.add({ description: data });
+	}
+	return toastState.add(data);
+};
+
+toast.success = (data: Omit<ToastData, "id" | "variant"> | string): string => {
+	if (typeof data === "string") {
+		return toastState.add({ description: data, variant: "success" });
+	}
+	return toastState.add({ ...data, variant: "success" });
+};
+
+toast.warning = (data: Omit<ToastData, "id" | "variant"> | string): string => {
+	if (typeof data === "string") {
+		return toastState.add({ description: data, variant: "warning" });
+	}
+	return toastState.add({ ...data, variant: "warning" });
+};
+
+toast.error = (data: Omit<ToastData, "id" | "variant"> | string): string => {
+	if (typeof data === "string") {
+		return toastState.add({ description: data, variant: "destructive" });
+	}
+	return toastState.add({ ...data, variant: "destructive" });
+};
+
+toast.dismiss = (id: string): void => {
+	toastState.update(id, { shouldClose: true });
+};
+
+toast.dismissAll = (): void => {
+	toastState.dismissAll();
+};
 
 interface ToastItemProps {
 	toast: ToastData & { index: number; total: number };
@@ -68,54 +284,17 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 			className = "",
 		} = toast;
 
-		const shouldOverrrideBackground = hasBackgroundColor(className);
-
-		const positionConfig = useMemo(
-			() => ({
-				"top-left": {
-					animateIn: { x: -100, y: -20 },
-					animateOut: { x: -100, y: -20 },
-				},
-				"top-center": {
-					animateIn: { x: 0, y: -100 },
-					animateOut: { x: 0, y: -100 },
-				},
-				"top-right": {
-					animateIn: { x: 100, y: -20 },
-					animateOut: { x: 100, y: -20 },
-				},
-				"bottom-left": {
-					animateIn: { x: -100, y: 20 },
-					animateOut: { x: -100, y: 100 },
-				},
-				"bottom-center": {
-					animateIn: { x: 0, y: 100 },
-					animateOut: { x: 0, y: 100 },
-				},
-				"bottom-right": {
-					animateIn: { x: 100, y: 20 },
-					animateOut: { x: 100, y: 100 },
-				},
-			}),
-			[],
+		const shouldOverrideBackground = useMemo(
+			() => hasBackgroundColor(className),
+			[className],
 		);
 
-		const config = positionConfig[position as keyof typeof positionConfig];
+		const config = POSITION_CONFIGS[position as keyof typeof POSITION_CONFIGS];
 
 		const getFocusableElements = useCallback(() => {
 			if (!toastRef.current) return [];
-
-			const focusableSelectors = [
-				"button:not([disabled])",
-				"input:not([disabled])",
-				"textarea:not([disabled])",
-				"select:not([disabled])",
-				"a[href]",
-				'[tabindex]:not([tabindex="-1"])',
-			].join(", ");
-
 			return Array.from(
-				toastRef.current.querySelectorAll(focusableSelectors),
+				toastRef.current.querySelectorAll(FOCUSABLE_SELECTORS),
 			) as HTMLElement[];
 		}, []);
 
@@ -138,7 +317,7 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 				y: config.animateOut.y,
 				opacity: 0,
 				scale: 0.9,
-				duration: 0.3,
+				duration: ANIMATION_CONFIG.EXIT_DURATION,
 				ease: "power2.in",
 				onComplete: () => {
 					onRemove(id);
@@ -152,18 +331,34 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 			}
 		}, [shouldClose, handleClose]);
 
-		useEffect(() => {
+		useLayoutEffect(() => {
 			if (!toastRef.current || isExiting.current) return;
 
 			const element = toastRef.current;
 			const isLatest = index === 0;
 			const isTopPosition = position?.startsWith("top-");
-			const offset = isTopPosition ? index * 8 : -(index * 8);
-			const scale = Math.max(0.92, 1 - index * 0.04);
+			const offset = isTopPosition
+				? index * ANIMATION_CONFIG.STACK_OFFSET
+				: -(index * ANIMATION_CONFIG.STACK_OFFSET);
+			const scale = Math.max(
+				ANIMATION_CONFIG.MIN_SCALE,
+				1 - index * ANIMATION_CONFIG.SCALE_FACTOR,
+			);
+			const zIndex = ANIMATION_CONFIG.Z_INDEX_BASE - index;
 
 			if (animationRef.current) {
 				animationRef.current.kill();
 			}
+
+			const setFocusToToast = () => {
+				if (!isLatest) return;
+				const focusableElements = getFocusableElements();
+				if (focusableElements.length > 0) {
+					focusableElements[0].focus();
+				} else {
+					element.focus();
+				}
+			};
 
 			if (!hasAnimatedIn.current && isLatest) {
 				hasAnimatedIn.current = true;
@@ -173,7 +368,7 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 					y: config.animateIn.y,
 					opacity: 0,
 					scale: 0.9,
-					zIndex: 50 - index,
+					zIndex,
 				});
 
 				animationRef.current = gsap.to(element, {
@@ -181,48 +376,42 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 					y: offset,
 					opacity: 1,
 					scale: 1,
-					duration: 0.4,
+					duration: ANIMATION_CONFIG.ENTER_DURATION,
 					ease: "power2.out",
 					force3D: true,
 					delay: 0.01,
-					onComplete: () => {
-						if (isLatest) {
-							const focusableElements = getFocusableElements();
-							if (focusableElements.length > 0) {
-								focusableElements[0].focus();
-							} else {
-								element.focus();
-							}
-						}
-					},
+					onComplete: setFocusToToast,
 				});
 			} else {
-				gsap.set(element, { zIndex: 50 - index });
+				gsap.set(element, { zIndex });
 
 				animationRef.current = gsap.to(element, {
 					x: 0,
 					y: offset,
 					scale: isLatest ? 1 : scale,
-					opacity: index >= 3 ? 0 : 1,
-					duration: 0.3,
+					opacity: index >= ANIMATION_CONFIG.MAX_VISIBLE_TOASTS ? 0 : 1,
+					duration: ANIMATION_CONFIG.STACK_DURATION,
 					ease: "power2.out",
 					force3D: true,
 					onComplete: () => {
-						if (index >= 3) {
+						if (index >= ANIMATION_CONFIG.MAX_VISIBLE_TOASTS) {
 							onRemove(id);
 						} else if (isLatest && !hasAnimatedIn.current) {
 							hasAnimatedIn.current = true;
-							const focusableElements = getFocusableElements();
-							if (focusableElements.length > 0) {
-								focusableElements[0].focus();
-							} else {
-								element.focus();
-							}
+							setFocusToToast();
 						}
 					},
 				});
 			}
-		}, [index, position, config.animateIn.x, config.animateIn.y, id, onRemove]);
+		}, [
+			index,
+			position,
+			config.animateIn.x,
+			config.animateIn.y,
+			id,
+			onRemove,
+			getFocusableElements,
+		]);
 
 		useEffect(() => {
 			if (shouldClose || !hasAnimatedIn.current) return;
@@ -300,7 +489,6 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 				ref={toastRef}
 				className={cn(toastContainerVariants({ position, variant }), className)}
 				style={{
-					zIndex: 50 - index,
 					transformOrigin: position?.startsWith("top-")
 						? "center top"
 						: "center bottom",
@@ -312,7 +500,7 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 				<div
 					className={cn(
 						toastContentVariants({ variant }),
-						variant === "default" && !shouldOverrrideBackground
+						variant === "default" && !shouldOverrideBackground
 							? "bg-nocta-100 dark:bg-nocta-900"
 							: "",
 					)}
@@ -343,7 +531,7 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 
 					<div className="p-4 pr-8">
 						{title && (
-							<div className="font-medium text-sm mb-1 leading-tight">
+							<div className="font-semibold text-sm mb-1 leading-tight">
 								{title}
 							</div>
 						)}
@@ -379,7 +567,6 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 		);
 	},
 	(prevProps, nextProps) => {
-		// Optymalizacja porównania dla React.memo
 		return (
 			prevProps.toast.id === nextProps.toast.id &&
 			prevProps.toast.index === nextProps.toast.index &&
@@ -389,38 +576,49 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 	},
 );
 
-const ToastManager: React.FC<{
-	toasts: (ToastData & { index: number; total: number })[];
-	onRemove: (id: string) => void;
-}> = ({ toasts, onRemove }) => {
-	if (toasts.length === 0) return null;
+ToastItem.displayName = "ToastItem";
 
-	const toastsByPosition = toasts.reduce(
-		(acc, toast) => {
-			const pos = toast.position || "bottom-center";
-			if (!acc[pos]) acc[pos] = [];
-			acc[pos].push(toast);
-			return acc;
-		},
-		{} as Record<
+const ToastManager: React.FC<{
+	toasts: ToastData[];
+	onRemove: (id: string) => void;
+}> = React.memo(({ toasts, onRemove }) => {
+	const toastsByPosition = useMemo(() => {
+		const grouped = toasts.reduce(
+			(acc, toast) => {
+				const pos = toast.position || "bottom-center";
+				if (!acc[pos]) acc[pos] = [];
+				acc[pos].push(toast);
+				return acc;
+			},
+			{} as Record<ToastPosition, ToastData[]>,
+		);
+
+		// Dodaj indeksy i total do każdej grupy
+		Object.keys(grouped).forEach((position) => {
+			const positionKey = position as ToastPosition;
+			grouped[positionKey] = grouped[positionKey].map((toast, index) => ({
+				...toast,
+				index,
+				total: grouped[positionKey].length,
+			})) as (ToastData & { index: number; total: number })[];
+		});
+
+		return grouped as Record<
 			ToastPosition,
 			(ToastData & { index: number; total: number })[]
-		>,
+		>;
+	}, [toasts]);
+
+	const positionEntries = useMemo(
+		() => Object.entries(toastsByPosition),
+		[toastsByPosition],
 	);
 
-	Object.keys(toastsByPosition).forEach((position) => {
-		toastsByPosition[position as ToastPosition] = toastsByPosition[
-			position as ToastPosition
-		].map((toast, index) => ({
-			...toast,
-			index,
-			total: toastsByPosition[position as ToastPosition].length,
-		}));
-	});
+	if (toasts.length === 0) return null;
 
 	return (
 		<div className="fixed inset-0 pointer-events-none z-50">
-			{Object.entries(toastsByPosition).map(([position, positionToasts]) => (
+			{positionEntries.map(([position, positionToasts]) => (
 				<div key={position}>
 					{positionToasts.map((toast) => (
 						<ToastItem key={toast.id} toast={toast} onRemove={onRemove} />
@@ -429,51 +627,31 @@ const ToastManager: React.FC<{
 			))}
 		</div>
 	);
-};
+});
 
-export const ToastProvider: React.FC<{ children: React.ReactNode }> = ({
-	children,
-}) => {
+ToastManager.displayName = "ToastManager";
+
+export const Toaster: React.FC = () => {
 	const [toasts, setToasts] = useState<ToastData[]>([]);
-
-	const toast = useCallback((data: Omit<ToastData, "id">) => {
-		const id = Math.random().toString(36).substring(2, 11);
-		const newToast: ToastData = { ...data, id };
-
-		setToasts((prev) => [newToast, ...prev]);
-		return id;
-	}, []);
-
-	const dismiss = useCallback((id: string) => {
-		setToasts((prev) => prev.filter((t) => t.id !== id));
-	}, []);
-
-	const dismissAll = useCallback(() => {
-		setToasts((prev) => {
-			prev.forEach((toast) => {
-				setTimeout(() => {
-					setToasts((current) =>
-						current.map((t) =>
-							t.id === toast.id ? { ...t, shouldClose: true, duration: 0 } : t,
-						),
-					);
-				});
-			});
-
-			return prev;
-		});
-	}, []);
-
-	const toastsWithIndex = toasts.map((toast, index) => ({
-		...toast,
-		index,
-		total: toasts.length,
-	}));
-
-	return (
-		<ToastContext.Provider value={{ toast, dismiss, dismissAll }}>
-			{children}
-			<ToastManager toasts={toastsWithIndex} onRemove={dismiss} />
-		</ToastContext.Provider>
+	const [instanceId] = useState(() =>
+		toasterInstanceManager.registerInstance(),
 	);
+
+	useEffect(() => {
+		const unsubscribe = toastState.subscribe(setToasts);
+		return () => {
+			unsubscribe();
+			toasterInstanceManager.unregisterInstance(instanceId);
+		};
+	}, [instanceId]);
+
+	const handleRemove = useCallback((id: string) => {
+		toastState.remove(id);
+	}, []);
+
+	if (!toasterInstanceManager.isActiveInstance(instanceId)) {
+		return null;
+	}
+
+	return <ToastManager toasts={toasts} onRemove={handleRemove} />;
 };

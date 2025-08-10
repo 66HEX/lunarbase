@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { useToast } from "@/hooks/useToast";
+import { toast } from "@/components/ui/toast";
 import { webSocketApi } from "@/lib/api";
 import type {
 	BroadcastMessageRequest,
@@ -54,7 +54,6 @@ export const useWebSocketActivityQuery = () => {
 // Hook for disconnecting a connection
 export const useDisconnectConnectionMutation = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async (connectionId: string) => {
@@ -84,7 +83,6 @@ export const useDisconnectConnectionMutation = () => {
 // Hook for broadcasting messages
 export const useBroadcastMessageMutation = () => {
 	const queryClient = useQueryClient();
-	const { toast } = useToast();
 
 	return useMutation({
 		mutationFn: async (
