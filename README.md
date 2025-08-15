@@ -127,17 +127,78 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 
 ## Quick Start
 
+### Development Mode
+
 ```bash
+# Install dependencies
+cargo build
+
+# Start LocalStack for S3 testing (required for file upload functionality)
+./start-with-localstack.sh
+
 # Start the backend server
 cargo run
 
 # In a separate terminal, start the admin interface
 cd admin-ui
+npm install
 npm run dev
+
+# Test WebSocket connections (in another terminal)
+# With TLS enabled:
+wscat -c wss://localhost:3000/api/ws --no-check
+
+# With TLS disabled:
+wscat -c ws://localhost:3000/api/ws
+
+# Run unit and integration tests (in another terminal)
+cargo test -- --test-threads=1
+
+# Format code after modifications:
+# Frontend (use biome.js for linting and formatting)
+cd admin-ui && npx @biomejs/biome check --write
+
+# Backend (use cargo fmt for code formatting)
+cargo fmt
+
+# Stop LocalStack when done
+./stop-localstack.sh
 ```
 
-The backend will be available at `http://localhost:3000` with API documentation at `http://localhost:3000/docs`.
-The admin interface will be available at `http://localhost:5173`.
+**With TLS enabled (ENABLE_TLS=true):**
+- Backend available at `https://localhost:3000/api/` with HTTP/2 support
+- API documentation at `https://localhost:3000/docs/`
+- Admin interface at `http://localhost:5173/admin/` (proxies API calls to HTTPS backend)
+
+**With TLS disabled (ENABLE_TLS=false):**
+- Backend available at `http://localhost:3000/api/` with HTTP/1.1
+- API documentation at `http://localhost:3000/docs/`
+- Admin interface at `http://localhost:5173/admin/`
+
+### Production Mode
+
+```bash
+# Build the admin interface
+cd admin-ui
+npm run build
+cd ..
+
+# Install dependencies
+cargo build
+
+# Start the backend server (serves both API and admin UI)
+cargo run
+```
+
+**With TLS enabled (ENABLE_TLS=true):**
+- Backend available at `https://localhost:3000/api/` with HTTP/2 support
+- Admin interface at `https://localhost:3000/admin/`
+- API documentation at `https://localhost:3000/docs/`
+
+**With TLS disabled (ENABLE_TLS=false):**
+- Backend available at `http://localhost:3000/api/` with HTTP/1.1
+- Admin interface at `http://localhost:3000/admin/`
+- API documentation at `http://localhost:3000/docs/`
 
 ## Architecture Highlights
 
@@ -169,33 +230,6 @@ We welcome contributions to LunarBase! Whether you're fixing bugs, adding featur
 4. **Ensure all tests pass** by running ` cargo test -- --test-threads=1  `
 5. **Update documentation** if you're adding new features
 6. **Submit a pull request** with a clear description of your changes
-
-### Development Setup
-
-```bash
-# Clone your fork
-git clone https://github.com/66HEX/lunarbase.git
-cd lunarbase
-
-# Install dependencies
-cargo build
-cd admin-ui && npm install
-
-# Start LocalStack for S3 testing (required for file upload functionality)
-./start-with-localstack.sh
-
-# Start the backend server
-cargo run
-
-# In a separate terminal, start the admin interface
-cd admin-ui && npm run dev
-
-# Run tests
-cargo test -- --test-threads=1
-
-# Stop LocalStack when done
-./stop-localstack.sh
-```
 
 ### Code of Conduct
 

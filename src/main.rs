@@ -8,11 +8,134 @@ use tokio::signal;
 use tracing::{info, warn};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
+use rustls::ServerConfig;
+use rustls_pemfile::{certs, pkcs8_private_keys};
+use std::fs::File;
+use std::io::BufReader;
+use std::sync::Arc;
+use axum_server::tls_rustls::RustlsConfig;
+use tower::Service;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::task::{Context, Poll};
+use std::pin::Pin;
+use std::future::Future;
+use tower::layer::Layer;
+use axum::{body::Body, http::{Request, Response}};
+use std::convert::Infallible;
 
 use lunarbase::database::{create_pool, create_pool_with_size};
 use lunarbase::services::{ConfigurationAccess, ConfigurationManager};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
+
+// Connection tracking for metrics
+#[derive(Clone)]
+struct ConnectionTracker {
+    tls_connections: Arc<AtomicUsize>,
+    http2_connections: Arc<AtomicUsize>,
+    metrics_state: lunarbase::middleware::MetricsState,
+}
+
+impl ConnectionTracker {
+    fn new(metrics_state: lunarbase::middleware::MetricsState) -> Self {
+        Self {
+            tls_connections: Arc::new(AtomicUsize::new(0)),
+            http2_connections: Arc::new(AtomicUsize::new(0)),
+            metrics_state,
+        }
+    }
+
+    fn increment_tls(&self) {
+        let count = self.tls_connections.fetch_add(1, Ordering::SeqCst) + 1;
+        self.metrics_state.tls_connections.set(count as f64);
+    }
+
+    fn decrement_tls(&self) {
+        let count = self.tls_connections.fetch_sub(1, Ordering::SeqCst).saturating_sub(1);
+        self.metrics_state.tls_connections.set(count as f64);
+    }
+
+    fn increment_http2(&self) {
+        let count = self.http2_connections.fetch_add(1, Ordering::SeqCst) + 1;
+        self.metrics_state.http2_connections.set(count as f64);
+    }
+
+    fn decrement_http2(&self) {
+        let count = self.http2_connections.fetch_sub(1, Ordering::SeqCst).saturating_sub(1);
+        self.metrics_state.http2_connections.set(count as f64);
+    }
+}
+
+// Service wrapper for tracking connections
+#[derive(Clone)]
+struct ConnectionTrackingService<S> {
+    inner: S,
+    tracker: ConnectionTracker,
+}
+
+impl<S> ConnectionTrackingService<S> {
+    fn new(inner: S, tracker: ConnectionTracker) -> Self {
+        Self { inner, tracker }
+    }
+}
+
+impl<S, ReqBody> Service<Request<ReqBody>> for ConnectionTrackingService<S>
+where
+    S: Service<Request<ReqBody>, Response = Response<Body>, Error = Infallible> + Clone + Send + 'static,
+    S::Future: Send + 'static,
+    ReqBody: Send + 'static,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.inner.poll_ready(cx)
+    }
+
+    fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
+        let mut inner = self.inner.clone();
+        let tracker = self.tracker.clone();
+        
+        // Increment TLS connection count (since this service only wraps TLS connections)
+        tracker.increment_tls();
+        
+        // For TLS connections, HTTP/2 is negotiated via ALPN
+        // We increment HTTP/2 counter since this tracker is only used when TLS is enabled
+        // and axum_server enables HTTP/2 by default for TLS connections
+        tracker.increment_http2();
+        
+        Box::pin(async move {
+            let result = inner.call(req).await;
+            
+            // Decrement counters when connection ends
+            tracker.decrement_tls();
+            tracker.decrement_http2();
+            
+            result
+        })
+    }
+}
+
+// Layer for applying the connection tracking service
+#[derive(Clone)]
+struct ConnectionTrackingLayer {
+    tracker: ConnectionTracker,
+}
+
+impl ConnectionTrackingLayer {
+    fn new(tracker: ConnectionTracker) -> Self {
+        Self { tracker }
+    }
+}
+
+impl<S> Layer<S> for ConnectionTrackingLayer {
+    type Service = ConnectionTrackingService<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        ConnectionTrackingService::new(inner, self.tracker.clone())
+    }
+}
 use lunarbase::handlers::{
     admin::serve_admin_assets,
     avatar_proxy::proxy_avatar,
@@ -56,6 +179,10 @@ use lunarbase::{ApiDoc, AppState, Config};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Initialize Rustls CryptoProvider before any TLS operations
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .map_err(|_| "Failed to install default crypto provider")?;
     // Logging initialization
     setup_logging();
     info!("Starting LunarBase server...");
@@ -122,6 +249,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         warn!("Failed to create admin from environment variables: {}", e);
     }
 
+    // Clone metrics_state before moving app_state
+    let metrics_state_clone = app_state.metrics_state.clone();
+    
     // Routing creation
     let app = create_router(app_state).await;
 
@@ -129,16 +259,81 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let addr = config.server_address().parse::<SocketAddr>()?;
     info!("Server will listen on {}", addr);
 
-    // Server startup with graceful shutdown
-    let listener = tokio::net::TcpListener::bind(addr).await?;
-    info!("Server started successfully");
+    // Check if TLS is enabled
+    if config.enable_tls.unwrap_or(false) {
+        // TLS configuration
+        let tls_config = create_tls_config(&config).await?;
+        info!("TLS enabled - starting HTTPS server with HTTP/2 support");
+        
+        // Create connection tracker for TLS/HTTP2 metrics
+        let connection_tracker = ConnectionTracker::new(metrics_state_clone);
+        let tracking_layer = ConnectionTrackingLayer::new(connection_tracker);
+        
+        // Apply connection tracking layer to the app
+        let tracked_app = app.layer(tracking_layer);
+        
+        axum_server::bind_rustls(addr, tls_config)
+            .serve(tracked_app.into_make_service())
+            .await?;
+    } else {
+        // HTTP/1.1 server (fallback)
+        info!("TLS disabled - starting HTTP server (HTTP/1.1 only)");
+        let listener = tokio::net::TcpListener::bind(addr).await?;
+        
+        axum::serve(listener, app.into_make_service())
+            .with_graceful_shutdown(shutdown_signal())
+            .await?;
+    }
 
-    axum::serve(listener, app.into_make_service())
-        .with_graceful_shutdown(shutdown_signal())
-        .await?;
+    info!("Server started successfully");
 
     info!("Server shutdown complete");
     Ok(())
+}
+
+async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std::error::Error>> {
+    let cert_path = config.tls_cert_path.as_ref()
+        .ok_or("TLS_CERT_PATH is required when TLS is enabled")?;
+    let key_path = config.tls_key_path.as_ref()
+        .ok_or("TLS_KEY_PATH is required when TLS is enabled")?;
+
+    info!("Loading TLS certificate from: {}", cert_path);
+    info!("Loading TLS private key from: {}", key_path);
+
+    // Load certificate chain
+    let cert_file = File::open(cert_path)
+        .map_err(|e| format!("Failed to open certificate file {}: {}", cert_path, e))?;
+    let mut cert_reader = BufReader::new(cert_file);
+    let cert_chain = certs(&mut cert_reader)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to parse certificate: {}", e))?;
+
+    if cert_chain.is_empty() {
+        return Err("No certificates found in certificate file".into());
+    }
+
+    // Load private key
+    let key_file = File::open(key_path)
+        .map_err(|e| format!("Failed to open private key file {}: {}", key_path, e))?;
+    let mut key_reader = BufReader::new(key_file);
+    let mut keys = pkcs8_private_keys(&mut key_reader)
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(|e| format!("Failed to parse private key: {}", e))?;
+
+    if keys.is_empty() {
+        return Err("No private keys found in key file".into());
+    }
+
+    let private_key = keys.remove(0);
+
+    // Create TLS configuration with HTTP/2 support
+    let tls_config = ServerConfig::builder()
+        .with_no_client_auth()
+        .with_single_cert(cert_chain, private_key.into())
+        .map_err(|e| format!("Failed to create TLS config: {}", e))?;
+
+    info!("TLS configuration created successfully with HTTP/2 support");
+    Ok(RustlsConfig::from_config(Arc::new(tls_config)))
 }
 
 async fn create_router(app_state: AppState) -> Router {

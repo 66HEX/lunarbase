@@ -27,6 +27,10 @@ pub struct Config {
     pub s3_access_key_id: Option<String>,
     pub s3_secret_access_key: Option<String>,
     pub s3_endpoint_url: Option<String>, // For LocalStack or custom S3-compatible services
+    // TLS configuration (HTTP/2 is automatically enabled with TLS)
+    pub tls_cert_path: Option<String>,
+    pub tls_key_path: Option<String>,
+    pub enable_tls: Option<bool>,
 }
 
 impl Config {
@@ -64,6 +68,13 @@ impl Config {
             s3_access_key_id: std::env::var("S3_ACCESS_KEY_ID").ok(),
             s3_secret_access_key: std::env::var("S3_SECRET_ACCESS_KEY").ok(),
             s3_endpoint_url: std::env::var("S3_ENDPOINT_URL").ok(),
+            // TLS configuration (HTTP/2 is automatically enabled with TLS)
+            tls_cert_path: std::env::var("TLS_CERT_PATH").ok(),
+            tls_key_path: std::env::var("TLS_KEY_PATH").ok(),
+            enable_tls: std::env::var("ENABLE_TLS")
+                .ok()
+                .and_then(|v| v.parse().ok())
+                .or(Some(false)), // Domyślnie wyłączone (wymaga certyfikatów)
         };
 
         Ok(config)

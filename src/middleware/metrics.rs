@@ -14,6 +14,8 @@ pub struct MetricsState {
     pub request_duration: Histogram,
     pub active_connections: Gauge,
     pub database_connections: Gauge,
+    pub http2_connections: Gauge,
+    pub tls_connections: Gauge,
     pub custom_metrics: Arc<RwLock<HashMap<String, Counter>>>,
 }
 
@@ -39,6 +41,16 @@ impl MetricsState {
             "Number of active database connections",
         )?;
 
+        let http2_connections = Gauge::new(
+            "http2_connections_active",
+            "Number of active HTTP/2 connections",
+        )?;
+
+        let tls_connections = Gauge::new(
+            "tls_connections_active",
+            "Number of active TLS connections",
+        )?;
+
         // Register metrics only if not in test environment
         // In tests, we skip registration to avoid global recorder conflicts
         if !cfg!(test) {
@@ -46,6 +58,8 @@ impl MetricsState {
             registry.register(Box::new(request_duration.clone()))?;
             registry.register(Box::new(active_connections.clone()))?;
             registry.register(Box::new(database_connections.clone()))?;
+            registry.register(Box::new(http2_connections.clone()))?;
+            registry.register(Box::new(tls_connections.clone()))?;
         }
 
         Ok(MetricsState {
@@ -54,6 +68,8 @@ impl MetricsState {
             request_duration,
             active_connections,
             database_connections,
+            http2_connections,
+            tls_connections,
             custom_metrics: Arc::new(RwLock::new(HashMap::new())),
         })
     }

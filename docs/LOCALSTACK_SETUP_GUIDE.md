@@ -118,19 +118,3 @@ aws --endpoint-url=http://localhost:4566 s3 ls
 # Stop LocalStack
 docker-compose -f docker-compose.localstack.yml down
 ```
-
-## Integration with CI/CD
-
-These scripts can be used in CI/CD pipelines for automated testing:
-
-```yaml
-# Example GitHub Actions step
-- name: Setup LocalStack
-  run: ./start-with-localstack.sh
-
-- name: Run tests
-  run: cargo test file_upload_integration_tests --test-threads=1
-
-- name: Cleanup
-  run: ./stop-localstack.sh
-```

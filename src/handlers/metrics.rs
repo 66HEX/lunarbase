@@ -49,6 +49,10 @@ pub struct MetricsSummary {
     pub active_websocket_connections: f64,
     /// Number of active database connections
     pub database_connections_active: f64,
+    /// Number of active HTTP/2 connections
+    pub http2_connections_active: f64,
+    /// Number of active TLS connections
+    pub tls_connections_active: f64,
     /// Total number of backup operations
     pub backup_operations_total: f64,
     /// Total number of backup failures
@@ -105,6 +109,8 @@ pub async fn get_metrics_summary(
     let request_count = app_state.metrics_state.request_counter.get();
     let active_connections = app_state.metrics_state.active_connections.get();
     let db_connections = app_state.metrics_state.database_connections.get();
+    let http2_connections = app_state.metrics_state.http2_connections.get();
+    let tls_connections = app_state.metrics_state.tls_connections.get();
 
     // Get backup metrics from custom metrics
     let custom_metrics = app_state.metrics_state.custom_metrics.read().await;
@@ -129,6 +135,8 @@ pub async fn get_metrics_summary(
         http_requests_total: request_count,
         active_websocket_connections: active_connections,
         database_connections_active: db_connections,
+        http2_connections_active: http2_connections,
+        tls_connections_active: tls_connections,
         backup_operations_total: backup_operations,
         backup_failures_total: backup_failures,
         backup_cleanup_operations_total: backup_cleanup_operations,
