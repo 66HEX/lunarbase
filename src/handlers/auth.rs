@@ -474,7 +474,11 @@ pub async fn reset_password(
     // Hash the new password using the same method as in User model
     let salt = SaltString::generate(&mut OsRng);
     let peppered_password = format!("{}{}", payload.new_password, app_state.password_pepper);
-    let argon2 = Argon2::default();
+    let argon2 = Argon2::new(
+        argon2::Algorithm::Argon2id,
+        argon2::Version::V0x13,
+        argon2::Params::new(65536, 4, 2, None).unwrap(),
+    );
     let password_hash = argon2
         .hash_password(peppered_password.as_bytes(), &salt)
         .map_err(|_| AuthError::InternalError)?
