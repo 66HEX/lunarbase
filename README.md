@@ -189,17 +189,14 @@ cargo fmt
 ### Production Mode
 
 ```bash
-# Build the admin interface
-cd admin-ui
-npm run build
-cd ..
+# Build the application with embedded admin UI
+cargo build --release
 
-# Install dependencies
-cargo build
-
-# Start the backend server (serves both API and admin UI)
-cargo run
+# Start the production server (serves both API and embedded admin UI)
+./target/release/lunarbase
 ```
+
+**Note:** The admin UI is automatically built and embedded into the binary during compilation. No separate frontend build step is required.
 
 **With TLS enabled (ENABLE_TLS=true):**
 - Backend available at `https://localhost:3000/api/` with HTTP/2 support
@@ -220,7 +217,7 @@ Every component has been designed with security as a primary concern. From the A
 Built-in WebSocket support provides real-time updates across the entire system. Whether it's live data synchronization or instant permission changes, LunarBase keeps all clients synchronized without compromising security.
 
 ### Scalable Architecture
-The Rust backend provides exceptional performance and memory safety, while the React frontend with Nocta UI delivers a responsive, accessible interface that scales from small teams to enterprise deployments.
+The Rust backend provides exceptional performance and memory safety, while the React frontend with Nocta UI delivers a responsive, accessible interface that scales from small teams to enterprise deployments. The single binary deployment with embedded assets simplifies production deployment and eliminates the need for separate frontend hosting.
 
 ### Developer Experience
 With comprehensive TypeScript support, automatic API documentation, and the intuitive Nocta UI component library, LunarBase provides an exceptional developer experience without sacrificing functionality or security.

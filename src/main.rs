@@ -137,7 +137,7 @@ impl<S> Layer<S> for ConnectionTrackingLayer {
     }
 }
 use lunarbase::handlers::{
-    admin::serve_admin_assets,
+    embedded_admin::{serve_embedded_admin_html, serve_embedded_assets},
     avatar_proxy::proxy_avatar,
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
@@ -501,7 +501,10 @@ async fn create_router(app_state: AppState) -> Router {
     let app = Router::new()
         .nest("/api", api_routes)
         .merge(swagger_router)
-        .nest_service("/admin", serve_admin_assets())
+        // Embedded admin UI routes
+        .route("/admin", get(serve_embedded_admin_html))
+        .route("/admin/", get(serve_embedded_admin_html))
+        .route("/admin/{*path}", get(serve_embedded_assets))
         // Add metrics endpoints at root level for Prometheus scraping
         .route("/metrics", get(get_metrics))
         .route("/metrics/summary", get(get_metrics_summary))

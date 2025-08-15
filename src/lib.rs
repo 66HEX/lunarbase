@@ -2,6 +2,7 @@ use utoipa::OpenApi;
 
 pub mod config;
 pub mod database;
+pub mod embedded_assets;
 pub mod handlers;
 pub mod middleware;
 pub mod models;
