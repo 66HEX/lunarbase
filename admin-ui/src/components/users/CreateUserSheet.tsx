@@ -50,6 +50,7 @@ export function CreateUserSheet({
 	const createUserMutation = useCreateUser();
 
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+	const [allowClose, setAllowClose] = useState(true);
 	const [formData, setFormData] =
 		useState<CreateUserRequest>(defaultUserFormData);
 
@@ -135,7 +136,24 @@ export function CreateUserSheet({
 	}, [isOpen]);
 
 	return (
-		<Sheet open={isOpen} onOpenChange={onOpenChange}>
+		<Sheet
+			open={isOpen}
+			onOpenChange={(newOpen) => {
+				// Only allow closing if explicitly allowed and not submitting
+				if (
+					!newOpen &&
+					(!allowClose || createUserMutation.isPending)
+				) {
+					// Prevent closing - do nothing
+					return;
+				}
+				// Allow opening or closing when conditions are met
+				onOpenChange(newOpen);
+				if (newOpen) {
+					setAllowClose(true); // Allow closing when opening
+				}
+			}}
+		>
 			<SheetContent side="right" size="lg">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
@@ -213,11 +231,29 @@ export function CreateUserSheet({
 								<FormLabel required>Role</FormLabel>
 								<FormControl>
 									<Select
-										value={formData.role}
-										onValueChange={(value) =>
-											updateFormData("role", value as CreateUserRequest["role"])
+									portalProps={
+										{
+											"data-sheet-portal": "true",
+										} as React.HTMLAttributes<HTMLDivElement>
+									}
+									value={formData.role}
+									onValueChange={(value) => {
+										if (value) {
+											// Prevent sheet from closing during value change
+											setAllowClose(false);
+											updateFormData("role", value as CreateUserRequest["role"]);
+											// Allow closing after a longer delay
+											setTimeout(() => setAllowClose(true), 300);
 										}
-									>
+									}}
+									onOpenChange={(isOpen) => {
+										// Prevent sheet from closing when select is open
+										if (isOpen) {
+											setAllowClose(false);
+										}
+										// Don't restore allowClose here - let onValueChange handle it
+									}}
+								>
 										<SelectTrigger className="w-full">
 											<SelectValue placeholder="Select a role" />
 										</SelectTrigger>
