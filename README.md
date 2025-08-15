@@ -101,6 +101,17 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 - **Fallback to secure defaults** ensuring system stability even with missing configuration
 - **Configuration validation** with type checking and range constraints
 
+### Automated Backup System
+- **Scheduled database backups** with configurable cron expressions (default: daily at 2 AM)
+- **S3 cloud storage integration** for secure, off-site backup storage
+- **Gzip compression** to minimize storage costs and transfer times
+- **Intelligent retention management** with automatic cleanup of old backups based on configurable retention periods
+- **Backup validation** with minimum size checks to prevent corrupted backup cleanup
+- **Comprehensive monitoring** with Prometheus metrics for backup success/failure rates
+- **SQLCipher VACUUM INTO** for atomic, consistent database snapshots
+- **Configurable backup settings** including schedule, retention days, compression, and file naming
+- **Health monitoring** with backup service status checks and S3 connectivity validation
+
 ### External Integrations
 - **OAuth Authentication** with Google and GitHub providers for seamless social login
 - **Resend Email Service** for reliable verification email delivery
