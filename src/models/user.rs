@@ -190,7 +190,11 @@ impl NewUser {
         // Combine password with pepper for additional security
         let peppered_password = format!("{}{}", password, pepper);
 
-        let argon2 = Argon2::default();
+        let argon2 = Argon2::new(
+            argon2::Algorithm::Argon2id,
+            argon2::Version::V0x13,
+            argon2::Params::new(65536, 4, 2, None).unwrap(),
+        );
         let password_hash = argon2
             .hash_password(peppered_password.as_bytes(), &salt)
             .map_err(|e| format!("Password hashing failed: {}", e))?
