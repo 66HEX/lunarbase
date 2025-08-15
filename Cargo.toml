@@ -49,6 +49,7 @@ thiserror = "2.0.12"
 base64 = "0.22.1"
 tokio-cron-scheduler = "0.14.0"
 flate2 = "1.1.2"
+rust-embed = { version = "8.7.2", features = ["debug-embed", "include-exclude"] }
 
 [dev-dependencies]
 tower = { version = "0.5.2", features = ["util"] }
