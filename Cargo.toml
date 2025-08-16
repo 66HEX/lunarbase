@@ -59,12 +59,18 @@ http-body-util = "0.1"
 # Optimizations for smaller binary size
 [profile.release]
 # Maximum size optimization
-opt-level = "z"
-# Link Time Optimization - better optimizations between crates
-lto = true
+opt-level = "s"
+# Aggressive Link Time Optimization
+lto = "fat"
 # Use panic=abort instead of unwind (smaller size)
 panic = "abort"
-# Remove debug symbols
-strip = true
+# Remove debug symbols and line tables
+strip = "symbols"
 # Single codegen unit for better optimization
 codegen-units = 1
+# Disable overflow checks in release
+overflow-checks = false
+# Disable debug assertions
+debug-assertions = false
+# Disable incremental compilation
+incremental = false
