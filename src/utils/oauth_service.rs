@@ -285,8 +285,8 @@ impl OAuthConfig {
             None
         };
 
-        let redirect_base_url = std::env::var("OAUTH_REDIRECT_BASE_URL")
-            .unwrap_or_else(|_| "http://localhost:3000".to_string());
+        let redirect_base_url = std::env::var("FRONTEND_URL")
+            .unwrap_or_else(|_| "https://localhost:3000".to_string());
 
         Self {
             google,

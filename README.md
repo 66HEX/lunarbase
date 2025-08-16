@@ -191,8 +191,6 @@ EMAIL_FROM=onboarding@resend.dev                          # Sender email address
 
 #### OAuth Authentication
 ```bash
-OAUTH_REDIRECT_BASE_URL=http://localhost:3000
-
 # Google OAuth (from Google Cloud Console)
 GOOGLE_CLIENT_ID=your-google-client-id-from-google-cloud-console
 GOOGLE_CLIENT_SECRET=your-google-client-secret-from-google-cloud-console

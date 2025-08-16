@@ -581,7 +581,8 @@ pub async fn oauth_callback(
         return Ok((
             HeaderMap::new(),
             Redirect::temporary(&format!(
-                "http://localhost:3000/admin/auth/error?message={}",
+                "{}/admin/auth/error?message={}",
+                app_state.email_service.get_frontend_url(),
                 urlencoding::encode(&error_msg)
             )),
         ));
@@ -719,7 +720,10 @@ pub async fn oauth_callback(
     // Redirect to frontend success page
     Ok((
         headers,
-        Redirect::temporary("http://localhost:3000/admin/auth/success"),
+        Redirect::temporary(&format!(
+            "{}/admin/auth/success",
+            app_state.email_service.get_frontend_url()
+        )),
     ))
 }
 
