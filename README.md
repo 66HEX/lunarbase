@@ -211,6 +211,20 @@ S3_SECRET_ACCESS_KEY=your-secret-access-key  # AWS secret key
 
 **Note:** All S3 variables are optional. If not set, file upload functionality will be disabled.
 
+#### Logging Configuration
+```bash
+# Control logging levels (optional)
+# Default: debug level in development, info level in release builds
+RUST_LOG=lunarbase=info,tower_http=info  # Info level and above
+# RUST_LOG=lunarbase=warn,tower_http=warn  # Warning level and above
+# RUST_LOG=lunarbase=error                 # Error level only
+# RUST_LOG=debug                           # Debug level for all modules
+# RUST_LOG=lunarbase=debug,tower_http=info # Mixed levels
+# RUST_LOG=off                             # Disable all logging
+```
+
+**Note:** The application automatically uses debug-level logging in development builds and info-level logging in release builds. Use the `RUST_LOG` environment variable to override these defaults.
+
 ### Security Best Practices
 
 - **Use strong, unique passwords** for `SQLCIPHER_KEY`, `JWT_SECRET`, and `PASSWORD_PEPPER`

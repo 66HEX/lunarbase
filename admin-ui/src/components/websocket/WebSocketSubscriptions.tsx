@@ -1,6 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import type { WebSocketStats } from "@/types/api";
-import { webSocketStatusIcons } from "./constants";
 
 interface WebSocketSubscriptionsProps {
 	stats: WebSocketStats | undefined;
@@ -18,7 +17,6 @@ export function WebSocketSubscriptions({ stats }: WebSocketSubscriptionsProps) {
 		<Card>
 			<CardHeader>
 				<CardTitle className="flex items-center gap-2">
-					<webSocketStatusIcons.subscriptions className="w-5 h-5" />
 					Subscriptions by Collection
 				</CardTitle>
 			</CardHeader>

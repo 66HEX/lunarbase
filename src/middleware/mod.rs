@@ -12,10 +12,16 @@ pub use auth::*;
 pub use metrics::*;
 
 pub fn setup_logging() {
+    let default_filter = if cfg!(debug_assertions) {
+        "lunarbase=debug,tower_http=debug"
+    } else {
+        "lunarbase=info,tower_http=info"
+    };
+    
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()
-                .unwrap_or_else(|_| "lunarbase=debug,tower_http=debug".into()),
+                .unwrap_or_else(|_| default_filter.into()),
         )
         .with(tracing_subscriber::fmt::layer())
         .init();

@@ -1,5 +1,21 @@
 # Changelog
 
+## [1.0.1][1.0.1] - 2025-08-16
+
+### Added
+- Extended build optimization for better performance
+- Embedded UI into binary for single-file deployment
+- Debug tracing with selective information hiding
+
+### Fixed
+- OAuth logging when using HTTPS connections
+- Frontend proxy configuration issues
+- CreateUserSheet closing when select value changes
+- Unified argon2id hash parameters for consistency
+
+### Removed
+- Unused handlers to reduce binary size
+
 ## [1.0.0][1.0.0] - 2025-08-15
 
 ### Added
@@ -17,4 +33,5 @@
 - Comprehensive audit logging and activity monitoring
 
 
+[1.0.1]: https://github.com/66HEX/lunarbase/releases/tag/v1.0.1
 [1.0.0]: https://github.com/66HEX/lunarbase/releases/tag/v1.0.0
