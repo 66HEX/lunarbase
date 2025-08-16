@@ -2,7 +2,7 @@ use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use resend_rs::{Resend, types::CreateEmailBaseOptions};
-use tracing::{error, info, warn};
+use tracing::{error, debug, warn};
 use uuid::Uuid;
 
 use crate::Config;
@@ -23,7 +23,7 @@ pub struct EmailService {
 impl EmailService {
     pub fn new(config: &Config, pool: DbPool) -> Self {
         let resend_client = if let Some(api_key) = &config.resend_api_key {
-            info!(
+            debug!(
                 "EmailService: Initializing with Resend API key: {}...",
                 &api_key[..10]
             );
@@ -34,7 +34,7 @@ impl EmailService {
         };
 
         let from_email = config.email_from.clone().unwrap_or_default();
-        info!(
+        debug!(
             "EmailService: Configured with from_email: {}, frontend_url: {}",
             from_email, config.frontend_url
         );
@@ -161,7 +161,7 @@ impl EmailService {
         email: &str,
         username: &str,
     ) -> Result<(), AuthError> {
-        info!(
+        debug!(
             "EmailService: Attempting to send verification email to {} for user_id: {}",
             email, user_id
         );
@@ -191,7 +191,7 @@ impl EmailService {
 
         match resend_client.emails.send(email_request).await {
             Ok(_) => {
-                info!("Verification email sent successfully to: {}", email);
+                debug!("Verification email sent successfully to: {}", email);
                 Ok(())
             }
             Err(e) => {
@@ -208,7 +208,7 @@ impl EmailService {
         email: &str,
         username: &str,
     ) -> Result<(), AuthError> {
-        info!(
+        debug!(
             "EmailService: Attempting to send password reset email to {} for user_id: {}",
             email, user_id
         );
@@ -238,7 +238,7 @@ impl EmailService {
 
         match resend_client.emails.send(email_request).await {
             Ok(_) => {
-                info!("Password reset email sent successfully to: {}", email);
+                debug!("Password reset email sent successfully to: {}", email);
                 Ok(())
             }
             Err(e) => {

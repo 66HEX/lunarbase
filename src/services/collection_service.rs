@@ -11,6 +11,7 @@ use crate::utils::AuthError;
 use base64::Engine;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
+use tracing::debug;
 use serde_json::{Map, Value};
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
@@ -271,7 +272,7 @@ impl CollectionService {
 
         // If we need to drop columns, use table recreation strategy
         if !fields_to_drop.is_empty() {
-            tracing::info!(
+            debug!(
                 "Dropping columns {:?} from table {}, using table recreation strategy",
                 fields_to_drop,
                 table_name
@@ -357,7 +358,7 @@ impl CollectionService {
         let table_name = self.get_records_table_name(collection_name);
         let temp_table_name = format!("{}_temp_{}", table_name, chrono::Utc::now().timestamp());
 
-        tracing::info!("Starting table recreation for {}", table_name);
+        debug!("Starting table recreation for {}", table_name);
 
         // Step 1: Create new table with updated schema
         let create_temp_sql =
@@ -405,7 +406,7 @@ impl CollectionService {
         // Step 5: Recreate indexes and triggers
         self.create_table_indexes_and_triggers(conn, collection_name)?;
 
-        tracing::info!("Table recreation completed successfully for {}", table_name);
+        debug!("Table recreation completed successfully for {}", table_name);
         Ok(())
     }
 
@@ -1175,7 +1176,7 @@ impl CollectionService {
                     e
                 );
             } else {
-                tracing::info!("Successfully deleted permissions for collection: {}", name);
+                debug!("Successfully deleted permissions for collection: {}", name);
             }
         }
 
@@ -1468,7 +1469,7 @@ impl CollectionService {
                                                     e
                                                 );
                                             } else {
-                                                tracing::info!(
+                                                debug!(
                                                     "Deleted old file '{}' for field '{}'",
                                                     url_str,
                                                     field_name
@@ -1642,7 +1643,7 @@ impl CollectionService {
                     if !file_url.is_empty() {
                         match s3_service.delete_file(file_url).await {
                             Ok(_) => {
-                                tracing::info!(
+                                debug!(
                                     "Successfully deleted file '{}' for field '{}'",
                                     file_url,
                                     field.name

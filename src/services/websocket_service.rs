@@ -5,7 +5,7 @@ use serde_json::json;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::{RwLock, broadcast, mpsc};
-use tracing::{debug, error, info, warn};
+use tracing::{debug, error, warn};
 use uuid::Uuid;
 
 use crate::models::{
@@ -68,7 +68,7 @@ impl WebSocketService {
         let mut client_connection = ClientConnection::new(user_id);
         client_connection.connection_id = connection_id;
 
-        info!(
+        debug!(
             "New WebSocket connection: {} (user: {:?})",
             connection_id, user_id
         );
@@ -203,7 +203,7 @@ impl WebSocketService {
                     }
                 }
                 Ok(Message::Close(_)) => {
-                    info!("Client {} disconnected", connection_id);
+                    debug!("Client {} disconnected", connection_id);
                     break;
                 }
                 Ok(Message::Ping(_data)) => {
@@ -234,7 +234,7 @@ impl WebSocketService {
         send_task.abort();
         event_task.abort();
 
-        info!("WebSocket connection {} closed", connection_id);
+        debug!("WebSocket connection {} closed", connection_id);
     }
 
     /// Handle incoming client message
@@ -335,7 +335,7 @@ impl WebSocketService {
             };
             let _ = sender.send(WebSocketMessage::SubscriptionConfirmed(confirmation));
 
-            info!("Added subscription for connection {}", connection_id);
+            debug!("Added subscription for connection {}", connection_id);
         }
 
         Ok(())
@@ -351,7 +351,7 @@ impl WebSocketService {
 
         if let Some((_sender, client, _)) = connections.get_mut(&connection_id) {
             client.remove_subscription(&req.subscription_id);
-            info!(
+            debug!(
                 "Removed subscription {} for connection {}",
                 req.subscription_id, connection_id
             );

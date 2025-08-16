@@ -5,6 +5,7 @@ use axum::{
     response::{Json, Redirect},
 };
 use diesel::prelude::*;
+use tracing::debug;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Duration;
@@ -404,7 +405,7 @@ pub async fn forgot_password(
         }
         Err(_) => {
             // User not found - but we don't reveal this for security
-            tracing::info!(
+            debug!(
                 "Password reset requested for non-existent email: {}",
                 payload.email
             );
@@ -495,7 +496,7 @@ pub async fn reset_password(
         .execute(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    tracing::info!("Password reset successfully for user: {}", user.email);
+    debug!("Password reset successfully for user: {}", user.email);
 
     Ok(Json(ApiResponse::success(
         "Password has been reset successfully".to_string(),

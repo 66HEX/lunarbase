@@ -3,6 +3,7 @@ use axum::{
     http::{header, StatusCode},
     response::{Html, IntoResponse, Response},
 };
+use tracing::debug;
 use std::borrow::Cow;
 
 use crate::embedded_assets::AdminAssets;
@@ -32,29 +33,29 @@ pub async fn serve_embedded_admin_html() -> impl IntoResponse {
 
 /// Serve embedded static assets with proper MIME types
 pub async fn serve_embedded_assets(Path(path): Path<String>) -> Response {
-    tracing::info!("serve_embedded_assets called with path: {}", path);
+    debug!("serve_embedded_assets called with path: {}", path);
     // Ensure the path starts with admin/ for security
     let normalized_path = if path.starts_with("admin/") {
         path
     } else {
         format!("admin/{}", path)
     };
-    tracing::info!("normalized_path: {}", normalized_path);
+    debug!("normalized_path: {}", normalized_path);
     
     match AdminAssets::get_asset_with_mime(&normalized_path) {
         Some((content, mime_type)) => {
-            tracing::info!("Found asset for path: {}, mime_type: {}", normalized_path, mime_type);
+            debug!("Found asset for path: {}, mime_type: {}", normalized_path, mime_type);
             create_asset_response(content, mime_type)
         }
         None => {
-            tracing::info!("Asset not found for path: {}, checking SPA fallback conditions", normalized_path);
+            debug!("Asset not found for path: {}, checking SPA fallback conditions", normalized_path);
             // For SPA routing, fallback to index.html for non-asset requests
             if !normalized_path.contains('.') || normalized_path.ends_with('/') {
-                tracing::info!("SPA fallback for path: {}", normalized_path);
+                debug!("SPA fallback for path: {}", normalized_path);
                 // Return the HTML content directly with proper headers for SPA routing
                 match AdminAssets::get_asset_with_mime("admin/index.html") {
                     Some((content, _)) => {
-                        tracing::info!("Serving index.html for SPA route: {}", normalized_path);
+                        debug!("Serving index.html for SPA route: {}", normalized_path);
                         (
                             StatusCode::OK,
                             [(header::CONTENT_TYPE, "text/html; charset=utf-8")],

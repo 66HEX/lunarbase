@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, info, warn};
+use tracing::{error, debug, warn};
 
 use crate::models::system_setting::SystemSetting;
 use crate::schema::system_settings;
@@ -29,9 +29,9 @@ impl ConfigurationManager {
 
     /// Initialize the configuration manager by loading all settings from database
     pub async fn initialize(&self) -> Result<(), AuthError> {
-        info!("Initializing configuration manager...");
+        debug!("Initializing configuration manager...");
         self.reload_cache().await?;
-        info!("Configuration manager initialized successfully");
+        debug!("Configuration manager initialized successfully");
         Ok(())
     }
 
@@ -55,7 +55,7 @@ impl ConfigurationManager {
             cache.insert(key, setting.setting_value);
         }
 
-        info!("Loaded {} settings into cache", cache.len());
+        debug!("Loaded {} settings into cache", cache.len());
         Ok(())
     }
 
@@ -207,7 +207,7 @@ impl ConfigurationManager {
         let cache_key = format!("{}:{}", category, key);
         let mut cache = self.cache.write().await;
         cache.insert(cache_key, value.to_string());
-        info!("Updated cache for setting {}:{}", category, key);
+        debug!("Updated cache for setting {}:{}", category, key);
     }
 
     /// Remove setting from cache
@@ -215,7 +215,7 @@ impl ConfigurationManager {
         let cache_key = format!("{}:{}", category, key);
         let mut cache = self.cache.write().await;
         cache.remove(&cache_key);
-        info!("Removed setting {}:{} from cache", category, key);
+        debug!("Removed setting {}:{} from cache", category, key);
     }
 
     /// Get all cached settings (for debugging)

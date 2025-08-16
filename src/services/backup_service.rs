@@ -5,7 +5,7 @@ use std::io::Write;
 use std::sync::Arc;
 use tokio::fs;
 use tokio_cron_scheduler::{Job, JobScheduler};
-use tracing::{error, info, warn};
+use tracing::{error, debug, warn};
 use uuid::Uuid;
 
 use crate::database::DatabasePool;
@@ -140,9 +140,9 @@ impl BackupService {
         if backup_enabled {
             service.setup_scheduled_backup().await?;
             let schedule = service.get_backup_schedule().await;
-            info!("Backup service initialized with schedule: {}", schedule);
+            debug!("Backup service initialized with schedule: {}", schedule);
         } else {
-            info!("Backup service initialized but disabled");
+            debug!("Backup service initialized but disabled");
         }
 
         Ok(service)
@@ -155,16 +155,16 @@ impl BackupService {
         let job = Job::new_async(schedule.as_str(), move |_uuid, _l| {
             let service = service_clone.clone();
             Box::pin(async move {
-                info!("Starting scheduled backup...");
+                debug!("Starting scheduled backup...");
                 match service.create_backup().await {
                     Ok(result) => {
-                        info!(
+                        debug!(
                             "Scheduled backup completed successfully. ID: {}, Size: {} bytes",
                             result.backup_id, result.file_size
                         );
 
                         // Run cleanup after successful backup
-                        info!("Running backup cleanup...");
+                        debug!("Running backup cleanup...");
                         service.cleanup_old_backups(result.file_size).await;
                     }
                     Err(e) => {
@@ -208,7 +208,7 @@ impl BackupService {
             if compression_enabled { ".gz" } else { "" }
         );
 
-        info!("Creating backup with ID: {}", backup_id);
+        debug!("Creating backup with ID: {}", backup_id);
 
         // Create database backup using SQLCipher VACUUM INTO
         let temp_backup_path = format!("/tmp/backup_{}.db", backup_id);
@@ -242,7 +242,7 @@ impl BackupService {
                 .await
             {
                 Ok(upload_result) => {
-                    info!("Backup uploaded to S3: {}", upload_result.file_url);
+                    debug!("Backup uploaded to S3: {}", upload_result.file_url);
 
                     // Log backup success metric
                     if let Some(ref metrics) = self.metrics_state {
@@ -317,7 +317,7 @@ impl BackupService {
             .execute(&mut conn)
             .map_err(|e| BackupError::DatabaseError(e.to_string()))?;
 
-        info!("Database backup created at: {}", backup_path);
+        debug!("Database backup created at: {}", backup_path);
         Ok(())
     }
 
@@ -354,7 +354,7 @@ impl BackupService {
             return;
         }
 
-        info!(
+        debug!(
             "Starting cleanup of backups older than {} days (new backup size: {} bytes)",
             retention_days, new_backup_size
         );
@@ -373,7 +373,7 @@ impl BackupService {
                 for object in objects {
                     // Check if the backup is older than retention period
                     if object.last_modified < cutoff_date {
-                        info!(
+                        debug!(
                             "Deleting old backup: {} (created: {})",
                             object.key, object.last_modified
                         );
@@ -381,7 +381,7 @@ impl BackupService {
                         match s3_service.delete_object(&object.key).await {
                             Ok(_) => {
                                 deleted_count += 1;
-                                info!("Successfully deleted backup: {}", object.key);
+                                debug!("Successfully deleted backup: {}", object.key);
                             }
                             Err(e) => {
                                 error_count += 1;
@@ -389,14 +389,14 @@ impl BackupService {
                             }
                         }
                     } else {
-                        info!(
+                        debug!(
                             "Keeping backup: {} (created: {})",
                             object.key, object.last_modified
                         );
                     }
                 }
 
-                info!(
+                debug!(
                     "Backup cleanup completed. Deleted: {}, Errors: {}",
                     deleted_count, error_count
                 );
@@ -435,11 +435,11 @@ impl BackupService {
     }
 
     pub async fn manual_backup(&self) -> Result<BackupResult, BackupError> {
-        info!("Manual backup requested");
+        debug!("Manual backup requested");
         let result = self.create_backup().await?;
 
         // Run cleanup after successful manual backup
-        info!("Running backup cleanup after manual backup...");
+        debug!("Running backup cleanup after manual backup...");
         self.cleanup_old_backups(result.file_size).await;
 
         Ok(result)
@@ -447,7 +447,7 @@ impl BackupService {
 
     /// Manually trigger cleanup of old backups
     pub async fn manual_cleanup(&self) {
-        info!("Manual cleanup requested");
+        debug!("Manual cleanup requested");
         // For manual cleanup, bypass size check by passing 0 (which will skip the check)
         self.cleanup_old_backups(0).await;
     }
@@ -469,7 +469,7 @@ impl BackupService {
     pub async fn stop(&self) -> Result<(), BackupError> {
         // Note: JobScheduler doesn't support shutdown through Arc
         // The scheduler will be dropped when the service is dropped
-        info!("Backup service stopped");
+        debug!("Backup service stopped");
         Ok(())
     }
 }
@@ -496,7 +496,7 @@ pub async fn create_backup_service_from_config(
 
     let backup_enabled = temp_service.get_backup_enabled().await;
     if !backup_enabled {
-        info!("Backup service is disabled");
+        debug!("Backup service is disabled");
         return Ok(None);
     }
 
