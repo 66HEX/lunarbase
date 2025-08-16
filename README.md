@@ -136,6 +136,91 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 - **Tailwind CSS 4.1.11** - Utility-first CSS framework
 - **Vite 7.0.4** - Lightning-fast build tool with HMR
 
+## Configuration
+
+LunarBase uses environment variables for configuration. Create a `.env` file in the project root directory based on the provided `env.example` template.
+
+### Required Configuration
+
+#### Server Settings
+```bash
+SERVER_HOST=127.0.0.1          # Server bind address
+SERVER_PORT=3000               # Server port
+FRONTEND_URL=http://localhost:3000  # Frontend URL for CORS and redirects
+```
+
+#### Database Configuration
+```bash
+DATABASE_URL=db.sqlite         # SQLite database file path
+SQLCIPHER_KEY=your-strong-encryption-password  # Database encryption key
+```
+
+#### Security Settings
+```bash
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+PASSWORD_PEPPER=your-super-secret-pepper-change-this-in-production-and-keep-it-secret
+```
+
+#### Admin User Setup
+```bash
+LUNARBASE_ADMIN_EMAIL=admin@example.com      # Initial admin email
+LUNARBASE_ADMIN_USERNAME=admin               # Initial admin username
+LUNARBASE_ADMIN_PASSWORD=your-secure-admin-password  # Initial admin password
+```
+
+**Note:** These variables automatically create an admin user on first startup. Only the first admin can be created this way - subsequent admins must be created through the admin panel.
+
+### Optional Configuration
+
+#### TLS/SSL Settings
+```bash
+ENABLE_TLS=false                          # Enable HTTPS with HTTP/2 (set to true for production)
+TLS_CERT_PATH=/path/to/your/certificate.pem    # SSL certificate path (PEM format)
+TLS_KEY_PATH=/path/to/your/private-key.pem     # SSL private key path (PEM format)
+
+# Examples:
+# For Let's Encrypt: /etc/letsencrypt/live/yourdomain.com/fullchain.pem
+# For self-signed: ./certs/localhost.pem
+```
+
+#### Email Service (Resend)
+```bash
+RESEND_API_KEY=your-resend-api-key-from-resend-dashboard  # Get from https://resend.com
+EMAIL_FROM=onboarding@resend.dev                          # Sender email address
+```
+
+#### OAuth Authentication
+```bash
+OAUTH_REDIRECT_BASE_URL=http://localhost:3000
+
+# Google OAuth (from Google Cloud Console)
+GOOGLE_CLIENT_ID=your-google-client-id-from-google-cloud-console
+GOOGLE_CLIENT_SECRET=your-google-client-secret-from-google-cloud-console
+
+# GitHub OAuth (from GitHub Developer Settings)
+GITHUB_CLIENT_ID=your-github-client-id-from-github-developer-settings
+GITHUB_CLIENT_SECRET=your-github-client-secret-from-github-developer-settings
+```
+
+#### S3 File Storage
+```bash
+S3_BUCKET_NAME=your-bucket-name           # S3 bucket for file uploads
+S3_REGION=us-east-1                       # AWS region
+S3_ACCESS_KEY_ID=your-access-key-id       # AWS access key
+S3_SECRET_ACCESS_KEY=your-secret-access-key  # AWS secret key
+# S3_ENDPOINT_URL=http://localhost:4566   # Optional: Custom endpoint (LocalStack)
+```
+
+**Note:** All S3 variables are optional. If not set, file upload functionality will be disabled.
+
+### Security Best Practices
+
+- **Use strong, unique passwords** for `SQLCIPHER_KEY`, `JWT_SECRET`, and `PASSWORD_PEPPER`
+- **Never commit secrets** to version control - use `.env` files locally and secure environment variable management in production
+- **Rotate secrets regularly** especially JWT secrets and database encryption keys
+- **Use HTTPS in production** by setting `ENABLE_TLS=true` and providing valid SSL certificates
+- **Restrict CORS origins** by configuring `FRONTEND_URL` to match your actual domain
+
 ## Quick Start
 
 ### Development Mode
@@ -175,6 +260,7 @@ cargo fmt
 # Stop LocalStack when done
 ./stop-localstack.sh
 ```
+#### Access Points
 
 **With TLS enabled (ENABLE_TLS=true):**
 - Backend available at `https://localhost:3000/api/` with HTTP/2 support
@@ -188,6 +274,45 @@ cargo fmt
 
 ### Production Mode
 
+#### Prerequisites
+
+**1. Environment Configuration**
+Create a `.env` file with required configuration. Copy from `env.example` and customize:
+
+```bash
+cp env.example .env
+```
+
+**Required .env variables:**
+- `DATABASE_URL` - SQLite database file path
+- `SQLCIPHER_KEY` - Strong encryption password for database
+- `JWT_SECRET` - Secret key for JWT token signing
+- `PASSWORD_PEPPER` - Additional security layer for password hashing
+- `LUNARBASE_ADMIN_EMAIL` - Initial admin user email
+- `LUNARBASE_ADMIN_USERNAME` - Initial admin username
+- `LUNARBASE_ADMIN_PASSWORD` - Initial admin password
+
+**Optional but recommended:**
+- `RESEND_API_KEY` - For email verification (get from https://resend.com)
+- `EMAIL_FROM` - Sender email address
+- OAuth credentials (Google/GitHub)
+- S3 configuration for file uploads
+
+**2. TLS Certificate Setup (if ENABLE_TLS=true)**
+
+For production with TLS enabled, you need SSL certificates:
+
+```bash
+
+# Option 1: Use existing certificates
+cp /path/to/your/cert.pem certs/localhost.pem
+cp /path/to/your/key.pem certs/localhost-key.pem
+
+# Option 2: Disable TLS (set ENABLE_TLS=false in .env)
+```
+
+#### Build and Deploy
+
 ```bash
 # Build the application with embedded admin UI
 cargo build --release
@@ -197,6 +322,8 @@ cargo build --release
 ```
 
 **Note:** The admin UI is automatically built and embedded into the binary during compilation. No separate frontend build step is required.
+
+#### Access Points
 
 **With TLS enabled (ENABLE_TLS=true):**
 - Backend available at `https://localhost:3000/api/` with HTTP/2 support
