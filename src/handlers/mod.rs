@@ -1,4 +1,3 @@
-pub mod admin;
 pub mod auth;
 pub mod avatar_proxy;
 pub mod collections;
@@ -12,7 +11,6 @@ pub mod record_permissions;
 pub mod users;
 pub mod websocket;
 
-pub use admin::*;
 pub use auth::*;
 pub use avatar_proxy::*;
 pub use configuration::*;
