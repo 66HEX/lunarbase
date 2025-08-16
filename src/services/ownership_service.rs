@@ -1,6 +1,7 @@
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use serde_json::Value;
+use tracing::debug;
 
 use crate::models::{Permission, RecordResponse, User};
 use crate::utils::AuthError;
@@ -171,7 +172,7 @@ impl OwnershipService {
             ]));
         }
 
-        tracing::info!(
+        debug!(
             "Ownership transferred successfully: collection={}, record_id={}, from_user={}, to_user={}",
             collection_name,
             record_id,
@@ -268,7 +269,7 @@ impl OwnershipService {
         owned_record_ids.sort();
         owned_record_ids.dedup();
 
-        tracing::info!(
+        debug!(
             "Found {} owned records for user {} in collection {}",
             owned_record_ids.len(),
             user.id,

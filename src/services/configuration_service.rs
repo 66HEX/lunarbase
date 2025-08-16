@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use tracing::{error, info};
+use tracing::{error, debug};
 
 use crate::models::system_setting::{
     NewSystemSetting, SettingCategory, SettingDataType, SystemSetting, SystemSettingResponse,
@@ -158,7 +158,7 @@ impl ConfigurationService {
                 AuthError::DatabaseError
             })?;
 
-        info!(
+        debug!(
             "Setting updated: {}:{} = {}",
             category, setting_key, new_value
         );
@@ -236,7 +236,7 @@ impl ConfigurationService {
                 AuthError::DatabaseError
             })?;
 
-        info!(
+        debug!(
             "Setting created: {}:{}",
             created_setting.category, created_setting.setting_key
         );
@@ -270,7 +270,7 @@ impl ConfigurationService {
             )));
         }
 
-        info!("Setting deleted: {}:{}", category, setting_key);
+        debug!("Setting deleted: {}:{}", category, setting_key);
         Ok(())
     }
 

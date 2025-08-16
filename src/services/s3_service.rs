@@ -1,6 +1,7 @@
 use aws_config::BehaviorVersion;
 use aws_sdk_s3::Client;
 use chrono::{DateTime, Utc};
+use tracing::debug;
 use uuid::Uuid;
 
 #[derive(Clone)]
@@ -142,7 +143,7 @@ impl S3Service {
 
         let file_url = format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key);
 
-        tracing::info!(
+        debug!(
             "Successfully uploaded file '{}' to S3 with key '{}'",
             original_filename,
             s3_key
@@ -182,7 +183,7 @@ impl S3Service {
 
         let file_url = format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key);
 
-        tracing::info!(
+        debug!(
             "Successfully uploaded file '{}' to S3 with key '{}'",
             original_filename,
             s3_key
@@ -238,7 +239,7 @@ impl S3Service {
             .await
             .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
 
-        tracing::info!("Successfully deleted file with key '{}' from S3", s3_key);
+        debug!("Successfully deleted file with key '{}' from S3", s3_key);
         Ok(())
     }
 
@@ -343,7 +344,7 @@ impl S3Service {
             .await
             .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
 
-        tracing::info!("Successfully deleted object with key '{}' from S3", key);
+        debug!("Successfully deleted object with key '{}' from S3", key);
         Ok(())
     }
 
@@ -361,7 +362,7 @@ pub async fn create_s3_service_from_config(
     let bucket_name = match &config.s3_bucket_name {
         Some(name) => name.clone(),
         None => {
-            tracing::info!("S3_BUCKET_NAME not configured, file upload will be disabled");
+            debug!("S3_BUCKET_NAME not configured, file upload will be disabled");
             return Ok(None);
         }
     };
@@ -376,7 +377,7 @@ pub async fn create_s3_service_from_config(
     .await
     {
         Ok(service) => {
-            tracing::info!("S3Service initialized successfully");
+            debug!("S3Service initialized successfully");
             Ok(Some(service))
         }
         Err(e) => {

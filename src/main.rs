@@ -265,6 +265,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         let tls_config = create_tls_config(&config).await?;
         info!("TLS enabled - starting HTTPS server with HTTP/2 support");
         
+        // Display clickable URL for HTTPS
+        let https_url = format!("https://{}:{}", config.server_host, config.server_port);
+        info!("API: {}/api", https_url);
+        info!("API Docs: {}/docs", https_url);
+        info!("Admin panel: {}/admin", https_url);
+        
         // Create connection tracker for TLS/HTTP2 metrics
         let connection_tracker = ConnectionTracker::new(metrics_state_clone);
         let tracking_layer = ConnectionTrackingLayer::new(connection_tracker);
@@ -278,6 +284,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     } else {
         // HTTP/1.1 server (fallback)
         info!("TLS disabled - starting HTTP server (HTTP/1.1 only)");
+        
+        // Display clickable URL for HTTP
+        let http_url = format!("http://{}:{}", config.server_host, config.server_port);
+        info!("API: {}/api", http_url);
+        info!("API Docs: {}/docs", http_url);
+        info!("Admin panel: {}/admin", http_url);
+
         let listener = tokio::net::TcpListener::bind(addr).await?;
         
         axum::serve(listener, app.into_make_service())

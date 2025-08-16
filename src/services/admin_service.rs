@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use tracing::{info, warn};
+use tracing::{debug, warn};
 
 use crate::Config;
 use crate::models::{NewUser, User};
@@ -27,7 +27,7 @@ impl AdminService {
     ) -> Result<(), AuthError> {
         // Check if admin configuration is provided
         if !config.has_admin_config() {
-            info!("No admin configuration provided via environment variables");
+            debug!("No admin configuration provided via environment variables");
             return Ok(());
         }
 
@@ -46,7 +46,7 @@ impl AdminService {
             .map_err(|_| AuthError::DatabaseError)?;
 
         if existing_admin.is_some() {
-            info!("Admin user already exists: {}", admin_email);
+            debug!("Admin user already exists: {}", admin_email);
             return Ok(());
         }
 
@@ -90,7 +90,7 @@ impl AdminService {
             .execute(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        info!(
+        debug!(
             "Admin user created successfully: {} ({})",
             admin_email, admin_username
         );
