@@ -27,8 +27,8 @@ export function useAllRecordsQuery({
 
 	// Add search/filter if provided
 	if (searchTerm && searchTerm.trim()) {
-		// Use filter parameter for searching by title field
-		queryOptions.filter = `title:like:${searchTerm.trim()}`;
+		// Use search parameter instead of filter for full-text search across all fields
+		queryOptions.search = searchTerm.trim();
 	}
 
 	if (filter) {

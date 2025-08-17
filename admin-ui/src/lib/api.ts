@@ -644,6 +644,7 @@ export const usersApi = {
 		if (params?.offset) searchParams.append("offset", params.offset.toString());
 		if (params?.sort) searchParams.append("sort", params.sort);
 		if (params?.filter) searchParams.append("filter", params.filter);
+		if (params?.search) searchParams.append("search", params.search);
 
 		const url = `/users${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
 		const response = await apiRequest<ApiResponse<PaginatedUsersResponse>>(url);

@@ -27,6 +27,8 @@ pub struct ListRecordsQuery {
     pub sort: Option<String>,
     #[schema(example = "name:eq:Product")]
     pub filter: Option<String>,
+    #[schema(example = "search term")]
+    pub search: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -316,7 +318,8 @@ pub async fn create_record(
         ("limit" = Option<i64>, Query, description = "Limit number of records"),
         ("offset" = Option<i64>, Query, description = "Offset for pagination"),
         ("sort" = Option<String>, Query, description = "Sort field"),
-        ("filter" = Option<String>, Query, description = "Filter expression")
+        ("filter" = Option<String>, Query, description = "Filter expression"),
+        ("search" = Option<String>, Query, description = "Search term")
     ),
     responses(
         (status = 200, description = "Records retrieved successfully", body = ApiResponse<Vec<RecordResponse>>),
@@ -334,7 +337,7 @@ pub async fn list_records(
             &collection_name,
             query.sort,
             query.filter,
-            None, // search - will be implemented later
+            query.search,
             query.limit,
             query.offset,
         )
@@ -351,7 +354,8 @@ pub async fn list_records(
         ("limit" = Option<i64>, Query, description = "Limit number of records (max 100)"),
         ("offset" = Option<i64>, Query, description = "Offset for pagination"),
         ("sort" = Option<String>, Query, description = "Sort field"),
-        ("filter" = Option<String>, Query, description = "Filter expression")
+        ("filter" = Option<String>, Query, description = "Filter expression"),
+        ("search" = Option<String>, Query, description = "Search term")
     ),
     responses(
         (status = 200, description = "Records retrieved successfully", body = ApiResponse<PaginatedRecordsResponse>),
@@ -407,7 +411,7 @@ pub async fn list_all_records(
                     &collection.name,
                     None, // sort will be applied globally
                     query.filter.clone(),
-                    None, // search
+                    query.search.clone(),
                     None, // no limit per collection
                     None, // no offset per collection
                 )

@@ -278,13 +278,46 @@ impl QueryEngine {
         &self,
         schema: &CollectionSchema,
     ) -> Result<(String, Vec<String>), AuthError> {
-        if self.filters.is_empty() {
-            return Ok(("".to_string(), vec![]));
-        }
-
         let mut where_parts = Vec::new();
         let mut parameters = Vec::new();
 
+        // Add search conditions if search term is provided
+        if let Some(search_term) = &self.search {
+            if !search_term.trim().is_empty() {
+                let mut search_conditions = Vec::new();
+                let search_pattern = format!("%{}%", search_term.trim());
+
+                // Search in title field (always present)
+                search_conditions.push("\"title\" LIKE ?".to_string());
+                parameters.push(search_pattern.clone());
+
+                // Search in content field if it exists
+                if schema.fields.iter().any(|f| f.name == "content") {
+                    search_conditions.push("\"content\" LIKE ?".to_string());
+                    parameters.push(search_pattern.clone());
+                }
+
+                // Search in other text fields
+                for field in &schema.fields {
+                    if field.name != "title" && field.name != "content" {
+                        match field.field_type {
+                             crate::models::FieldType::Text | crate::models::FieldType::Email | crate::models::FieldType::Url => {
+                                 let escaped_field = self.escape_field_name(&field.name);
+                                 search_conditions.push(format!("{} LIKE ?", escaped_field));
+                                 parameters.push(search_pattern.clone());
+                             }
+                             _ => {} // Skip non-text fields
+                         }
+                    }
+                }
+
+                if !search_conditions.is_empty() {
+                    where_parts.push(format!("({})", search_conditions.join(" OR ")));
+                }
+            }
+        }
+
+        // Add filter conditions
         for filter in &self.filters {
             // Validate field exists in schema (or is a system field)
             if !self.is_valid_filter_field(&filter.field, schema) {
@@ -297,6 +330,10 @@ impl QueryEngine {
             let (condition_sql, mut condition_params) = self.build_filter_condition(filter)?;
             where_parts.push(condition_sql);
             parameters.append(&mut condition_params);
+        }
+
+        if where_parts.is_empty() {
+            return Ok(("".to_string(), vec![]));
         }
 
         let where_clause = format!("WHERE {}", where_parts.join(" AND "));

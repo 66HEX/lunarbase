@@ -20,7 +20,7 @@ export const useUsersQuery = ({
 				limit: pageSize,
 				offset: (currentPage - 1) * pageSize,
 				sort: "created_at",
-				filter: searchTerm ? `email:like:%${searchTerm}%` : undefined,
+				search: searchTerm || undefined,
 			};
 
 			const data = await usersApi.list(params);

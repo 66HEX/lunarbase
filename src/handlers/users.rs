@@ -30,6 +30,8 @@ pub struct ListUsersQuery {
     pub sort: Option<String>,
     #[schema(example = "email:like:@example.com")]
     pub filter: Option<String>,
+    #[schema(example = "john")]
+    pub search: Option<String>,
 }
 
 #[derive(Debug, Serialize, ToSchema)]
@@ -55,7 +57,8 @@ pub struct PaginationMeta {
         ("limit" = Option<i64>, Query, description = "Limit number of users (max 100)"),
         ("offset" = Option<i64>, Query, description = "Offset for pagination"),
         ("sort" = Option<String>, Query, description = "Sort field (e.g., 'created_at', '-email')"),
-        ("filter" = Option<String>, Query, description = "Filter expression (e.g., 'email:like:@example.com')")
+        ("filter" = Option<String>, Query, description = "Filter expression (e.g., 'email:like:@example.com')"),
+        ("search" = Option<String>, Query, description = "Search term for full-text search in email and username fields")
     ),
     responses(
         (status = 200, description = "Users retrieved successfully"),
@@ -116,6 +119,17 @@ pub async fn list_users(
         query_builder = query_builder.order(users::created_at.desc());
     }
 
+    // Apply search filtering
+    if let Some(search_term) = &query.search {
+        if !search_term.trim().is_empty() {
+            let search_pattern = format!("%{}%", search_term.trim());
+            query_builder = query_builder.filter(
+                users::email.like(search_pattern.clone())
+                    .or(users::username.like(search_pattern))
+            );
+        }
+    }
+
     // Apply filtering
     if let Some(filter_str) = &query.filter {
         // Simple filter parsing for common cases
@@ -135,6 +149,17 @@ pub async fn list_users(
     // Get total count before applying pagination
     let total_count: i64 = {
         let mut count_query = users::table.into_boxed();
+
+        // Apply the same search filtering for count
+        if let Some(search_term) = &query.search {
+            if !search_term.trim().is_empty() {
+                let search_pattern = format!("%{}%", search_term.trim());
+                count_query = count_query.filter(
+                    users::email.like(search_pattern.clone())
+                        .or(users::username.like(search_pattern))
+                );
+            }
+        }
 
         // Apply the same filtering for count
         if let Some(filter_str) = &query.filter {
