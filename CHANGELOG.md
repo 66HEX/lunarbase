@@ -1,5 +1,18 @@
 # Changelog
 
+## [1.1.0][1.1.0] - 2025-08-17
+
+### Added
+- Search functionality integrated into search engine
+- Prefetching data when hovering dashboard links for improved performance
+- Prefetching data when hovering sidebar links for improved performance
+
+### Changed
+- Standardized debounce implementation using useDebounce hook across all views
+
+### Performance
+- Cached CPU usage via background sampler to reduce latency
+
 ## [1.0.1][1.0.1] - 2025-08-16
 
 ### Added
@@ -33,5 +46,6 @@
 - Comprehensive audit logging and activity monitoring
 
 
+[1.1.0]: https://github.com/66HEX/lunarbase/releases/tag/v1.1.0
 [1.0.1]: https://github.com/66HEX/lunarbase/releases/tag/v1.0.1
 [1.0.0]: https://github.com/66HEX/lunarbase/releases/tag/v1.0.0
