@@ -289,6 +289,8 @@ impl AppState {
         let ownership_service = OwnershipService::new(db_pool.clone());
         let admin_service = AdminService::new(db_pool.clone());
         let metrics_state = middleware::MetricsState::new()?;
+        // Start background CPU sampler (non-blocking)
+        metrics_state.start_cpu_sampler();
         let websocket_service =
             Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
         let mut collection_service = CollectionService::new(db_pool.clone())

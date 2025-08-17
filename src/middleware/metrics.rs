@@ -4,8 +4,10 @@ use axum_prometheus::PrometheusMetricLayer;
 use prometheus::{Counter, Encoder, Gauge, Histogram, HistogramOpts, Registry, TextEncoder};
 use std::collections::HashMap;
 use std::sync::Arc;
-use std::time::Instant;
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::{Duration, Instant};
 use tokio::sync::RwLock;
+use sysinfo::System;
 
 #[derive(Clone)]
 pub struct MetricsState {
@@ -17,6 +19,10 @@ pub struct MetricsState {
     pub http2_connections: Gauge,
     pub tls_connections: Gauge,
     pub custom_metrics: Arc<RwLock<HashMap<String, Counter>>>,
+    // Cached CPU usage in hundredths of percent (e.g., 1234 => 12.34%)
+    pub cpu_cache_hundredths: Arc<AtomicU64>,
+    // Prometheus gauge for CPU usage percent
+    pub cpu_usage_gauge: Gauge,
 }
 
 impl MetricsState {
@@ -51,6 +57,11 @@ impl MetricsState {
             "Number of active TLS connections",
         )?;
 
+        let cpu_usage_gauge = Gauge::new(
+            "system_cpu_usage_percent",
+            "Estimated system CPU usage percentage (0-100)"
+        )?;
+
         // Register metrics only if not in test environment
         // In tests, we skip registration to avoid global recorder conflicts
         if !cfg!(test) {
@@ -60,6 +71,7 @@ impl MetricsState {
             registry.register(Box::new(database_connections.clone()))?;
             registry.register(Box::new(http2_connections.clone()))?;
             registry.register(Box::new(tls_connections.clone()))?;
+            registry.register(Box::new(cpu_usage_gauge.clone()))?;
         }
 
         Ok(MetricsState {
@@ -71,7 +83,48 @@ impl MetricsState {
             http2_connections,
             tls_connections,
             custom_metrics: Arc::new(RwLock::new(HashMap::new())),
+            cpu_cache_hundredths: Arc::new(AtomicU64::new(0)),
+            cpu_usage_gauge,
         })
+    }
+
+    /// Starts a background sampler task that updates cached CPU usage approximately every second.
+    pub fn start_cpu_sampler(&self) {
+        let cache = self.cpu_cache_hundredths.clone();
+        let gauge = self.cpu_usage_gauge.clone();
+
+        // Spawn a background task; it will live as long as the runtime lives
+        tokio::spawn(async move {
+            let mut sys = System::new_all();
+            loop {
+                // Refresh CPU info twice without blocking endpoints
+                sys.refresh_cpu_all();
+                // Small non-blocking delay to calculate diff; 100ms keeps overhead low
+                tokio::time::sleep(Duration::from_millis(100)).await;
+                sys.refresh_cpu_all();
+
+                let cpus = sys.cpus();
+                let value_percent = if cpus.is_empty() {
+                    0.0
+                } else {
+                    let total: f32 = cpus.iter().map(|c| c.cpu_usage()).sum();
+                    (total / cpus.len() as f32) as f64
+                } as f64;
+
+                // Convert to hundredths to store atomically without floats
+                let hundredths = (value_percent * 100.0).round().clamp(0.0, 10000.0) as u64;
+                cache.store(hundredths, Ordering::Relaxed);
+                gauge.set(value_percent);
+
+                // Wait roughly 1s between samples
+                tokio::time::sleep(Duration::from_secs(1)).await;
+            }
+        });
+    }
+
+    /// Returns last cached CPU usage percent as f64 (0.0 - 100.0)
+    pub fn get_cached_cpu_usage_percent(&self) -> f64 {
+        (self.cpu_cache_hundredths.load(Ordering::Relaxed) as f64) / 100.0
     }
 
     /// Update database connections metric based on pool state

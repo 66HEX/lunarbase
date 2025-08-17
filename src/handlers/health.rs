@@ -91,7 +91,7 @@ pub async fn health_check(
     // Check database health
     let database_health = check_database_health(&state).await;
     let memory_info = get_memory_info();
-    let system_info = get_system_info();
+    let system_info = get_system_info(&state);
 
     let is_healthy = database_health.status == "healthy";
     let status_code = if is_healthy {
@@ -146,12 +146,14 @@ pub async fn health_check(
         (status = 503, description = "Service is unhealthy", body = Value)
     )
 )]
-pub async fn public_health_check() -> Result<(StatusCode, Json<Value>), StatusCode> {
+pub async fn public_health_check(
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<Value>), StatusCode> {
     // Initialize app start time if not already set
     APP_START_TIME.get_or_init(|| SystemTime::now());
 
     let memory_info = get_memory_info();
-    let system_info = get_system_info();
+    let system_info = get_system_info(&state);
 
     let response = json!({
         "status": "healthy",
@@ -272,8 +274,8 @@ fn get_memory_info() -> MemoryInfo {
     }
 }
 
-fn get_system_info() -> SystemInfo {
-    let cpu_usage = get_cpu_usage();
+fn get_system_info(state: &AppState) -> SystemInfo {
+    let cpu_usage = state.metrics_state.get_cached_cpu_usage_percent();
     let load_average = get_load_average();
     let disk_usage_percentage = get_disk_usage();
 
@@ -326,23 +328,17 @@ fn estimate_total_records(conn: &mut diesel::SqliteConnection) -> i64 {
     }
 }
 
-fn get_cpu_usage() -> f64 {
-    let mut sys = System::new_all();
-    sys.refresh_cpu_all();
-
-    // Wait a bit to get accurate CPU usage
-    std::thread::sleep(std::time::Duration::from_millis(200));
-    sys.refresh_cpu_all();
-
-    // Calculate average CPU usage across all cores
-    let cpus = sys.cpus();
-    if cpus.is_empty() {
-        return 0.0;
-    }
-
-    let total_usage: f32 = cpus.iter().map(|cpu| cpu.cpu_usage()).sum();
-    (total_usage / cpus.len() as f32) as f64
-}
+// Removed direct CPU measurement; using cached value from MetricsState instead.
+// fn get_cpu_usage() -> f64 {
+//     let mut sys = System::new_all();
+//     sys.refresh_cpu_all();
+//     std::thread::sleep(std::time::Duration::from_millis(200));
+//     sys.refresh_cpu_all();
+//     let cpus = sys.cpus();
+//     if cpus.is_empty() { return 0.0; }
+//     let total_usage: f32 = cpus.iter().map(|cpu| cpu.cpu_usage()).sum();
+//     (total_usage / cpus.len() as f32) as f64
+// }
 
 fn get_load_average() -> f64 {
     if cfg!(target_os = "linux") || cfg!(target_os = "macos") {
