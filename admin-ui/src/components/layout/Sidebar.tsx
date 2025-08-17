@@ -15,6 +15,7 @@ import LunarLogo from "@/assets/lunar.svg";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { usePrefetch } from "@/hooks/usePrefetch";
 import { cn } from "@/lib/utils";
 import { useUI, useUIActions } from "@/stores/client.store";
 
@@ -51,6 +52,17 @@ export function Sidebar() {
 	const [isVisible, setIsVisible] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
 	const timeoutRef = useRef<number | null>(null);
+
+	// Initialize prefetch functions
+	const {
+		prefetchUsers,
+		prefetchCollections,
+		prefetchRecords,
+		prefetchWebSocket,
+		prefetchMetrics,
+		prefetchSettings,
+		prefetchDashboard,
+	} = usePrefetch();
 
 	// Memoize setSidebarOpen to prevent infinite loops
 	const setSidebarOpenStable = useCallback(
@@ -199,10 +211,38 @@ export function Sidebar() {
 								currentPath === item.href ||
 								(item.href !== "/" && currentPath.startsWith(item.href));
 
+							// Handle prefetching on hover
+							const handleMouseEnter = () => {
+								switch (item.href) {
+									case "/dashboard":
+										prefetchDashboard();
+										break;
+									case "/users":
+										prefetchUsers();
+										break;
+									case "/collections":
+										prefetchCollections();
+										break;
+									case "/records":
+										prefetchRecords();
+										break;
+									case "/websocket":
+										prefetchWebSocket();
+										break;
+									case "/metrics":
+										prefetchMetrics();
+										break;
+									case "/settings":
+										prefetchSettings();
+										break;
+								}
+							};
+
 							return (
 								<Link
 									key={item.name}
 									to={item.href}
+									onMouseEnter={handleMouseEnter}
 									className={`group flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
 										isActive
 											? "bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-nocta-200 dark:to-nocta-400 hover:contrast-125 text-white dark:text-nocta-900"

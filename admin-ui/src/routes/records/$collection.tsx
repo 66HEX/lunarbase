@@ -5,7 +5,7 @@ import {
 	useParams,
 } from "@tanstack/react-router";
 import { ArrowLeft, Edit3, Trash2, UserPen } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { OwnershipBadge, TransferOwnership } from "@/components/ownership";
 import {
 	CollectionRecordsEditSheet,
@@ -17,18 +17,17 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Table } from "@/components/ui/table";
-import { toast } from "@/components/ui/toast";
 import {
 	useCreateRecord,
 	useDeleteRecord,
 	useUpdateRecord,
 } from "@/hooks/records/useRecordMutations";
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
+import { useCollection } from "@/hooks/collections/useCollections";
 import { useDebounce } from "@/hooks/useDebounce";
-import { CustomApiError, collectionsApi } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
-import type { ApiRecord, Collection, RecordData } from "@/types/api";
+import type { ApiRecord, RecordData } from "@/types/api";
 
 // Use ApiRecord instead of Record to avoid conflict with TypeScript's built-in Record type
 type Record = ApiRecord;
@@ -74,7 +73,10 @@ export default function RecordComponent() {
 	const updateRecordMutation = useUpdateRecord();
 	const deleteRecordMutation = useDeleteRecord();
 
-	const [collection, setCollection] = useState<Collection | null>(null);
+	// Use React Query hook for collection data instead of manual fetching
+	const { data: collection } = useCollection(collectionName || "");
+	// Convert undefined to null for consistency with existing code
+	const collectionData = collection || null;
 	const [recordToDelete, setRecordToDelete] = useState<number | null>(null);
 
 	// UI store for modals and sheets
@@ -94,7 +96,6 @@ export default function RecordComponent() {
 		data: recordsData,
 		isLoading,
 		error,
-		refetch,
 	} = useCollectionRecordsQuery({
 		collectionName: collectionName || "",
 		currentPage,
@@ -108,51 +109,12 @@ export default function RecordComponent() {
 	// Local state for record data
 	const [editingRecord, setEditingRecord] = useState<Record | null>(null);
 
-	const fetchCollection = useCallback(async () => {
-		if (!collectionName) return;
-
-		try {
-			const collectionResponse = await collectionsApi.get(collectionName);
-			setCollection(collectionResponse.data);
-		} catch (error) {
-			const errorMessage =
-				error instanceof CustomApiError
-					? error.message
-					: "Failed to fetch collection";
-			toast({
-				title: "Error",
-				description: errorMessage,
-				variant: "destructive",
-				position: "bottom-center",
-				duration: 3000,
-			});
-		}
-	}, [collectionName, toast]);
-
-	useEffect(() => {
-		if (collectionName) {
-			fetchCollection();
-		}
-	}, [collectionName, fetchCollection]);
-
 	// Reset page when search term changes
 	useEffect(() => {
 		setCurrentPage(1);
 	}, [debouncedSearchTerm]);
 
-	// Refresh data when component becomes visible again
-	useEffect(() => {
-		const handleVisibilityChange = () => {
-			if (!document.hidden && collectionName) {
-				refetch();
-				fetchCollection();
-			}
-		};
 
-		document.addEventListener("visibilitychange", handleVisibilityChange);
-		return () =>
-			document.removeEventListener("visibilitychange", handleVisibilityChange);
-	}, [collectionName, refetch, fetchCollection]);
 
 	const handleEditRecord = (record: Record) => {
 		setEditingRecord(record);
@@ -172,6 +134,7 @@ export default function RecordComponent() {
 					// Invalidate queries to refresh data
 					queryClient.invalidateQueries({
 						queryKey: ["collectionRecords", collectionName],
+						exact: false,
 					});
 				},
 				onError: (error) => {
@@ -197,6 +160,7 @@ export default function RecordComponent() {
 					// Invalidate queries to refresh data
 					queryClient.invalidateQueries({
 						queryKey: ["collectionRecords", collectionName],
+						exact: false,
 					});
 				},
 				onError: (error) => {
@@ -226,6 +190,7 @@ export default function RecordComponent() {
 					// Invalidate queries to refresh data
 					queryClient.invalidateQueries({
 						queryKey: ["collectionRecords", collectionName],
+						exact: false,
 					});
 				},
 				onError: () => {
@@ -268,7 +233,7 @@ export default function RecordComponent() {
 		);
 	}
 
-	if (isLoading && !collection) {
+	if (isLoading && !collectionData) {
 		return (
 			<div className="space-y-6">
 				<div className="flex items-center gap-3">
@@ -293,8 +258,8 @@ export default function RecordComponent() {
 	return (
 		<div className="space-y-6">
 			<CollectionRecordsHeader
-				collectionName={collection?.display_name || collectionName}
-				collection={collection}
+				collectionName={collectionData?.display_name || collectionName}
+				collection={collectionData}
 				totalCount={totalCount}
 				searchTerm={localSearchTerm}
 				onSearchChange={handleSearchChange}
@@ -412,6 +377,7 @@ export default function RecordComponent() {
 														// Invalidate queries to refresh data
 														queryClient.invalidateQueries({
 															queryKey: ["collectionRecords", collectionName],
+															exact: false,
 														});
 													}}
 													trigger={
@@ -482,7 +448,7 @@ export default function RecordComponent() {
 					open ? openSheet("editRecord") : closeSheet("editRecord")
 				}
 				record={editingRecord}
-				collection={collection}
+				collection={collectionData}
 				onSubmit={handleUpdateRecord}
 			/>
 

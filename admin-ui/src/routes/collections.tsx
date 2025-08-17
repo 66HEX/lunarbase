@@ -33,6 +33,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { useDeleteCollection } from "@/hooks/collections/useCollectionMutations";
 import { useCollections } from "@/hooks/collections/useCollections";
+import { usePrefetch } from "@/hooks/usePrefetch";
 import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 
@@ -42,6 +43,9 @@ export default function CollectionsComponent() {
 
 	// Mutation for deleting collections
 	const deleteCollectionMutation = useDeleteCollection();
+
+	// Prefetch hook
+	const { prefetchCollectionRecords, prefetchCollection } = usePrefetch();
 
 	const collections = data?.collections || [];
 	const collectionRecordCounts = data?.recordCounts || {};
@@ -317,10 +321,14 @@ export default function CollectionsComponent() {
 													Details
 												</Button>
 												<Link
-													to="/records/$collection"
-													params={{ collection: collection.name }}
-													className="flex-1"
-												>
+												to="/records/$collection"
+												params={{ collection: collection.name }}
+												className="flex-1"
+												onMouseEnter={() => {
+													prefetchCollectionRecords(collection.name);
+													prefetchCollection(collection.name);
+												}}
+											>
 													<Button
 														variant="secondary"
 														size="sm"

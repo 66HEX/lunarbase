@@ -27,6 +27,7 @@ export const useCreateRecord = () => {
 		onSuccess: (_, { collectionName }) => {
 			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
+			queryClient.invalidateQueries({ queryKey: ["collectionRecords", collectionName], exact: false });
 
 			// Invalidate all records query
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
@@ -73,6 +74,7 @@ export const useUpdateRecord = () => {
 		onSuccess: (updatedRecord: Record, { collectionName, recordId }) => {
 			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
+			queryClient.invalidateQueries({ queryKey: ["collectionRecords", collectionName], exact: false });
 
 			// Update specific record cache
 			queryClient.setQueryData(
@@ -120,6 +122,7 @@ export const useDeleteRecord = () => {
 		onSuccess: ({ collectionName, recordId }) => {
 			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
+			queryClient.invalidateQueries({ queryKey: ["collectionRecords", collectionName], exact: false });
 
 			// Remove from specific record cache
 			queryClient.removeQueries({
@@ -173,6 +176,7 @@ export const useBulkDeleteRecords = () => {
 		onSuccess: ({ collectionName, recordIds }) => {
 			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
+			queryClient.invalidateQueries({ queryKey: ["collectionRecords", collectionName], exact: false });
 
 			// Remove from specific record caches
 			recordIds.forEach((recordId) => {

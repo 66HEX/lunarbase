@@ -34,6 +34,10 @@ export const useTransferOwnership = () => {
 				queryKey: ["records", variables.collectionName],
 			});
 			queryClient.invalidateQueries({
+				queryKey: ["collectionRecords", variables.collectionName],
+				exact: false,
+			});
+			queryClient.invalidateQueries({
 				queryKey: ["record", variables.collectionName, variables.recordId],
 			});
 		},
