@@ -150,6 +150,7 @@ impl<S> Layer<S> for ConnectionTrackingLayer {
 }
 use lunarbase::handlers::{
     avatar_proxy::proxy_avatar,
+    backup::{create_manual_backup, get_backup_health},
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
         get_collection_schema, get_collections_stats, get_record, list_all_records,
@@ -517,6 +518,9 @@ async fn create_router(app_state: AppState) -> Router {
             "/admin/configuration/{category}/{setting_key}/reset",
             post(reset_setting),
         )
+        // Backup management endpoints (admin only)
+        .route("/admin/backup", post(create_manual_backup))
+        .route("/admin/backup/health", get(get_backup_health))
         .layer(middleware::from_fn_with_state(
             app_state.auth_state.clone(),
             auth_middleware,

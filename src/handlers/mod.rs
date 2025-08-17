@@ -1,5 +1,6 @@
 pub mod auth;
 pub mod avatar_proxy;
+pub mod backup;
 pub mod collections;
 pub mod configuration;
 pub mod embedded_admin;
@@ -13,6 +14,7 @@ pub mod websocket;
 
 pub use auth::*;
 pub use avatar_proxy::*;
+pub use backup::*;
 pub use configuration::*;
 pub use embedded_admin::*;
 pub use health::*;

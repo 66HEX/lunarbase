@@ -229,6 +229,28 @@ export const authApi = {
 	},
 };
 
+// Backup API
+export const backupApi = {
+	// Create manual backup
+	createManualBackup: async (): Promise<{ message: string; backup_id: string; size_bytes: number }> => {
+		const response = await apiRequest<ApiResponse<{ message: string; backup_id: string; size_bytes: number }>>(
+			"/admin/backup",
+			{
+				method: "POST",
+			},
+		);
+		return response.data;
+	},
+
+	// Get backup health status
+	getBackupHealth: async (): Promise<boolean> => {
+		const response = await apiRequest<ApiResponse<boolean>>(
+			"/admin/backup/health",
+		);
+		return response.data;
+	},
+};
+
 // Collections API
 export const collectionsApi = {
 	list: (): Promise<ApiResponse<Collection[]>> =>
@@ -879,3 +901,7 @@ export const ownershipApi = {
 		return response.data;
 	},
 };
+
+// Export individual functions for backward compatibility
+export const createManualBackup = backupApi.createManualBackup;
+export const getBackupHealth = backupApi.getBackupHealth;

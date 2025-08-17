@@ -120,6 +120,10 @@ pub mod utils;
         handlers::configuration::create_setting,
         handlers::configuration::delete_setting,
         handlers::configuration::reset_setting,
+
+        // Backup endpoints
+        handlers::backup::create_manual_backup,
+        handlers::backup::get_backup_health,
     ),
     components(
         schemas(
@@ -214,6 +218,11 @@ pub mod utils;
             utils::ApiResponse<models::system_setting::SystemSettingResponse>,
             utils::ApiResponse<Vec<models::system_setting::SystemSettingResponse>>,
             utils::ApiResponse<handlers::configuration::ConfigurationResponse>,
+
+            // Backup schemas
+            handlers::backup::BackupResponse,
+            utils::ApiResponse<handlers::backup::BackupResponse>,
+            utils::ApiResponse<bool>,
         )
     ),
     modifiers(&SecurityAddon),
@@ -229,7 +238,8 @@ pub mod utils;
         (name = "Users", description = "User management operations"),
         (name = "Health", description = "System health checks"),
         (name = "Monitoring", description = "System monitoring and metrics"),
-        (name = "Configuration", description = "System configuration management")
+        (name = "Configuration", description = "System configuration management"),
+        (name = "Backup", description = "Database backup management")
     )
 )]
 pub struct ApiDoc;

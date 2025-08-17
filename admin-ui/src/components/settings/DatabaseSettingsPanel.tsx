@@ -1,4 +1,4 @@
-import { AlertTriangle, Save } from "lucide-react";
+import { AlertTriangle, Save, Database } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,10 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { useSettingsByCategory } from "@/hooks/configuration/useConfiguration";
 import { useUpdateSetting } from "@/hooks/configuration/useConfigurationMutations";
+import { createManualBackup } from "@/lib/api";
 import type { SystemSetting } from "@/types/api";
+import { useMutation } from "@tanstack/react-query";
+import { toast } from "@/components/ui/toast";
 
 // Predefined backup schedule options
 const BACKUP_SCHEDULE_OPTIONS = [
@@ -38,6 +41,25 @@ const BACKUP_SCHEDULE_OPTIONS = [
 export function DatabaseSettingsPanel() {
 	const { data: settings, isLoading } = useSettingsByCategory("database");
 	const updateSettingMutation = useUpdateSetting();
+
+	// Manual backup mutation
+	const manualBackupMutation = useMutation({
+		mutationFn: createManualBackup,
+		onSuccess: (data) => {
+			toast({
+				title: "Manual backup created successfully",
+				description: `Backup ID: ${data.backup_id}`,
+				variant: "success",
+			});
+		},
+		onError: (error) => {
+			toast({
+				title: "Failed to create manual backup",
+				description: error.message,
+				variant: "destructive",
+			});
+		},
+	});
 
 	// Local state for form values
 	const [formValues, setFormValues] = useState<Record<string, string>>({});
@@ -323,8 +345,25 @@ export function DatabaseSettingsPanel() {
 						</FormField>
 					</div>
 
-					{/* Save Button */}
-					<div className="flex justify-end pt-6">
+					{/* Action Buttons */}
+					<div className="flex justify-between items-center pt-6">
+						{/* Manual Backup Button */}
+						<Button
+							type="button"
+							variant="secondary"
+							onClick={() => manualBackupMutation.mutate()}
+							disabled={manualBackupMutation.isPending || getSettingValue("backup_enabled") !== "true"}
+							className="flex items-center gap-2"
+						>
+							{manualBackupMutation.isPending ? (
+								<Spinner className="w-4 h-4" />
+							) : (
+								<Database className="w-4 h-4" />
+							)}
+							Create Manual Backup
+						</Button>
+
+						{/* Save Button */}
 						<Button
 							type="submit"
 							disabled={!hasChanges || updateSettingMutation.isPending}

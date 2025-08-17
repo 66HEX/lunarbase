@@ -486,3 +486,14 @@ export interface CreateSystemSettingRequest {
 export interface UpdateSystemSettingRequest {
 	setting_value: string;
 }
+
+// Backup types
+export interface BackupResponse {
+	message: string;
+	backup_id: string;
+	size_bytes: number;
+}
+
+export interface BackupHealthResponse {
+	is_enabled: boolean;
+}
