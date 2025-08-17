@@ -33,6 +33,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { useDeleteCollection } from "@/hooks/collections/useCollectionMutations";
 import { useCollections } from "@/hooks/collections/useCollections";
+import { useDebounce } from "@/hooks/useDebounce";
 import { usePrefetch } from "@/hooks/usePrefetch";
 import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
@@ -60,13 +61,16 @@ export default function CollectionsComponent() {
 	const closeSheet = useClientStore((state) => state.closeSheet);
 
 	// Local UI states
-	const [searchTerm, setSearchTerm] = useState("");
+	const [localSearchTerm, setLocalSearchTerm] = useState("");
+	const searchTerm = useDebounce(localSearchTerm, 300);
 	const [collectionToDelete, setCollectionToDelete] = useState<string | null>(
 		null,
 	);
 	const [selectedCollectionName, setSelectedCollectionName] = useState<
 		string | null
 	>(null);
+
+
 
 	// Handle opening collection details
 	const handleOpenDetails = (collectionName: string) => {
@@ -177,8 +181,8 @@ export default function CollectionsComponent() {
 			{/* Header */}
 			<CollectionsHeader
 				collectionsCount={collections.length}
-				searchTerm={searchTerm}
-				onSearchChange={setSearchTerm}
+				searchTerm={localSearchTerm}
+				onSearchChange={setLocalSearchTerm}
 				onCreateCollection={() => openModal("createCollection")}
 			/>
 

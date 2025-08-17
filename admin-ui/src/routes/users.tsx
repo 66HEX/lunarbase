@@ -27,6 +27,7 @@ import {
 } from "@/components/users";
 import { useDeleteUser } from "@/hooks/users/useUserMutations";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { User } from "@/types/api";
 
@@ -65,9 +66,15 @@ const getProxyUrl = (originalUrl: string): string => {
 
 export default function UsersComponent() {
 	// Local state for search and pagination
-	const [searchTerm, setSearchTerm] = useState("");
+	const [localSearchTerm, setLocalSearchTerm] = useState("");
+	const searchTerm = useDebounce(localSearchTerm, 300);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize] = useState(10);
+
+	// Reset page when search term changes
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [searchTerm]);
 
 	// React Query mutations
 	const deleteUserMutation = useDeleteUser();
@@ -93,21 +100,7 @@ export default function UsersComponent() {
 		id: number;
 		email: string;
 	} | null>(null);
-	const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
 
-	useEffect(() => {
-		setLocalSearchTerm(searchTerm);
-	}, [searchTerm]);
-
-	useEffect(() => {
-		const timeoutId = setTimeout(() => {
-			if (localSearchTerm !== searchTerm) {
-				setSearchTerm(localSearchTerm);
-			}
-		}, 300); // 300ms debounce
-
-		return () => clearTimeout(timeoutId);
-	}, [localSearchTerm, searchTerm, setSearchTerm]);
 
 	const handleDeleteUser = async (userId: number) => {
 		const user = extendedUsers.find((u) => u.id === userId);

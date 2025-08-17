@@ -20,6 +20,7 @@ import {
 } from "@/hooks/records/useRecordMutations";
 import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
 import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
+import { useDebounce } from "@/hooks/useDebounce";
 import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
@@ -35,14 +36,20 @@ export default function RecordsComponent() {
 	);
 
 	// Local state for pagination and search (replacing useRecords store)
-	const [searchTerm, setSearchTerm] = useState("");
+	const [localSearchTerm, setLocalSearchTerm] = useState("");
+	const searchTerm = useDebounce(localSearchTerm, 300);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize] = useState(20);
+
+	// Reset page when search term changes
+	useEffect(() => {
+		setCurrentPage(1);
+	}, [searchTerm]);
 
 	const { modals, sheets } = useUI();
 	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
 
-	const [localSearchTerm, setLocalSearchTerm] = useState(searchTerm);
+
 	const { data, isLoading, error, refetch } = useAllRecordsQuery({
 		currentPage,
 		pageSize,
@@ -65,20 +72,7 @@ export default function RecordsComponent() {
 	const deleteRecordMutation = useDeleteRecord();
 	const updateRecordMutation = useUpdateRecord();
 
-	useEffect(() => {
-		setLocalSearchTerm(searchTerm);
-	}, [searchTerm]);
 
-	useEffect(() => {
-		const timeoutId = setTimeout(() => {
-			if (localSearchTerm !== searchTerm) {
-				setSearchTerm(localSearchTerm);
-				setCurrentPage(1); // Reset to first page when searching
-			}
-		}, 300); // 300ms debounce
-
-		return () => clearTimeout(timeoutId);
-	}, [localSearchTerm, searchTerm, setSearchTerm, setCurrentPage]);
 
 	useEffect(() => {
 		if (sheets.editRecord && editingRecord) {
