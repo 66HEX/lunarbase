@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePrefetch } from "@/hooks/usePrefetch";
 
 interface QuickAction {
 	name: string;
@@ -14,6 +15,33 @@ interface QuickActionsCardProps {
 }
 
 export function QuickActionsCard({ actions }: QuickActionsCardProps) {
+	const {
+		prefetchCollections,
+		prefetchUsers,
+		prefetchRecords,
+		prefetchWebSocket,
+	} = usePrefetch();
+
+	const handleMouseEnter = (href: string) => {
+		switch (href) {
+			case "/collections":
+				prefetchCollections();
+				break;
+			case "/users":
+				prefetchUsers();
+				break;
+			case "/records":
+				prefetchRecords();
+				break;
+			case "/websocket":
+				prefetchWebSocket();
+				break;
+			default:
+				// No prefetch for unknown routes
+				break;
+		}
+	};
+
 	return (
 		<Card className="dashboard-card">
 			<CardHeader className="pb-3 p-3">
@@ -27,7 +55,12 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 			<CardContent className="p-3 pt-0">
 				<div className="grid grid-cols-1 gap-1.5">
 					{actions.map((action) => (
-						<Link key={action.name} to={action.href} className="block group">
+						<Link 
+							key={action.name} 
+							to={action.href} 
+							className="block group"
+							onMouseEnter={() => handleMouseEnter(action.href)}
+						>
 							<div className="flex items-center p-2 rounded-lg transition-all duration-200 ease-in-out group-hover:bg-nocta-100 dark:group-hover:bg-nocta-800/50 group-hover:shadow-sm">
 								<div className="w-6 h-6 rounded-md bg-nocta-100 dark:bg-nocta-800/30 flex items-center justify-center mr-2.5 group-hover:bg-nocta-200 dark:group-hover:bg-nocta-700/50 transition-colors">
 									<action.icon className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
