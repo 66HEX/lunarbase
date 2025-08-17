@@ -124,8 +124,9 @@ pub async fn list_users(
         if !search_term.trim().is_empty() {
             let search_pattern = format!("%{}%", search_term.trim());
             query_builder = query_builder.filter(
-                users::email.like(search_pattern.clone())
-                    .or(users::username.like(search_pattern))
+                users::email
+                    .like(search_pattern.clone())
+                    .or(users::username.like(search_pattern)),
             );
         }
     }
@@ -155,8 +156,9 @@ pub async fn list_users(
             if !search_term.trim().is_empty() {
                 let search_pattern = format!("%{}%", search_term.trim());
                 count_query = count_query.filter(
-                    users::email.like(search_pattern.clone())
-                        .or(users::username.like(search_pattern))
+                    users::email
+                        .like(search_pattern.clone())
+                        .or(users::username.like(search_pattern)),
                 );
             }
         }

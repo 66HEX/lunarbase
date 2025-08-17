@@ -301,13 +301,15 @@ impl QueryEngine {
                 for field in &schema.fields {
                     if field.name != "title" && field.name != "content" {
                         match field.field_type {
-                             crate::models::FieldType::Text | crate::models::FieldType::Email | crate::models::FieldType::Url => {
-                                 let escaped_field = self.escape_field_name(&field.name);
-                                 search_conditions.push(format!("{} LIKE ?", escaped_field));
-                                 parameters.push(search_pattern.clone());
-                             }
-                             _ => {} // Skip non-text fields
-                         }
+                            crate::models::FieldType::Text
+                            | crate::models::FieldType::Email
+                            | crate::models::FieldType::Url => {
+                                let escaped_field = self.escape_field_name(&field.name);
+                                search_conditions.push(format!("{} LIKE ?", escaped_field));
+                                parameters.push(search_pattern.clone());
+                            }
+                            _ => {} // Skip non-text fields
+                        }
                     }
                 }
 

@@ -17,13 +17,13 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Table } from "@/components/ui/table";
+import { useCollection } from "@/hooks/collections/useCollections";
 import {
 	useCreateRecord,
 	useDeleteRecord,
 	useUpdateRecord,
 } from "@/hooks/records/useRecordMutations";
 import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
-import { useCollection } from "@/hooks/collections/useCollections";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
@@ -113,8 +113,6 @@ export default function RecordComponent() {
 	useEffect(() => {
 		setCurrentPage(1);
 	}, [debouncedSearchTerm]);
-
-
 
 	const handleEditRecord = (record: Record) => {
 		setEditingRecord(record);

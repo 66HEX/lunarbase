@@ -6,8 +6,8 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::{Duration, Instant};
-use tokio::sync::RwLock;
 use sysinfo::System;
+use tokio::sync::RwLock;
 
 #[derive(Clone)]
 pub struct MetricsState {
@@ -52,14 +52,12 @@ impl MetricsState {
             "Number of active HTTP/2 connections",
         )?;
 
-        let tls_connections = Gauge::new(
-            "tls_connections_active",
-            "Number of active TLS connections",
-        )?;
+        let tls_connections =
+            Gauge::new("tls_connections_active", "Number of active TLS connections")?;
 
         let cpu_usage_gauge = Gauge::new(
             "system_cpu_usage_percent",
-            "Estimated system CPU usage percentage (0-100)"
+            "Estimated system CPU usage percentage (0-100)",
         )?;
 
         // Register metrics only if not in test environment

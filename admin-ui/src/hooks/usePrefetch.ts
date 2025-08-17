@@ -2,14 +2,14 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCallback } from "react";
 import {
 	collectionsApi,
+	configurationApi,
 	healthApi,
 	metricsApi,
 	recordsApi,
 	usersApi,
 	webSocketApi,
-	configurationApi,
 } from "@/lib/api";
-import type { UsersListParams, QueryOptions } from "@/types/api";
+import type { QueryOptions, UsersListParams } from "@/types/api";
 
 /**
  * Hook for managing data prefetching for different application sections
@@ -101,48 +101,62 @@ export const usePrefetch = () => {
 	/**
 	 * Prefetch records for a specific collection with exact same parameters as useCollectionRecordsQuery
 	 */
-	const prefetchCollectionRecords = useCallback(async (collectionName: string) => {
-		// Use exact same parameters as useCollectionRecordsQuery default call
-		const currentPage = 1;
-		const pageSize = 10;
-		const searchTerm = ""; // Empty string to match debouncedSearchTerm initial value
-		const sort: string | undefined = undefined;
-		const filter: string | undefined = undefined;
-		
-		const offset = (currentPage - 1) * pageSize;
-		
-		const queryOptions: QueryOptions = {
-			limit: pageSize,
-			offset,
-			sort: sort || "-created_at", // Default sort by created_at desc
-		};
-		
-		// Add search/filter logic exactly like in useCollectionRecordsQuery
-		// searchTerm is empty string, so no search filter applied
-		if (filter) {
-			queryOptions.filter = filter;
-		}
+	const prefetchCollectionRecords = useCallback(
+		async (collectionName: string) => {
+			// Use exact same parameters as useCollectionRecordsQuery default call
+			const currentPage = 1;
+			const pageSize = 10;
+			const searchTerm = ""; // Empty string to match debouncedSearchTerm initial value
+			const sort: string | undefined = undefined;
+			const filter: string | undefined = undefined;
 
-		await queryClient.prefetchQuery({
-			queryKey: ["collectionRecords", collectionName, currentPage, pageSize, searchTerm, sort, filter],
-			queryFn: () => recordsApi.list(collectionName, queryOptions),
-			staleTime: 30 * 1000, // 30 seconds
-		});
-	}, [queryClient]);
+			const offset = (currentPage - 1) * pageSize;
+
+			const queryOptions: QueryOptions = {
+				limit: pageSize,
+				offset,
+				sort: sort || "-created_at", // Default sort by created_at desc
+			};
+
+			// Add search/filter logic exactly like in useCollectionRecordsQuery
+			// searchTerm is empty string, so no search filter applied
+			if (filter) {
+				queryOptions.filter = filter;
+			}
+
+			await queryClient.prefetchQuery({
+				queryKey: [
+					"collectionRecords",
+					collectionName,
+					currentPage,
+					pageSize,
+					searchTerm,
+					sort,
+					filter,
+				],
+				queryFn: () => recordsApi.list(collectionName, queryOptions),
+				staleTime: 30 * 1000, // 30 seconds
+			});
+		},
+		[queryClient],
+	);
 
 	/**
 	 * Prefetch collection data for a specific collection
 	 */
-	const prefetchCollection = useCallback(async (collectionName: string) => {
-		await queryClient.prefetchQuery({
-			queryKey: ["collections", collectionName],
-			queryFn: async () => {
-				const response = await collectionsApi.get(collectionName);
-				return response.data;
-			},
-			staleTime: 5 * 60 * 1000, // 5 minutes
-		});
-	}, [queryClient]);
+	const prefetchCollection = useCallback(
+		async (collectionName: string) => {
+			await queryClient.prefetchQuery({
+				queryKey: ["collections", collectionName],
+				queryFn: async () => {
+					const response = await collectionsApi.get(collectionName);
+					return response.data;
+				},
+				staleTime: 5 * 60 * 1000, // 5 minutes
+			});
+		},
+		[queryClient],
+	);
 
 	/**
 	 * Prefetch WebSocket data (stats, connections, activity)
@@ -214,8 +228,8 @@ export const usePrefetch = () => {
 					queryKey: ["settings", category],
 					queryFn: () => configurationApi.getSettingsByCategory(category),
 					staleTime: 5 * 60 * 1000, // 5 minutes
-				})
-			)
+				}),
+			),
 		);
 	}, [queryClient]);
 

@@ -174,10 +174,7 @@ impl OwnershipService {
 
         debug!(
             "Ownership transferred successfully: collection={}, record_id={}, from_user={}, to_user={}",
-            collection_name,
-            record_id,
-            current_user.id,
-            new_owner_id
+            collection_name, record_id, current_user.id, new_owner_id
         );
 
         Ok(())

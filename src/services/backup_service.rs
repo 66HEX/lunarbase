@@ -5,7 +5,7 @@ use std::io::Write;
 use std::sync::Arc;
 use tokio::fs;
 use tokio_cron_scheduler::{Job, JobScheduler};
-use tracing::{error, debug, warn};
+use tracing::{debug, error, warn};
 use uuid::Uuid;
 
 use crate::database::DatabasePool;

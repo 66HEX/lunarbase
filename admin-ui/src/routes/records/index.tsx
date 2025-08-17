@@ -49,7 +49,6 @@ export default function RecordsComponent() {
 	const { modals, sheets } = useUI();
 	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
 
-
 	const { data, isLoading, error, refetch } = useAllRecordsQuery({
 		currentPage,
 		pageSize,
@@ -71,8 +70,6 @@ export default function RecordsComponent() {
 	// React Query mutations
 	const deleteRecordMutation = useDeleteRecord();
 	const updateRecordMutation = useUpdateRecord();
-
-
 
 	useEffect(() => {
 		if (sheets.editRecord && editingRecord) {

@@ -17,7 +17,7 @@ pub fn setup_logging() {
     } else {
         "lunarbase=info,tower_http=info"
     };
-    
+
     tracing_subscriber::registry()
         .with(
             tracing_subscriber::EnvFilter::try_from_default_env()

@@ -145,8 +145,7 @@ impl S3Service {
 
         debug!(
             "Successfully uploaded file '{}' to S3 with key '{}'",
-            original_filename,
-            s3_key
+            original_filename, s3_key
         );
 
         Ok(FileUploadResult {
@@ -185,8 +184,7 @@ impl S3Service {
 
         debug!(
             "Successfully uploaded file '{}' to S3 with key '{}'",
-            original_filename,
-            s3_key
+            original_filename, s3_key
         );
 
         Ok(FileUploadResult {

@@ -70,8 +70,6 @@ export default function CollectionsComponent() {
 		string | null
 	>(null);
 
-
-
 	// Handle opening collection details
 	const handleOpenDetails = (collectionName: string) => {
 		setSelectedCollectionName(collectionName);
@@ -325,14 +323,14 @@ export default function CollectionsComponent() {
 													Details
 												</Button>
 												<Link
-												to="/records/$collection"
-												params={{ collection: collection.name }}
-												className="flex-1"
-												onMouseEnter={() => {
-													prefetchCollectionRecords(collection.name);
-													prefetchCollection(collection.name);
-												}}
-											>
+													to="/records/$collection"
+													params={{ collection: collection.name }}
+													className="flex-1"
+													onMouseEnter={() => {
+														prefetchCollectionRecords(collection.name);
+														prefetchCollection(collection.name);
+													}}
+												>
 													<Button
 														variant="secondary"
 														size="sm"

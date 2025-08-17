@@ -55,9 +55,9 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 			<CardContent className="p-3 pt-0">
 				<div className="grid grid-cols-1 gap-1.5">
 					{actions.map((action) => (
-						<Link 
-							key={action.name} 
-							to={action.href} 
+						<Link
+							key={action.name}
+							to={action.href}
 							className="block group"
 							onMouseEnter={() => handleMouseEnter(action.href)}
 						>

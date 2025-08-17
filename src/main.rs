@@ -2,26 +2,29 @@ use axum::{
     Router, middleware,
     routing::{delete, get, post, put},
 };
+use axum::{
+    body::Body,
+    http::{Request, Response},
+};
+use axum_server::tls_rustls::RustlsConfig;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use rustls::ServerConfig;
+use rustls_pemfile::{certs, pkcs8_private_keys};
+use std::convert::Infallible;
+use std::fs::File;
+use std::future::Future;
+use std::io::BufReader;
 use std::net::SocketAddr;
+use std::pin::Pin;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::task::{Context, Poll};
 use tokio::signal;
+use tower::Service;
+use tower::layer::Layer;
 use tracing::{info, warn};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
-use rustls::ServerConfig;
-use rustls_pemfile::{certs, pkcs8_private_keys};
-use std::fs::File;
-use std::io::BufReader;
-use std::sync::Arc;
-use axum_server::tls_rustls::RustlsConfig;
-use tower::Service;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::task::{Context, Poll};
-use std::pin::Pin;
-use std::future::Future;
-use tower::layer::Layer;
-use axum::{body::Body, http::{Request, Response}};
-use std::convert::Infallible;
 
 use lunarbase::database::{create_pool, create_pool_with_size};
 use lunarbase::services::{ConfigurationAccess, ConfigurationManager};
@@ -51,7 +54,10 @@ impl ConnectionTracker {
     }
 
     fn decrement_tls(&self) {
-        let count = self.tls_connections.fetch_sub(1, Ordering::SeqCst).saturating_sub(1);
+        let count = self
+            .tls_connections
+            .fetch_sub(1, Ordering::SeqCst)
+            .saturating_sub(1);
         self.metrics_state.tls_connections.set(count as f64);
     }
 
@@ -61,7 +67,10 @@ impl ConnectionTracker {
     }
 
     fn decrement_http2(&self) {
-        let count = self.http2_connections.fetch_sub(1, Ordering::SeqCst).saturating_sub(1);
+        let count = self
+            .http2_connections
+            .fetch_sub(1, Ordering::SeqCst)
+            .saturating_sub(1);
         self.metrics_state.http2_connections.set(count as f64);
     }
 }
@@ -81,7 +90,10 @@ impl<S> ConnectionTrackingService<S> {
 
 impl<S, ReqBody> Service<Request<ReqBody>> for ConnectionTrackingService<S>
 where
-    S: Service<Request<ReqBody>, Response = Response<Body>, Error = Infallible> + Clone + Send + 'static,
+    S: Service<Request<ReqBody>, Response = Response<Body>, Error = Infallible>
+        + Clone
+        + Send
+        + 'static,
     S::Future: Send + 'static,
     ReqBody: Send + 'static,
 {
@@ -96,22 +108,22 @@ where
     fn call(&mut self, req: Request<ReqBody>) -> Self::Future {
         let mut inner = self.inner.clone();
         let tracker = self.tracker.clone();
-        
+
         // Increment TLS connection count (since this service only wraps TLS connections)
         tracker.increment_tls();
-        
+
         // For TLS connections, HTTP/2 is negotiated via ALPN
         // We increment HTTP/2 counter since this tracker is only used when TLS is enabled
         // and axum_server enables HTTP/2 by default for TLS connections
         tracker.increment_http2();
-        
+
         Box::pin(async move {
             let result = inner.call(req).await;
-            
+
             // Decrement counters when connection ends
             tracker.decrement_tls();
             tracker.decrement_http2();
-            
+
             result
         })
     }
@@ -137,7 +149,6 @@ impl<S> Layer<S> for ConnectionTrackingLayer {
     }
 }
 use lunarbase::handlers::{
-    embedded_admin::{serve_embedded_admin_html, serve_embedded_assets},
     avatar_proxy::proxy_avatar,
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
@@ -148,6 +159,7 @@ use lunarbase::handlers::{
         create_setting, delete_setting, get_all_settings, get_setting, get_settings_by_category,
         reset_setting, update_setting,
     },
+    embedded_admin::{serve_embedded_admin_html, serve_embedded_assets},
     forgot_password,
     health::{health_check, public_health_check, simple_health_check},
     login, logout, me,
@@ -251,7 +263,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Clone metrics_state before moving app_state
     let metrics_state_clone = app_state.metrics_state.clone();
-    
+
     // Routing creation
     let app = create_router(app_state).await;
 
@@ -264,27 +276,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         // TLS configuration
         let tls_config = create_tls_config(&config).await?;
         info!("TLS enabled - starting HTTPS server with HTTP/2 support");
-        
+
         // Display clickable URL for HTTPS
         let https_url = format!("https://{}:{}", config.server_host, config.server_port);
         info!("API: {}/api", https_url);
         info!("API Docs: {}/docs", https_url);
         info!("Admin panel: {}/admin", https_url);
-        
+
         // Create connection tracker for TLS/HTTP2 metrics
         let connection_tracker = ConnectionTracker::new(metrics_state_clone);
         let tracking_layer = ConnectionTrackingLayer::new(connection_tracker);
-        
+
         // Apply connection tracking layer to the app
         let tracked_app = app.layer(tracking_layer);
-        
+
         axum_server::bind_rustls(addr, tls_config)
             .serve(tracked_app.into_make_service())
             .await?;
     } else {
         // HTTP/1.1 server (fallback)
         info!("TLS disabled - starting HTTP server (HTTP/1.1 only)");
-        
+
         // Display clickable URL for HTTP
         let http_url = format!("http://{}:{}", config.server_host, config.server_port);
         info!("API: {}/api", http_url);
@@ -292,7 +304,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("Admin panel: {}/admin", http_url);
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
-        
+
         axum::serve(listener, app.into_make_service())
             .with_graceful_shutdown(shutdown_signal())
             .await?;
@@ -305,9 +317,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 }
 
 async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std::error::Error>> {
-    let cert_path = config.tls_cert_path.as_ref()
+    let cert_path = config
+        .tls_cert_path
+        .as_ref()
         .ok_or("TLS_CERT_PATH is required when TLS is enabled")?;
-    let key_path = config.tls_key_path.as_ref()
+    let key_path = config
+        .tls_key_path
+        .as_ref()
         .ok_or("TLS_KEY_PATH is required when TLS is enabled")?;
 
     info!("Loading TLS certificate from: {}", cert_path);

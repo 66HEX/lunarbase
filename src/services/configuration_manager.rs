@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use tracing::{error, debug, warn};
+use tracing::{debug, error, warn};
 
 use crate::models::system_setting::SystemSetting;
 use crate::schema::system_settings;

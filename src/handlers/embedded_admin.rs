@@ -1,10 +1,10 @@
 use axum::{
     extract::Path,
-    http::{header, StatusCode},
+    http::{StatusCode, header},
     response::{Html, IntoResponse, Response},
 };
-use tracing::debug;
 use std::borrow::Cow;
+use tracing::debug;
 
 use crate::embedded_assets::AdminAssets;
 
@@ -13,11 +13,7 @@ pub async fn serve_embedded_admin_html() -> impl IntoResponse {
     match AdminAssets::get_asset_with_mime("admin/index.html") {
         Some((content, mime_type)) => {
             let html = String::from_utf8_lossy(&content);
-            (
-                [(header::CONTENT_TYPE, mime_type)],
-                Html(html.to_string()),
-            )
-                .into_response()
+            ([(header::CONTENT_TYPE, mime_type)], Html(html.to_string())).into_response()
         }
         None => {
             // Fallback for development or when assets are not embedded
@@ -41,14 +37,20 @@ pub async fn serve_embedded_assets(Path(path): Path<String>) -> Response {
         format!("admin/{}", path)
     };
     debug!("normalized_path: {}", normalized_path);
-    
+
     match AdminAssets::get_asset_with_mime(&normalized_path) {
         Some((content, mime_type)) => {
-            debug!("Found asset for path: {}, mime_type: {}", normalized_path, mime_type);
+            debug!(
+                "Found asset for path: {}, mime_type: {}",
+                normalized_path, mime_type
+            );
             create_asset_response(content, mime_type)
         }
         None => {
-            debug!("Asset not found for path: {}, checking SPA fallback conditions", normalized_path);
+            debug!(
+                "Asset not found for path: {}, checking SPA fallback conditions",
+                normalized_path
+            );
             // For SPA routing, fallback to index.html for non-asset requests
             if !normalized_path.contains('.') || normalized_path.ends_with('/') {
                 debug!("SPA fallback for path: {}", normalized_path);
@@ -64,19 +66,11 @@ pub async fn serve_embedded_assets(Path(path): Path<String>) -> Response {
                             .into_response()
                     }
                     None => {
-                        (
-                            StatusCode::NOT_FOUND,
-                            "Admin interface not available",
-                        )
-                            .into_response()
+                        (StatusCode::NOT_FOUND, "Admin interface not available").into_response()
                     }
                 }
             } else {
-                (
-                    StatusCode::NOT_FOUND,
-                    "Asset not found",
-                )
-                    .into_response()
+                (StatusCode::NOT_FOUND, "Asset not found").into_response()
             }
         }
     }
@@ -89,18 +83,14 @@ pub async fn serve_embedded_asset_by_path(Path(asset_path): Path<String>) -> imp
     } else {
         format!("admin/{}", asset_path)
     };
-    
+
     match AdminAssets::get_asset_with_mime(&normalized_path) {
-        Some((content, mime_type)) => {
-            create_asset_response(content, mime_type)
-        }
-        None => {
-            (
-                StatusCode::NOT_FOUND,
-                format!("Asset not found: {}", normalized_path),
-            )
-                .into_response()
-        }
+        Some((content, mime_type)) => create_asset_response(content, mime_type),
+        None => (
+            StatusCode::NOT_FOUND,
+            format!("Asset not found: {}", normalized_path),
+        )
+            .into_response(),
     }
 }
 
@@ -117,23 +107,19 @@ fn create_asset_response(content: Cow<'static, [u8]>, mime_type: &'static str) -
         .header(header::CACHE_CONTROL, "public, max-age=31536000") // 1 year cache for assets
         .body(axum::body::Body::from(content.into_owned()))
         .unwrap();
-    
+
     // Add security headers
-    response.headers_mut().insert(
-        header::X_CONTENT_TYPE_OPTIONS,
-        "nosniff".parse().unwrap(),
-    );
-    
+    response
+        .headers_mut()
+        .insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
+
     response
 }
 
 /// Check if embedded assets are available (useful for health checks)
 pub async fn embedded_assets_health() -> impl IntoResponse {
     if AdminAssets::is_available() {
-        (
-            StatusCode::OK,
-            "Embedded admin assets are available",
-        )
+        (StatusCode::OK, "Embedded admin assets are available")
     } else {
         (
             StatusCode::SERVICE_UNAVAILABLE,
@@ -154,24 +140,27 @@ pub async fn list_embedded_assets() -> impl IntoResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     #[tokio::test]
     async fn test_serve_embedded_admin_html() {
         let response = serve_embedded_admin_html().await.into_response();
         // In development, this might return 404, in release it should return the HTML
         assert!(response.status() == StatusCode::OK || response.status() == StatusCode::NOT_FOUND);
     }
-    
+
     #[tokio::test]
     async fn test_serve_embedded_assets() {
         let path = "index.html".to_string();
         let response = serve_embedded_assets(Path(path)).await.into_response();
         assert!(response.status() == StatusCode::OK || response.status() == StatusCode::NOT_FOUND);
     }
-    
+
     #[tokio::test]
     async fn test_embedded_assets_health() {
         let response = embedded_assets_health().await.into_response();
-        assert!(response.status() == StatusCode::OK || response.status() == StatusCode::SERVICE_UNAVAILABLE);
+        assert!(
+            response.status() == StatusCode::OK
+                || response.status() == StatusCode::SERVICE_UNAVAILABLE
+        );
     }
 }

@@ -2,7 +2,7 @@ use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
 use resend_rs::{Resend, types::CreateEmailBaseOptions};
-use tracing::{error, debug, warn};
+use tracing::{debug, error, warn};
 use uuid::Uuid;
 
 use crate::Config;

@@ -11,8 +11,8 @@ use crate::utils::AuthError;
 use base64::Engine;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use tracing::debug;
 use serde_json::{Map, Value};
+use tracing::debug;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -274,8 +274,7 @@ impl CollectionService {
         if !fields_to_drop.is_empty() {
             debug!(
                 "Dropping columns {:?} from table {}, using table recreation strategy",
-                fields_to_drop,
-                table_name
+                fields_to_drop, table_name
             );
             return self.recreate_table_with_schema(conn, collection_name, new_schema);
         }
@@ -1471,8 +1470,7 @@ impl CollectionService {
                                             } else {
                                                 debug!(
                                                     "Deleted old file '{}' for field '{}'",
-                                                    url_str,
-                                                    field_name
+                                                    url_str, field_name
                                                 );
                                             }
                                         }
@@ -1645,8 +1643,7 @@ impl CollectionService {
                             Ok(_) => {
                                 debug!(
                                     "Successfully deleted file '{}' for field '{}'",
-                                    file_url,
-                                    field.name
+                                    file_url, field.name
                                 );
                             }
                             Err(e) => {

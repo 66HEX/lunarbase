@@ -25,9 +25,9 @@ import {
 	UserDetailsSheet,
 	UsersHeader,
 } from "@/components/users";
+import { useDebounce } from "@/hooks/useDebounce";
 import { useDeleteUser } from "@/hooks/users/useUserMutations";
 import { useUsersQuery } from "@/hooks/useUsersQuery";
-import { useDebounce } from "@/hooks/useDebounce";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { User } from "@/types/api";
 
@@ -100,7 +100,6 @@ export default function UsersComponent() {
 		id: number;
 		email: string;
 	} | null>(null);
-
 
 	const handleDeleteUser = async (userId: number) => {
 		const user = extendedUsers.find((u) => u.id === userId);

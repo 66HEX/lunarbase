@@ -5,10 +5,10 @@ use axum::{
     response::{Json, Redirect},
 };
 use diesel::prelude::*;
-use tracing::debug;
 use serde::{Deserialize, Serialize};
 use std::net::SocketAddr;
 use std::time::Duration;
+use tracing::debug;
 use utoipa::ToSchema;
 
 use crate::{
