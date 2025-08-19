@@ -7,6 +7,7 @@
 - Manual backup button in Database Settings panel
 - Backup health check endpoint (GET /admin/backup/health)
 - Enhanced backup API with proper error handling and notifications
+- Added missing text colors to default toast variant
 
 ## [1.1.0][1.1.0] - 2025-08-17
 

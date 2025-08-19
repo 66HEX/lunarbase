@@ -186,7 +186,7 @@ const toastContentVariants = cva(
 	{
 		variants: {
 			variant: {
-				default: "",
+				default: "text-nocta-900 dark:text-nocta-100",
 				success:
 					"bg-green-50 dark:bg-green-950 text-green-900 dark:text-green-100",
 				warning:
