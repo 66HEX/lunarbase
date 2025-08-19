@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/lib/toast";
+import { toast } from "@/components/ui/toast";
 import { recordsApi } from "@/lib/api";
 import type {
 	CreateRecordRequest,

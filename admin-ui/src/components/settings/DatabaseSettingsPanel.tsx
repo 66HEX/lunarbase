@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/lib/toast";
+import { toast } from "@/components/ui/toast";
 import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import { createManualBackup } from "@/lib/api";
 import type { SystemSetting } from "@/types/api";

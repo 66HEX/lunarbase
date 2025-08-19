@@ -30,7 +30,7 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { toast } from "@/lib/toast";
+import { toast } from "@/components/ui/toast";
 import {
 	useCollections,
 	useDebounce,

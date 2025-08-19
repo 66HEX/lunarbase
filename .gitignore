@@ -3,9 +3,9 @@
 .env
 .env.local
 .env.*.local
-*.db
-*.sqlite
 tmp/
 .DS_Store
 .DS_Store?
 /certs
+/db.sqlite*
+/lunarbase.tar.gz

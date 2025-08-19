@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
-import { toast } from "@/lib/toast";
+import { toast } from "@/components/ui/toast";
 
 import {
 	useAllRecords,

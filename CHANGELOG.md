@@ -1,5 +1,13 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Change way of animating active route on sidebar for better UX
+
+### Refactored
+- Toast system migrated from GSAP to CSS transition-driven animations, centralized easing, and improved accessibility
+
 ## [0.3.0][0.3.0] - 2025-08-19
 
 ### Added

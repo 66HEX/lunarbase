@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/lib/toast";
+import { toast } from "@/components/ui/toast";
 import { rolesApi } from "@/lib/api";
 import type { CreateRoleRequest, Role, UpdateRoleRequest } from "@/types/api";
 import { permissionKeys } from "./usePermissions";

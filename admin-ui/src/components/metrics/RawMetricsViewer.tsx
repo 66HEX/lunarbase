@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { toast } from "@/lib/toast";
+import { toast } from "@/components/ui/toast";
 import { useRawMetricsQuery } from "@/hooks/";
 
 export function RawMetricsViewer() {

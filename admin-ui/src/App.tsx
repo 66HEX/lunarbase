@@ -1,6 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRouter, RouterProvider } from "@tanstack/react-router";
-import { StrictMode } from "react";
 import { Toaster } from "@/components/ui/toast";
 import { ThemeProvider } from "./components/layout/ThemeProvider";
 
@@ -32,14 +31,12 @@ declare module "@tanstack/react-router" {
 
 function App() {
 	return (
-		<StrictMode>
-			<QueryClientProvider client={queryClient}>
+		<QueryClientProvider client={queryClient}>
 				<ThemeProvider defaultTheme="dark">
 					<RouterProvider router={router} />
 					<Toaster />
 				</ThemeProvider>
 			</QueryClientProvider>
-		</StrictMode>
 	);
 }
 
