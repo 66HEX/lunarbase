@@ -3,6 +3,11 @@ import { useCallback, useContext } from "react";
 import { AuthContext } from "@/contexts/auth-context";
 import { useAuthStore } from "@/stores/auth-persist.store";
 
+/**
+ * Hook for authentication management
+ * Provides authentication state and methods for login/logout
+ * @returns Authentication context or store data with enhanced methods
+ */
 export const useAuth = () => {
 	const context = useContext(AuthContext);
 	const navigate = useNavigate();
@@ -16,13 +21,11 @@ export const useAuth = () => {
 		fetchUser,
 	} = useAuthStore();
 
-	// Enhanced logout function that includes navigation
 	const logout = useCallback(async () => {
 		await storeLogout();
 		navigate({ to: "/login" });
 	}, [storeLogout, navigate]);
 
-	// Function to check authentication status using store
 	const checkAuth = useCallback(async () => {
 		const isAuth = await storeCheckAuth();
 		if (!isAuth) {
@@ -31,7 +34,6 @@ export const useAuth = () => {
 		return isAuth;
 	}, [storeCheckAuth, navigate]);
 
-	// Use context if available (within AuthProvider), otherwise use store
 	if (context) {
 		return context;
 	}

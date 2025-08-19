@@ -25,9 +25,7 @@ import {
 	UserDetailsSheet,
 	UsersHeader,
 } from "@/components/users";
-import { useDebounce } from "@/hooks/useDebounce";
-import { useDeleteUser } from "@/hooks/users/useUserMutations";
-import { useUsersQuery } from "@/hooks/useUsersQuery";
+import { useDeleteUser, useDebounce, useUsersWithPagination } from "@/hooks/";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { User } from "@/types/api";
 
@@ -80,7 +78,7 @@ export default function UsersComponent() {
 	const deleteUserMutation = useDeleteUser();
 
 	// Use React Query for data fetching with keepPreviousData
-	const { data, isLoading, error } = useUsersQuery({
+	const { data, isLoading, error } = useUsersWithPagination({
 		currentPage,
 		pageSize,
 		searchTerm,

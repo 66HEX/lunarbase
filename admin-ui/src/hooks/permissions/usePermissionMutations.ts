@@ -3,7 +3,7 @@ import { toast } from "@/components/ui/toast";
 import { permissionsApi } from "@/lib/api";
 import type { SetCollectionPermissionRequest } from "@/types/api";
 
-// Query keys
+
 const permissionKeys = {
 	all: ["permissions"] as const,
 	roles: () => [...permissionKeys.all, "roles"] as const,
@@ -20,7 +20,7 @@ const permissionKeys = {
 		] as const,
 };
 
-// Set collection permission
+
 export const useSetCollectionPermission = () => {
 	const queryClient = useQueryClient();
 
@@ -28,7 +28,6 @@ export const useSetCollectionPermission = () => {
 		mutationFn: (data: SetCollectionPermissionRequest) =>
 			permissionsApi.setCollectionPermission(data),
 		onSuccess: () => {
-			// Invalidate related queries
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.collectionPermissions(),
 			});
@@ -52,7 +51,7 @@ export const useSetCollectionPermission = () => {
 	});
 };
 
-// Set user collection permissions
+
 export const useSetUserCollectionPermissions = () => {
 	const queryClient = useQueryClient();
 
@@ -64,7 +63,6 @@ export const useSetUserCollectionPermissions = () => {
 			},
 		) => permissionsApi.setUserCollectionPermissions(data),
 		onSuccess: (_, variables) => {
-			// Invalidate related queries
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.userPermission(
 					variables.user_id,
@@ -91,7 +89,7 @@ export const useSetUserCollectionPermissions = () => {
 	});
 };
 
-// Check collection permission
+
 export const useCheckCollectionPermission = () => {
 	return useMutation({
 		mutationFn: ({

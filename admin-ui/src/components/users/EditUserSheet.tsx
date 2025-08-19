@@ -29,7 +29,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
-import { useUnlockUser, useUpdateUser } from "@/hooks/users/useUserMutations";
+import { useUnlockUser, useUpdateUser } from "@/hooks";
 import type { UpdateUserRequest, User } from "@/types/api";
 import {
 	userFieldDescriptions,

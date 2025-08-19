@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { permissionsApi, rolesApi } from "@/lib/api";
 
-// Query keys for permissions
+
 export const permissionKeys = {
 	all: ["permissions"] as const,
 	roles: () => [...permissionKeys.all, "roles"] as const,
@@ -14,17 +14,17 @@ export const permissionKeys = {
 		[...permissionKeys.collectionPermissions(), collectionName] as const,
 };
 
-// Get all roles
+
 export const useRoles = () => {
 	return useQuery({
 		queryKey: permissionKeys.roles(),
 		queryFn: () => rolesApi.list(),
-		staleTime: 10 * 60 * 1000, // 10 minutes
-		gcTime: 30 * 60 * 1000, // 30 minutes
+		staleTime: 10 * 60 * 1000,
+		gcTime: 30 * 60 * 1000,
 	});
 };
 
-// Get user collection permissions
+
 export const useUserCollectionPermissions = (
 	userId: number,
 	collectionName: string,
@@ -34,12 +34,12 @@ export const useUserCollectionPermissions = (
 		queryFn: () =>
 			permissionsApi.getUserCollectionPermissions(userId, collectionName),
 		enabled: !!userId && !!collectionName,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
 	});
 };
 
-// Get role collection permissions
+
 export const useRoleCollectionPermissions = (
 	roleName: string,
 	collectionName: string,
@@ -53,12 +53,12 @@ export const useRoleCollectionPermissions = (
 		queryFn: () =>
 			permissionsApi.getCollectionPermissions(roleName, collectionName),
 		enabled: !!roleName && !!collectionName,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
 	});
 };
 
-// Get all role collection permissions for a collection
+
 export const useAllRoleCollectionPermissions = (
 	collectionName: string,
 	options?: { enabled?: boolean },
@@ -82,7 +82,6 @@ export const useAllRoleCollectionPermissions = (
 						);
 						return { roleName: role.name, permissions };
 					} catch {
-						// Return default permissions if not found
 						return {
 							roleName: role.name,
 							permissions: {
@@ -112,7 +111,7 @@ export const useAllRoleCollectionPermissions = (
 			return permissionsMap;
 		},
 		enabled: !!collectionName && roles.length > 0 && options?.enabled !== false,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
 	});
 };

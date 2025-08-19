@@ -29,7 +29,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
-import { useCollections } from "@/hooks/collections/useCollections";
+import { useCollections } from "@/hooks";
 import type {
 	Collection,
 	FieldDefinition,

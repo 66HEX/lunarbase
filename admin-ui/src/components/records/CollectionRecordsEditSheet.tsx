@@ -31,7 +31,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useCollections } from "@/hooks/collections/useCollections";
+import { useCollections } from "@/hooks";
 import type {
 	ApiRecord,
 	Collection,

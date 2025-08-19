@@ -11,7 +11,8 @@ import type {
 } from "@/types/api";
 
 /**
- * Hook for creating a new collection
+ * Custom hook for creating a new collection
+ * @returns Mutation object for creating collections
  */
 export const useCreateCollection = () => {
 	const queryClient = useQueryClient();
@@ -21,10 +22,9 @@ export const useCreateCollection = () => {
 			return await collectionsApi.create(data);
 		},
 		onSuccess: (newCollection: Collection) => {
-			// Invalidate collections list
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 
-			// Optimistically add to cache
+
 			queryClient.setQueryData(
 				["collections"],
 				(
@@ -63,7 +63,8 @@ export const useCreateCollection = () => {
 };
 
 /**
- * Hook for updating an existing collection
+ * Custom hook for updating an existing collection
+ * @returns Mutation object for updating collections
  */
 export const useUpdateCollection = () => {
 	const queryClient = useQueryClient();
@@ -79,16 +80,14 @@ export const useUpdateCollection = () => {
 			return await collectionsApi.update(name, data);
 		},
 		onSuccess: (updatedCollection: Collection) => {
-			// Invalidate collections list
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 
-			// Update specific collection cache
 			queryClient.setQueryData(
 				["collections", updatedCollection.name],
 				updatedCollection,
 			);
 
-			// Optimistically update collections list
+
 			queryClient.setQueryData(
 				["collections"],
 				(
@@ -128,7 +127,8 @@ export const useUpdateCollection = () => {
 };
 
 /**
- * Hook for deleting a collection
+ * Custom hook for deleting a collection
+ * @returns Mutation object for deleting collections
  */
 export const useDeleteCollection = () => {
 	const queryClient = useQueryClient();
@@ -139,13 +139,11 @@ export const useDeleteCollection = () => {
 			return name;
 		},
 		onSuccess: (deletedName: string) => {
-			// Invalidate collections list
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 
-			// Remove from cache
 			queryClient.removeQueries({ queryKey: ["collections", deletedName] });
 
-			// Optimistically remove from collections list
+
 			queryClient.setQueryData(
 				["collections"],
 				(
@@ -168,7 +166,6 @@ export const useDeleteCollection = () => {
 				},
 			);
 
-			// Invalidate related queries
 			queryClient.invalidateQueries({ queryKey: ["records", deletedName] });
 			queryClient.invalidateQueries({ queryKey: ["permissions"] });
 
@@ -189,7 +186,8 @@ export const useDeleteCollection = () => {
 };
 
 /**
- * Hook for saving collection permissions
+ * Custom hook for saving collection permissions
+ * @returns Mutation object for saving collection permissions
  */
 export const useSaveCollectionPermissions = () => {
 	const queryClient = useQueryClient();
@@ -202,10 +200,9 @@ export const useSaveCollectionPermissions = () => {
 			collectionName: string;
 			permissions: CollectionPermissions;
 		}) => {
-			// Convert CollectionPermissions to individual SetCollectionPermissionRequest calls
 			const promises: Promise<void>[] = [];
 
-			// Set role permissions
+
 			for (const [roleName, rolePerms] of Object.entries(
 				permissions.role_permissions,
 			)) {
@@ -222,9 +219,9 @@ export const useSaveCollectionPermissions = () => {
 				promises.push(
 					permissionsApi.setCollectionPermission(rolePermissionRequest),
 				);
-			}
+		}
 
-			// Set user permissions
+
 			for (const [userId, userPerms] of Object.entries(
 				permissions.user_permissions,
 			)) {
@@ -253,7 +250,6 @@ export const useSaveCollectionPermissions = () => {
 			return { collectionName, permissions };
 		},
 		onSuccess: ({ collectionName }) => {
-			// Invalidate permissions queries
 			queryClient.invalidateQueries({ queryKey: ["permissions"] });
 			queryClient.invalidateQueries({
 				queryKey: ["collections", collectionName],

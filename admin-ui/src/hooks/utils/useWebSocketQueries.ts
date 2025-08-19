@@ -9,49 +9,61 @@ import type {
 	WebSocketStats,
 } from "@/types/api";
 
-// Hook for WebSocket stats
+/**
+ * Hook to fetch WebSocket statistics
+ * @returns Query result containing WebSocket stats
+ */
 export const useWebSocketStatsQuery = () => {
 	return useQuery({
 		queryKey: ["websocket", "stats"],
 		queryFn: async (): Promise<WebSocketStats> => {
 			return await webSocketApi.getStats();
 		},
-		staleTime: 10 * 1000, // 10 seconds
-		gcTime: 2 * 60 * 1000, // 2 minutes
+		staleTime: 10 * 1000,
+		gcTime: 2 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		retry: 2,
 	});
 };
 
-// Hook for WebSocket connections
+/**
+ * Hook to fetch WebSocket connections
+ * @returns Query result containing WebSocket connections data
+ */
 export const useWebSocketConnectionsQuery = () => {
 	return useQuery({
 		queryKey: ["websocket", "connections"],
 		queryFn: async (): Promise<WebSocketConnectionsResponse> => {
 			return await webSocketApi.getConnections();
 		},
-		staleTime: 5 * 1000, // 5 seconds
-		gcTime: 2 * 60 * 1000, // 2 minutes
+		staleTime: 5 * 1000,
+		gcTime: 2 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		retry: 2,
 	});
 };
 
-// Hook for WebSocket activity
+/**
+ * Hook to fetch WebSocket activity
+ * @returns Query result containing WebSocket activity data
+ */
 export const useWebSocketActivityQuery = () => {
 	return useQuery({
 		queryKey: ["websocket", "activity"],
 		queryFn: async (): Promise<WebSocketActivityResponse> => {
 			return await webSocketApi.getActivity();
 		},
-		staleTime: 15 * 1000, // 15 seconds
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 15 * 1000,
+		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		retry: 2,
 	});
 };
 
-// Hook for disconnecting a connection
+/**
+ * Hook to disconnect a WebSocket connection
+ * @returns Mutation function for disconnecting connections
+ */
 export const useDisconnectConnectionMutation = () => {
 	const queryClient = useQueryClient();
 
@@ -60,7 +72,6 @@ export const useDisconnectConnectionMutation = () => {
 			return await webSocketApi.disconnectConnection(connectionId);
 		},
 		onSuccess: () => {
-			// Invalidate connections query to refresh the list
 			queryClient.invalidateQueries({ queryKey: ["websocket", "connections"] });
 			queryClient.invalidateQueries({ queryKey: ["websocket", "stats"] });
 			queryClient.invalidateQueries({ queryKey: ["websocket", "activity"] });
@@ -80,7 +91,10 @@ export const useDisconnectConnectionMutation = () => {
 	});
 };
 
-// Hook for broadcasting messages
+/**
+ * Hook to broadcast messages to WebSocket connections
+ * @returns Mutation function for broadcasting messages
+ */
 export const useBroadcastMessageMutation = () => {
 	const queryClient = useQueryClient();
 
@@ -91,7 +105,6 @@ export const useBroadcastMessageMutation = () => {
 			return await webSocketApi.broadcastMessage(data);
 		},
 		onSuccess: (data) => {
-			// Invalidate activity query to show the new broadcast
 			queryClient.invalidateQueries({ queryKey: ["websocket", "activity"] });
 			toast({
 				title: "Message Broadcasted",
@@ -108,19 +121,19 @@ export const useBroadcastMessageMutation = () => {
 	});
 };
 
-// Combined hook for all WebSocket data
+/**
+ * Combined hook for all WebSocket data
+ * @returns Object containing all WebSocket queries and their states
+ */
 export const useWebSocketData = () => {
 	const statsQuery = useWebSocketStatsQuery();
 	const connectionsQuery = useWebSocketConnectionsQuery();
 	const activityQuery = useWebSocketActivityQuery();
 
 	return {
-		// Data
 		stats: statsQuery.data,
 		connections: connectionsQuery.data,
 		activity: activityQuery.data,
-
-		// Loading states
 		isLoading:
 			statsQuery.isLoading ||
 			connectionsQuery.isLoading ||
@@ -129,13 +142,11 @@ export const useWebSocketData = () => {
 		isConnectionsLoading: connectionsQuery.isLoading,
 		isActivityLoading: activityQuery.isLoading,
 
-		// Error states
 		error: statsQuery.error || connectionsQuery.error || activityQuery.error,
 		statsError: statsQuery.error,
 		connectionsError: connectionsQuery.error,
 		activityError: activityQuery.error,
 
-		// Refetch functions
 		refetchAll: () => {
 			statsQuery.refetch();
 			connectionsQuery.refetch();
@@ -145,7 +156,6 @@ export const useWebSocketData = () => {
 		refetchConnections: connectionsQuery.refetch,
 		refetchActivity: activityQuery.refetch,
 
-		// Individual query objects for advanced usage
 		queries: {
 			stats: statsQuery,
 			connections: connectionsQuery,

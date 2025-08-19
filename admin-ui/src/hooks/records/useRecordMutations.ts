@@ -25,17 +25,15 @@ export const useCreateRecord = () => {
 			return result;
 		},
 		onSuccess: (_, { collectionName }) => {
-			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
 			queryClient.invalidateQueries({
 				queryKey: ["collectionRecords", collectionName],
 				exact: false,
 			});
 
-			// Invalidate all records query
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
 
-			// Invalidate collection stats
+
 			queryClient.invalidateQueries({ queryKey: ["collections", "stats"] });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 
@@ -75,20 +73,17 @@ export const useUpdateRecord = () => {
 			return await recordsApi.update(collectionName, recordId, data);
 		},
 		onSuccess: (updatedRecord: Record, { collectionName, recordId }) => {
-			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
 			queryClient.invalidateQueries({
 				queryKey: ["collectionRecords", collectionName],
 				exact: false,
 			});
 
-			// Update specific record cache
 			queryClient.setQueryData(
 				["records", collectionName, recordId],
 				updatedRecord,
 			);
 
-			// Invalidate all records query
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
 
 			toast({
@@ -126,22 +121,19 @@ export const useDeleteRecord = () => {
 			return { collectionName, recordId };
 		},
 		onSuccess: ({ collectionName, recordId }) => {
-			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
 			queryClient.invalidateQueries({
 				queryKey: ["collectionRecords", collectionName],
 				exact: false,
 			});
 
-			// Remove from specific record cache
 			queryClient.removeQueries({
 				queryKey: ["records", collectionName, recordId],
 			});
 
-			// Invalidate all records query
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
 
-			// Invalidate collection stats
+
 			queryClient.invalidateQueries({ queryKey: ["collections", "stats"] });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 
@@ -176,31 +168,27 @@ export const useBulkDeleteRecords = () => {
 			collectionName: string;
 			recordIds: number[];
 		}) => {
-			// Execute deletions in parallel
 			await Promise.all(
 				recordIds.map((id) => recordsApi.delete(collectionName, id)),
 			);
 			return { collectionName, recordIds };
 		},
 		onSuccess: ({ collectionName, recordIds }) => {
-			// Invalidate records queries for this collection
 			queryClient.invalidateQueries({ queryKey: ["records", collectionName] });
 			queryClient.invalidateQueries({
 				queryKey: ["collectionRecords", collectionName],
 				exact: false,
 			});
 
-			// Remove from specific record caches
 			recordIds.forEach((recordId) => {
 				queryClient.removeQueries({
 					queryKey: ["records", collectionName, recordId],
 				});
 			});
 
-			// Invalidate all records query
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
 
-			// Invalidate collection stats
+
 			queryClient.invalidateQueries({ queryKey: ["collections", "stats"] });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 

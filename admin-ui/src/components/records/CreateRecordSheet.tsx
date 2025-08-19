@@ -26,7 +26,7 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
-import { useCollections } from "@/hooks/collections/useCollections";
+import { useCollections } from "@/hooks";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
 import {
 	fieldTypeIcons,

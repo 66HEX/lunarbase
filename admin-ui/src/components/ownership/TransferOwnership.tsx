@@ -21,8 +21,8 @@ import {
 	SelectValue,
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
-import { useTransferOwnership } from "@/hooks/ownership/useOwnershipMutations";
-import { useUsers } from "@/hooks/users/useUsers";
+import { useTransferOwnership } from "@/hooks/";
+import { useUsers } from "@/hooks";
 import type { User } from "@/types/api";
 
 interface TransferOwnershipProps {

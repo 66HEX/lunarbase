@@ -17,14 +17,9 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Table } from "@/components/ui/table";
-import { useCollection } from "@/hooks/collections/useCollections";
-import {
-	useCreateRecord,
+import { useCollection, useDebounce, useCollectionRecords, useCreateRecord,
 	useDeleteRecord,
-	useUpdateRecord,
-} from "@/hooks/records/useRecordMutations";
-import { useCollectionRecordsQuery } from "@/hooks/useCollectionRecordsQuery";
-import { useDebounce } from "@/hooks/useDebounce";
+	useUpdateRecord, } from "@/hooks/";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, RecordData } from "@/types/api";
@@ -96,7 +91,7 @@ export default function RecordComponent() {
 		data: recordsData,
 		isLoading,
 		error,
-	} = useCollectionRecordsQuery({
+	} = useCollectionRecords({
 		collectionName: collectionName || "",
 		currentPage,
 		pageSize,

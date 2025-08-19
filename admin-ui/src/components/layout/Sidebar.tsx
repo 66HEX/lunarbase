@@ -14,8 +14,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/useAuth";
-import { usePrefetch } from "@/hooks/usePrefetch";
+import { useAuth, usePrefetch } from "@/hooks/";
 import { cn } from "@/lib/utils";
 import { useUI, useUIActions } from "@/stores/client.store";
 

@@ -12,8 +12,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { useSettingsByCategory } from "@/hooks/configuration/useConfiguration";
-import { useUpdateSetting } from "@/hooks/configuration/useConfigurationMutations";
+import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import type { SystemSetting } from "@/types/api";
 
 export function ApiSettingsPanel() {

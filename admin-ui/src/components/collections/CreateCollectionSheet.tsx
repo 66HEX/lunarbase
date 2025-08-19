@@ -28,7 +28,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useCreateCollection } from "@/hooks/collections/useCollectionMutations";
+import { useCreateCollection } from "@/hooks";
 import type { CreateCollectionRequest, FieldDefinition } from "@/types/api";
 import { fieldTypeIcons, fieldTypeOptions } from "./constants";
 

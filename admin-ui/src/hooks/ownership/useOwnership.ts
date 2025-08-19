@@ -19,8 +19,8 @@ export const useOwnershipCheck = (
 		queryFn: (): Promise<OwnershipCheckResponse> =>
 			ownershipApi.checkRecordOwnership(collectionName, recordId),
 		enabled: enabled && !!collectionName && !!recordId,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
 		retry: 2,
 	});
 };
@@ -34,8 +34,8 @@ export const useOwnershipStats = (collectionName: string, enabled = true) => {
 		queryFn: (): Promise<OwnershipStatsResponse> =>
 			ownershipApi.getOwnershipStats(collectionName),
 		enabled: enabled && !!collectionName,
-		staleTime: 2 * 60 * 1000, // 2 minutes
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 2 * 60 * 1000,
+		gcTime: 5 * 60 * 1000,
 		retry: 2,
 	});
 };
@@ -54,8 +54,8 @@ export const useMyOwnedRecords = (
 		queryFn: (): Promise<OwnedRecordsResponse> =>
 			ownershipApi.getMyOwnedRecords(collectionName, limit, offset),
 		enabled: enabled && !!collectionName,
-		staleTime: 1 * 60 * 1000, // 1 minute
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 1 * 60 * 1000,
+		gcTime: 5 * 60 * 1000,
 		retry: 2,
 	});
 };
@@ -82,8 +82,8 @@ export const useUserOwnedRecords = (
 		queryFn: (): Promise<OwnedRecordsResponse> =>
 			ownershipApi.getUserOwnedRecords(collectionName, userId, limit, offset),
 		enabled: enabled && !!collectionName && !!userId,
-		staleTime: 1 * 60 * 1000, // 1 minute
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 1 * 60 * 1000,
+		gcTime: 5 * 60 * 1000,
 		retry: 2,
 	});
 };

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Zap } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { usePrefetch } from "@/hooks/usePrefetch";
+import { usePrefetch } from "@/hooks";
 
 interface QuickAction {
 	name: string;

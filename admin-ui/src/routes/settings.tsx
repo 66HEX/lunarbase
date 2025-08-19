@@ -5,7 +5,7 @@ import { AuthSettingsPanel } from "@/components/settings/AuthSettingsPanel";
 import { DatabaseSettingsPanel } from "@/components/settings/DatabaseSettingsPanel";
 import { SettingsHeader } from "@/components/settings/SettingsHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useAllSettings } from "@/hooks/configuration/useConfiguration";
+import { useAllSettings } from "@/hooks/";
 
 function SettingsPage() {
 	const { data: allSettings } = useAllSettings();

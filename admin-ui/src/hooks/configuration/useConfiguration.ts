@@ -11,8 +11,8 @@ export const useAllSettings = () => {
 		queryFn: async (): Promise<SystemSetting[]> => {
 			return await configurationApi.getAllSettings();
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		retry: 2,
 	});
@@ -29,8 +29,8 @@ export const useSettingsByCategory = (
 		queryFn: async (): Promise<SystemSetting[]> => {
 			return await configurationApi.getSettingsByCategory(category);
 		},
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		retry: 2,
 	});
@@ -50,8 +50,8 @@ export const useSetting = (
 			return await configurationApi.getSetting(category, settingKey);
 		},
 		enabled,
-		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		retry: 2,
 	});

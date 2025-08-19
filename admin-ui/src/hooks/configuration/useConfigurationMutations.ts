@@ -20,7 +20,6 @@ export const useCreateSetting = () => {
 			return await configurationApi.createSetting(data);
 		},
 		onSuccess: (data) => {
-			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
 			queryClient.invalidateQueries({ queryKey: ["settings", data.category] });
 
@@ -59,7 +58,6 @@ export const useUpdateSetting = () => {
 			return await configurationApi.updateSetting(category, settingKey, data);
 		},
 		onSuccess: (_, variables) => {
-			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
 			queryClient.invalidateQueries({
 				queryKey: ["settings", variables.category],
@@ -101,7 +99,6 @@ export const useDeleteSetting = () => {
 			return await configurationApi.deleteSetting(category, settingKey);
 		},
 		onSuccess: (_, variables) => {
-			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
 			queryClient.invalidateQueries({
 				queryKey: ["settings", variables.category],
@@ -143,7 +140,6 @@ export const useResetSetting = () => {
 			return await configurationApi.resetSetting(category, settingKey);
 		},
 		onSuccess: (_, variables) => {
-			// Invalidate and refetch settings queries
 			queryClient.invalidateQueries({ queryKey: ["settings"] });
 			queryClient.invalidateQueries({
 				queryKey: ["settings", variables.category],

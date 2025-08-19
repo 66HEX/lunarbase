@@ -6,61 +6,70 @@ import type {
 	WebSocketStats,
 } from "@/types/api";
 
-// Hook for collection stats
+/**
+ * Hook to fetch collection statistics for dashboard
+ * @returns Query result containing collection stats
+ */
 export const useCollectionStatsQuery = () => {
 	return useQuery({
 		queryKey: ["dashboard", "collections"],
 		queryFn: async (): Promise<CollectionStats> => {
 			return await collectionsApi.getStats();
 		},
-		staleTime: 30 * 1000, // 30 seconds
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 30 * 1000,
+		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,
 	});
 };
 
-// Hook for WebSocket stats
+/**
+ * Hook to fetch WebSocket statistics for dashboard
+ * @returns Query result containing WebSocket stats
+ */
 export const useWebSocketStatsQuery = () => {
 	return useQuery({
 		queryKey: ["dashboard", "websocket"],
 		queryFn: async (): Promise<WebSocketStats> => {
 			return await webSocketApi.getStats();
 		},
-		staleTime: 10 * 1000, // 10 seconds (more frequent for real-time data)
-		gcTime: 2 * 60 * 1000, // 2 minutes
+		staleTime: 10 * 1000,
+		gcTime: 2 * 60 * 1000,
 		refetchOnWindowFocus: false,
-		retry: 2, // Retry failed requests
+		retry: 2
 	});
 };
 
-// Hook for health stats
+/**
+ * Hook to fetch health statistics for dashboard
+ * @returns Query result containing health data
+ */
 export const useHealthQuery = () => {
 	return useQuery({
 		queryKey: ["dashboard", "health"],
 		queryFn: async (): Promise<HealthResponse> => {
 			return await healthApi.getHealth();
 		},
-		staleTime: 15 * 1000, // 15 seconds
-		gcTime: 3 * 60 * 1000, // 3 minutes
+		staleTime: 15 * 1000,
+		gcTime: 3 * 60 * 1000,
 		refetchOnWindowFocus: false,
-		refetchInterval: 30 * 1000, // Auto-refresh every 30 seconds
-		retry: 3, // Retry failed requests
+		refetchInterval: 30 * 1000,
+		retry: 3
 	});
 };
 
-// Combined hook for all dashboard data
+/**
+ * Combined hook for all dashboard data
+ * @returns Object containing all dashboard queries and their states
+ */
 export const useDashboardStats = () => {
 	const collectionsQuery = useCollectionStatsQuery();
 	const websocketQuery = useWebSocketStatsQuery();
 	const healthQuery = useHealthQuery();
 
 	return {
-		// Data
 		collections: collectionsQuery.data,
 		websocket: websocketQuery.data,
 		health: healthQuery.data,
-
-		// Loading states
 		isLoading:
 			collectionsQuery.isLoading ||
 			websocketQuery.isLoading ||
@@ -69,13 +78,11 @@ export const useDashboardStats = () => {
 		isWebSocketLoading: websocketQuery.isLoading,
 		isHealthLoading: healthQuery.isLoading,
 
-		// Error states
 		error: collectionsQuery.error || websocketQuery.error || healthQuery.error,
 		collectionsError: collectionsQuery.error,
 		websocketError: websocketQuery.error,
 		healthError: healthQuery.error,
 
-		// Refetch functions
 		refetchAll: () => {
 			collectionsQuery.refetch();
 			websocketQuery.refetch();
@@ -85,7 +92,6 @@ export const useDashboardStats = () => {
 		refetchWebSocket: websocketQuery.refetch,
 		refetchHealth: healthQuery.refetch,
 
-		// Individual query objects for advanced usage
 		queries: {
 			collections: collectionsQuery,
 			websocket: websocketQuery,

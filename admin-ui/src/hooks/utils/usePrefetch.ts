@@ -19,7 +19,7 @@ export const usePrefetch = () => {
 	const queryClient = useQueryClient();
 
 	/**
-	 * Prefetch users data with default parameters matching useUsersQuery
+	 * Prefetch users data with default parameters matching useUsersWithPagination
 	 */
 	const prefetchUsers = useCallback(async () => {
 		await queryClient.prefetchQuery({
@@ -29,7 +29,7 @@ export const usePrefetch = () => {
 					limit: 10,
 					offset: 0,
 					sort: "created_at",
-					filter: undefined, // No search filter for prefetch
+					filter: undefined
 				};
 
 				const data = await usersApi.list(params);
@@ -38,7 +38,7 @@ export const usePrefetch = () => {
 				}
 				return data;
 			},
-			staleTime: 30 * 1000, // 30 seconds
+			staleTime: 30 * 1000
 		});
 	}, [queryClient]);
 
@@ -49,18 +49,18 @@ export const usePrefetch = () => {
 		await queryClient.prefetchQuery({
 			queryKey: ["collections"],
 			queryFn: async () => {
-				// Fetch collections
+
 				const collections = await collectionsApi.list();
 				const collectionsData = collections.data;
 
-				// Fetch record counts from stats endpoint
+
 				let recordCounts: Record<string, number> = {};
 				try {
 					const stats = await collectionsApi.getStats();
 					recordCounts = stats.records_per_collection;
 				} catch (error) {
 					console.warn("Failed to fetch collection stats:", error);
-					// Fallback: set all counts to 0
+
 					recordCounts = collectionsData.reduce(
 						(acc, collection) => {
 							acc[collection.name] = 0;
@@ -75,12 +75,12 @@ export const usePrefetch = () => {
 					recordCounts,
 				};
 			},
-			staleTime: 30 * 1000, // 30 seconds
+			staleTime: 30 * 1000
 		});
 	}, [queryClient]);
 
 	/**
-	 * Prefetch all records data with default parameters matching useAllRecordsQuery
+	 * Prefetch all records data with default parameters matching useAllRecords
 	 */
 	const prefetchRecords = useCallback(async () => {
 		await queryClient.prefetchQuery({
@@ -89,24 +89,23 @@ export const usePrefetch = () => {
 				const queryOptions: QueryOptions = {
 					limit: 20,
 					offset: 0,
-					sort: "-created_at", // Default sort by created_at desc
+					sort: "-created_at"
 				};
 
 				return await recordsApi.listAll(queryOptions);
 			},
-			staleTime: 30 * 1000, // 30 seconds
+			staleTime: 30 * 1000
 		});
 	}, [queryClient]);
 
 	/**
-	 * Prefetch records for a specific collection with exact same parameters as useCollectionRecordsQuery
+	 * Prefetch records for a specific collection with exact same parameters as useCollectionRecords
 	 */
-	const prefetchCollectionRecords = useCallback(
-		async (collectionName: string) => {
-			// Use exact same parameters as useCollectionRecordsQuery default call
+	const prefetchCollectionRecords = useCallback(async (collectionName: string) => {
+
 			const currentPage = 1;
 			const pageSize = 10;
-			const searchTerm = ""; // Empty string to match debouncedSearchTerm initial value
+			const searchTerm = "";
 			const sort: string | undefined = undefined;
 			const filter: string | undefined = undefined;
 
@@ -115,11 +114,10 @@ export const usePrefetch = () => {
 			const queryOptions: QueryOptions = {
 				limit: pageSize,
 				offset,
-				sort: sort || "-created_at", // Default sort by created_at desc
+				sort: sort || "-created_at"
 			};
 
-			// Add search/filter logic exactly like in useCollectionRecordsQuery
-			// searchTerm is empty string, so no search filter applied
+
 			if (filter) {
 				queryOptions.filter = filter;
 			}
@@ -135,7 +133,7 @@ export const usePrefetch = () => {
 					filter,
 				],
 				queryFn: () => recordsApi.list(collectionName, queryOptions),
-				staleTime: 30 * 1000, // 30 seconds
+				staleTime: 30 * 1000
 			});
 		},
 		[queryClient],
@@ -152,7 +150,7 @@ export const usePrefetch = () => {
 					const response = await collectionsApi.get(collectionName);
 					return response.data;
 				},
-				staleTime: 5 * 60 * 1000, // 5 minutes
+				staleTime: 5 * 60 * 1000
 			});
 		},
 		[queryClient],
@@ -162,31 +160,25 @@ export const usePrefetch = () => {
 	 * Prefetch WebSocket data (stats, connections, activity)
 	 */
 	const prefetchWebSocket = useCallback(async () => {
-		/**
-		 * Prefetch WebSocket statistics
-		 */
+
 		await queryClient.prefetchQuery({
 			queryKey: ["websocket", "stats"],
 			queryFn: () => webSocketApi.getStats(),
-			staleTime: 10 * 1000, // 10 seconds
+			staleTime: 10 * 1000
 		});
 
-		/**
-		 * Prefetch WebSocket connections
-		 */
+
 		await queryClient.prefetchQuery({
 			queryKey: ["websocket", "connections"],
 			queryFn: () => webSocketApi.getConnections(),
-			staleTime: 10 * 1000, // 10 seconds
+			staleTime: 10 * 1000
 		});
 
-		/**
-		 * Prefetch WebSocket activity
-		 */
+
 		await queryClient.prefetchQuery({
 			queryKey: ["websocket", "activity"],
 			queryFn: () => webSocketApi.getActivity(),
-			staleTime: 10 * 1000, // 10 seconds
+			staleTime: 10 * 1000
 		});
 	}, [queryClient]);
 
@@ -194,18 +186,18 @@ export const usePrefetch = () => {
 	 * Prefetch application metrics
 	 */
 	const prefetchMetrics = useCallback(async () => {
-		// Prefetch metrics summary
+
 		await queryClient.prefetchQuery({
 			queryKey: ["metrics", "summary"],
 			queryFn: () => metricsApi.getSummary(),
-			staleTime: 30 * 1000, // 30 seconds
+			staleTime: 30 * 1000
 		});
 
-		// Prefetch raw metrics
+
 		await queryClient.prefetchQuery({
 			queryKey: ["metrics", "raw"],
 			queryFn: () => metricsApi.getMetrics(),
-			staleTime: 30 * 1000, // 30 seconds
+			staleTime: 30 * 1000
 		});
 	}, [queryClient]);
 
@@ -213,21 +205,21 @@ export const usePrefetch = () => {
 	 * Prefetch application settings
 	 */
 	const prefetchSettings = useCallback(async () => {
-		// Prefetch all settings
+
 		await queryClient.prefetchQuery({
 			queryKey: ["settings"],
 			queryFn: () => configurationApi.getAllSettings(),
-			staleTime: 5 * 60 * 1000, // 5 minutes
+			staleTime: 5 * 60 * 1000
 		});
 
-		// Prefetch settings by category for each tab
+
 		const categories = ["database", "auth", "api"] as const;
 		await Promise.all(
 			categories.map((category) =>
 				queryClient.prefetchQuery({
 					queryKey: ["settings", category],
 					queryFn: () => configurationApi.getSettingsByCategory(category),
-					staleTime: 5 * 60 * 1000, // 5 minutes
+					staleTime: 5 * 60 * 1000
 				}),
 			),
 		);
@@ -237,31 +229,25 @@ export const usePrefetch = () => {
 	 * Prefetch dashboard data (collections, websocket, health)
 	 */
 	const prefetchDashboard = useCallback(async () => {
-		/**
-		 * Prefetch collection statistics
-		 */
+
 		await queryClient.prefetchQuery({
 			queryKey: ["dashboard", "collections"],
 			queryFn: () => collectionsApi.getStats(),
-			staleTime: 30 * 1000, // 30 seconds
+			staleTime: 30 * 1000
 		});
 
-		/**
-		 * Prefetch WebSocket statistics for dashboard
-		 */
+
 		await queryClient.prefetchQuery({
 			queryKey: ["dashboard", "websocket"],
 			queryFn: () => webSocketApi.getStats(),
-			staleTime: 10 * 1000, // 10 seconds
+			staleTime: 10 * 1000
 		});
 
-		/**
-		 * Prefetch health statistics for dashboard
-		 */
+
 		await queryClient.prefetchQuery({
 			queryKey: ["dashboard", "health"],
 			queryFn: () => healthApi.getHealth(),
-			staleTime: 15 * 1000, // 15 seconds
+			staleTime: 15 * 1000
 		});
 	}, [queryClient]);
 

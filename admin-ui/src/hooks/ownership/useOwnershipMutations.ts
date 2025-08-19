@@ -26,7 +26,6 @@ export const useTransferOwnership = () => {
 				variant: "success",
 			});
 
-			// Invalidate related queries
 			queryClient.invalidateQueries({
 				queryKey: ["ownership"],
 			});

@@ -14,7 +14,7 @@ import {
 	WebSocketStats,
 	WebSocketSubscriptions,
 } from "@/components/websocket";
-import { useWebSocketData } from "@/hooks/useWebSocketQueries";
+import { useWebSocketData } from "@/hooks";
 import { webSocketApi } from "@/lib/api";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { BroadcastMessageRequest } from "@/types/api";

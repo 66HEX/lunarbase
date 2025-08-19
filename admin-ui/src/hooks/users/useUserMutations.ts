@@ -4,14 +4,16 @@ import { usersApi } from "@/lib/api";
 import type { CreateUserRequest, UpdateUserRequest, User } from "@/types/api";
 import { userKeys } from "./useUsers";
 
-// Create user mutation
+/**
+ * Hook to create a new user
+ * @returns Mutation function for creating users
+ */
 export const useCreateUser = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (data: CreateUserRequest) => usersApi.create(data),
 		onSuccess: (newUser: User) => {
-			// Invalidate and refetch users list
 			queryClient.invalidateQueries({ queryKey: userKeys.all });
 
 			toast({
@@ -30,7 +32,10 @@ export const useCreateUser = () => {
 	});
 };
 
-// Update user mutation
+/**
+ * Hook to update an existing user
+ * @returns Mutation function for updating users
+ */
 export const useUpdateUser = () => {
 	const queryClient = useQueryClient();
 
@@ -38,10 +43,7 @@ export const useUpdateUser = () => {
 		mutationFn: ({ id, data }: { id: number; data: UpdateUserRequest }) =>
 			usersApi.update(id, data),
 		onSuccess: (updatedUser: User) => {
-			// Update the user in the cache
 			queryClient.setQueryData(userKeys.detail(updatedUser.id), updatedUser);
-
-			// Invalidate users list to ensure consistency
 			queryClient.invalidateQueries({ queryKey: userKeys.lists() });
 
 			toast({
@@ -60,17 +62,17 @@ export const useUpdateUser = () => {
 	});
 };
 
-// Delete user mutation
+/**
+ * Hook to delete a user
+ * @returns Mutation function for deleting users
+ */
 export const useDeleteUser = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (id: number) => usersApi.delete(id),
 		onSuccess: (_, deletedUserId) => {
-			// Remove the user from all relevant queries
 			queryClient.removeQueries({ queryKey: userKeys.detail(deletedUserId) });
-
-			// Invalidate users list (both old and new query keys)
 			queryClient.invalidateQueries({ queryKey: userKeys.lists() });
 			queryClient.invalidateQueries({ queryKey: ["users"] });
 
@@ -90,17 +92,17 @@ export const useDeleteUser = () => {
 	});
 };
 
-// Unlock user mutation
+/**
+ * Hook to unlock a user account
+ * @returns Mutation function for unlocking users
+ */
 export const useUnlockUser = () => {
 	const queryClient = useQueryClient();
 
 	return useMutation({
 		mutationFn: (id: number) => usersApi.unlock(id),
 		onSuccess: (unlockedUser: User) => {
-			// Update the user in the cache
 			queryClient.setQueryData(userKeys.detail(unlockedUser.id), unlockedUser);
-
-			// Invalidate users list to ensure consistency
 			queryClient.invalidateQueries({ queryKey: userKeys.lists() });
 
 			toast({

@@ -14,13 +14,9 @@ import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
 import { toast } from "@/components/ui/toast";
-import {
-	useDeleteRecord,
-	useUpdateRecord,
-} from "@/hooks/records/useRecordMutations";
-import { useAllRecordsQuery } from "@/hooks/useAllRecordsQuery";
-import { useCollectionsQuery } from "@/hooks/useCollectionsQuery";
-import { useDebounce } from "@/hooks/useDebounce";
+
+import { useAllRecords, useDebounce, useCollections, useDeleteRecord,
+	useUpdateRecord } from "@/hooks/";
 import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
@@ -29,7 +25,7 @@ import type { Collection, RecordData, RecordWithCollection } from "@/types/api";
 export default function RecordsComponent() {
 	// Use stores and hooks
 	const { user } = useAuthStore();
-	const { data: collectionsData } = useCollectionsQuery();
+	const { data: collectionsData } = useCollections();
 	const collections = useMemo(
 		() => collectionsData?.collections || [],
 		[collectionsData?.collections],
@@ -49,7 +45,7 @@ export default function RecordsComponent() {
 	const { modals, sheets } = useUI();
 	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
 
-	const { data, isLoading, error, refetch } = useAllRecordsQuery({
+	const { data, isLoading, error, refetch } = useAllRecords({
 		currentPage,
 		pageSize,
 		searchTerm,

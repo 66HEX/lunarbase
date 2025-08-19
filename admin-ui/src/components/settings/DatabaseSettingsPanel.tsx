@@ -20,8 +20,7 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import { useSettingsByCategory } from "@/hooks/configuration/useConfiguration";
-import { useUpdateSetting } from "@/hooks/configuration/useConfigurationMutations";
+import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import { createManualBackup } from "@/lib/api";
 import type { SystemSetting } from "@/types/api";
 import { useMutation } from "@tanstack/react-query";

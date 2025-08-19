@@ -31,10 +31,7 @@ import {
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
-import { useDeleteCollection } from "@/hooks/collections/useCollectionMutations";
-import { useCollections } from "@/hooks/collections/useCollections";
-import { useDebounce } from "@/hooks/useDebounce";
-import { usePrefetch } from "@/hooks/usePrefetch";
+import { useDeleteCollection, usePrefetch, useCollections, useDebounce } from "@/hooks/";
 import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 

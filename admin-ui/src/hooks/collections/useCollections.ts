@@ -8,24 +8,21 @@ interface CollectionsQueryData {
 }
 
 /**
- * Hook for fetching all accessible collections with record counts
+ * Custom hook for fetching all accessible collections with record counts
  * Replaces collections store functionality
+ * @returns Query object containing collections and record counts
  */
 export const useCollections = () => {
 	return useQuery({
 		queryKey: ["collections"],
 		queryFn: async (): Promise<CollectionsQueryData> => {
-			// Fetch collections
-			const collections = await permissionsApi.getMyAccessibleCollections();
-
-			// Fetch record counts from stats endpoint
+				const collections = await permissionsApi.getMyAccessibleCollections();
 			let recordCounts: Record<string, number> = {};
 			try {
 				const stats = await collectionsApi.getStats();
 				recordCounts = stats.records_per_collection;
 			} catch (error) {
-				console.warn("Failed to fetch collection stats:", error);
-				// Fallback: set all counts to 0
+					console.warn("Failed to fetch collection stats:", error);
 				recordCounts = collections.reduce(
 					(acc, collection) => {
 						acc[collection.name] = 0;
@@ -41,14 +38,16 @@ export const useCollections = () => {
 			};
 		},
 		staleTime: 5 * 60 * 1000, // 5 minutes
-		gcTime: 10 * 60 * 1000, // 10 minutes
+		gcTime: 10 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		retry: 2,
 	});
 };
 
 /**
- * Hook for fetching a single collection by name
+ * Custom hook for fetching a single collection by name
+ * @param name - The name of the collection to fetch
+ * @returns Query object containing the collection data
  */
 export const useCollection = (name: string) => {
 	return useQuery({
@@ -65,15 +64,16 @@ export const useCollection = (name: string) => {
 };
 
 /**
- * Hook for fetching collection statistics
+ * Custom hook for fetching collection statistics
+ * @returns Query object containing collection statistics
  */
 export const useCollectionStats = () => {
 	return useQuery({
 		queryKey: ["collections", "stats"],
 		queryFn: () => collectionsApi.getStats(),
-		staleTime: 30 * 1000, // 30 seconds
-		gcTime: 5 * 60 * 1000, // 5 minutes
+		staleTime: 30 * 1000,
+			gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,
-		refetchInterval: 60 * 1000, // Auto-refresh every minute
+		refetchInterval: 60 * 1000,
 	});
 };

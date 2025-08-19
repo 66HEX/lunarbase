@@ -13,12 +13,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { useSaveCollectionPermissions } from "@/hooks/collections/useCollectionMutations";
-import {
-	useAllRoleCollectionPermissions,
-	useRoles,
-} from "@/hooks/permissions/usePermissions";
-import { useUsers } from "@/hooks/users/useUsers";
+import { useSaveCollectionPermissions, useAllRoleCollectionPermissions, useRoles, useUsers } from "@/hooks";
 import type { Collection, CollectionPermissions } from "@/types/api";
 
 interface CollectionPermissionsSheetProps {

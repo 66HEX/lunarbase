@@ -2,7 +2,7 @@ import { Activity, Database, Globe, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { useMetricsQuery } from "@/hooks/useMetricsQuery";
+import { useMetricsQuery } from "@/hooks/";
 import { MetricCard } from "./MetricCard";
 
 export function MetricsSummary() {
