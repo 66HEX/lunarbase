@@ -1,5 +1,5 @@
 import { AlertTriangle, Plus, Save, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -26,7 +26,10 @@ export function ApiSettingsPanel() {
 	const [hasChanges, setHasChanges] = useState(false);
 
 	// Required origins that should not be removable
-	const requiredOrigins = ["http://localhost:3000", "http://localhost:5173"];
+	const requiredOrigins = useMemo(
+		() => ["http://localhost:3000", "http://localhost:5173"],
+		[],
+	);
 
 	useEffect(() => {
 		if (settings && Array.isArray(settings)) {
@@ -57,7 +60,7 @@ export function ApiSettingsPanel() {
 				}
 			}
 		}
-	}, [settings]);
+	}, [settings, requiredOrigins]);
 
 	const getSetting = (key: string): SystemSetting | undefined => {
 		return settings && Array.isArray(settings)

@@ -21,7 +21,7 @@ export const useUsers = (options?: UsersListParams) => {
 		queryKey: userKeys.list(options),
 		queryFn: () => usersApi.list(options),
 		staleTime: 5 * 60 * 1000,
-		gcTime: 10 * 60 * 1000
+		gcTime: 10 * 60 * 1000,
 	});
 };
 
@@ -36,7 +36,7 @@ export const useUser = (id: number) => {
 		queryFn: () => usersApi.get(id),
 		enabled: !!id,
 		staleTime: 5 * 60 * 1000,
-		gcTime: 10 * 60 * 1000
+		gcTime: 10 * 60 * 1000,
 	});
 };
 
@@ -49,7 +49,7 @@ export const useAllUsers = () => {
 		queryKey: [...userKeys.all, "all"],
 		queryFn: () => usersApi.list({ limit: 1000 }),
 		staleTime: 10 * 60 * 1000,
-		gcTime: 30 * 60 * 1000
+		gcTime: 30 * 60 * 1000,
 	});
 };
 
@@ -89,6 +89,6 @@ export const useUsersWithPagination = ({
 		},
 		placeholderData: (previousData) => previousData,
 		staleTime: 30 * 1000,
-		gcTime: 5 * 60 * 1000
+		gcTime: 5 * 60 * 1000,
 	});
 };

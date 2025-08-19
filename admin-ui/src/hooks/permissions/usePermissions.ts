@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { permissionsApi, rolesApi } from "@/lib/api";
 
-
 export const permissionKeys = {
 	all: ["permissions"] as const,
 	roles: () => [...permissionKeys.all, "roles"] as const,
@@ -14,7 +13,6 @@ export const permissionKeys = {
 		[...permissionKeys.collectionPermissions(), collectionName] as const,
 };
 
-
 export const useRoles = () => {
 	return useQuery({
 		queryKey: permissionKeys.roles(),
@@ -23,7 +21,6 @@ export const useRoles = () => {
 		gcTime: 30 * 60 * 1000,
 	});
 };
-
 
 export const useUserCollectionPermissions = (
 	userId: number,
@@ -38,7 +35,6 @@ export const useUserCollectionPermissions = (
 		gcTime: 10 * 60 * 1000,
 	});
 };
-
 
 export const useRoleCollectionPermissions = (
 	roleName: string,
@@ -57,7 +53,6 @@ export const useRoleCollectionPermissions = (
 		gcTime: 10 * 60 * 1000,
 	});
 };
-
 
 export const useAllRoleCollectionPermissions = (
 	collectionName: string,

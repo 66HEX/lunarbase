@@ -1,9 +1,8 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 import { rolesApi } from "@/lib/api";
 import type { CreateRoleRequest, Role, UpdateRoleRequest } from "@/types/api";
 import { permissionKeys } from "./usePermissions";
-
 
 export const useCreateRole = () => {
 	const queryClient = useQueryClient();
@@ -29,7 +28,6 @@ export const useCreateRole = () => {
 	});
 };
 
-
 export const useUpdateRole = () => {
 	const queryClient = useQueryClient();
 
@@ -43,7 +41,6 @@ export const useUpdateRole = () => {
 		}) => rolesApi.update(roleName, data),
 		onSuccess: (updatedRole: Role) => {
 			queryClient.invalidateQueries({ queryKey: permissionKeys.roles() });
-
 
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.collectionPermissions(),
@@ -65,7 +62,6 @@ export const useUpdateRole = () => {
 	});
 };
 
-
 export const useDeleteRole = () => {
 	const queryClient = useQueryClient();
 
@@ -73,7 +69,6 @@ export const useDeleteRole = () => {
 		mutationFn: (roleName: string) => rolesApi.delete(roleName),
 		onSuccess: (_, deletedRoleName) => {
 			queryClient.invalidateQueries({ queryKey: permissionKeys.roles() });
-
 
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.collectionPermissions(),

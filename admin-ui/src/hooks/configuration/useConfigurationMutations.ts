@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 import { type CustomApiError, configurationApi } from "@/lib/api";
 import type {
 	CreateSystemSettingRequest,

@@ -27,7 +27,7 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 import { useCreateUser } from "@/hooks";
 import type { CreateUserRequest } from "@/types/api";
 import {

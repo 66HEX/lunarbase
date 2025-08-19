@@ -16,13 +16,13 @@ export const useCollections = () => {
 	return useQuery({
 		queryKey: ["collections"],
 		queryFn: async (): Promise<CollectionsQueryData> => {
-				const collections = await permissionsApi.getMyAccessibleCollections();
+			const collections = await permissionsApi.getMyAccessibleCollections();
 			let recordCounts: Record<string, number> = {};
 			try {
 				const stats = await collectionsApi.getStats();
 				recordCounts = stats.records_per_collection;
 			} catch (error) {
-					console.warn("Failed to fetch collection stats:", error);
+				console.warn("Failed to fetch collection stats:", error);
 				recordCounts = collections.reduce(
 					(acc, collection) => {
 						acc[collection.name] = 0;
@@ -72,7 +72,7 @@ export const useCollectionStats = () => {
 		queryKey: ["collections", "stats"],
 		queryFn: () => collectionsApi.getStats(),
 		staleTime: 30 * 1000,
-			gcTime: 5 * 60 * 1000,
+		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		refetchInterval: 60 * 1000,
 	});

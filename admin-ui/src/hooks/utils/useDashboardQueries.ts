@@ -35,7 +35,7 @@ export const useWebSocketStatsQuery = () => {
 		staleTime: 10 * 1000,
 		gcTime: 2 * 60 * 1000,
 		refetchOnWindowFocus: false,
-		retry: 2
+		retry: 2,
 	});
 };
 
@@ -53,7 +53,7 @@ export const useHealthQuery = () => {
 		gcTime: 3 * 60 * 1000,
 		refetchOnWindowFocus: false,
 		refetchInterval: 30 * 1000,
-		retry: 3
+		retry: 3,
 	});
 };
 

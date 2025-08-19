@@ -104,7 +104,15 @@ export const useCollectionRecords = ({
 	}
 
 	return useQuery({
-		queryKey: ["collectionRecords", collectionName, currentPage, pageSize, searchTerm, sort, filter],
+		queryKey: [
+			"collectionRecords",
+			collectionName,
+			currentPage,
+			pageSize,
+			searchTerm,
+			sort,
+			filter,
+		],
 		queryFn: () => recordsApi.list(collectionName, queryOptions),
 		placeholderData: (previousData) => previousData, // keepPreviousData equivalent
 		staleTime: 30000,

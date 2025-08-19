@@ -232,13 +232,16 @@ export const authApi = {
 // Backup API
 export const backupApi = {
 	// Create manual backup
-	createManualBackup: async (): Promise<{ message: string; backup_id: string; size_bytes: number }> => {
-		const response = await apiRequest<ApiResponse<{ message: string; backup_id: string; size_bytes: number }>>(
-			"/admin/backup",
-			{
-				method: "POST",
-			},
-		);
+	createManualBackup: async (): Promise<{
+		message: string;
+		backup_id: string;
+		size_bytes: number;
+	}> => {
+		const response = await apiRequest<
+			ApiResponse<{ message: string; backup_id: string; size_bytes: number }>
+		>("/admin/backup", {
+			method: "POST",
+		});
 		return response.data;
 	},
 

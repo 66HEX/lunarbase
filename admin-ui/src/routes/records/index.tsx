@@ -13,10 +13,15 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 
-import { useAllRecords, useDebounce, useCollections, useDeleteRecord,
-	useUpdateRecord } from "@/hooks/";
+import {
+	useAllRecords,
+	useCollections,
+	useDebounce,
+	useDeleteRecord,
+	useUpdateRecord,
+} from "@/hooks/";
 import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
@@ -93,7 +98,7 @@ export default function RecordsComponent() {
 				duration: 3000,
 			});
 		}
-	}, [error, toast]);
+	}, [error]);
 
 	const handleDeleteRecord = async (
 		collectionName: string,

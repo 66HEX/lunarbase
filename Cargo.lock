@@ -2111,7 +2111,6 @@ dependencies = [
  "thiserror 2.0.12",
  "tokio",
  "tokio-cron-scheduler",
- "tokio-rustls 0.26.2",
  "tower",
  "tower-http",
  "tracing",

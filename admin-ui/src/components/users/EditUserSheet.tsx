@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 import { useUnlockUser, useUpdateUser } from "@/hooks";
 import type { UpdateUserRequest, User } from "@/types/api";
 import {

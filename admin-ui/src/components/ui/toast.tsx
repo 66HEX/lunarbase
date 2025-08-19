@@ -11,6 +11,7 @@ import React, {
 	useState,
 } from "react";
 import { cn } from "@/lib/utils";
+import { toastState } from "@/lib/toast";
 
 const BACKGROUND_COLOR_REGEX = /bg-(?!linear|gradient|none)\w+/;
 const hasBackgroundColor = (className: string = "") => {
@@ -65,63 +66,7 @@ const ANIMATION_CONFIG = {
 } as const;
 
 // Observer Pattern - ToastState
-type ToastSubscriber = (toasts: ToastData[]) => void;
 
-class ToastState {
-	private toasts: ToastData[] = [];
-	private subscribers: Set<ToastSubscriber> = new Set();
-	private idCounter = 0;
-
-	subscribe(callback: ToastSubscriber): () => void {
-		this.subscribers.add(callback);
-		return () => {
-			this.subscribers.delete(callback);
-		};
-	}
-
-	private notify(): void {
-		this.subscribers.forEach((callback) => callback([...this.toasts]));
-	}
-
-	private generateId(): string {
-		return `toast-${Date.now()}-${++this.idCounter}`;
-	}
-
-	add(data: Omit<ToastData, "id">): string {
-		const id = this.generateId();
-		const newToast: ToastData = { ...data, id };
-		this.toasts = [newToast, ...this.toasts];
-		this.notify();
-		return id;
-	}
-
-	remove(id: string): void {
-		this.toasts = this.toasts.filter((toast) => toast.id !== id);
-		this.notify();
-	}
-
-	update(id: string, data: Partial<ToastData>): void {
-		this.toasts = this.toasts.map((toast) =>
-			toast.id === id ? { ...toast, ...data } : toast,
-		);
-		this.notify();
-	}
-
-	dismissAll(): void {
-		this.toasts = this.toasts.map((toast) => ({
-			...toast,
-			shouldClose: true,
-			duration: 0,
-		}));
-		this.notify();
-	}
-
-	getToasts(): ToastData[] {
-		return [...this.toasts];
-	}
-}
-
-const toastState = new ToastState();
 
 // Single instance management for Toaster
 class ToasterInstanceManager {
@@ -222,41 +167,7 @@ export interface ToastData extends VariantProps<typeof toastContainerVariants> {
 	shouldClose?: boolean;
 }
 
-export const toast = (data: Omit<ToastData, "id"> | string): string => {
-	if (typeof data === "string") {
-		return toastState.add({ description: data });
-	}
-	return toastState.add(data);
-};
 
-toast.success = (data: Omit<ToastData, "id" | "variant"> | string): string => {
-	if (typeof data === "string") {
-		return toastState.add({ description: data, variant: "success" });
-	}
-	return toastState.add({ ...data, variant: "success" });
-};
-
-toast.warning = (data: Omit<ToastData, "id" | "variant"> | string): string => {
-	if (typeof data === "string") {
-		return toastState.add({ description: data, variant: "warning" });
-	}
-	return toastState.add({ ...data, variant: "warning" });
-};
-
-toast.error = (data: Omit<ToastData, "id" | "variant"> | string): string => {
-	if (typeof data === "string") {
-		return toastState.add({ description: data, variant: "destructive" });
-	}
-	return toastState.add({ ...data, variant: "destructive" });
-};
-
-toast.dismiss = (id: string): void => {
-	toastState.update(id, { shouldClose: true });
-};
-
-toast.dismissAll = (): void => {
-	toastState.dismissAll();
-};
 
 interface ToastItemProps {
 	toast: ToastData & { index: number; total: number };
@@ -479,10 +390,10 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 			};
 
 			if (index === 0) {
-				document.addEventListener("keydown", handleKeyDown);
-				return () => document.removeEventListener("keydown", handleKeyDown);
-			}
-		}, [handleClose, index]);
+			document.addEventListener("keydown", handleKeyDown);
+			return () => document.removeEventListener("keydown", handleKeyDown);
+		}
+	}, [handleClose, index, getFocusableElements]);
 
 		return (
 			<div

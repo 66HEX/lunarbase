@@ -6,7 +6,10 @@ export {
 	useWebSocketStatsQuery,
 } from "@/hooks/utils/useDashboardQueries";
 export { useDebounce } from "@/hooks/utils/useDebounce";
-export { useMetricsQuery, useRawMetricsQuery } from "@/hooks/utils/useMetricsQuery";
+export {
+	useMetricsQuery,
+	useRawMetricsQuery,
+} from "@/hooks/utils/useMetricsQuery";
 export { usePrefetch } from "@/hooks/utils/usePrefetch";
 export { useTheme } from "@/hooks/utils/useTheme";
 export {

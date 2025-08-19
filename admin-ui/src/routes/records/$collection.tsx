@@ -17,9 +17,14 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { Table } from "@/components/ui/table";
-import { useCollection, useDebounce, useCollectionRecords, useCreateRecord,
+import {
+	useCollection,
+	useCollectionRecords,
+	useCreateRecord,
+	useDebounce,
 	useDeleteRecord,
-	useUpdateRecord, } from "@/hooks/";
+	useUpdateRecord,
+} from "@/hooks/";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, RecordData } from "@/types/api";

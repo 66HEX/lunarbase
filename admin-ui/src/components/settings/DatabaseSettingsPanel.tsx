@@ -1,4 +1,5 @@
-import { AlertTriangle, Save, Database } from "lucide-react";
+import { useMutation } from "@tanstack/react-query";
+import { AlertTriangle, Database, Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,11 +21,10 @@ import {
 } from "@/components/ui/select";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "@/lib/toast";
 import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import { createManualBackup } from "@/lib/api";
 import type { SystemSetting } from "@/types/api";
-import { useMutation } from "@tanstack/react-query";
-import { toast } from "@/components/ui/toast";
 
 // Predefined backup schedule options
 const BACKUP_SCHEDULE_OPTIONS = [
@@ -351,7 +351,10 @@ export function DatabaseSettingsPanel() {
 							type="button"
 							variant="secondary"
 							onClick={() => manualBackupMutation.mutate()}
-							disabled={manualBackupMutation.isPending || getSettingValue("backup_enabled") !== "true"}
+							disabled={
+								manualBackupMutation.isPending ||
+								getSettingValue("backup_enabled") !== "true"
+							}
 							className="flex items-center gap-2"
 						>
 							{manualBackupMutation.isPending ? (

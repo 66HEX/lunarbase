@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 import { collectionsApi, permissionsApi } from "@/lib/api";
 import type {
 	BasePermissions,
@@ -23,7 +23,6 @@ export const useCreateCollection = () => {
 		},
 		onSuccess: (newCollection: Collection) => {
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
-
 
 			queryClient.setQueryData(
 				["collections"],
@@ -87,7 +86,6 @@ export const useUpdateCollection = () => {
 				updatedCollection,
 			);
 
-
 			queryClient.setQueryData(
 				["collections"],
 				(
@@ -142,7 +140,6 @@ export const useDeleteCollection = () => {
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 
 			queryClient.removeQueries({ queryKey: ["collections", deletedName] });
-
 
 			queryClient.setQueryData(
 				["collections"],
@@ -202,7 +199,6 @@ export const useSaveCollectionPermissions = () => {
 		}) => {
 			const promises: Promise<void>[] = [];
 
-
 			for (const [roleName, rolePerms] of Object.entries(
 				permissions.role_permissions,
 			)) {
@@ -219,8 +215,7 @@ export const useSaveCollectionPermissions = () => {
 				promises.push(
 					permissionsApi.setCollectionPermission(rolePermissionRequest),
 				);
-		}
-
+			}
 
 			for (const [userId, userPerms] of Object.entries(
 				permissions.user_permissions,

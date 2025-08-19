@@ -25,7 +25,7 @@ import {
 	UserDetailsSheet,
 	UsersHeader,
 } from "@/components/users";
-import { useDeleteUser, useDebounce, useUsersWithPagination } from "@/hooks/";
+import { useDebounce, useDeleteUser, useUsersWithPagination } from "@/hooks/";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { User } from "@/types/api";
 

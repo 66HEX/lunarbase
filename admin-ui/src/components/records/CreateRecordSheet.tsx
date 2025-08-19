@@ -25,7 +25,7 @@ import {
 	SheetTrigger,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 import { useCollections } from "@/hooks";
 import type { Collection, FieldDefinition, RecordData } from "@/types/api";
 import {

@@ -30,8 +30,13 @@ import {
 	DialogTitle,
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
-import { toast } from "@/components/ui/toast";
-import { useDeleteCollection, usePrefetch, useCollections, useDebounce } from "@/hooks/";
+import { toast } from "@/lib/toast";
+import {
+	useCollections,
+	useDebounce,
+	useDeleteCollection,
+	usePrefetch,
+} from "@/hooks/";
 import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 

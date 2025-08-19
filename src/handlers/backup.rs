@@ -1,11 +1,11 @@
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{Json, extract::State, http::StatusCode};
 use serde::Serialize;
 use tracing::{debug, error};
 use utoipa::ToSchema;
 
+use crate::AppState;
 use crate::services::BackupError;
 use crate::utils::{ApiResponse, ErrorResponse};
-use crate::AppState;
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct BackupResponse {
@@ -22,7 +22,7 @@ pub struct BackupResponse {
 }
 
 /// Create manual backup
-/// 
+///
 /// Creates a manual backup of the SQLite database. The backup will be compressed
 /// if compression is enabled in the configuration and uploaded to S3 if configured.
 /// This endpoint requires admin privileges.
@@ -90,7 +90,9 @@ pub async fn create_manual_backup(
                 Json(ErrorResponse {
                     success: false,
                     error: "Backup disabled".to_string(),
-                    details: Some("Backup functionality is disabled in the system configuration".to_string()),
+                    details: Some(
+                        "Backup functionality is disabled in the system configuration".to_string(),
+                    ),
                 }),
             ))
         }
@@ -153,7 +155,7 @@ pub async fn create_manual_backup(
 }
 
 /// Get backup service health status
-/// 
+///
 /// Checks if the backup service is properly configured and healthy.
 /// This endpoint requires admin privileges.
 #[utoipa::path(

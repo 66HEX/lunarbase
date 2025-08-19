@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { toast } from "@/components/ui/toast";
+import { toast } from "@/lib/toast";
 import { recordsApi } from "@/lib/api";
 import type {
 	CreateRecordRequest,
@@ -32,7 +32,6 @@ export const useCreateRecord = () => {
 			});
 
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
-
 
 			queryClient.invalidateQueries({ queryKey: ["collections", "stats"] });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
@@ -133,7 +132,6 @@ export const useDeleteRecord = () => {
 
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
 
-
 			queryClient.invalidateQueries({ queryKey: ["collections", "stats"] });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });
 
@@ -187,7 +185,6 @@ export const useBulkDeleteRecords = () => {
 			});
 
 			queryClient.invalidateQueries({ queryKey: ["records", "all"] });
-
 
 			queryClient.invalidateQueries({ queryKey: ["collections", "stats"] });
 			queryClient.invalidateQueries({ queryKey: ["collections"] });

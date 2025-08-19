@@ -31,17 +31,17 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
                 .execute(conn)
                 .map_err(|e| diesel::r2d2::Error::QueryError(e))?;
         }
-        
+
         // Enable WAL mode for better concurrency
         diesel::sql_query("PRAGMA journal_mode=WAL")
             .execute(conn)
             .map_err(|e| diesel::r2d2::Error::QueryError(e))?;
-        
+
         // Set synchronous mode to NORMAL for better performance with WAL
         diesel::sql_query("PRAGMA synchronous=NORMAL")
             .execute(conn)
             .map_err(|e| diesel::r2d2::Error::QueryError(e))?;
-        
+
         Ok(())
     }
 }
