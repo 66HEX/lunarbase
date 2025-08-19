@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.3.0][0.3.0] - 2025-08-19
 
 ### Added
 - Manual backup endpoint (POST /admin/backup) for on-demand database backups
@@ -9,14 +9,20 @@
 - Enhanced backup API with proper error handling and notifications
 - Added missing text colors to default toast variant
 - Comprehensive JSDoc documentation for all React hooks
+- WAL (Write-Ahead Logging) mode for SQLCipher database for improved concurrency and performance
+
+### Fixed
+- ESLint errors and warnings in admin-ui frontend code
+- Fast refresh compatibility issues by separating toast logic into dedicated module
+- React Hook dependency warnings in useEffect and useCallback hooks
+- Missing and unnecessary dependencies in React components
 
 ### Improved
 - Cleaned up hooks folder structure by removing redundant hooks
 - Optimized and standardized hook imports across the project
-- Enhanced code documentation with detailed JSDoc comments for better developer experience
 - Optimized prefetch hook with cache checking to prevent unnecessary network requests
 
-## [1.1.0][1.1.0] - 2025-08-17
+## [0.2.0][0.2.0] - 2025-08-17
 
 ### Added
 - Search functionality integrated into search engine
@@ -29,7 +35,7 @@
 ### Performance
 - Cached CPU usage via background sampler to reduce latency
 
-## [1.0.1][1.0.1] - 2025-08-16
+## [0.1.1][0.1.1] - 2025-08-16
 
 ### Added
 - Extended build optimization for better performance
@@ -45,7 +51,7 @@
 ### Removed
 - Unused handlers to reduce binary size
 
-## [1.0.0][1.0.0] - 2025-08-15
+## [0.1.0][0.1.0] - 2025-08-15
 
 ### Added
 
@@ -62,6 +68,7 @@
 - Comprehensive audit logging and activity monitoring
 
 
-[1.1.0]: https://github.com/66HEX/lunarbase/releases/tag/v1.1.0
-[1.0.1]: https://github.com/66HEX/lunarbase/releases/tag/v1.0.1
-[1.0.0]: https://github.com/66HEX/lunarbase/releases/tag/v1.0.0
+[0.3.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.3.0
+[0.2.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.2.0
+[0.1.1]: https://github.com/66HEX/lunarbase/releases/tag/v0.1.1
+[0.1.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.1.0
