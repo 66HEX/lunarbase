@@ -8,6 +8,13 @@
 - Backup health check endpoint (GET /admin/backup/health)
 - Enhanced backup API with proper error handling and notifications
 - Added missing text colors to default toast variant
+- Comprehensive JSDoc documentation for all React hooks
+
+### Improved
+- Cleaned up hooks folder structure by removing redundant hooks
+- Optimized and standardized hook imports across the project
+- Enhanced code documentation with detailed JSDoc comments for better developer experience
+- Optimized prefetch hook with cache checking to prevent unnecessary network requests
 
 ## [1.1.0][1.1.0] - 2025-08-17
 
