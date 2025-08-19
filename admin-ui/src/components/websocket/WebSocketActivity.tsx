@@ -37,7 +37,7 @@ export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 								>
 									<div className="flex-shrink-0 mt-0.5">
 										<div
-											className={`w-2 h-2 rounded-full ${actionColors[item.action as keyof typeof actionColors] ? "bg-current" : "bg-gray-400"} ${actionColors[item.action as keyof typeof actionColors] || "text-gray-400"}`}
+											className={`w-2 h-2 rounded-full ${actionColors[item.action as keyof typeof actionColors] ? "bg-current" : "bg-neutral-400"} ${actionColors[item.action as keyof typeof actionColors] || "text-neutral-400"}`}
 										/>
 									</div>
 									<div className="flex-1 min-w-0">
