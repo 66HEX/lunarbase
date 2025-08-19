@@ -201,7 +201,17 @@ export function Sidebar() {
 					</div>
 
 					{/* Navigation */}
-					<nav className="flex-1 px-4 py-6 space-y-1">
+					<nav className="flex-1 px-4 py-6 space-y-1 relative">
+						{/* Gradient background element */}
+						<div 
+							className="absolute left-4 w-[calc(100%-2rem)] h-[42px] rounded-lg bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-nocta-200 dark:to-nocta-400 transition-all duration-300 ease-in-out opacity-100 z-0"
+							style={{
+								transform: `translateY(${navigation.findIndex(item => {
+									const currentPath = location.pathname.replace(/^\/admin/, "") || "/";
+									return currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
+								}) * 44}px)`
+							}}
+						/>
 						{navigation.map((item) => {
 							const Icon = item.icon;
 							const currentPath =
@@ -242,16 +252,16 @@ export function Sidebar() {
 									key={item.name}
 									to={item.href}
 									onMouseEnter={handleMouseEnter}
-									className={`group flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all ${
+									className={`group relative flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium duration-300 ease-in-out  transition-all z-10 ${
 										isActive
-											? "bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-nocta-200 dark:to-nocta-400 hover:contrast-125 text-white dark:text-nocta-900"
+											? "text-white dark:text-nocta-900 hover:contrast-125"
 											: "text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/50 hover:text-nocta-900 dark:hover:text-nocta-100"
 									}`}
 								>
 									<Icon
 										className={`w-5 h-5 transition-colors ${
 											isActive
-												? "text-nocta-900"
+												? "text-white dark:text-nocta-900"
 												: "text-nocta-400 dark:text-nocta-500 group-hover:text-nocta-600 dark:group-hover:text-nocta-300"
 										}`}
 									/>
