@@ -104,7 +104,9 @@ export default function LoginComponent() {
 
 		try {
 			await login(formData.email, formData.password);
-			navigate({ to: search.redirect || "/dashboard" });
+			const { user } = useAuthStore.getState();
+			const redirectTo = search.redirect || (user?.role === "admin" ? "/dashboard" : "/collections");
+			navigate({ to: redirectTo });
 		} catch (error) {
 			if (error instanceof CustomApiError) {
 				if (error.statusCode === 401) {
@@ -300,7 +302,7 @@ export const Route = createFileRoute("/login")({
 		const { user } = useAuthStore.getState();
 		if (user) {
 			throw redirect({
-				to: "/dashboard",
+				to: user.role === "admin" ? "/dashboard" : "/collections",
 			});
 		}
 	},

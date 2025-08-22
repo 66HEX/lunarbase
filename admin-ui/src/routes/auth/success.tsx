@@ -11,13 +11,15 @@ export default function AuthSuccessComponent() {
 	useEffect(() => {
 		const handleOAuthSuccess = async () => {
 			try {
-				setLoading(true);
-				// Fetch user data after successful OAuth
-				await fetchUser();
-				// Redirect to dashboard after 10 seconds
-				const timer = setTimeout(() => {
-					navigate({ to: "/dashboard" });
-				}, 2000);
+					setLoading(true);
+					// Fetch user data after successful OAuth
+					await fetchUser();
+					// Get user data and redirect based on role
+					const { user } = useAuthStore.getState();
+					const redirectTo = user?.role === "admin" ? "/dashboard" : "/collections";
+					const timer = setTimeout(() => {
+						navigate({ to: redirectTo });
+					}, 2000);
 				// Return cleanup function
 				return timer;
 			} catch (error) {

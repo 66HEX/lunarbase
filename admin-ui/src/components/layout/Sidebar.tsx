@@ -19,13 +19,13 @@ import { cn } from "@/lib/utils";
 import { useUI, useUIActions } from "@/stores/client.store";
 
 const navigation = [
-	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-	{ name: "Collections", href: "/collections", icon: Database },
-	{ name: "Records", href: "/records", icon: FileText },
-	{ name: "Users", href: "/users", icon: Users },
-	{ name: "WebSocket", href: "/websocket", icon: Activity },
-	{ name: "Metrics", href: "/metrics", icon: BarChart3 },
-	{ name: "Settings", href: "/settings", icon: Settings },
+	{ name: "Dashboard", href: "/dashboard", icon: LayoutDashboard, adminOnly: true },
+	{ name: "Collections", href: "/collections", icon: Database, adminOnly: false },
+	{ name: "Records", href: "/records", icon: FileText, adminOnly: false },
+	{ name: "Users", href: "/users", icon: Users, adminOnly: true },
+	{ name: "WebSocket", href: "/websocket", icon: Activity, adminOnly: true },
+	{ name: "Metrics", href: "/metrics", icon: BarChart3, adminOnly: true },
+	{ name: "Settings", href: "/settings", icon: Settings, adminOnly: true },
 ];
 
 const getProxyUrl = (originalUrl: string): string => {
@@ -206,13 +206,17 @@ export function Sidebar() {
 						<div 
 							className="absolute left-4 w-[calc(100%-2rem)] h-[42px] rounded-lg bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-nocta-200 dark:to-nocta-400 transition-all duration-300 ease-in-out opacity-100 z-0"
 							style={{
-								transform: `translateY(${navigation.findIndex(item => {
-									const currentPath = location.pathname.replace(/^\/admin/, "") || "/";
-									return currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
-								}) * 44}px)`
+								transform: `translateY(${navigation
+									.filter((item) => !item.adminOnly || user?.role === "admin")
+									.findIndex(item => {
+										const currentPath = location.pathname.replace(/^\/admin/, "") || "/";
+										return currentPath === item.href || (item.href !== "/" && currentPath.startsWith(item.href));
+									}) * 44}px)`
 							}}
 						/>
-						{navigation.map((item) => {
+						{navigation
+						.filter((item) => !item.adminOnly || user?.role === "admin")
+						.map((item) => {
 							const Icon = item.icon;
 							const currentPath =
 								location.pathname.replace(/^\/admin/, "") || "/";
