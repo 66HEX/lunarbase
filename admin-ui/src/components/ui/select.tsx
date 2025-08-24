@@ -133,12 +133,10 @@ export const Select: React.FC<SelectProps> = ({
 		}
 	}, [open]);
 
-	// Call onOpenChange when open state changes
 	useEffect(() => {
 		onOpenChange?.(open);
 	}, [open, onOpenChange]);
 
-	// Update displayValue when value changes or children change
 	useEffect(() => {
 		if (value && children) {
 			const childrenArray = React.Children.toArray(children);
@@ -328,15 +326,14 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 	useEffect(() => {
 		if (open) {
 			setShouldRender(true);
-			// Calculate position based on trigger element
+
 			if (triggerRef?.current) {
 				const triggerRect = triggerRef.current.getBoundingClientRect();
 				const viewportHeight = window.innerHeight;
 				const spaceBelow = viewportHeight - triggerRect.bottom;
 				const spaceAbove = triggerRect.top;
-				const dropdownHeight = 240; // max-h-60 = 240px
+				const dropdownHeight = 240;
 
-				// Determine if dropdown should open upward or downward
 				let finalPosition: "top" | "bottom" = position;
 				if (
 					position === "bottom" &&
@@ -554,7 +551,6 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 		</div>
 	);
 
-	// Use portal to render dropdown outside of component tree
 	return typeof document !== "undefined"
 		? createPortal(dropdownContent, document.body)
 		: null;

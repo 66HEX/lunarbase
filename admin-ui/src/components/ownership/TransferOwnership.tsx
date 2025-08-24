@@ -44,17 +44,14 @@ export function TransferOwnership({
 	const [selectedUserId, setSelectedUserId] = useState<string>("");
 	const [allowClose, setAllowClose] = useState(true);
 
-	// Fetch users for selection
 	const { data: usersResponse, isLoading: isLoadingUsers } = useUsers({
-		limit: 100, // Get first 100 users
+		limit: 100,
 	});
 
-	// Transfer ownership mutation
 	const transferOwnership = useTransferOwnership();
 
 	const users = usersResponse?.users || [];
 
-	// Filter out current owner from the list
 	const availableUsers = users.filter(
 		(user: User) => user.id !== currentOwnerId,
 	);
@@ -69,13 +66,11 @@ export function TransferOwnership({
 				data: { new_owner_id: parseInt(selectedUserId) },
 			});
 
-			// Close dialog and reset form
 			setAllowClose(true);
 			setOpen(false);
 			setSelectedUserId("");
 			onSuccess?.();
 		} catch (error) {
-			// Error is handled by the mutation hook
 			console.error("Transfer failed:", error);
 		}
 	};
@@ -94,7 +89,6 @@ export function TransferOwnership({
 	);
 
 	const getProxyUrl = (originalUrl: string): string => {
-		// Check if it's an external URL that needs proxying
 		if (
 			originalUrl.startsWith("https://lh3.googleusercontent.com") ||
 			originalUrl.startsWith("https://avatars.githubusercontent.com")
@@ -109,13 +103,12 @@ export function TransferOwnership({
 		<Dialog
 			open={open}
 			onOpenChange={(newOpen) => {
-				// Only allow closing if explicitly allowed or not pending transfer
 				if (!newOpen && (allowClose || !transferOwnership.isPending)) {
 					setOpen(newOpen);
-					setAllowClose(true); // Reset for next time
+					setAllowClose(true);
 				} else if (newOpen) {
 					setOpen(newOpen);
-					setAllowClose(true); // Allow closing when opening
+					setAllowClose(true);
 				}
 			}}
 		>
@@ -152,11 +145,9 @@ export function TransferOwnership({
 								value={selectedUserId}
 								onValueChange={setSelectedUserId}
 								onOpenChange={(isOpen) => {
-									// Prevent dialog from closing when select is open or closing
 									if (isOpen) {
 										setAllowClose(false);
 									} else {
-										// Keep dialog open even when select closes
 										setTimeout(() => setAllowClose(true), 100);
 									}
 								}}

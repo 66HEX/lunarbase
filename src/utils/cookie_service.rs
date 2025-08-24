@@ -2,7 +2,6 @@ use axum::http::{HeaderMap, HeaderValue, header::SET_COOKIE};
 use chrono::{Duration, Utc};
 use std::env;
 
-/// Konfiguracja ciasteczek dla różnych środowisk
 #[derive(Debug, Clone)]
 pub struct CookieConfig {
     pub secure: bool,
@@ -27,7 +26,6 @@ impl Default for CookieConfig {
     }
 }
 
-/// Serwis do zarządzania ciasteczkami JWT
 pub struct CookieService {
     config: CookieConfig,
 }
@@ -43,21 +41,14 @@ impl CookieService {
         Self { config }
     }
 
-    /// Ustawia access token jako ciasteczko httpOnly
     pub fn set_access_token_cookie(&self, headers: &mut HeaderMap, token: &str) {
-        let cookie_value = self.build_cookie(
-            "access_token",
-            token,
-            Duration::minutes(15), // 15 minut
-            "/",
-        );
+        let cookie_value = self.build_cookie("access_token", token, Duration::minutes(15), "/");
 
         if let Ok(header_value) = HeaderValue::from_str(&cookie_value) {
             headers.append(SET_COOKIE, header_value);
         }
     }
 
-    /// Ustawia refresh token jako ciasteczko httpOnly
     pub fn set_refresh_token_cookie(&self, headers: &mut HeaderMap, token: &str) {
         let cookie_value = self.build_cookie("refresh_token", token, Duration::days(7), "/");
 
@@ -66,7 +57,6 @@ impl CookieService {
         }
     }
 
-    /// Usuwa access token (ustawia puste ciasteczko z przeszłą datą)
     pub fn clear_access_token_cookie(&self, headers: &mut HeaderMap) {
         let cookie_value = self.build_clear_cookie("access_token", "/");
 
@@ -75,7 +65,6 @@ impl CookieService {
         }
     }
 
-    /// Usuwa refresh token (ustawia puste ciasteczko z przeszłą datą)
     pub fn clear_refresh_token_cookie(&self, headers: &mut HeaderMap) {
         let cookie_value = self.build_clear_cookie("refresh_token", "/");
 
@@ -84,13 +73,11 @@ impl CookieService {
         }
     }
 
-    /// Usuwa oba tokeny
     pub fn clear_all_tokens(&self, headers: &mut HeaderMap) {
         self.clear_access_token_cookie(headers);
         self.clear_refresh_token_cookie(headers);
     }
 
-    /// Buduje string ciasteczka z odpowiednimi flagami bezpieczeństwa
     fn build_cookie(&self, name: &str, value: &str, max_age: Duration, path: &str) -> String {
         let expires = Utc::now() + max_age;
         let expires_str = expires.format("%a, %d %b %Y %H:%M:%S GMT").to_string();
@@ -121,7 +108,6 @@ impl CookieService {
         cookie
     }
 
-    /// Buduje string ciasteczka do usunięcia (z przeszłą datą)
     fn build_clear_cookie(&self, name: &str, path: &str) -> String {
         let mut cookie = format!(
             "{}=; Path={}; Expires=Thu, 01 Jan 1970 00:00:00 GMT; Max-Age=0",
@@ -145,9 +131,7 @@ impl CookieService {
         cookie
     }
 
-    /// Ekstraktuje token z ciasteczka
     pub fn extract_token_from_cookies(headers: &HeaderMap, token_name: &str) -> Option<String> {
-        // Try different possible cookie header names
         let cookie_headers = ["cookie", "Cookie", "COOKIE"];
 
         for header_name in &cookie_headers {
@@ -172,12 +156,10 @@ impl CookieService {
         None
     }
 
-    /// Ekstraktuje access token z ciasteczka
     pub fn extract_access_token(headers: &HeaderMap) -> Option<String> {
         Self::extract_token_from_cookies(headers, "access_token")
     }
 
-    /// Ekstraktuje refresh token z ciasteczka
     pub fn extract_refresh_token(headers: &HeaderMap) -> Option<String> {
         Self::extract_token_from_cookies(headers, "refresh_token")
     }

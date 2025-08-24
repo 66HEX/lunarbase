@@ -112,9 +112,7 @@ export function EditUserSheet({
 				onSuccess: () => {
 					onOpenChange(false);
 				},
-				onError: () => {
-					// Error handling is done in the mutation hook
-				},
+				onError: () => {},
 			},
 		);
 	};
@@ -124,7 +122,7 @@ export function EditUserSheet({
 		value: string | boolean,
 	) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
-		// Clear field error when user starts typing
+
 		if (fieldErrors[field]) {
 			setFieldErrors((prev) => ({ ...prev, [field]: "" }));
 		}
@@ -137,18 +135,14 @@ export function EditUserSheet({
 			onSuccess: () => {
 				onOpenChange(false);
 			},
-			onError: () => {
-				// Error handling is done in the mutation hook
-			},
+			onError: () => {},
 		});
 	};
 
-	// Check if user is locked
 	const isUserLocked = user?.locked_until
 		? new Date(user.locked_until) > new Date()
 		: false;
 
-	// Initialize form when user changes or sheet opens
 	useEffect(() => {
 		if (isOpen && user) {
 			setFormData({
@@ -165,20 +159,18 @@ export function EditUserSheet({
 		<Sheet
 			open={isOpen}
 			onOpenChange={(newOpen) => {
-				// Only allow closing if explicitly allowed and not submitting
 				if (
 					!newOpen &&
 					(!allowClose ||
 						updateUserMutation.isPending ||
 						unlockUserMutation.isPending)
 				) {
-					// Prevent closing - do nothing
 					return;
 				}
-				// Allow opening or closing when conditions are met
+
 				onOpenChange(newOpen);
 				if (newOpen) {
-					setAllowClose(true); // Allow closing when opening
+					setAllowClose(true);
 				}
 			}}
 		>
@@ -196,7 +188,6 @@ export function EditUserSheet({
 						}}
 					>
 						<div className="space-y-6">
-							{/* Email */}
 							<FormField name="email" error={fieldErrors.email}>
 								<FormLabel required>Email Address</FormLabel>
 								<FormControl>
@@ -213,7 +204,6 @@ export function EditUserSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Username */}
 							<FormField name="username" error={fieldErrors.username}>
 								<FormLabel>Username</FormLabel>
 								<FormControl>
@@ -231,7 +221,6 @@ export function EditUserSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Role */}
 							<FormField name="role" error={fieldErrors.role}>
 								<FormLabel required>Role</FormLabel>
 								<FormControl>
@@ -244,22 +233,19 @@ export function EditUserSheet({
 										value={formData.role}
 										onValueChange={(value) => {
 											if (value) {
-												// Prevent sheet from closing during value change
 												setAllowClose(false);
 												updateFormData(
 													"role",
 													value as "admin" | "user" | "guest",
 												);
-												// Allow closing after a longer delay
+
 												setTimeout(() => setAllowClose(true), 300);
 											}
 										}}
 										onOpenChange={(isOpen) => {
-											// Prevent sheet from closing when select is open
 											if (isOpen) {
 												setAllowClose(false);
 											}
-											// Don't restore allowClose here - let onValueChange handle it
 										}}
 									>
 										<SelectTrigger className="w-full">
@@ -278,7 +264,6 @@ export function EditUserSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Active Status */}
 							<FormField name="is_active">
 								<div className="flex items-center justify-between">
 									<div className="space-y-0.5">
@@ -298,7 +283,6 @@ export function EditUserSheet({
 								</div>
 							</FormField>
 
-							{/* Unlock User - only show if user is locked */}
 							{isUserLocked && (
 								<div className="p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
 									<div className="flex items-center justify-between">

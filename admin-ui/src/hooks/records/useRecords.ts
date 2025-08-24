@@ -114,7 +114,7 @@ export const useCollectionRecords = ({
 			filter,
 		],
 		queryFn: () => recordsApi.list(collectionName, queryOptions),
-		placeholderData: (previousData) => previousData, // keepPreviousData equivalent
+		placeholderData: (previousData) => previousData,
 		staleTime: 30000,
 		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,
@@ -175,7 +175,7 @@ export const useAllRecords = ({
 	return useQuery({
 		queryKey: ["allRecords", currentPage, pageSize, searchTerm, sort, filter],
 		queryFn: () => recordsApi.listAll(queryOptions),
-		placeholderData: (previousData) => previousData, // keepPreviousData equivalent
+		placeholderData: (previousData) => previousData,
 		staleTime: 30000,
 		gcTime: 5 * 60 * 1000,
 		refetchOnWindowFocus: false,

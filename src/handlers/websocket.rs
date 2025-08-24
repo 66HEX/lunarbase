@@ -17,15 +17,11 @@ use crate::{
     utils::{ApiResponse, AuthError},
 };
 
-/// Query parameters for WebSocket connection
 #[derive(Debug, Deserialize)]
 pub struct WebSocketQuery {
-    /// Optional authentication token
     token: Option<String>,
 }
 
-/// Handle WebSocket connection upgrade
-/// WebSocket connection handler
 #[utoipa::path(
     get,
     path = "/ws",
@@ -45,42 +41,32 @@ pub async fn websocket_handler(
     Query(params): Query<WebSocketQuery>,
     request: Request,
 ) -> Result<Response, AuthError> {
-    // Extract user information from token if provided
     let user_id = if let Some(token) = params.token {
-        // Create a modified request with Authorization header for token extraction
         let mut headers = request.headers().clone();
         headers.insert(
             "authorization",
             format!("Bearer {}", token).parse().unwrap(),
         );
 
-        // Extract user claims from token
         match app_state
             .auth_state
             .jwt_service
             .validate_access_token(&token)
         {
             Ok(claims) => Some(claims.sub.parse::<i32>().unwrap_or_default()),
-            Err(_) => {
-                // Invalid token - allow anonymous connection
-                None
-            }
+            Err(_) => None,
         }
     } else {
-        // Check if Authorization header is present
         match extract_user_claims(&request) {
             Ok(claims) => Some(claims.sub.parse::<i32>().unwrap_or_default()),
-            Err(_) => None, // Allow anonymous connections
+            Err(_) => None,
         }
     };
 
-    // Upgrade to WebSocket and handle connection
     let websocket_service = std::sync::Arc::new(app_state.websocket_service.clone());
     Ok(ws.on_upgrade(move |socket| websocket_service.clone().handle_connection(socket, user_id)))
 }
 
-/// Get WebSocket connection statistics (Admin only)
-/// Get WebSocket connection statistics
 #[utoipa::path(
     get,
     path = "/ws/stats",
@@ -98,10 +84,8 @@ pub async fn websocket_stats(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<Json<ApiResponse<WebSocketStats>>, AuthError> {
-    // Extract and verify user claims
     let claims = extract_user_claims(&request)?;
 
-    // Get user from database to check admin status
     use crate::models::User;
     use crate::schema::users;
     use diesel::prelude::*;
@@ -119,19 +103,15 @@ pub async fn websocket_stats(
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Check if user is admin
     if user.role != "admin" {
         return Err(AuthError::Forbidden("Admin access required".to_string()));
     }
 
-    // Get WebSocket statistics
     let stats = app_state.websocket_service.get_stats().await;
 
     Ok(Json(ApiResponse::success(stats)))
 }
 
-/// Get WebSocket connection count (public endpoint)
-/// Get WebSocket service status
 #[utoipa::path(
     get,
     path = "/ws/status",
@@ -159,7 +139,6 @@ pub async fn websocket_status(
     Ok(Json(ApiResponse::success(status)))
 }
 
-/// Get all active WebSocket connections (Admin only)
 #[utoipa::path(
     get,
     path = "/ws/connections",
@@ -177,10 +156,8 @@ pub async fn get_connections(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<Json<ApiResponse<ConnectionsResponse>>, AuthError> {
-    // Extract and verify user claims
     let claims = extract_user_claims(&request)?;
 
-    // Get user from database to check admin status
     use crate::models::User;
     use crate::schema::users;
     use diesel::prelude::*;
@@ -198,12 +175,10 @@ pub async fn get_connections(
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Check if user is admin
     if user.role != "admin" {
         return Err(AuthError::Forbidden("Admin access required".to_string()));
     }
 
-    // Get connection details
     let connections = app_state.websocket_service.get_connection_details().await;
     let total_count = connections.len();
 
@@ -215,7 +190,6 @@ pub async fn get_connections(
     Ok(Json(ApiResponse::success(response)))
 }
 
-/// Disconnect a specific WebSocket connection (Admin only)
 #[utoipa::path(
     delete,
     path = "/ws/connections/{connection_id}",
@@ -238,10 +212,8 @@ pub async fn disconnect_connection(
     Path(connection_id): Path<String>,
     request: Request,
 ) -> Result<Json<ApiResponse<String>>, AuthError> {
-    // Extract and verify user claims
     let claims = extract_user_claims(&request)?;
 
-    // Get user from database to check admin status
     use crate::models::User;
     use crate::schema::users;
     use diesel::prelude::*;
@@ -259,17 +231,14 @@ pub async fn disconnect_connection(
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Check if user is admin
     if user.role != "admin" {
         return Err(AuthError::Forbidden("Admin access required".to_string()));
     }
 
-    // Parse connection ID
     let conn_uuid = Uuid::parse_str(&connection_id).map_err(|_| {
         AuthError::ValidationError(vec!["Invalid connection ID format".to_string()])
     })?;
 
-    // Disconnect the connection
     let success = app_state
         .websocket_service
         .disconnect_connection(conn_uuid)
@@ -284,7 +253,6 @@ pub async fn disconnect_connection(
     }
 }
 
-/// Broadcast a message to WebSocket connections (Admin only)
 #[utoipa::path(
     post,
     path = "/ws/broadcast",
@@ -304,7 +272,6 @@ pub async fn broadcast_message(
     Extension(claims): Extension<crate::utils::Claims>,
     Json(broadcast_req): Json<BroadcastRequest>,
 ) -> Result<Json<ApiResponse<BroadcastResponse>>, AuthError> {
-    // Get user from database to check admin status
     use crate::models::User;
     use crate::schema::users;
     use diesel::prelude::*;
@@ -322,12 +289,10 @@ pub async fn broadcast_message(
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Check if user is admin
     if user.role != "admin" {
         return Err(AuthError::Forbidden("Admin access required".to_string()));
     }
 
-    // Broadcast the message
     let sent_count = app_state
         .websocket_service
         .broadcast_admin_message(
@@ -345,7 +310,6 @@ pub async fn broadcast_message(
     Ok(Json(ApiResponse::success(response)))
 }
 
-/// Get WebSocket activity log (Admin only)
 #[utoipa::path(
     get,
     path = "/ws/activity",
@@ -368,10 +332,8 @@ pub async fn get_activity(
     Query(params): Query<ActivityQuery>,
     request: Request,
 ) -> Result<Json<ApiResponse<ActivityResponse>>, AuthError> {
-    // Extract and verify user claims
     let claims = extract_user_claims(&request)?;
 
-    // Get user from database to check admin status
     use crate::models::User;
     use crate::schema::users;
     use diesel::prelude::*;
@@ -389,12 +351,10 @@ pub async fn get_activity(
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Check if user is admin
     if user.role != "admin" {
         return Err(AuthError::Forbidden("Admin access required".to_string()));
     }
 
-    // Get activity log
     let limit = params.limit.unwrap_or(100);
     let offset = params.offset.unwrap_or(0);
     let activity = app_state
@@ -405,7 +365,6 @@ pub async fn get_activity(
     Ok(Json(ApiResponse::success(activity)))
 }
 
-/// Query parameters for activity endpoint
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ActivityQuery {
     pub limit: Option<usize>,
@@ -419,7 +378,6 @@ pub struct WebSocketStatus {
     pub status: String,
 }
 
-/// WebSocket connection details
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ConnectionDetails {
     pub connection_id: String,
@@ -428,14 +386,12 @@ pub struct ConnectionDetails {
     pub subscriptions: Vec<SubscriptionInfo>,
 }
 
-/// Connections response
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ConnectionsResponse {
     pub connections: Vec<ConnectionDetails>,
     pub total_count: usize,
 }
 
-/// Subscription information
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct SubscriptionInfo {
     pub subscription_id: String,
@@ -444,7 +400,6 @@ pub struct SubscriptionInfo {
     pub filters: Option<HashMap<String, String>>,
 }
 
-/// Broadcast message request
 #[derive(Debug, Deserialize, utoipa::ToSchema)]
 pub struct BroadcastRequest {
     pub message: String,
@@ -452,14 +407,12 @@ pub struct BroadcastRequest {
     pub target_collections: Option<Vec<String>>,
 }
 
-/// Broadcast response
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct BroadcastResponse {
     pub sent_to_connections: usize,
     pub message: String,
 }
 
-/// WebSocket activity entry
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ActivityEntry {
     pub timestamp: String,
@@ -469,7 +422,6 @@ pub struct ActivityEntry {
     pub details: Option<String>,
 }
 
-/// Activity response
 #[derive(Debug, Serialize, utoipa::ToSchema)]
 pub struct ActivityResponse {
     pub activities: Vec<ActivityEntry>,

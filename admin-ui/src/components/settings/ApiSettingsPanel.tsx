@@ -25,7 +25,6 @@ export function ApiSettingsPanel() {
 	const [corsOrigins, setCorsOrigins] = useState<string[]>([]);
 	const [hasChanges, setHasChanges] = useState(false);
 
-	// Required origins that should not be removable
 	const requiredOrigins = useMemo(
 		() => ["http://localhost:3000", "http://localhost:5173"],
 		[],
@@ -42,20 +41,17 @@ export function ApiSettingsPanel() {
 			);
 			setLocalSettings(settingsMap);
 
-			// Parse CORS origins and filter out required ones for display
 			const corsValue = settingsMap.cors_allowed_origins;
 			if (corsValue) {
 				try {
 					const parsed = JSON.parse(corsValue);
 					if (Array.isArray(parsed)) {
-						// Only show origins that are not in the required list
 						const userOrigins = parsed.filter(
 							(origin) => !requiredOrigins.includes(origin),
 						);
 						setCorsOrigins(userOrigins);
 					}
 				} catch {
-					// If parsing fails, start with empty array
 					setCorsOrigins([]);
 				}
 			}
@@ -72,7 +68,6 @@ export function ApiSettingsPanel() {
 		return localSettings[key] || "";
 	};
 
-	// Check if setting requires restart
 	const requiresRestart = (key: string): boolean => {
 		const setting = getSetting(key);
 		return setting?.requires_restart || false;
@@ -103,14 +98,12 @@ export function ApiSettingsPanel() {
 	const handleSave = async () => {
 		if (!settings) return;
 
-		// Prepare CORS origins by combining required origins with user-defined ones
 		const allCorsOrigins = [
 			...requiredOrigins,
 			...corsOrigins.filter((origin) => origin.trim()),
 		];
 		const corsValue = JSON.stringify(allCorsOrigins);
 
-		// Update CORS setting
 		const corsUpdated = corsValue !== localSettings.cors_allowed_origins;
 		if (corsUpdated) {
 			await updateSettingMutation.mutateAsync({
@@ -120,7 +113,6 @@ export function ApiSettingsPanel() {
 			});
 		}
 
-		// Update other settings
 		for (const setting of settings) {
 			if (setting.setting_key !== "cors_allowed_origins") {
 				const newValue = localSettings[setting.setting_key];
@@ -159,7 +151,6 @@ export function ApiSettingsPanel() {
 					}}
 				>
 					<div className="space-y-6">
-						{/* Rate Limit */}
 						<FormField name="rate_limit_requests_per_minute">
 							<FormLabel>Rate Limit (requests per minute)</FormLabel>
 							<FormControl>
@@ -184,7 +175,6 @@ export function ApiSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* CORS Allowed Origins */}
 						<FormField name="cors_allowed_origins">
 							<div className="flex items-center gap-2">
 								<FormLabel>CORS Allowed Origins</FormLabel>
@@ -237,7 +227,6 @@ export function ApiSettingsPanel() {
 							</div>
 						</FormField>
 
-						{/* Save Button */}
 						<div className="flex justify-end pt-4">
 							<Button
 								type="submit"

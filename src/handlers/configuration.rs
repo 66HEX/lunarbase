@@ -48,7 +48,6 @@ pub struct CreateSettingRequest {
     pub requires_restart: Option<bool>,
 }
 
-/// Get all configuration settings (admin only)
 #[utoipa::path(
     get,
     path = "/admin/configuration",
@@ -70,7 +69,6 @@ pub async fn get_all_settings(
     Extension(claims): Extension<Claims>,
     Query(query): Query<ListSettingsQuery>,
 ) -> Result<Json<ApiResponse<ConfigurationResponse>>, AuthError> {
-    // Check if user is admin
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -78,7 +76,6 @@ pub async fn get_all_settings(
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
 
     let settings = if let Some(category_str) = query.category {
-        // Validate category
         match category_str.as_str() {
             "database" | "auth" | "api" => {}
             _ => {
@@ -101,7 +98,6 @@ pub async fn get_all_settings(
     Ok(Json(ApiResponse::success(response)))
 }
 
-/// Get settings by category (admin only)
 #[utoipa::path(
     get,
     path = "/admin/configuration/{category}",
@@ -124,12 +120,10 @@ pub async fn get_settings_by_category(
     Extension(claims): Extension<Claims>,
     Path(category_str): Path<String>,
 ) -> Result<Json<ApiResponse<ConfigurationResponse>>, AuthError> {
-    // Check if user is admin
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Validate category
     match category_str.as_str() {
         "database" | "auth" | "api" => {}
         _ => {
@@ -151,7 +145,6 @@ pub async fn get_settings_by_category(
     Ok(Json(ApiResponse::success(response)))
 }
 
-/// Get a specific setting (admin only)
 #[utoipa::path(
     get,
     path = "/admin/configuration/{category}/{setting_key}",
@@ -175,12 +168,10 @@ pub async fn get_setting(
     Extension(claims): Extension<Claims>,
     Path((category_str, setting_key)): Path<(String, String)>,
 ) -> Result<Json<ApiResponse<SystemSettingResponse>>, AuthError> {
-    // Check if user is admin
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Validate category
     match category_str.as_str() {
         "database" | "auth" | "api" => {}
         _ => {
@@ -204,7 +195,6 @@ pub async fn get_setting(
     Ok(Json(ApiResponse::success(setting)))
 }
 
-/// Update a setting (admin only)
 #[utoipa::path(
     put,
     path = "/admin/configuration/{category}/{setting_key}",
@@ -230,12 +220,10 @@ pub async fn update_setting(
     Path((category_str, setting_key)): Path<(String, String)>,
     Json(payload): Json<SystemSettingRequest>,
 ) -> Result<Json<ApiResponse<SystemSettingResponse>>, AuthError> {
-    // Check if user is admin
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Validate category
     match category_str.as_str() {
         "database" | "auth" | "api" => {}
         _ => {
@@ -258,7 +246,6 @@ pub async fn update_setting(
     Ok(Json(ApiResponse::success(updated_setting)))
 }
 
-/// Create a new setting (admin only)
 #[utoipa::path(
     post,
     path = "/admin/configuration",
@@ -280,7 +267,6 @@ pub async fn create_setting(
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateSettingRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<SystemSettingResponse>>), AuthError> {
-    // Check if user is admin
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -326,7 +312,6 @@ pub async fn create_setting(
     Ok((StatusCode::CREATED, Json(ApiResponse::success(new_setting))))
 }
 
-/// Delete a setting (admin only)
 #[utoipa::path(
     delete,
     path = "/admin/configuration/{category}/{setting_key}",
@@ -350,12 +335,10 @@ pub async fn delete_setting(
     Extension(claims): Extension<Claims>,
     Path((category_str, setting_key)): Path<(String, String)>,
 ) -> Result<Json<ApiResponse<()>>, AuthError> {
-    // Check if user is admin
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Validate category
     match category_str.as_str() {
         "database" | "auth" | "api" => {}
         _ => {
@@ -373,7 +356,6 @@ pub async fn delete_setting(
     Ok(Json(ApiResponse::success(())))
 }
 
-/// Reset a setting to its default value (admin only)
 #[utoipa::path(
     post,
     path = "/admin/configuration/{category}/{setting_key}/reset",
@@ -397,12 +379,10 @@ pub async fn reset_setting(
     Extension(claims): Extension<Claims>,
     Path((category_str, setting_key)): Path<(String, String)>,
 ) -> Result<Json<ApiResponse<SystemSettingResponse>>, AuthError> {
-    // Check if user is admin
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Validate category
     match category_str.as_str() {
         "database" | "auth" | "api" => {}
         _ => {

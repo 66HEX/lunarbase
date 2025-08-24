@@ -38,7 +38,6 @@ export function CollectionDetailsSheet({
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<div className="space-y-6">
-						{/* Basic Information */}
 						<div className="space-y-4">
 							<div className="space-y-4">
 								<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
@@ -74,7 +73,6 @@ export function CollectionDetailsSheet({
 								</div>
 							</div>
 						</div>
-						{/* Schema Fields */}
 						<div className="space-y-4">
 							<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 								Schema Fields ({collection.schema?.fields?.length || 0})

@@ -46,13 +46,8 @@ import type {
 	WebSocketStats,
 } from "@/types/api";
 
-// API Configuration
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 
-// Auth token management is now handled via httpOnly cookies
-// No client-side token management needed
-
-// API Error handling
 export class CustomApiError extends Error {
 	public statusCode: number;
 	public validationErrors?: string[];
@@ -69,54 +64,46 @@ export class CustomApiError extends Error {
 	}
 }
 
-// Base API function
 async function apiRequest<T>(
 	endpoint: string,
 	options: RequestInit = {},
 	isRetry: boolean = false,
 ): Promise<T> {
-	// Don't set Content-Type for FormData - let browser set it with boundary
 	const headers: { [key: string]: string } = {
 		...(options.headers as { [key: string]: string }),
 	};
 
-	// Only set Content-Type if body is not FormData
 	if (!(options.body instanceof FormData)) {
 		headers["Content-Type"] = "application/json";
 	}
 
-	// Include credentials to send httpOnly cookies
 	const url = `${API_BASE_URL}${endpoint}`;
 	const config = {
 		...options,
 		headers,
-		credentials: "include" as RequestCredentials, // This ensures cookies are sent with requests
+		credentials: "include" as RequestCredentials,
 	};
 
 	const response = await fetch(url, config);
 
 	if (!response.ok) {
-		// Handle 401 Unauthorized - try to refresh token
 		if (response.status === 401 && !isRetry && endpoint !== "/auth/refresh") {
 			try {
-				// Try to refresh the token using httpOnly cookies
 				const refreshResponse = await fetch(`${API_BASE_URL}/auth/refresh`, {
 					method: "POST",
 					headers: {
 						"Content-Type": "application/json",
 					},
-					credentials: "include", // Send httpOnly cookies
+					credentials: "include",
 				});
 
 				if (refreshResponse.ok) {
-					// Retry the original request
 					return apiRequest<T>(endpoint, options, true);
 				}
 			} catch {
-				// Refresh failed, redirect to login
 				window.location.href = "/admin/login";
 			}
-			// If refresh failed, redirect to login
+
 			window.location.href = "/admin/login";
 		}
 
@@ -127,7 +114,6 @@ async function apiRequest<T>(
 			errorData = { error: `HTTP ${response.status}: ${response.statusText}` };
 		}
 
-		// Handle different error response formats
 		let errorMessage = "Request failed";
 
 		if (errorData.error) {
@@ -149,7 +135,6 @@ async function apiRequest<T>(
 		);
 	}
 
-	// Handle empty responses (like 204 No Content)
 	const contentType = response.headers.get("content-type");
 	if (!contentType || !contentType.includes("application/json")) {
 		return undefined as T;
@@ -163,7 +148,6 @@ async function apiRequest<T>(
 	return JSON.parse(text);
 }
 
-// Auth API
 export const authApi = {
 	login: (credentials: LoginRequest): Promise<ApiResponse<LoginResponse>> =>
 		apiRequest<ApiResponse<LoginResponse>>("/auth/login", {
@@ -187,7 +171,6 @@ export const authApi = {
 		return response.data as User;
 	},
 
-	// OAuth methods
 	oauthAuthorize: (provider: string): Promise<OAuthAuthorizationResponse> =>
 		apiRequest<OAuthAuthorizationResponse>(`/auth/oauth/${provider}`, {
 			method: "GET",
@@ -229,9 +212,7 @@ export const authApi = {
 	},
 };
 
-// Backup API
 export const backupApi = {
-	// Create manual backup
 	createManualBackup: async (): Promise<{
 		message: string;
 		backup_id: string;
@@ -245,7 +226,6 @@ export const backupApi = {
 		return response.data;
 	},
 
-	// Get backup health status
 	getBackupHealth: async (): Promise<boolean> => {
 		const response = await apiRequest<ApiResponse<boolean>>(
 			"/admin/backup/health",
@@ -254,7 +234,6 @@ export const backupApi = {
 	},
 };
 
-// Collections API
 export const collectionsApi = {
 	list: (): Promise<ApiResponse<Collection[]>> =>
 		apiRequest<ApiResponse<Collection[]>>("/collections"),
@@ -299,7 +278,6 @@ export const collectionsApi = {
 	},
 };
 
-// Records API
 export const recordsApi = {
 	list: async (
 		collectionName: string,
@@ -315,21 +293,17 @@ export const recordsApi = {
 		const queryString = params.toString();
 		const endpoint = `/collections/${collectionName}/records${queryString ? `?${queryString}` : ""}`;
 
-		// Backend returns ApiResponse<Vec<RecordResponse>>, not PaginatedRecordsResponse
 		const response = await apiRequest<ApiResponse<Record[]>>(endpoint);
 		const records = response.data || [];
 
-		// Get total count from collection stats
 		const stats = await collectionsApi.getStats();
 		const totalCount = stats.records_per_collection[collectionName] || 0;
 
-		// Calculate pagination info
 		const limit = options?.limit || 20;
 		const offset = options?.offset || 0;
 		const currentPage = Math.floor(offset / limit) + 1;
 		const totalPages = Math.ceil(totalCount / limit);
 
-		// Add collection_name to each record to match RecordWithCollection type
 		const recordsWithCollection: RecordWithCollection[] = records.map(
 			(record) => ({
 				...record,
@@ -361,33 +335,26 @@ export const recordsApi = {
 	): Promise<Record> => {
 		const formData = new FormData();
 
-		// Separate files from other data
 		const recordData: { [key: string]: unknown } = {};
 		const files: { [key: string]: File[] } = {};
 
-		// Process each field in the data
 		for (const [key, value] of Object.entries(data.data)) {
 			if (
 				Array.isArray(value) &&
 				value.length > 0 &&
 				value[0] instanceof File
 			) {
-				// This is a file field
 				files[key] = value as File[];
 			} else {
-				// This is regular data
 				recordData[key] = value;
 			}
 		}
 
-		// Add JSON data
 		const jsonData = JSON.stringify(recordData);
 		formData.append("data", jsonData);
 
-		// Add files
 		for (const [fieldName, fileList] of Object.entries(files)) {
 			for (const file of fileList) {
-				// Backend expects file fields to be prefixed with "file_"
 				const backendFieldName = `file_${fieldName}`;
 				formData.append(backendFieldName, file);
 			}
@@ -398,7 +365,7 @@ export const recordsApi = {
 			{
 				method: "POST",
 				body: formData,
-				headers: {}, // Let browser set Content-Type with boundary
+				headers: {},
 			},
 		);
 		return response.data;
@@ -411,33 +378,26 @@ export const recordsApi = {
 	): Promise<Record> => {
 		const formData = new FormData();
 
-		// Separate files from other data
 		const recordData: { [key: string]: unknown } = {};
 		const files: { [key: string]: File[] } = {};
 
-		// Process each field in the data
 		for (const [key, value] of Object.entries(data.data)) {
 			if (
 				Array.isArray(value) &&
 				value.length > 0 &&
 				value[0] instanceof File
 			) {
-				// This is a file field
 				files[key] = value as File[];
 			} else {
-				// This is regular data
 				recordData[key] = value;
 			}
 		}
 
-		// Add JSON data
 		const jsonData = JSON.stringify(recordData);
 		formData.append("data", jsonData);
 
-		// Add files
 		for (const [fieldName, fileList] of Object.entries(files)) {
 			for (const file of fileList) {
-				// Backend expects file fields to be prefixed with "file_"
 				const backendFieldName = `file_${fieldName}`;
 				formData.append(backendFieldName, file);
 			}
@@ -448,7 +408,7 @@ export const recordsApi = {
 			{
 				method: "PUT",
 				body: formData,
-				headers: {}, // Let browser set Content-Type with boundary
+				headers: {},
 			},
 		);
 		return response.data;
@@ -459,7 +419,6 @@ export const recordsApi = {
 			method: "DELETE",
 		}),
 
-	// List all records across all collections with pagination
 	listAll: async (
 		options?: QueryOptions,
 	): Promise<PaginatedRecordsResponse> => {
@@ -475,14 +434,12 @@ export const recordsApi = {
 		const queryString = queryParams.toString();
 		const endpoint = `/records${queryString ? `?${queryString}` : ""}`;
 
-		// Backend returns ApiResponse<PaginatedRecordsResponse> for this endpoint
 		const response =
 			await apiRequest<ApiResponse<PaginatedRecordsResponse>>(endpoint);
 		return response.data;
 	},
 };
 
-// Roles API
 export const rolesApi = {
 	list: async (): Promise<Role[]> => {
 		const response =
@@ -523,9 +480,7 @@ export const rolesApi = {
 	},
 };
 
-// Permissions API
 export const permissionsApi = {
-	// Collection permissions for roles
 	setCollectionPermission: async (
 		data: SetCollectionPermissionRequest,
 	): Promise<void> => {
@@ -554,7 +509,6 @@ export const permissionsApi = {
 		return response.data;
 	},
 
-	// User-specific collection permissions
 	getUserCollectionPermissions: async (
 		userId: number,
 		collectionName: string,
@@ -583,7 +537,6 @@ export const permissionsApi = {
 		);
 	},
 
-	// Check permissions
 	checkCollectionPermission: async (
 		userId: number,
 		collectionName: string,
@@ -600,7 +553,6 @@ export const permissionsApi = {
 		return response.data;
 	},
 
-	// Get accessible collections for user
 	getUserAccessibleCollections: async (userId: number): Promise<string[]> => {
 		const response = await apiRequest<ApiResponse<string[]>>(
 			`/permissions/users/${userId}/accessible-collections`,
@@ -608,7 +560,6 @@ export const permissionsApi = {
 		return response.data;
 	},
 
-	// Get accessible collections for current user
 	getMyAccessibleCollections: async (): Promise<Collection[]> => {
 		const response = await apiRequest<
 			ApiResponse<{ user_id: number; accessible_collections: Collection[] }>
@@ -617,7 +568,6 @@ export const permissionsApi = {
 	},
 };
 
-// WebSocket API
 export const webSocketApi = {
 	getStats: async (): Promise<WebSocketStats> => {
 		const response = await apiRequest<ApiResponse<WebSocketStats>>("/ws/stats");
@@ -661,7 +611,6 @@ export const webSocketApi = {
 	},
 };
 
-// Users API
 export const usersApi = {
 	list: async (params?: UsersListParams): Promise<PaginatedUsersResponse> => {
 		const searchParams = new URLSearchParams();
@@ -714,7 +663,6 @@ export const usersApi = {
 	},
 };
 
-// Health API
 export const healthApi = {
 	getHealth: (): Promise<HealthResponse> =>
 		apiRequest<HealthResponse>("/health/admin"),
@@ -722,7 +670,6 @@ export const healthApi = {
 		apiRequest<{ status: string; timestamp: string }>("/health/simple"),
 };
 
-// Metrics API
 export const metricsApi = {
 	getMetrics: async (): Promise<string> => {
 		const response = await fetch(`${API_BASE_URL}/metrics`, {
@@ -739,9 +686,7 @@ export const metricsApi = {
 	},
 };
 
-// Configuration API
 export const configurationApi = {
-	// Get all system settings
 	getAllSettings: async (): Promise<SystemSetting[]> => {
 		const response = await apiRequest<
 			ApiResponse<{ settings: SystemSetting[] }>
@@ -749,7 +694,6 @@ export const configurationApi = {
 		return response.data.settings;
 	},
 
-	// Get settings by category
 	getSettingsByCategory: async (
 		category: "database" | "auth" | "api",
 	): Promise<SystemSetting[]> => {
@@ -759,7 +703,6 @@ export const configurationApi = {
 		return response.data.settings;
 	},
 
-	// Get a specific setting
 	getSetting: async (
 		category: "database" | "auth" | "api",
 		settingKey: string,
@@ -770,7 +713,6 @@ export const configurationApi = {
 		return response.data;
 	},
 
-	// Create a new setting
 	createSetting: async (
 		data: CreateSystemSettingRequest,
 	): Promise<SystemSetting> => {
@@ -784,7 +726,6 @@ export const configurationApi = {
 		return response.data;
 	},
 
-	// Update a setting
 	updateSetting: async (
 		category: "database" | "auth" | "api",
 		settingKey: string,
@@ -800,7 +741,6 @@ export const configurationApi = {
 		return response.data;
 	},
 
-	// Delete a setting
 	deleteSetting: async (
 		category: "database" | "auth" | "api",
 		settingKey: string,
@@ -810,7 +750,6 @@ export const configurationApi = {
 		});
 	},
 
-	// Reset setting to default value
 	resetSetting: async (
 		category: "database" | "auth" | "api",
 		settingKey: string,
@@ -825,9 +764,7 @@ export const configurationApi = {
 	},
 };
 
-// Ownership API
 export const ownershipApi = {
-	// Transfer ownership of a record
 	transferOwnership: async (
 		collectionName: string,
 		recordId: number,
@@ -842,7 +779,6 @@ export const ownershipApi = {
 		);
 	},
 
-	// Get records owned by current user
 	getMyOwnedRecords: async (
 		collectionName: string,
 		limit?: number,
@@ -862,7 +798,6 @@ export const ownershipApi = {
 		return response.data;
 	},
 
-	// Get records owned by a specific user (admin only)
 	getUserOwnedRecords: async (
 		collectionName: string,
 		userId: number,
@@ -883,7 +818,6 @@ export const ownershipApi = {
 		return response.data;
 	},
 
-	// Check ownership of a specific record
 	checkRecordOwnership: async (
 		collectionName: string,
 		recordId: number,
@@ -894,7 +828,6 @@ export const ownershipApi = {
 		return response.data;
 	},
 
-	// Get ownership statistics for a collection
 	getOwnershipStats: async (
 		collectionName: string,
 	): Promise<OwnershipStatsResponse> => {
@@ -905,6 +838,5 @@ export const ownershipApi = {
 	},
 };
 
-// Export individual functions for backward compatibility
 export const createManualBackup = backupApi.createManualBackup;
 export const getBackupHealth = backupApi.getBackupHealth;

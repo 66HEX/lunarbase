@@ -6,7 +6,6 @@ use axum::{
 use serde_json::{Value, json};
 use std::fmt;
 
-/// Production-safe auth errors - never expose sensitive information
 #[derive(Debug)]
 pub enum AuthError {
     InvalidCredentials,
@@ -159,7 +158,6 @@ impl IntoResponse for AuthError {
     }
 }
 
-// Helper type for consistent API responses
 #[derive(serde::Serialize, utoipa::ToSchema)]
 pub struct ApiResponse<T> {
     pub success: bool,

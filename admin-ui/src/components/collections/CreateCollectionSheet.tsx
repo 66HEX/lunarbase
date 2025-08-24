@@ -69,7 +69,7 @@ export function CreateCollectionSheet({
 	};
 
 	const removeField = (index: number) => {
-		if (index === 0) return; // Don't allow removing the ID field
+		if (index === 0) return;
 		setFields((prev) => prev.filter((_, i) => i !== index));
 	};
 
@@ -124,7 +124,6 @@ export function CreateCollectionSheet({
 
 			await createCollectionMutation.mutateAsync(request);
 
-			// Reset form and close sheet
 			setCollectionName("");
 			setFields([
 				{
@@ -143,7 +142,6 @@ export function CreateCollectionSheet({
 		}
 	};
 
-	// Reset form when sheet opens
 	useEffect(() => {
 		if (isOpen) {
 			setCollectionName("");
@@ -163,15 +161,12 @@ export function CreateCollectionSheet({
 		<Sheet
 			open={isOpen}
 			onOpenChange={(newOpen) => {
-				// Only allow closing if explicitly allowed and not submitting
 				if (!newOpen && (!allowClose || submitting)) {
-					// Prevent closing - do nothing
 					return;
 				}
-				// Allow opening or closing when conditions are met
 				onOpenChange(newOpen);
 				if (newOpen) {
-					setAllowClose(true); // Allow closing when opening
+					setAllowClose(true);
 				}
 			}}
 		>
@@ -193,7 +188,6 @@ export function CreateCollectionSheet({
 						}}
 					>
 						<div className="space-y-6">
-							{/* Collection Name */}
 							<FormField
 								name="collectionName"
 								error={fieldErrors.collectionName}
@@ -215,7 +209,6 @@ export function CreateCollectionSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Schema Fields */}
 							<div className="space-y-4">
 								<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 									Schema Fields
@@ -249,9 +242,7 @@ export function CreateCollectionSheet({
 													)}
 												</div>
 
-												{/* Fields in one row */}
 												<div className="grid grid-cols-12 gap-3 items-start">
-													{/* Field Name */}
 													<div className="col-span-4">
 														<FormField
 															name={`field_${index}_name`}
@@ -283,7 +274,6 @@ export function CreateCollectionSheet({
 														</FormField>
 													</div>
 
-													{/* Field Type */}
 													<div className="col-span-3">
 														<FormField name={`field_${index}_type`}>
 															<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
@@ -298,21 +288,17 @@ export function CreateCollectionSheet({
 																	}
 																	value={field.field_type}
 																	onValueChange={(value) => {
-																		// Prevent sheet from closing during value change
 																		setAllowClose(false);
 																		updateField(index, {
 																			field_type:
 																				value as FieldDefinition["field_type"],
 																		});
-																		// Allow closing after a longer delay
 																		setTimeout(() => setAllowClose(true), 300);
 																	}}
 																	onOpenChange={(isOpen) => {
-																		// Prevent sheet from closing when select is open
 																		if (isOpen) {
 																			setAllowClose(false);
 																		}
-																		// Don't restore allowClose here - let onValueChange handle it
 																	}}
 																	disabled={index === 0}
 																>
@@ -334,7 +320,6 @@ export function CreateCollectionSheet({
 														</FormField>
 													</div>
 
-													{/* Default Value */}
 													<div className="col-span-3">
 														<FormField name={`field_${index}_default`}>
 															<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
@@ -362,7 +347,6 @@ export function CreateCollectionSheet({
 														</FormField>
 													</div>
 
-													{/* Required Checkbox */}
 													<div className="col-span-2 flex items-center h-full">
 														<label className="flex items-center gap-2 cursor-pointer pt-6">
 															<Checkbox
@@ -385,7 +369,6 @@ export function CreateCollectionSheet({
 									})}
 								</div>
 
-								{/* Add Field Button */}
 								<Button
 									type="button"
 									variant="primary"

@@ -37,7 +37,6 @@ const statusVariants: Record<
 };
 
 const getProxyUrl = (originalUrl: string): string => {
-	// Check if it's an external URL that needs proxying
 	if (
 		originalUrl.startsWith("https://lh3.googleusercontent.com") ||
 		originalUrl.startsWith("https://avatars.githubusercontent.com")
@@ -134,7 +133,6 @@ export function UserDetailsSheet({
 						</div>
 					) : user ? (
 						<div className="space-y-6">
-							{/* User Avatar and Basic Info */}
 							<div className="flex items-center gap-4 p-3 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
 								<Avatar
 									size="lg"
@@ -165,13 +163,11 @@ export function UserDetailsSheet({
 								</div>
 							</div>
 
-							{/* User Details */}
 							<div className="space-y-3">
 								<h4 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 									Account Information
 								</h4>
 
-								{/* Email */}
 								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
 									<Mail className="size-4 text-nocta-500" />
 									<div>
@@ -184,7 +180,6 @@ export function UserDetailsSheet({
 									</div>
 								</div>
 
-								{/* Role */}
 								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
 									<Shield className="size-4 text-nocta-500" />
 									<div>
@@ -197,7 +192,6 @@ export function UserDetailsSheet({
 									</div>
 								</div>
 
-								{/* Last Login */}
 								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
 									<Clock className="size-4 text-nocta-500" />
 									<div>
@@ -212,7 +206,6 @@ export function UserDetailsSheet({
 									</div>
 								</div>
 
-								{/* Created At */}
 								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
 									<Calendar className="size-4 text-nocta-500" />
 									<div>
@@ -225,7 +218,6 @@ export function UserDetailsSheet({
 									</div>
 								</div>
 
-								{/* Updated At */}
 								{user.updated_at && (
 									<div className="flex items-center gap-3">
 										<Calendar className="size-4 text-nocta-500" />

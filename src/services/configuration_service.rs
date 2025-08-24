@@ -21,7 +21,6 @@ impl ConfigurationService {
         Self { pool }
     }
 
-    /// Get all system settings
     pub async fn get_all_settings(&self) -> Result<Vec<SystemSettingResponse>, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
@@ -36,7 +35,6 @@ impl ConfigurationService {
         Ok(settings.into_iter().map(|s| s.into()).collect())
     }
 
-    /// Get settings by category
     pub async fn get_settings_by_category(
         &self,
         category: &str,
@@ -55,7 +53,6 @@ impl ConfigurationService {
         Ok(settings.into_iter().map(|s| s.into()).collect())
     }
 
-    /// Get a specific setting by category and key
     pub async fn get_setting(
         &self,
         category: &str,
@@ -80,7 +77,6 @@ impl ConfigurationService {
         Ok(setting.map(|s| s.into()))
     }
 
-    /// Update a setting value
     pub async fn update_setting(
         &self,
         category: &str,
@@ -90,7 +86,6 @@ impl ConfigurationService {
     ) -> Result<SystemSettingResponse, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Check if setting exists
         let existing_setting = system_settings::table
             .filter(
                 system_settings::category
@@ -115,7 +110,6 @@ impl ConfigurationService {
             )));
         }
 
-        // Update the setting
         let update_data = UpdateSystemSetting {
             setting_value: Some(new_value.to_string()),
             description: None,
@@ -141,7 +135,6 @@ impl ConfigurationService {
             AuthError::DatabaseError
         })?;
 
-        // Return updated setting
         let updated_setting = system_settings::table
             .filter(
                 system_settings::category
@@ -165,7 +158,6 @@ impl ConfigurationService {
         Ok(updated_setting.into())
     }
 
-    /// Create a new setting
     pub async fn create_setting(
         &self,
         category: SettingCategory,
@@ -179,7 +171,6 @@ impl ConfigurationService {
     ) -> Result<SystemSettingResponse, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Check if setting already exists
         let existing = system_settings::table
             .filter(
                 system_settings::category
@@ -211,7 +202,7 @@ impl ConfigurationService {
             Some(default_value),
             is_sensitive,
             requires_restart,
-            None, // updated_by
+            None,
         );
 
         diesel::insert_into(system_settings::table)
@@ -222,7 +213,6 @@ impl ConfigurationService {
                 AuthError::DatabaseError
             })?;
 
-        // Return the created setting
         let created_setting = system_settings::table
             .filter(
                 system_settings::category
@@ -243,7 +233,6 @@ impl ConfigurationService {
         Ok(created_setting.into())
     }
 
-    /// Delete a setting
     pub async fn delete_setting(&self, category: &str, setting_key: &str) -> Result<(), AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
@@ -274,7 +263,6 @@ impl ConfigurationService {
         Ok(())
     }
 
-    /// Get setting value as string
     pub async fn get_setting_value(
         &self,
         category: &str,
@@ -284,7 +272,6 @@ impl ConfigurationService {
         Ok(setting.map(|s| s.setting_value))
     }
 
-    /// Get setting value as integer
     pub async fn get_setting_value_as_i32(
         &self,
         category: &str,
@@ -299,7 +286,6 @@ impl ConfigurationService {
         }
     }
 
-    /// Get setting value as boolean
     pub async fn get_setting_value_as_bool(
         &self,
         category: &str,
@@ -319,7 +305,6 @@ impl ConfigurationService {
         }
     }
 
-    /// Get setting value as float
     pub async fn get_setting_value_as_f64(
         &self,
         category: &str,
@@ -334,7 +319,6 @@ impl ConfigurationService {
         }
     }
 
-    /// Reset setting to default value
     pub async fn reset_setting_to_default(
         &self,
         category: &str,
@@ -343,7 +327,6 @@ impl ConfigurationService {
     ) -> Result<SystemSettingResponse, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Get the setting to find its default value
         let setting = system_settings::table
             .filter(
                 system_settings::category
@@ -363,7 +346,6 @@ impl ConfigurationService {
         })?;
         let default_value = setting.default_value.unwrap_or_default();
 
-        // Update to default value
         self.update_setting(category, setting_key, &default_value, updated_by)
             .await
     }

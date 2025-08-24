@@ -98,7 +98,6 @@ export function CollectionPermissionsSheet({
 		setPermissionsSubmitting(true);
 
 		try {
-			// Filter out null values from user permissions to avoid saving default states
 			const filteredUserPermissions: CollectionPermissions["user_permissions"] =
 				{};
 
@@ -125,7 +124,6 @@ export function CollectionPermissionsSheet({
 					}
 				});
 
-				// Only include user if they have explicit permissions set
 				if (hasExplicitPermissions) {
 					filteredUserPermissions[userId] = filteredPerms;
 				}
@@ -149,11 +147,9 @@ export function CollectionPermissionsSheet({
 		}
 	};
 
-	// Initialize role permissions when data is loaded
 	useEffect(() => {
 		const roles = rolesData || [];
 		if (roles.length > 0) {
-			// Initialize role permissions with default values
 			const initialRolePermissions: CollectionPermissions["role_permissions"] =
 				{};
 			roles.forEach((role: { name: string }) => {
@@ -169,7 +165,6 @@ export function CollectionPermissionsSheet({
 		}
 	}, [rolesData]);
 
-	// Update local state when permissions are loaded from backend
 	useEffect(() => {
 		const collectionPermissions = collectionPermissionsData || {};
 		if (
@@ -177,7 +172,6 @@ export function CollectionPermissionsSheet({
 			collectionPermissions &&
 			Object.keys(collectionPermissions).length > 0
 		) {
-			// Convert backend permissions to component format
 			const formattedRolePermissions: CollectionPermissions["role_permissions"] =
 				{};
 
@@ -230,7 +224,6 @@ export function CollectionPermissionsSheet({
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<div className="space-y-6">
-						{/* Role-based Permissions */}
 						<div className="space-y-4">
 							<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 								Role-based Permissions
@@ -308,7 +301,6 @@ export function CollectionPermissionsSheet({
 							)}
 						</div>
 
-						{/* User-specific Permissions */}
 						<div className="space-y-4">
 							<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 								User-specific Permissions
@@ -359,13 +351,9 @@ export function CollectionPermissionsSheet({
 															perm.replace("can_", "").charAt(0).toUpperCase() +
 															perm.replace("can_", "").slice(1);
 
-														// Get default permission from user's role
 														const defaultRolePermission =
 															rolePermissions[user.role]?.[perm] || false;
 
-														// Checkbox should be checked if:
-														// - explicitly set to true, OR
-														// - set to null (default) AND user's role has this permission
 														const isChecked =
 															permValue === true ||
 															(permValue === null && defaultRolePermission);
@@ -379,14 +367,12 @@ export function CollectionPermissionsSheet({
 																	checked={isChecked}
 																	onCheckedChange={() => {
 																		if (permValue === null) {
-																			// From default state, set to opposite of default role permission
 																			handleUserPermissionChange(
 																				user.id,
 																				perm,
 																				!defaultRolePermission,
 																			);
 																		} else {
-																			// From explicit state, return to default (null)
 																			handleUserPermissionChange(
 																				user.id,
 																				perm,

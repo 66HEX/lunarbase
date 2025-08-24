@@ -57,7 +57,6 @@ export function CreateRecordSheet({
 	);
 	const { data: collectionsData } = useCollections();
 
-	// Get available collections for relation fields
 	const availableCollections = collectionsData?.collections || [];
 
 	const initializeFormData = useCallback(() => {
@@ -239,7 +238,7 @@ export function CreateRecordSheet({
 						<FileUpload
 							multiple={true}
 							accept="*/*"
-							maxSize={10 * 1024 * 1024} // 10MB
+							maxSize={10 * 1024 * 1024}
 							maxFiles={5}
 							files={fileData[field.name] || []}
 							onFilesChange={(files) => updateFileData(field.name, files)}

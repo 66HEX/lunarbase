@@ -11,10 +11,8 @@ use lunarbase::handlers::auth::*;
 use lunarbase::{AppState, Config};
 
 async fn create_test_router() -> Router {
-    // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
-    // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
@@ -22,12 +20,10 @@ async fn create_test_router() -> Router {
         .await
         .expect("Failed to create AppState");
 
-    // OAuth routes
     let oauth_routes = Router::new()
         .route("/auth/oauth/{provider}", get(oauth_authorize))
         .route("/auth/oauth/{provider}/callback", get(oauth_callback));
 
-    // Combine routes
     let api_routes = Router::new().merge(oauth_routes);
 
     let router = Router::new().nest("/api", api_routes).with_state(app_state);
@@ -47,13 +43,11 @@ async fn test_github_oauth_authorize_redirect() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should redirect to GitHub OAuth
     assert_eq!(response.status(), StatusCode::TEMPORARY_REDIRECT);
 
     let location = response.headers().get("location").unwrap();
     let location_str = location.to_str().unwrap();
 
-    // Should redirect to GitHub OAuth URL
     assert!(location_str.contains("github.com/login/oauth/authorize"));
     assert!(location_str.contains("client_id="));
     assert!(location_str.contains("scope=user%3Aemail"));
@@ -72,13 +66,11 @@ async fn test_google_oauth_authorize_redirect() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should redirect to Google OAuth
     assert_eq!(response.status(), StatusCode::TEMPORARY_REDIRECT);
 
     let location = response.headers().get("location").unwrap();
     let location_str = location.to_str().unwrap();
 
-    // Should redirect to Google OAuth URL
     assert!(location_str.contains("accounts.google.com/o/oauth2/v2/auth"));
     assert!(location_str.contains("client_id="));
     assert!(location_str.contains("scope="));
@@ -97,7 +89,6 @@ async fn test_oauth_authorize_invalid_provider() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should return bad request for invalid provider
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
@@ -113,7 +104,6 @@ async fn test_oauth_callback_missing_code() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should return bad request for missing required parameter
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
@@ -129,7 +119,6 @@ async fn test_oauth_callback_missing_state() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should return bad request for missing required parameter
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
@@ -145,7 +134,6 @@ async fn test_oauth_callback_invalid_provider() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should return bad request for invalid provider
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
@@ -161,7 +149,6 @@ async fn test_oauth_callback_with_error_parameter() {
 
     let response = app.oneshot(request).await.unwrap();
 
-    // Should redirect to error page
     assert_eq!(response.status(), StatusCode::TEMPORARY_REDIRECT);
 
     let location = response.headers().get("location").unwrap();
@@ -175,7 +162,6 @@ async fn test_oauth_callback_with_error_parameter() {
 async fn test_oauth_state_parameter_security() {
     let app = create_test_router().await;
 
-    // Test GitHub OAuth authorize
     let request = Request::builder()
         .uri("/api/auth/oauth/github")
         .method("GET")
@@ -188,23 +174,19 @@ async fn test_oauth_state_parameter_security() {
     let location = response.headers().get("location").unwrap();
     let location_str = location.to_str().unwrap();
 
-    // Verify that state parameter is present and looks like a UUID
     assert!(location_str.contains("state="));
 
-    // Extract state parameter
     let state_start = location_str.find("state=").unwrap() + 6;
     let state_end = location_str[state_start..]
         .find('&')
         .unwrap_or(location_str[state_start..].len());
     let state = &location_str[state_start..state_start + state_end];
 
-    // State should be a base64url encoded string (typically 22 characters for 16 bytes)
     assert_eq!(state.len(), 22);
 }
 
 #[tokio::test]
 async fn test_oauth_scope_limitation() {
-    // Test GitHub scopes
     let github_app = create_test_router().await;
     let github_request = Request::builder()
         .uri("/api/auth/oauth/github")
@@ -220,12 +202,10 @@ async fn test_oauth_scope_limitation() {
         .to_str()
         .unwrap();
 
-    // Should only request user:email scope for GitHub
     assert!(github_location.contains("scope=user%3Aemail"));
     assert!(!github_location.contains("repo"));
     assert!(!github_location.contains("admin"));
 
-    // Test Google scopes
     let google_app = create_test_router().await;
     let google_request = Request::builder()
         .uri("/api/auth/oauth/google")
@@ -241,13 +221,7 @@ async fn test_oauth_scope_limitation() {
         .to_str()
         .unwrap();
 
-    // Should only request basic profile and email for Google
     assert!(
         google_location.contains("scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email")
     );
 }
-
-// Note: Testing successful OAuth flow would require mocking external OAuth providers
-// or using integration test environment with test OAuth apps.
-// The tests above cover the main error cases and redirect logic that can be tested
-// without external dependencies.

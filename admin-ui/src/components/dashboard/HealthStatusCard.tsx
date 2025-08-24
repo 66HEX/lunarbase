@@ -31,7 +31,6 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 			</CardHeader>
 			<CardContent className="p-3 pt-0">
 				<div className="space-y-3">
-					{/* API Server Status */}
 					<div className="flex items-center justify-between p-2 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
 						<div className="flex items-center gap-2.5">
 							<div
@@ -49,7 +48,6 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 						</Badge>
 					</div>
 
-					{/* Database Status */}
 					<div className="flex items-center justify-between p-2 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
 						<div className="flex items-center gap-2.5">
 							<div
@@ -67,9 +65,7 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 						</Badge>
 					</div>
 
-					{/* System Metrics */}
 					<div className="space-y-2.5 pt-2.5 border-t border-nocta-200 dark:border-nocta-800/50">
-						{/* Memory Usage */}
 						<div className="space-y-1.5">
 							<div className="flex items-center justify-between">
 								<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
@@ -91,7 +87,6 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 							</div>
 						</div>
 
-						{/* CPU Usage */}
 						<div className="space-y-1.5">
 							<div className="flex items-center justify-between">
 								<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
@@ -107,7 +102,6 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 							/>
 						</div>
 
-						{/* Additional Metrics */}
 						<div className="grid grid-cols-2 gap-2.5 pt-1.5">
 							<div className="text-center p-1.5 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
 								<div className="text-xs text-nocta-500 dark:text-nocta-500">

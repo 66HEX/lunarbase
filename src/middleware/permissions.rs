@@ -12,32 +12,27 @@ use crate::{
     AppState,
 };
 
-// Permission middleware for collection operations
 pub async fn check_collection_permission(
     State(state): State<AppState>,
     Path(collection_name): Path<String>,
     req: Request<Body>,
     next: Next,
 ) -> Result<Response, AuthError> {
-    // Get the user from request extensions (set by auth middleware)
     let user = req
         .extensions()
         .get::<User>()
         .ok_or_else(|| AuthError::InsufficientPermissions)?;
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Determine required permission based on HTTP method
     let method = req.method();
     let required_permission = match method.as_str() {
         "POST" => Permission::Create,
         "GET" => {
-            // Check if it's a list endpoint or single record
             if req.uri().path().ends_with("/records") {
                 Permission::List
             } else {
@@ -49,7 +44,6 @@ pub async fn check_collection_permission(
         _ => return Err(AuthError::Forbidden("Invalid HTTP method".to_string())),
     };
 
-    // Check permissions
     let has_permission = state
         .permission_service
         .check_collection_permission(user, collection.id, required_permission)
@@ -63,31 +57,26 @@ pub async fn check_collection_permission(
         )));
     }
 
-    // Permission granted, continue with the request
     Ok(next.run(req).await)
 }
 
-// Permission middleware for specific record operations
 pub async fn check_record_permission(
     State(state): State<AppState>,
     Path((collection_name, record_id)): Path<(String, i32)>,
     req: Request<Body>,
     next: Next,
 ) -> Result<Response, AuthError> {
-    // Get the user from request extensions (set by auth middleware)
     let user = req
         .extensions()
         .get::<User>()
         .ok_or_else(|| AuthError::InsufficientPermissions)?;
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Determine required permission based on HTTP method
     let required_permission = match req.method().as_str() {
         "GET" => Permission::Read,
         "PUT" | "PATCH" => Permission::Update,
@@ -95,7 +84,6 @@ pub async fn check_record_permission(
         _ => return Err(AuthError::Forbidden("Invalid HTTP method".to_string())),
     };
 
-    // Check record-level permissions (falls back to collection permissions)
     let has_permission = state
         .permission_service
         .check_record_permission(user, collection.id, record_id, required_permission)
@@ -109,16 +97,13 @@ pub async fn check_record_permission(
         )));
     }
 
-    // Permission granted, continue with the request
     Ok(next.run(req).await)
 }
 
-// Admin-only middleware
 pub async fn require_admin(
     req: Request<Body>,
     next: Next,
 ) -> Result<Response, AuthError> {
-    // Get the user from request extensions (set by auth middleware)
     let user = req
         .extensions()
         .get::<User>()
@@ -130,11 +115,9 @@ pub async fn require_admin(
         ));
     }
 
-    // Admin access granted, continue with the request
     Ok(next.run(req).await)
 }
 
-// Permission checking utilities for use in handlers
 pub struct PermissionChecker<'a> {
     pub state: &'a AppState,
     pub user: &'a User,
@@ -197,14 +180,12 @@ impl<'a> PermissionChecker<'a> {
     }
 }
 
-// Helper function to extract user from request extensions
 pub fn get_user_from_request(req: &Request<Body>) -> Result<&User, AuthError> {
     req.extensions()
         .get::<User>()
         .ok_or_else(|| AuthError::InsufficientPermissions)
 }
 
-// Helper macro for quick permission checks in handlers
 #[macro_export]
 macro_rules! require_permission {
     ($state:expr, $user:expr, $collection:expr, $permission:expr) => {{
@@ -218,7 +199,6 @@ macro_rules! require_permission {
     }};
 }
 
-// Helper macro for record-level permission checks
 #[macro_export]
 macro_rules! require_record_permission {
     ($state:expr, $user:expr, $collection:expr, $record_id:expr, $permission:expr) => {{

@@ -3,14 +3,6 @@ use axum::{extract::State, http::StatusCode};
 use serde::Serialize;
 use utoipa::ToSchema;
 
-/// Prometheus metrics endpoint
-///
-/// This endpoint exposes metrics in Prometheus format for monitoring and observability.
-/// Metrics include:
-/// - HTTP request counts and durations
-/// - Active WebSocket connections
-/// - Database connection pool status
-/// - Custom application metrics
 #[utoipa::path(
     get,
     path = "/metrics",
@@ -21,12 +13,10 @@ use utoipa::ToSchema;
     )
 )]
 pub async fn get_metrics(State(app_state): State<AppState>) -> Result<String, StatusCode> {
-    // Update database connections metric before returning metrics
     app_state
         .metrics_state
         .update_database_connections(&app_state.db_pool);
 
-    // Update WebSocket connections metric
     let websocket_count = app_state.websocket_service.connection_count().await;
     app_state
         .metrics_state
@@ -40,32 +30,20 @@ pub async fn get_metrics(State(app_state): State<AppState>) -> Result<String, St
         .map_err(|_| StatusCode::INTERNAL_SERVER_ERROR)
 }
 
-/// Metrics summary response structure
 #[derive(Serialize, ToSchema)]
 pub struct MetricsSummary {
-    /// Total number of HTTP requests processed
     pub http_requests_total: f64,
-    /// Number of active WebSocket connections
     pub active_websocket_connections: f64,
-    /// Number of active database connections
     pub database_connections_active: f64,
-    /// Number of active HTTP/2 connections
     pub http2_connections_active: f64,
-    /// Number of active TLS connections
     pub tls_connections_active: f64,
-    /// Total number of backup operations
     pub backup_operations_total: f64,
-    /// Total number of backup failures
     pub backup_failures_total: f64,
-    /// Total number of backup cleanup operations
     pub backup_cleanup_operations_total: f64,
-    /// Total number of backup files deleted
     pub backup_files_deleted_total: f64,
-    /// Timestamp when metrics were collected
     pub timestamp: String,
 }
 
-/// Get metrics summary for admin dashboard
 #[utoipa::path(
     get,
     path = "/admin/metrics/summary",
@@ -93,26 +71,22 @@ pub struct MetricsSummary {
 pub async fn get_metrics_summary(
     State(app_state): State<AppState>,
 ) -> Result<axum::Json<MetricsSummary>, StatusCode> {
-    // Update database connections metric before returning summary
     app_state
         .metrics_state
         .update_database_connections(&app_state.db_pool);
 
-    // Update WebSocket connections metric
     let websocket_count = app_state.websocket_service.connection_count().await;
     app_state
         .metrics_state
         .active_connections
         .set(websocket_count as f64);
 
-    // Get current metric values for dashboard display
     let request_count = app_state.metrics_state.request_counter.get();
     let active_connections = app_state.metrics_state.active_connections.get();
     let db_connections = app_state.metrics_state.database_connections.get();
     let http2_connections = app_state.metrics_state.http2_connections.get();
     let tls_connections = app_state.metrics_state.tls_connections.get();
 
-    // Get backup metrics from custom metrics
     let custom_metrics = app_state.metrics_state.custom_metrics.read().await;
     let backup_operations = custom_metrics
         .get("backup_operations_total")

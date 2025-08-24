@@ -52,7 +52,6 @@ pub struct PaginationMeta {
     pub total_pages: i64,
 }
 
-/// Create a new collection
 #[utoipa::path(
     post,
     path = "/collections",
@@ -73,7 +72,6 @@ pub async fn create_collection(
     Extension(user): Extension<Claims>,
     Json(request): Json<CreateCollectionRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<CollectionResponse>>), AuthError> {
-    // Only admin users can create collections
     if user.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -82,7 +80,6 @@ pub async fn create_collection(
     Ok((StatusCode::CREATED, Json(ApiResponse::success(collection))))
 }
 
-/// List all collections
 #[utoipa::path(
     get,
     path = "/collections",
@@ -98,7 +95,6 @@ pub async fn list_collections(
     Ok(Json(ApiResponse::success(collections)))
 }
 
-/// Get collection by name
 #[utoipa::path(
     get,
     path = "/collections/{name}",
@@ -119,7 +115,6 @@ pub async fn get_collection(
     Ok(Json(ApiResponse::success(collection)))
 }
 
-/// Update collection
 #[utoipa::path(
     put,
     path = "/api/collections/{name}",
@@ -143,7 +138,6 @@ pub async fn update_collection(
     Path(name): Path<String>,
     Json(request): Json<UpdateCollectionRequest>,
 ) -> Result<Json<ApiResponse<CollectionResponse>>, AuthError> {
-    // Only admin users can update collections
     if user.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -155,7 +149,6 @@ pub async fn update_collection(
     Ok(Json(ApiResponse::success(collection)))
 }
 
-/// Delete collection
 #[utoipa::path(
     delete,
     path = "/api/collections/{name}",
@@ -177,7 +170,6 @@ pub async fn delete_collection(
     Extension(user): Extension<Claims>,
     Path(name): Path<String>,
 ) -> Result<StatusCode, AuthError> {
-    // Only admin users can delete collections
     if user.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -186,7 +178,6 @@ pub async fn delete_collection(
     Ok(StatusCode::NO_CONTENT)
 }
 
-// Record management endpoints
 #[utoipa::path(
     post,
     path = "/collections/{collection_name}/records",
@@ -214,7 +205,6 @@ pub async fn create_record(
     Path(collection_name): Path<String>,
     mut multipart: Multipart,
 ) -> Result<(StatusCode, Json<ApiResponse<RecordResponse>>), AuthError> {
-    // Parse multipart data
     let mut data = serde_json::Value::Object(serde_json::Map::new());
     let mut files: HashMap<String, FileUpload> = HashMap::new();
 
@@ -226,7 +216,6 @@ pub async fn create_record(
         let name = field.name().unwrap_or("").to_string();
 
         if name == "data" {
-            // Parse JSON data field
             let data_bytes = field
                 .bytes()
                 .await
@@ -236,7 +225,6 @@ pub async fn create_record(
             data = serde_json::from_str(&data_str)
                 .map_err(|_| AuthError::BadRequest("Invalid JSON in data field".to_string()))?;
         } else if name.starts_with("file_") {
-            // Handle file upload
             let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
             let filename = field.file_name().unwrap_or("unknown").to_string();
             let content_type = field
@@ -261,13 +249,11 @@ pub async fn create_record(
         }
     }
 
-    // Create request object
     let mut request = CreateRecordRequest {
         data,
         files: if files.is_empty() { None } else { Some(files) },
     };
 
-    // Convert claims to user for ownership service
     use crate::schema::users;
     use diesel::prelude::*;
 
@@ -281,13 +267,11 @@ pub async fn create_record(
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
-    // Get collection for permission checking
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await?;
 
-    // Check collection-level create permission
     let has_permission = state
         .permission_service
         .check_collection_permission(&user, collection.id, crate::models::Permission::Create)
@@ -297,7 +281,6 @@ pub async fn create_record(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Set ownership in record data
     state
         .ownership_service
         .set_record_ownership(&user, &mut request.data)?;
@@ -345,7 +328,6 @@ pub async fn list_records(
     Ok(Json(ApiResponse::success(records)))
 }
 
-/// List all records across all collections with pagination
 #[utoipa::path(
     get,
     path = "/records",
@@ -371,7 +353,6 @@ pub async fn list_all_records(
     Extension(claims): Extension<Claims>,
     Query(query): Query<ListRecordsQuery>,
 ) -> Result<Json<ApiResponse<PaginatedRecordsResponse>>, AuthError> {
-    // Convert claims to user for permission checking
     use crate::schema::users;
     use diesel::prelude::*;
 
@@ -385,18 +366,14 @@ pub async fn list_all_records(
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
-    // Set default limit to 20, max 100
     let limit = query.limit.unwrap_or(20).min(100);
     let offset = query.offset.unwrap_or(0);
 
-    // Get all collections
     let collections = state.collection_service.list_collections().await?;
 
     let mut all_records = Vec::new();
 
-    // Collect records from all collections where user has LIST permission
     for collection in collections {
-        // Check if user has LIST permission for this collection
         let has_permission = state
             .permission_service
             .check_collection_permission(&user, collection.id, crate::models::Permission::List)
@@ -404,21 +381,19 @@ pub async fn list_all_records(
             .unwrap_or(false);
 
         if has_permission {
-            // Get records from this collection
             let records = state
                 .collection_service
                 .list_records(
                     &collection.name,
-                    None, // sort will be applied globally
+                    None,
                     query.filter.clone(),
                     query.search.clone(),
-                    None, // no limit per collection
-                    None, // no offset per collection
+                    None,
+                    None,
                 )
                 .await
                 .unwrap_or_default();
 
-            // Add collection name to each record
             for record in records {
                 all_records.push(RecordWithCollection {
                     record,
@@ -430,7 +405,6 @@ pub async fn list_all_records(
 
     let total_count = all_records.len() as i64;
 
-    // Apply global sorting
     if let Some(sort_str) = &query.sort {
         if sort_str.starts_with('-') {
             let field = &sort_str[1..];
@@ -463,11 +437,9 @@ pub async fn list_all_records(
             }
         }
     } else {
-        // Default sort by created_at desc
         all_records.sort_by(|a, b| b.record.created_at.cmp(&a.record.created_at));
     }
 
-    // Apply pagination
     let start_index = offset as usize;
     let end_index = (start_index + limit as usize).min(all_records.len());
     let paginated_records = if start_index < all_records.len() {
@@ -476,9 +448,8 @@ pub async fn list_all_records(
         Vec::new()
     };
 
-    // Calculate pagination metadata
     let current_page = (offset / limit) + 1;
-    let total_pages = (total_count + limit - 1) / limit; // Ceiling division
+    let total_pages = (total_count + limit - 1) / limit;
 
     let pagination_meta = PaginationMeta {
         current_page,
@@ -547,7 +518,6 @@ pub async fn update_record(
     Path((collection_name, record_id)): Path<(String, i32)>,
     mut multipart: Multipart,
 ) -> Result<Json<ApiResponse<RecordResponse>>, AuthError> {
-    // Parse multipart data
     let mut data = serde_json::Value::Object(serde_json::Map::new());
     let mut files: HashMap<String, FileUpload> = HashMap::new();
 
@@ -559,7 +529,6 @@ pub async fn update_record(
         let name = field.name().unwrap_or("").to_string();
 
         if name == "data" {
-            // Parse JSON data field
             let data_bytes = field
                 .bytes()
                 .await
@@ -569,7 +538,6 @@ pub async fn update_record(
             data = serde_json::from_str(&data_str)
                 .map_err(|_| AuthError::BadRequest("Invalid JSON in data field".to_string()))?;
         } else if name.starts_with("file_") {
-            // Handle file upload
             let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
             let filename = field.file_name().unwrap_or("unknown").to_string();
             let content_type = field
@@ -594,13 +562,11 @@ pub async fn update_record(
         }
     }
 
-    // Create request object
     let request = UpdateRecordRequest {
         data,
         files: if files.is_empty() { None } else { Some(files) },
     };
 
-    // Convert claims to user for permission checking
     use crate::schema::users;
     use diesel::prelude::*;
 
@@ -614,13 +580,11 @@ pub async fn update_record(
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
-    // Get collection for permission checking
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await?;
 
-    // Check collection-level update permission
     let has_permission = state
         .permission_service
         .check_collection_permission(&user, collection.id, crate::models::Permission::Update)
@@ -659,7 +623,6 @@ pub async fn delete_record(
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
 ) -> Result<StatusCode, AuthError> {
-    // Convert claims to user for permission checking
     use crate::schema::users;
     use diesel::prelude::*;
 
@@ -673,13 +636,11 @@ pub async fn delete_record(
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
 
-    // Get collection for permission checking
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await?;
 
-    // Check collection-level delete permission
     let has_permission = state
         .permission_service
         .check_collection_permission(&user, collection.id, crate::models::Permission::Delete)
@@ -696,7 +657,6 @@ pub async fn delete_record(
     Ok(StatusCode::NO_CONTENT)
 }
 
-// Helper endpoint to get collection schema
 #[utoipa::path(
     get,
     path = "/collections/{name}/schema",
@@ -719,7 +679,6 @@ pub async fn get_collection_schema(
     Ok(Json(ApiResponse::success(schema_json)))
 }
 
-// Statistics endpoint for admin
 #[derive(Serialize, ToSchema)]
 pub struct CollectionStats {
     pub total_collections: i64,
@@ -748,7 +707,6 @@ pub async fn get_collections_stats(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
 ) -> Result<Json<ApiResponse<CollectionStats>>, AuthError> {
-    // Only admin users can view stats
     if user.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -765,7 +723,6 @@ pub async fn get_collections_stats(
         smallest_collection,
     ) = state.collection_service.get_collections_stats().await?;
 
-    // Calculate collections by type (could be enhanced further)
     let mut collections_by_type = HashMap::new();
     for collection in &collections {
         let collection_type = if collection.is_system {

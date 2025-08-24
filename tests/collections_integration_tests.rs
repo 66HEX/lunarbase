@@ -18,10 +18,8 @@ use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, Validation
 use lunarbase::{AppState, Config};
 
 async fn create_test_router() -> Router {
-    // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
-    // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
@@ -29,7 +27,6 @@ async fn create_test_router() -> Router {
         .await
         .expect("Failed to create AppState");
 
-    // Public routes (no authentication required)
     let public_routes = Router::new()
         .route("/collections", get(list_collections))
         .route("/collections/{name}", get(get_collection))
@@ -39,7 +36,6 @@ async fn create_test_router() -> Router {
         .route("/auth/register", post(register))
         .route("/auth/login", post(login));
 
-    // Protected routes (authentication required)
     let protected_routes = Router::new()
         .route("/collections", post(create_collection))
         .route("/collections/{name}", put(update_collection))
@@ -59,12 +55,10 @@ async fn create_test_router() -> Router {
             auth_middleware,
         ));
 
-    // Combine routes
     let api_routes = Router::new().merge(public_routes).merge(protected_routes);
 
     let router = Router::new().nest("/api", api_routes).with_state(app_state);
 
-    // Skip middleware in tests to avoid Prometheus global recorder conflicts
     router
 }
 
@@ -131,7 +125,6 @@ fn create_test_schema() -> CollectionSchema {
     }
 }
 
-// Helper function to generate unique collection name
 fn unique_collection_name(prefix: &str) -> String {
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
@@ -140,12 +133,10 @@ fn unique_collection_name(prefix: &str) -> String {
     format!("{}_{}", prefix, timestamp)
 }
 
-// Helper function to create admin JWT token for testing
 async fn create_admin_token(app: &Router) -> (i32, String) {
     create_test_user(app, "admin").await
 }
 
-// Helper function to create test user and return (user_id, token)
 async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     use diesel::prelude::*;
     use lunarbase::models::NewUser;
@@ -158,13 +149,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     );
     let unique_email = format!("{}@test.com", unique_username);
 
-    // Create user directly in database with is_verified = true
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let mut conn = db_pool.get().expect("Failed to get database connection");
     let test_password_pepper = "test_pepper".to_string();
 
-    // Create new user with verification status set to true for tests
     let new_user = NewUser::new_verified(
         unique_email.clone(),
         "TestPassword123!",
@@ -175,13 +164,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     )
     .expect("Failed to create new user");
 
-    // Insert user into database
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
         .expect("Failed to insert user");
 
-    // Get the inserted user
     let user: lunarbase::models::User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(lunarbase::models::User::as_select())
@@ -193,7 +180,6 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     (user_id, token)
 }
 
-// Helper function to create JWT token for specific user
 fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     use jsonwebtoken::{EncodingKey, Header, encode};
     use lunarbase::utils::Claims;
@@ -203,7 +189,7 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs() as i64;
-    let exp = now + 3600; // 1 hour
+    let exp = now + 3600;
 
     let claims = Claims {
         sub: user_id.to_string(),
@@ -271,7 +257,6 @@ async fn test_create_collection_without_auth() {
         .unwrap();
 
     let response = app.oneshot(request).await.unwrap();
-    // Should require authentication
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
 
@@ -346,7 +331,6 @@ async fn test_create_and_get_collection() {
         "schema": schema
     });
 
-    // Create collection
     let create_request = Request::builder()
         .uri("/api/collections")
         .method("POST")
@@ -358,7 +342,6 @@ async fn test_create_and_get_collection() {
     let create_response = app.clone().oneshot(create_request).await.unwrap();
     assert_eq!(create_response.status(), StatusCode::CREATED);
 
-    // Get collection
     let get_request = Request::builder()
         .uri(&format!("/api/collections/{}", unique_name))
         .method("GET")
@@ -385,7 +368,6 @@ async fn test_create_record_success() {
     let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
-    // First create a collection
     let schema = create_test_schema();
     let unique_name = unique_collection_name("record_test");
     let collection_payload = json!({
@@ -406,7 +388,6 @@ async fn test_create_record_success() {
     let create_collection_response = app1.oneshot(create_collection_request).await.unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // Create record using multipart/form-data
     let record_data = json!({
         "title": "Test Article",
         "content": "This is a test article content",
@@ -457,7 +438,6 @@ async fn test_create_record_validation_error() {
     let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
-    // Create collection
     let schema = create_test_schema();
     let unique_name = unique_collection_name("validation_test");
     let collection_payload = json!({
@@ -478,7 +458,6 @@ async fn test_create_record_validation_error() {
     let create_collection_response = app1.oneshot(create_collection_request).await.unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // Try to create record without required field using multipart/form-data
     let record_data = json!({
         "content": "Missing required title field"
     });
@@ -512,7 +491,6 @@ async fn test_list_records_public() {
     let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
-    // Create collection
     let schema = create_test_schema();
     let unique_name = unique_collection_name("list_records");
     let collection_payload = json!({
@@ -533,7 +511,6 @@ async fn test_list_records_public() {
     let create_collection_response = app1.oneshot(create_collection_request).await.unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // List records (should work without auth)
     let list_request = Request::builder()
         .uri(&format!("/api/collections/{}/records", unique_name))
         .method("GET")
@@ -552,7 +529,6 @@ async fn test_list_records_public() {
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
 
-    // Should return empty array for new collection
     assert!(json_response["data"].is_array());
 }
 
@@ -562,7 +538,6 @@ async fn test_get_collection_schema() {
     let app2 = create_test_router().await;
     let (_admin_id, token) = create_admin_token(&app1).await;
 
-    // Create collection
     let schema = create_test_schema();
     let unique_name = unique_collection_name("schema_test");
     let collection_payload = json!({
@@ -583,7 +558,6 @@ async fn test_get_collection_schema() {
     let create_collection_response = app1.oneshot(create_collection_request).await.unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // Get schema
     let schema_request = Request::builder()
         .uri(&format!("/api/collections/{}/schema", unique_name))
         .method("GET")
@@ -612,7 +586,6 @@ async fn test_delete_record_with_files() {
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let unique_name = unique_collection_name("delete_files_test");
 
-    // Create collection with file field
     let schema = CollectionSchema {
         fields: vec![
             FieldDefinition {
@@ -654,7 +627,6 @@ async fn test_delete_record_with_files() {
         .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // Create record with file URL (simulating S3 upload)
     let record_data = json!({
         "title": "Test Record with File",
         "document": "https://test-bucket.s3.amazonaws.com/files/test-document.pdf"
@@ -697,7 +669,6 @@ async fn test_delete_record_with_files() {
         .parse()
         .unwrap();
 
-    // Delete the record (this should also attempt to delete the file from S3)
     let delete_record_request = Request::builder()
         .uri(&format!(
             "/api/collections/{}/records/{}",
@@ -711,7 +682,6 @@ async fn test_delete_record_with_files() {
     let delete_record_response = app.clone().oneshot(delete_record_request).await.unwrap();
     assert_eq!(delete_record_response.status(), StatusCode::NO_CONTENT);
 
-    // Verify record is deleted
     let get_record_request = Request::builder()
         .uri(&format!(
             "/api/collections/{}/records/{}",
@@ -731,7 +701,6 @@ async fn test_delete_collection_with_files() {
     let (_admin_id, admin_token) = create_admin_token(&app).await;
     let unique_name = unique_collection_name("delete_collection_files_test");
 
-    // Create collection with file field
     let schema = CollectionSchema {
         fields: vec![
             FieldDefinition {
@@ -774,7 +743,6 @@ async fn test_delete_collection_with_files() {
         .unwrap();
     assert_eq!(create_collection_response.status(), StatusCode::CREATED);
 
-    // Create a record with a file URL (simulating S3 file)
     let record_data = json!({
         "title": "Test Document",
         "document": "https://test-bucket.s3.amazonaws.com/files/test-document.pdf"
@@ -802,7 +770,6 @@ async fn test_delete_collection_with_files() {
     let create_record_response = app.clone().oneshot(create_record_request).await.unwrap();
     assert_eq!(create_record_response.status(), StatusCode::CREATED);
 
-    // Create another record with a file URL
     let record_data2 = json!({
         "title": "Test Document 2",
         "document": "https://test-bucket.s3.amazonaws.com/files/test-document-2.pdf"
@@ -830,7 +797,6 @@ async fn test_delete_collection_with_files() {
     let create_record_response2 = app.clone().oneshot(create_record_request2).await.unwrap();
     assert_eq!(create_record_response2.status(), StatusCode::CREATED);
 
-    // Delete the entire collection (this should also attempt to delete all files from S3)
     let delete_collection_request = Request::builder()
         .uri(&format!("/api/collections/{}", unique_name))
         .method("DELETE")
@@ -845,7 +811,6 @@ async fn test_delete_collection_with_files() {
         .unwrap();
     assert_eq!(delete_collection_response.status(), StatusCode::NO_CONTENT);
 
-    // Verify the collection is deleted
     let get_collection_request = Request::builder()
         .uri(&format!("/api/collections/{}", unique_name))
         .method("GET")

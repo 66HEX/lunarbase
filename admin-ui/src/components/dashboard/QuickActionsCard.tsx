@@ -37,7 +37,6 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 				prefetchWebSocket();
 				break;
 			default:
-				// No prefetch for unknown routes
 				break;
 		}
 	};

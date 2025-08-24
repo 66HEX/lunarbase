@@ -24,7 +24,6 @@ function DashboardComponent() {
 		useDashboardStats();
 	const pageRef = useRef<HTMLDivElement>(null);
 
-	// Create stats object for backward compatibility with existing components
 	const stats = {
 		collections,
 		websocket,
@@ -106,17 +105,14 @@ function DashboardComponent() {
 
 	return (
 		<div className="space-y-4" ref={pageRef}>
-			{/* Header */}
 			<DashboardHeader onRefresh={refetchAll} loading={isLoading} />
 
-			{/* Error Alert */}
 			{error && (
 				<Alert variant="destructive">
 					<AlertDescription>{error.message || String(error)}</AlertDescription>
 				</Alert>
 			)}
 
-			{/* Health Alert */}
 			{stats.health && stats.health.status !== "healthy" && (
 				<Alert variant="destructive">
 					<AlertTriangle className="h-4 w-4" />
@@ -128,25 +124,19 @@ function DashboardComponent() {
 			)}
 
 			<div className="grid grid-cols-1 xl:grid-cols-5 gap-4">
-				{/* Main Content */}
 				<div className="xl:col-span-3 space-y-4">
-					{/* Overview Cards */}
 					<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 						{overviewCards.map((card) => (
 							<StatCard key={card.title} {...card} />
 						))}
 					</div>
 
-					{/* Collections Overview */}
 					<CollectionsOverviewCard collections={stats.collections} />
 				</div>
 
-				{/* Right Column */}
 				<div className="lg:col-span-2 space-y-4">
-					{/* Quick Actions Card */}
 					<QuickActionsCard actions={quickActions} />
 
-					{/* System Health Card */}
 					<HealthStatusCard health={stats.health} />
 				</div>
 			</div>

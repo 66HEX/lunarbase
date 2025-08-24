@@ -2,7 +2,6 @@ use crate::models::CollectionSchema;
 use crate::utils::AuthError;
 use serde::{Deserialize, Serialize};
 
-/// Query parser for handling filtering, sorting and search operations
 #[derive(Debug, Clone)]
 pub struct QueryEngine {
     pub sort: Vec<SortField>,
@@ -12,21 +11,18 @@ pub struct QueryEngine {
     pub offset: Option<i64>,
 }
 
-/// Represents a sort field with direction
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SortField {
     pub field: String,
     pub direction: SortDirection,
 }
 
-/// Sort direction enum
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SortDirection {
     Asc,
     Desc,
 }
 
-/// Filter condition for querying records
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FilterCondition {
     pub field: String,
@@ -34,24 +30,22 @@ pub struct FilterCondition {
     pub value: FilterValue,
 }
 
-/// Supported filter operators
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FilterOperator {
-    Eq,        // Equal
-    Ne,        // Not equal
-    Gt,        // Greater than
-    Gte,       // Greater than or equal
-    Lt,        // Less than
-    Lte,       // Less than or equal
-    Like,      // SQL LIKE pattern
-    NotLike,   // SQL NOT LIKE pattern
-    In,        // In array of values
-    NotIn,     // Not in array of values
-    IsNull,    // IS NULL
-    IsNotNull, // IS NOT NULL
+    Eq,
+    Ne,
+    Gt,
+    Gte,
+    Lt,
+    Lte,
+    Like,
+    NotLike,
+    In,
+    NotIn,
+    IsNull,
+    IsNotNull,
 }
 
-/// Filter value types
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum FilterValue {
     String(String),
@@ -62,7 +56,6 @@ pub enum FilterValue {
 }
 
 impl QueryEngine {
-    /// Create a new QueryEngine from query parameters
     pub fn new(
         sort: Option<String>,
         filter: Option<String>,
@@ -78,12 +71,10 @@ impl QueryEngine {
             offset,
         };
 
-        // Parse sort parameter
         if let Some(sort_str) = sort {
             query_engine.sort = Self::parse_sort(&sort_str)?;
         }
 
-        // Parse filter parameter
         if let Some(filter_str) = filter {
             query_engine.filters = Self::parse_filters(&filter_str)?;
         }
@@ -91,7 +82,6 @@ impl QueryEngine {
         Ok(query_engine)
     }
 
-    /// Parse sort string format: "field1,-field2,field3" (- prefix for DESC)
     fn parse_sort(sort_str: &str) -> Result<Vec<SortField>, AuthError> {
         let mut sort_fields = Vec::new();
 
@@ -107,7 +97,6 @@ impl QueryEngine {
                 (field_str, SortDirection::Asc)
             };
 
-            // Validate field name (alphanumeric and underscore only)
             if !Self::is_valid_field_name(field) {
                 return Err(AuthError::ValidationError(vec![format!(
                     "Invalid field name for sorting: {}",
@@ -124,7 +113,6 @@ impl QueryEngine {
         Ok(sort_fields)
     }
 
-    /// Parse filter string format: "field1:eq:value1,field2:gt:123,field3:like:pattern"
     fn parse_filters(filter_str: &str) -> Result<Vec<FilterCondition>, AuthError> {
         let mut filters = Vec::new();
 
@@ -150,7 +138,6 @@ impl QueryEngine {
                 String::new()
             };
 
-            // Validate field name
             if !Self::is_valid_field_name(field) {
                 return Err(AuthError::ValidationError(vec![format!(
                     "Invalid field name for filtering: {}",
@@ -158,10 +145,8 @@ impl QueryEngine {
                 )]));
             }
 
-            // Parse operator
             let operator = Self::parse_operator(operator_str)?;
 
-            // Parse value based on operator
             let value = Self::parse_filter_value(&value_str, &operator)?;
 
             filters.push(FilterCondition {
@@ -174,7 +159,6 @@ impl QueryEngine {
         Ok(filters)
     }
 
-    /// Parse filter operator from string
     fn parse_operator(op_str: &str) -> Result<FilterOperator, AuthError> {
         match op_str.to_lowercase().as_str() {
             "eq" => Ok(FilterOperator::Eq),
@@ -196,7 +180,6 @@ impl QueryEngine {
         }
     }
 
-    /// Parse filter value based on operator
     fn parse_filter_value(
         value_str: &str,
         operator: &FilterOperator,
@@ -204,7 +187,6 @@ impl QueryEngine {
         match operator {
             FilterOperator::IsNull | FilterOperator::IsNotNull => Ok(FilterValue::Null),
             FilterOperator::In | FilterOperator::NotIn => {
-                // Parse comma-separated array: "value1,value2,value3"
                 let values: Vec<String> = value_str
                     .split(',')
                     .map(|s| s.trim().to_string())
@@ -213,28 +195,23 @@ impl QueryEngine {
                 Ok(FilterValue::Array(values))
             }
             _ => {
-                // Try to parse as different types
                 if value_str.is_empty() {
                     return Ok(FilterValue::Null);
                 }
 
-                // Try boolean first
                 if let Ok(bool_val) = value_str.parse::<bool>() {
                     return Ok(FilterValue::Boolean(bool_val));
                 }
 
-                // Try number
                 if let Ok(num_val) = value_str.parse::<f64>() {
                     return Ok(FilterValue::Number(num_val));
                 }
 
-                // Default to string
                 Ok(FilterValue::String(value_str.to_string()))
             }
         }
     }
 
-    /// Validate field name (alphanumeric, underscore, dots for nested fields)
     fn is_valid_field_name(field: &str) -> bool {
         !field.is_empty()
             && field.len() <= 100
@@ -243,7 +220,6 @@ impl QueryEngine {
                 .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
     }
 
-    /// Build SQL ORDER BY clause from sort fields
     pub fn build_order_by_clause(&self, schema: &CollectionSchema) -> Result<String, AuthError> {
         if self.sort.is_empty() {
             return Ok("ORDER BY \"created_at\" DESC".to_string());
@@ -252,7 +228,6 @@ impl QueryEngine {
         let mut order_parts = Vec::new();
 
         for sort_field in &self.sort {
-            // Validate field exists in schema (or is a system field)
             if !self.is_valid_sort_field(&sort_field.field, schema) {
                 return Err(AuthError::ValidationError(vec![format!(
                     "Field '{}' does not exist or cannot be sorted",
@@ -265,7 +240,6 @@ impl QueryEngine {
                 SortDirection::Desc => "DESC",
             };
 
-            // Escape field name to prevent SQL injection
             let escaped_field = self.escape_field_name(&sort_field.field);
             order_parts.push(format!("{} {}", escaped_field, direction));
         }
@@ -273,7 +247,6 @@ impl QueryEngine {
         Ok(format!("ORDER BY {}", order_parts.join(", ")))
     }
 
-    /// Build SQL WHERE clause from filter conditions
     pub fn build_where_clause(
         &self,
         schema: &CollectionSchema,
@@ -281,23 +254,19 @@ impl QueryEngine {
         let mut where_parts = Vec::new();
         let mut parameters = Vec::new();
 
-        // Add search conditions if search term is provided
         if let Some(search_term) = &self.search {
             if !search_term.trim().is_empty() {
                 let mut search_conditions = Vec::new();
                 let search_pattern = format!("%{}%", search_term.trim());
 
-                // Search in title field (always present)
                 search_conditions.push("\"title\" LIKE ?".to_string());
                 parameters.push(search_pattern.clone());
 
-                // Search in content field if it exists
                 if schema.fields.iter().any(|f| f.name == "content") {
                     search_conditions.push("\"content\" LIKE ?".to_string());
                     parameters.push(search_pattern.clone());
                 }
 
-                // Search in other text fields
                 for field in &schema.fields {
                     if field.name != "title" && field.name != "content" {
                         match field.field_type {
@@ -308,7 +277,7 @@ impl QueryEngine {
                                 search_conditions.push(format!("{} LIKE ?", escaped_field));
                                 parameters.push(search_pattern.clone());
                             }
-                            _ => {} // Skip non-text fields
+                            _ => {}
                         }
                     }
                 }
@@ -319,9 +288,7 @@ impl QueryEngine {
             }
         }
 
-        // Add filter conditions
         for filter in &self.filters {
-            // Validate field exists in schema (or is a system field)
             if !self.is_valid_filter_field(&filter.field, schema) {
                 return Err(AuthError::ValidationError(vec![format!(
                     "Field '{}' does not exist or cannot be filtered",
@@ -342,7 +309,6 @@ impl QueryEngine {
         Ok((where_clause, parameters))
     }
 
-    /// Build individual filter condition
     fn build_filter_condition(
         &self,
         filter: &FilterCondition,
@@ -376,7 +342,6 @@ impl QueryEngine {
             )),
             FilterOperator::Like => {
                 let value_str = self.filter_value_to_string(&filter.value);
-                // Automatically add wildcards for partial matching if not already present
                 let like_value = if value_str.starts_with('%') || value_str.ends_with('%') {
                     value_str
                 } else {
@@ -386,7 +351,6 @@ impl QueryEngine {
             }
             FilterOperator::NotLike => {
                 let value_str = self.filter_value_to_string(&filter.value);
-                // Automatically add wildcards for partial matching if not already present
                 let like_value = if value_str.starts_with('%') || value_str.ends_with('%') {
                     value_str
                 } else {
@@ -424,7 +388,6 @@ impl QueryEngine {
         }
     }
 
-    /// Convert filter value to string for SQL parameter
     fn filter_value_to_string(&self, value: &FilterValue) -> String {
         match value {
             FilterValue::String(s) => s.clone(),
@@ -437,39 +400,30 @@ impl QueryEngine {
                 }
             }
             FilterValue::Null => "NULL".to_string(),
-            FilterValue::Array(_) => "".to_string(), // Should not be called for arrays
+            FilterValue::Array(_) => "".to_string(),
         }
     }
 
-    /// Escape field name to prevent SQL injection
     fn escape_field_name(&self, field: &str) -> String {
-        // Use double quotes for SQLite identifiers
         format!("\"{}\"", field.replace("\"", "\"\""))
     }
 
-    /// Check if field can be used for sorting
     fn is_valid_sort_field(&self, field: &str, schema: &CollectionSchema) -> bool {
-        // Allow system fields
         if matches!(field, "id" | "created_at" | "updated_at") {
             return true;
         }
 
-        // Check if field exists in schema
         schema.fields.iter().any(|f| f.name == field)
     }
 
-    /// Check if field can be used for filtering
     fn is_valid_filter_field(&self, field: &str, schema: &CollectionSchema) -> bool {
-        // Allow system fields
         if matches!(field, "id" | "created_at" | "updated_at") {
             return true;
         }
 
-        // Check if field exists in schema
         schema.fields.iter().any(|f| f.name == field)
     }
 
-    /// Build complete SQL query with WHERE, ORDER BY, LIMIT, OFFSET
     pub fn build_complete_query(
         &self,
         table_name: &str,
@@ -479,7 +433,6 @@ impl QueryEngine {
         let mut sql = format!("SELECT id FROM {}", escaped_table_name);
         let mut parameters = Vec::new();
 
-        // Add WHERE clause
         let (where_clause, where_params) = self.build_where_clause(schema)?;
         if !where_clause.is_empty() {
             sql.push(' ');
@@ -487,17 +440,14 @@ impl QueryEngine {
             parameters.extend(where_params);
         }
 
-        // Add ORDER BY clause
         let order_clause = self.build_order_by_clause(schema)?;
         sql.push(' ');
         sql.push_str(&order_clause);
 
-        // Add LIMIT clause
         if let Some(limit) = self.limit {
             sql.push_str(&format!(" LIMIT {}", limit));
         }
 
-        // Add OFFSET clause
         if let Some(offset) = self.offset {
             sql.push_str(&format!(" OFFSET {}", offset));
         }
@@ -573,14 +523,7 @@ mod tests {
 
     #[test]
     fn test_empty_parameters() {
-        let query_engine = QueryEngine::new(
-            None, // no sort
-            None, // no filter
-            None, // no search
-            None, // no limit
-            None, // no offset
-        )
-        .unwrap();
+        let query_engine = QueryEngine::new(None, None, None, None, None).unwrap();
 
         let schema = create_test_schema();
         let (sql, params) = query_engine
@@ -612,6 +555,6 @@ mod tests {
         assert!(sql.contains("ORDER BY"));
         assert!(sql.contains("LIMIT 10"));
         assert!(sql.contains("OFFSET 5"));
-        assert_eq!(params.len(), 2); // Two filter values
+        assert_eq!(params.len(), 2);
     }
 }

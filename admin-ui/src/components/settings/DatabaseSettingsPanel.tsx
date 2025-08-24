@@ -26,7 +26,6 @@ import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import { createManualBackup } from "@/lib/api";
 import type { SystemSetting } from "@/types/api";
 
-// Predefined backup schedule options
 const BACKUP_SCHEDULE_OPTIONS = [
 	{ value: "0 0 2 * * *", label: "Daily at 2:00 AM" },
 	{ value: "0 0 */12 * * *", label: "Every 12 hours" },
@@ -41,7 +40,6 @@ export function DatabaseSettingsPanel() {
 	const { data: settings, isLoading } = useSettingsByCategory("database");
 	const updateSettingMutation = useUpdateSetting();
 
-	// Manual backup mutation
 	const manualBackupMutation = useMutation({
 		mutationFn: createManualBackup,
 		onSuccess: (data) => {
@@ -60,12 +58,10 @@ export function DatabaseSettingsPanel() {
 		},
 	});
 
-	// Local state for form values
 	const [formValues, setFormValues] = useState<Record<string, string>>({});
 	const [hasChanges, setHasChanges] = useState(false);
 	const [isCustomSchedule, setIsCustomSchedule] = useState(false);
 
-	// Initialize form values when settings are loaded
 	useEffect(() => {
 		if (settings && Array.isArray(settings)) {
 			const settingsMap = settings.reduce(
@@ -77,7 +73,6 @@ export function DatabaseSettingsPanel() {
 			);
 			setFormValues(settingsMap);
 
-			// Check if current backup schedule is a custom one
 			const currentSchedule = settingsMap.backup_schedule;
 			const isPredefined = BACKUP_SCHEDULE_OPTIONS.some(
 				(option) =>
@@ -87,19 +82,16 @@ export function DatabaseSettingsPanel() {
 		}
 	}, [settings]);
 
-	// Handle input changes
 	const handleInputChange = (key: string, value: string) => {
 		setFormValues((prev) => ({ ...prev, [key]: value }));
 		setHasChanges(true);
 	};
 
-	// Handle switch changes
 	const handleSwitchChange = (key: string, checked: boolean) => {
 		setFormValues((prev) => ({ ...prev, [key]: checked.toString() }));
 		setHasChanges(true);
 	};
 
-	// Save changes
 	const handleSave = async () => {
 		if (!settings || !Array.isArray(settings)) return;
 
@@ -116,19 +108,16 @@ export function DatabaseSettingsPanel() {
 		setHasChanges(false);
 	};
 
-	// Get setting value helper
 	const getSettingValue = (key: string) => {
 		return formValues[key] || "";
 	};
 
-	// Get setting by key helper
 	const getSetting = (key: string): SystemSetting | undefined => {
 		return settings && Array.isArray(settings)
 			? settings.find((s) => s.setting_key === key)
 			: undefined;
 	};
 
-	// Check if setting requires restart
 	const requiresRestart = (key: string): boolean => {
 		const setting = getSetting(key);
 		return setting?.requires_restart || false;
@@ -159,7 +148,6 @@ export function DatabaseSettingsPanel() {
 					}}
 				>
 					<div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-						{/* Backup Enabled */}
 						<FormField className="w-96" name="backup_enabled">
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
@@ -180,7 +168,6 @@ export function DatabaseSettingsPanel() {
 							</div>
 						</FormField>
 
-						{/* Backup Compression */}
 						<FormField className="w-96" name="backup_compression">
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
@@ -201,7 +188,6 @@ export function DatabaseSettingsPanel() {
 							</div>
 						</FormField>
 
-						{/* Connection Pooling */}
 						<FormField className="w-96" name="connection_pool_size">
 							<div className="flex items-center gap-2">
 								<FormLabel>Connection Pool Size</FormLabel>
@@ -233,7 +219,6 @@ export function DatabaseSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Backup Retention Days */}
 						<FormField className="w-96" name="backup_retention_days">
 							<FormLabel>Backup Retention (days)</FormLabel>
 							<FormControl>
@@ -253,7 +238,6 @@ export function DatabaseSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Backup Schedule */}
 						<FormField className="w-96" name="backup_schedule">
 							<FormLabel>Backup Schedule (Cron)</FormLabel>
 							<FormControl>
@@ -303,7 +287,6 @@ export function DatabaseSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Backup Prefix */}
 						<FormField className="w-96" name="backup_prefix">
 							<FormLabel>Backup Prefix</FormLabel>
 							<FormControl>
@@ -323,7 +306,6 @@ export function DatabaseSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Backup Minimum Size */}
 						<FormField className="w-96" name="backup_min_size_bytes">
 							<FormLabel>Minimum Backup Size (bytes)</FormLabel>
 							<FormControl>
@@ -344,9 +326,7 @@ export function DatabaseSettingsPanel() {
 						</FormField>
 					</div>
 
-					{/* Action Buttons */}
 					<div className="flex justify-between items-center pt-6">
-						{/* Manual Backup Button */}
 						<Button
 							type="button"
 							variant="secondary"
@@ -365,7 +345,6 @@ export function DatabaseSettingsPanel() {
 							Create Manual Backup
 						</Button>
 
-						{/* Save Button */}
 						<Button
 							type="submit"
 							disabled={!hasChanges || updateSettingMutation.isPending}

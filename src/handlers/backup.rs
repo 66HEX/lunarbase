@@ -9,23 +9,13 @@ use crate::utils::{ApiResponse, ErrorResponse};
 
 #[derive(Debug, Serialize, ToSchema)]
 pub struct BackupResponse {
-    /// Unique backup identifier
     pub backup_id: String,
-    /// Size of the backup file in bytes
     pub file_size: u64,
-    /// S3 URL where the backup is stored (if S3 is configured)
     pub s3_url: Option<String>,
-    /// Timestamp when the backup was created
     pub created_at: String,
-    /// Compression ratio if compression is enabled
     pub compression_ratio: Option<f64>,
 }
 
-/// Create manual backup
-///
-/// Creates a manual backup of the SQLite database. The backup will be compressed
-/// if compression is enabled in the configuration and uploaded to S3 if configured.
-/// This endpoint requires admin privileges.
 #[utoipa::path(
     post,
     path = "/admin/backup",
@@ -45,7 +35,6 @@ pub async fn create_manual_backup(
 ) -> Result<Json<ApiResponse<BackupResponse>>, (StatusCode, Json<ErrorResponse>)> {
     debug!("Manual backup requested");
 
-    // Check if backup service is available
     let backup_service = match &app_state.backup_service {
         Some(service) => service,
         None => {
@@ -61,7 +50,6 @@ pub async fn create_manual_backup(
         }
     };
 
-    // Create the backup
     match backup_service.manual_backup().await {
         Ok(result) => {
             debug!(
@@ -154,10 +142,6 @@ pub async fn create_manual_backup(
     }
 }
 
-/// Get backup service health status
-///
-/// Checks if the backup service is properly configured and healthy.
-/// This endpoint requires admin privileges.
 #[utoipa::path(
     get,
     path = "/admin/backup/health",

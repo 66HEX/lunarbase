@@ -110,7 +110,6 @@ impl From<SystemSetting> for SystemSettingResponse {
     }
 }
 
-// Helper enums for type safety
 #[derive(Debug, Serialize, Deserialize, utoipa::ToSchema)]
 pub enum SettingDataType {
     #[serde(rename = "string")]
@@ -157,7 +156,6 @@ impl ToString for SettingCategory {
     }
 }
 
-// Implementation for SystemSetting
 impl SystemSetting {
     pub fn to_response(&self) -> SystemSettingResponse {
         SystemSettingResponse {

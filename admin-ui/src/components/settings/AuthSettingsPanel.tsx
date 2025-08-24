@@ -92,7 +92,6 @@ export function AuthSettingsPanel() {
 					}}
 				>
 					<div className="space-y-6">
-						{/* JWT Lifetime */}
 						<FormField name="jwt_lifetime_hours">
 							<FormLabel>JWT Lifetime (hours)</FormLabel>
 							<FormControl>
@@ -114,7 +113,6 @@ export function AuthSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Lockout Duration */}
 						<FormField name="lockout_duration_minutes">
 							<FormLabel>Lockout Duration (minutes)</FormLabel>
 							<FormControl>
@@ -139,7 +137,6 @@ export function AuthSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Max Login Attempts */}
 						<FormField name="max_login_attempts">
 							<FormLabel>Max Login Attempts</FormLabel>
 							<FormControl>
@@ -161,7 +158,6 @@ export function AuthSettingsPanel() {
 							</FormDescription>
 						</FormField>
 
-						{/* Save Button */}
 						<div className="flex justify-end pt-4">
 							<Button
 								type="submit"

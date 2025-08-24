@@ -25,19 +25,16 @@ impl diesel::r2d2::CustomizeConnection<SqliteConnection, diesel::r2d2::Error>
     for SqlCipherCustomizer
 {
     fn on_acquire(&self, conn: &mut SqliteConnection) -> Result<(), diesel::r2d2::Error> {
-        // Set SQLCipher encryption key if SQLCIPHER_KEY environment variable is set
         if let Ok(key) = env::var("SQLCIPHER_KEY") {
             diesel::sql_query(format!("PRAGMA key='{}'", key))
                 .execute(conn)
                 .map_err(|e| diesel::r2d2::Error::QueryError(e))?;
         }
 
-        // Enable WAL mode for better concurrency
         diesel::sql_query("PRAGMA journal_mode=WAL")
             .execute(conn)
             .map_err(|e| diesel::r2d2::Error::QueryError(e))?;
 
-        // Set synchronous mode to NORMAL for better performance with WAL
         diesel::sql_query("PRAGMA synchronous=NORMAL")
             .execute(conn)
             .map_err(|e| diesel::r2d2::Error::QueryError(e))?;

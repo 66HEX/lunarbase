@@ -15,14 +15,12 @@ export function ThemeProvider({
 	const theme = useClientStore((state) => state.ui.theme);
 	const setTheme = useClientStore((state) => state.setTheme);
 
-	// Initialize theme if not set
 	useEffect(() => {
 		if (!theme) {
 			setTheme(defaultTheme);
 		}
 	}, [theme, defaultTheme, setTheme]);
 
-	// Apply theme to document
 	useEffect(() => {
 		const root = window.document.documentElement;
 

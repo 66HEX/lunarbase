@@ -16,10 +16,8 @@ use lunarbase::middleware::auth_middleware;
 use lunarbase::{AppState, Config};
 
 async fn create_test_router() -> Router {
-    // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
-    // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
@@ -27,7 +25,6 @@ async fn create_test_router() -> Router {
         .await
         .expect("Failed to create AppState");
 
-    // Public routes (no authentication required)
     let public_routes = Router::new()
         .route("/health", get(health_check))
         .route("/auth/register", post(register))
@@ -37,7 +34,6 @@ async fn create_test_router() -> Router {
         .route("/ws", get(websocket_handler))
         .route("/ws/status", get(websocket_status));
 
-    // Protected routes (authentication required)
     let protected_routes = Router::new()
         .route("/auth/me", get(me))
         .route("/ws/stats", get(websocket_stats))
@@ -53,21 +49,17 @@ async fn create_test_router() -> Router {
             auth_middleware,
         ));
 
-    // Combine routes
     let api_routes = Router::new().merge(public_routes).merge(protected_routes);
 
     let router = Router::new().nest("/api", api_routes).with_state(app_state);
 
-    // Skip middleware in tests to avoid Prometheus global recorder conflicts
     router
 }
 
-// Helper function to create admin JWT token for testing
 async fn create_admin_token(app: &Router) -> (i32, String) {
     create_test_user(app, "admin").await
 }
 
-// Helper function to create test user and return (user_id, token)
 async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     use diesel::prelude::*;
     use lunarbase::models::NewUser;
@@ -80,13 +72,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     );
     let unique_email = format!("{}@test.com", unique_username);
 
-    // Create user directly in database with is_verified = true
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let mut conn = db_pool.get().expect("Failed to get database connection");
     let test_password_pepper = "test_pepper".to_string();
 
-    // Create new user with verification status set to true for tests
     let new_user = NewUser::new_verified(
         unique_email.clone(),
         "TestPassword123!",
@@ -97,13 +87,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     )
     .expect("Failed to create new user");
 
-    // Insert user into database
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
         .expect("Failed to insert user");
 
-    // Get the inserted user
     let user: lunarbase::models::User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(lunarbase::models::User::as_select())
@@ -115,7 +103,6 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     (user_id, token)
 }
 
-// Helper function to create JWT token for specific user
 fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     use jsonwebtoken::{EncodingKey, Header, encode};
     use lunarbase::utils::Claims;
@@ -125,7 +112,7 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs() as i64;
-    let exp = now + 3600; // 1 hour
+    let exp = now + 3600;
 
     let claims = Claims {
         sub: user_id.to_string(),
@@ -149,7 +136,6 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
 async fn test_websocket_connection_stats() {
     let app = create_test_router().await;
 
-    // Get initial WebSocket stats
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -180,7 +166,6 @@ async fn test_websocket_connection_stats() {
 async fn test_websocket_admin_stats_requires_auth() {
     let app = create_test_router().await;
 
-    // Try to access admin stats without authentication
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -198,10 +183,8 @@ async fn test_websocket_admin_stats_requires_auth() {
 async fn test_websocket_admin_stats_with_auth() {
     let app = create_test_router().await;
 
-    // Use the same approach as permissions tests - create token for existing admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
-    // Access admin WebSocket stats
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -231,7 +214,6 @@ async fn test_websocket_admin_stats_with_auth() {
 async fn test_websocket_models_serialization() {
     use lunarbase::models::{SubscriptionRequest, SubscriptionType, WebSocketMessage};
 
-    // Test WebSocket message serialization
     let subscription_request = SubscriptionRequest {
         subscription_id: "test-sub-1".to_string(),
         collection_name: "test_collection".to_string(),
@@ -257,7 +239,6 @@ async fn test_record_event_creation() {
     use lunarbase::models::{PendingEvent, RecordEvent};
     use serde_json::json;
 
-    // Test record event creation
     let event = RecordEvent::Created {
         record_id: "123".to_string(),
         record: json!({"title": "Test Record", "content": "Test content"}),
@@ -269,7 +250,6 @@ async fn test_record_event_creation() {
         user_id: Some(1),
     };
 
-    // Test serialization
     match &pending_event.event {
         RecordEvent::Created { record_id, record } => {
             assert_eq!(record_id, "123");
@@ -284,7 +264,6 @@ async fn test_subscription_data_matching() {
     use lunarbase::models::{PendingEvent, RecordEvent, SubscriptionData, SubscriptionType};
     use serde_json::json;
 
-    // Create subscription for a specific collection
     let subscription = SubscriptionData::new(
         "articles".to_string(),
         SubscriptionType::Collection,
@@ -292,7 +271,6 @@ async fn test_subscription_data_matching() {
         Some(1),
     );
 
-    // Create matching event
     let matching_event = PendingEvent {
         collection_name: "articles".to_string(),
         event: RecordEvent::Created {
@@ -302,7 +280,6 @@ async fn test_subscription_data_matching() {
         user_id: Some(1),
     };
 
-    // Create non-matching event
     let non_matching_event = PendingEvent {
         collection_name: "users".to_string(),
         event: RecordEvent::Created {
@@ -316,16 +293,12 @@ async fn test_subscription_data_matching() {
     assert!(!subscription.matches_event(&non_matching_event));
 }
 
-// Tests for new admin WebSocket endpoints
-
 #[tokio::test]
 async fn test_get_connections_requires_admin() {
     let app = create_test_router().await;
 
-    // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
 
-    // Try to access connections with regular user
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -344,10 +317,8 @@ async fn test_get_connections_requires_admin() {
 async fn test_get_connections_with_admin() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
-    // Access connections with admin
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -374,10 +345,8 @@ async fn test_get_connections_with_admin() {
 async fn test_disconnect_connection_requires_admin() {
     let app = create_test_router().await;
 
-    // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
 
-    // Try to disconnect connection with regular user
     let fake_connection_id = uuid::Uuid::new_v4().to_string();
     let response = app
         .oneshot(
@@ -398,10 +367,8 @@ async fn test_disconnect_connection_requires_admin() {
 async fn test_disconnect_nonexistent_connection() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
-    // Try to disconnect non-existent connection
     let fake_connection_id = uuid::Uuid::new_v4().to_string();
     let response = app
         .oneshot(
@@ -422,10 +389,8 @@ async fn test_disconnect_nonexistent_connection() {
 async fn test_disconnect_connection_invalid_uuid() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
-    // Try to disconnect with invalid UUID
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -445,7 +410,6 @@ async fn test_disconnect_connection_invalid_uuid() {
 async fn test_broadcast_message_requires_admin() {
     let app = create_test_router().await;
 
-    // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
 
     let broadcast_payload = json!({
@@ -454,7 +418,6 @@ async fn test_broadcast_message_requires_admin() {
         "target_collections": null
     });
 
-    // Try to broadcast with regular user
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -475,7 +438,6 @@ async fn test_broadcast_message_requires_admin() {
 async fn test_broadcast_message_with_admin() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
     let broadcast_payload = json!({
@@ -484,7 +446,6 @@ async fn test_broadcast_message_with_admin() {
         "target_collections": null
     });
 
-    // Broadcast with admin
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -517,7 +478,6 @@ async fn test_broadcast_message_with_admin() {
 async fn test_broadcast_message_with_target_users() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
     let broadcast_payload = json!({
@@ -526,7 +486,6 @@ async fn test_broadcast_message_with_target_users() {
         "target_collections": null
     });
 
-    // Broadcast with specific user targets
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -558,7 +517,6 @@ async fn test_broadcast_message_with_target_users() {
 async fn test_broadcast_message_with_target_collections() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
     let broadcast_payload = json!({
@@ -567,7 +525,6 @@ async fn test_broadcast_message_with_target_collections() {
         "target_collections": ["articles", "users"]
     });
 
-    // Broadcast with specific collection targets
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -599,10 +556,8 @@ async fn test_broadcast_message_with_target_collections() {
 async fn test_get_activity_requires_admin() {
     let app = create_test_router().await;
 
-    // Create regular user
     let (_user_id, user_token) = create_test_user(&app, "user").await;
 
-    // Try to access activity with regular user
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -621,10 +576,8 @@ async fn test_get_activity_requires_admin() {
 async fn test_get_activity_with_admin() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
-    // Access activity with admin
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -652,10 +605,8 @@ async fn test_get_activity_with_admin() {
 async fn test_get_activity_with_pagination() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
-    // Access activity with pagination parameters
     let response = app
         .oneshot(
             axum::http::Request::builder()
@@ -683,10 +634,8 @@ async fn test_get_activity_with_pagination() {
 async fn test_broadcast_request_validation() {
     let app = create_test_router().await;
 
-    // Create admin user
     let (_user_id, admin_token) = create_admin_token(&app).await;
 
-    // Test with empty message
     let broadcast_payload = json!({
         "message": "",
         "target_users": null,
@@ -706,7 +655,6 @@ async fn test_broadcast_request_validation() {
         .await
         .unwrap();
 
-    // Should still work with empty message (validation depends on implementation)
     assert_eq!(response.status(), StatusCode::OK);
 }
 
@@ -714,7 +662,6 @@ async fn test_broadcast_request_validation() {
 async fn test_websocket_admin_endpoints_unauthorized() {
     let app = create_test_router().await;
 
-    // Test all admin endpoints without authentication
     let endpoints = vec![
         ("/api/ws/connections", "GET"),
         ("/api/ws/broadcast", "POST"),
@@ -756,7 +703,6 @@ async fn test_record_specific_subscription() {
     use lunarbase::models::{PendingEvent, RecordEvent, SubscriptionData, SubscriptionType};
     use serde_json::json;
 
-    // Create subscription for a specific record
     let subscription = SubscriptionData::new(
         "articles".to_string(),
         SubscriptionType::Record {
@@ -766,7 +712,6 @@ async fn test_record_specific_subscription() {
         Some(1),
     );
 
-    // Create matching event for the specific record
     let matching_event = PendingEvent {
         collection_name: "articles".to_string(),
         event: RecordEvent::Updated {
@@ -777,7 +722,6 @@ async fn test_record_specific_subscription() {
         user_id: Some(1),
     };
 
-    // Create non-matching event for different record
     let non_matching_event = PendingEvent {
         collection_name: "articles".to_string(),
         event: RecordEvent::Updated {

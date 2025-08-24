@@ -1,4 +1,3 @@
-// API Response Types
 export interface ApiResponse<T> {
 	success: boolean;
 	data: T;
@@ -8,7 +7,6 @@ export interface ApiResponse<T> {
 	timestamp: string;
 }
 
-// User Types
 export interface User {
 	id: number;
 	email: string;
@@ -61,7 +59,6 @@ export interface ResetPasswordRequest {
 	new_password: string;
 }
 
-// OAuth Types
 export interface OAuthAuthorizationResponse {
 	authorization_url: string;
 	state: string;
@@ -97,7 +94,6 @@ export interface UsersListParams {
 	filter?: string;
 }
 
-// Collection Types
 export interface FieldDefinition {
 	name: string;
 	field_type:
@@ -146,7 +142,6 @@ export interface UpdateCollectionRequest {
 	schema?: CollectionSchema;
 }
 
-// Record Types
 export interface RecordData {
 	[key: string]: unknown;
 }
@@ -167,21 +162,17 @@ export interface UpdateRecordRequest {
 	data: RecordData;
 }
 
-// Alias for backward compatibility
 export type Record = ApiRecord;
 
-// Record with collection name (for all records endpoint)
 export interface RecordWithCollection extends ApiRecord {
 	collection_name: string;
 }
 
-// Paginated Records Response
 export interface PaginatedRecordsResponse {
 	records: RecordWithCollection[];
 	pagination: PaginationMeta;
 }
 
-// Query Types
 export interface QueryOptions {
 	sort?: string;
 	filter?: string;
@@ -190,7 +181,6 @@ export interface QueryOptions {
 	offset?: number;
 }
 
-// Permission Types
 export interface BasePermissions {
 	can_create: boolean;
 	can_read: boolean;
@@ -222,7 +212,6 @@ export interface SetPermissionsRequest {
 	can_list: boolean;
 }
 
-// Role Types
 export interface Role {
 	id: number;
 	name: string;
@@ -244,7 +233,6 @@ export interface UpdateRoleRequest {
 	priority?: number;
 }
 
-// Collection Permission Types
 export interface CollectionPermission {
 	id: number;
 	role_id: number;
@@ -268,7 +256,6 @@ export interface SetCollectionPermissionRequest {
 	can_list: boolean;
 }
 
-// User Collection Permission Types
 export interface UserCollectionPermission {
 	id: number;
 	user_id: number;
@@ -292,13 +279,11 @@ export interface SetUserCollectionPermissionRequest {
 	can_list: boolean | null;
 }
 
-// Permission Result Type
 export interface PermissionResult {
 	has_permission: boolean;
 	reason?: string;
 }
 
-// Statistics Types
 export interface CollectionStats {
 	total_collections: number;
 	total_records: number;
@@ -310,7 +295,6 @@ export interface CollectionStats {
 	smallest_collection: string | null;
 }
 
-// WebSocket Types
 export interface WebSocketStats {
 	total_connections: number;
 	authenticated_connections: number;
@@ -361,7 +345,6 @@ export interface BroadcastMessageResponse {
 	message: string;
 }
 
-// Ownership Types
 export interface OwnershipInfo {
 	user_id?: number;
 	created_by?: number;
@@ -406,13 +389,11 @@ export interface OwnedRecordsResponse {
 	records: Record[];
 }
 
-// Error Types
 export interface ApiError {
 	error: string;
 	validation_errors?: string[];
 }
 
-// Health Types
 export interface HealthResponse {
 	status: string;
 	message: string;
@@ -444,7 +425,6 @@ export interface SystemInfo {
 	disk_usage_percentage: number;
 }
 
-// Metrics Types
 export interface MetricsSummary {
 	http_requests_total: number;
 	active_websocket_connections: number;
@@ -456,7 +436,6 @@ export interface MetricsSummary {
 	timestamp: string;
 }
 
-// Configuration Types
 export interface SystemSetting {
 	id: number;
 	category: "database" | "auth" | "api";
@@ -487,7 +466,6 @@ export interface UpdateSystemSettingRequest {
 	setting_value: string;
 }
 
-// Backup types
 export interface BackupResponse {
 	message: string;
 	backup_id: string;

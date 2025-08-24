@@ -8,7 +8,6 @@ import {
 	WifiOff,
 } from "lucide-react";
 
-// WebSocket status icons
 export const webSocketStatusIcons = {
 	active: Wifi,
 	idle: WifiOff,
@@ -17,14 +16,12 @@ export const webSocketStatusIcons = {
 	subscriptions: Activity,
 };
 
-// User connection status icons
 export const connectionStatusIcons = {
 	authenticated: UserCheck,
 	anonymous: UserX,
 	disconnect: WifiOff,
 };
 
-// WebSocket status variants
 export const getWebSocketStatusVariant = (status: string) => {
 	const variants: {
 		[key: string]:
@@ -43,7 +40,6 @@ export const getWebSocketStatusVariant = (status: string) => {
 	return variants[status] || "secondary";
 };
 
-// Connection status colors
 export const connectionStatusColors = {
 	authenticated: "text-green-500",
 	anonymous: "text-gray-400",
@@ -51,7 +47,6 @@ export const connectionStatusColors = {
 		"text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20",
 };
 
-// WebSocket stats card configurations
 export const webSocketStatsConfig = [
 	{
 		key: "total_connections",
@@ -84,7 +79,6 @@ export const webSocketStatsConfig = [
 	},
 ];
 
-// Empty state messages
 export const webSocketEmptyStates = {
 	connections: {
 		title: "No active connections",
@@ -103,7 +97,6 @@ export const webSocketEmptyStates = {
 	},
 };
 
-// Connection ID display format
 export const formatConnectionId = (
 	connectionId: string,
 	length: number = 8,
@@ -111,7 +104,6 @@ export const formatConnectionId = (
 	return `${connectionId.substring(0, length)}...`;
 };
 
-// Date formatting utilities
 export const formatConnectionDate = (dateString: string) => {
 	const date = new Date(dateString);
 	return {
@@ -120,7 +112,6 @@ export const formatConnectionDate = (dateString: string) => {
 	};
 };
 
-// Subscription badge variant
 export const getSubscriptionBadgeVariant = (hasSubscriptions: boolean) => {
 	return hasSubscriptions ? "secondary" : "outline";
 };

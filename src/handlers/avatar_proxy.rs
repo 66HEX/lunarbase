@@ -5,11 +5,9 @@ use utoipa::{IntoParams, ToSchema};
 
 #[derive(Deserialize, IntoParams, ToSchema)]
 pub struct AvatarQuery {
-    /// External avatar URL to proxy (must be from allowed domains)
     url: String,
 }
 
-/// Proxy external avatar images
 #[utoipa::path(
     get,
     path = "/avatar-proxy",
@@ -28,12 +26,10 @@ pub struct AvatarQuery {
 pub async fn proxy_avatar(Query(params): Query<AvatarQuery>) -> Result<Response, StatusCode> {
     let url = &params.url;
 
-    // Validate that the URL is from allowed domains
     if !is_allowed_avatar_domain(url) {
         return Err(StatusCode::FORBIDDEN);
     }
 
-    // Fetch the image from the external URL
     let client = reqwest::Client::new();
     let response = client
         .get(url)
@@ -61,7 +57,7 @@ pub async fn proxy_avatar(Query(params): Query<AvatarQuery>) -> Result<Response,
     let response_builder = Response::builder()
         .status(StatusCode::OK)
         .header("Content-Type", content_type)
-        .header("Cache-Control", "public, max-age=3600") // Cache for 1 hour
+        .header("Cache-Control", "public, max-age=3600")
         .header("Access-Control-Allow-Origin", "*");
 
     response_builder
@@ -74,7 +70,7 @@ fn is_allowed_avatar_domain(url: &str) -> bool {
         "lh3.googleusercontent.com",
         "avatars.githubusercontent.com",
         "graph.facebook.com",
-        "pbs.twimg.com", // Twitter avatars
+        "pbs.twimg.com",
     ];
 
     allowed_domains.iter().any(|domain| url.contains(domain))

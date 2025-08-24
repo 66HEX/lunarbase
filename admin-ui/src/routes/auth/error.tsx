@@ -15,7 +15,6 @@ export default function AuthErrorComponent() {
 	const errorMessage = search.message || "Authentication failed";
 
 	useEffect(() => {
-		// Auto redirect to login after 10 seconds
 		const timer = setTimeout(() => {
 			navigate({ to: "/login" });
 		}, 10000);
@@ -26,7 +25,6 @@ export default function AuthErrorComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-				{/* Header */}
 				<div className="text-center">
 					<div className="flex justify-center mb-4">
 						<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -38,7 +36,6 @@ export default function AuthErrorComponent() {
 					</h1>
 				</div>
 
-				{/* Error Card */}
 				<Card>
 					<CardHeader>
 						<CardTitle className="text-center text-red-600 dark:text-red-400">

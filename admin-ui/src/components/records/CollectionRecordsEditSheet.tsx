@@ -68,7 +68,6 @@ export function CollectionRecordsEditSheet({
 		{},
 	);
 
-	// Get available collections for relation fields
 	const availableCollections = collectionsData?.collections || [];
 
 	const initializeFormData = useCallback(() => {
@@ -82,20 +81,17 @@ export function CollectionRecordsEditSheet({
 				const value = record.data[field.name];
 
 				if (field.field_type === "file") {
-					// Handle file fields - convert URLs to FileUploadFile objects
 					if (value && typeof value === "string") {
-						// Single file URL
 						const fileName = value.split("/").pop() || "file";
 						initialFileData[field.name] = [
 							{
 								id: `existing-${Date.now()}`,
-								file: new File([], fileName), // Empty file object for existing files
-								preview: value, // Use URL as preview
+								file: new File([], fileName),
+								preview: value,
 								status: "success" as const,
 							},
 						];
 					} else if (Array.isArray(value)) {
-						// Multiple file URLs
 						initialFileData[field.name] = value.map((url, index) => {
 							const fileName = url.split("/").pop() || `file-${index}`;
 							return {
@@ -109,7 +105,6 @@ export function CollectionRecordsEditSheet({
 						initialFileData[field.name] = [];
 					}
 				} else {
-					// Handle non-file fields
 					if (value !== null && value !== undefined) {
 						initialData[field.name] =
 							field.field_type === "json" && typeof value === "object"
@@ -283,7 +278,7 @@ export function CollectionRecordsEditSheet({
 						<FileUpload
 							multiple={false}
 							accept="*/*"
-							maxSize={10 * 1024 * 1024} // 10MB
+							maxSize={10 * 1024 * 1024}
 							maxFiles={2}
 							files={fileData[field.name] || []}
 							onFilesChange={(files) => updateFileData(field.name, files)}

@@ -3,9 +3,7 @@ import { devtools } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
 import type { ToastPosition } from "@/components/ui/toast";
 
-// Client-side state only - no server data
 interface ClientState {
-	// UI State
 	ui: {
 		sidebar: {
 			isOpen: boolean;
@@ -44,14 +42,12 @@ interface ClientState {
 		}>;
 	};
 
-	// Selected items (client state)
 	selected: {
 		collectionName: string | null;
 		recordId: number | null;
 		userId: number | null;
 	};
 
-	// Form state
 	forms: {
 		recordForm: {
 			isOpen: boolean;
@@ -70,35 +66,29 @@ interface ClientState {
 }
 
 interface ClientActions {
-	// UI Actions
 	toggleSidebar: () => void;
 	setSidebarOpen: (isOpen: boolean) => void;
 	setTheme: (theme: "light" | "dark" | "system") => void;
 
-	// Modal Actions
 	openModal: (modal: keyof ClientState["ui"]["modals"]) => void;
 	closeModal: (modal: keyof ClientState["ui"]["modals"]) => void;
 	closeAllModals: () => void;
 
-	// Sheet Actions
 	openSheet: (sheet: keyof ClientState["ui"]["sheets"]) => void;
 	closeSheet: (sheet: keyof ClientState["ui"]["sheets"]) => void;
 	closeAllSheets: () => void;
 
-	// Notification Actions
 	addNotification: (
 		notification: Omit<ClientState["ui"]["notifications"][0], "id">,
 	) => string;
 	removeNotification: (id: string) => void;
 	clearNotifications: () => void;
 
-	// Selection Actions
 	setSelectedCollection: (collectionName: string | null) => void;
 	setSelectedRecord: (recordId: number | null) => void;
 	setSelectedUser: (userId: number | null) => void;
 	clearSelections: () => void;
 
-	// Form Actions
 	openRecordForm: (
 		mode: "create" | "edit",
 		collectionName: string,
@@ -175,7 +165,6 @@ export const useClientStore = create<ClientStore>()(
 		immer((set) => ({
 			...initialState,
 
-			// UI Actions
 			toggleSidebar: () =>
 				set((state: ClientState) => {
 					state.ui.sidebar.isOpen = !state.ui.sidebar.isOpen;
@@ -191,7 +180,6 @@ export const useClientStore = create<ClientStore>()(
 					state.ui.theme = theme;
 				}),
 
-			// Modal Actions
 			openModal: (modal: keyof ClientState["ui"]["modals"]) =>
 				set((state: ClientState) => {
 					state.ui.modals[modal] = true;
@@ -209,7 +197,6 @@ export const useClientStore = create<ClientStore>()(
 					});
 				}),
 
-			// Sheet Actions
 			openSheet: (sheet: keyof ClientState["ui"]["sheets"]) =>
 				set((state: ClientState) => {
 					state.ui.sheets[sheet] = true;
@@ -227,7 +214,6 @@ export const useClientStore = create<ClientStore>()(
 					});
 				}),
 
-			// Notification Actions
 			addNotification: (
 				notification: Omit<ClientState["ui"]["notifications"][0], "id">,
 			) => {
@@ -250,7 +236,6 @@ export const useClientStore = create<ClientStore>()(
 					state.ui.notifications = [];
 				}),
 
-			// Selection Actions
 			setSelectedCollection: (collectionName: string | null) =>
 				set((state: ClientState) => {
 					state.selected.collectionName = collectionName;
@@ -273,7 +258,6 @@ export const useClientStore = create<ClientStore>()(
 					state.selected.userId = null;
 				}),
 
-			// Form Actions
 			openRecordForm: (
 				mode: "create" | "edit",
 				collectionName: string,
@@ -328,12 +312,10 @@ export const useClientStore = create<ClientStore>()(
 	),
 );
 
-// Selectors for easier access
 export const useUI = () => useClientStore((state) => state.ui);
 export const useSelected = () => useClientStore((state) => state.selected);
 export const useForms = () => useClientStore((state) => state.forms);
 
-// Action selectors - using individual property access to avoid object recreation
 export const useUIActions = () => {
 	const toggleSidebar = useClientStore((state) => state.toggleSidebar);
 	const setSidebarOpen = useClientStore((state) => state.setSidebarOpen);

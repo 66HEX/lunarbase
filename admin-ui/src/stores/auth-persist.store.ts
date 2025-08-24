@@ -1,4 +1,3 @@
-// Persistent Auth Store
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
 import { immer } from "zustand/middleware/immer";
@@ -36,14 +35,12 @@ export const useAuthStore = create<AuthStore>()(
 	devtools(
 		persist(
 			immer((set, get) => ({
-				// Initial state
 				user: null,
 				isAuthenticated: false,
 				loading: false,
 				error: null,
 				refreshTimer: null,
 
-				// Actions
 				login: async (email: string, password: string) => {
 					set((state) => {
 						state.loading = true;
@@ -53,7 +50,6 @@ export const useAuthStore = create<AuthStore>()(
 					try {
 						const loginResponse = await authApi.login({ email, password });
 
-						// Fetch user data to verify authentication
 						const userData = await authApi.me();
 
 						set((state) => {
@@ -63,7 +59,6 @@ export const useAuthStore = create<AuthStore>()(
 							state.error = null;
 						});
 
-						// Start proactive token refresh if expires_in is available
 						if (loginResponse?.data?.expires_in) {
 							get().startTokenRefresh(loginResponse.data.expires_in);
 						}
@@ -85,15 +80,12 @@ export const useAuthStore = create<AuthStore>()(
 						state.loading = true;
 					});
 
-					// Stop token refresh timer
 					get().stopTokenRefresh();
 
 					try {
 						await authApi.logout();
 					} catch {
-						// Silently handle logout errors
 					} finally {
-						// Clear auth state
 						set((state) => {
 							state.user = null;
 							state.isAuthenticated = false;
@@ -111,8 +103,6 @@ export const useAuthStore = create<AuthStore>()(
 					});
 
 					try {
-						// Directly redirect to backend OAuth endpoint
-						// Backend will handle the redirect to OAuth provider
 						const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || "/api";
 						window.location.href = `${API_BASE_URL}/auth/oauth/${provider}`;
 					} catch (error: unknown) {
@@ -132,7 +122,6 @@ export const useAuthStore = create<AuthStore>()(
 
 				checkAuth: async () => {
 					try {
-						// Try to get user data
 						const userData = await authApi.me();
 
 						set((state) => {
@@ -142,7 +131,6 @@ export const useAuthStore = create<AuthStore>()(
 						});
 						return true;
 					} catch {
-						// Clear auth state on error
 						set((state) => {
 							state.user = null;
 							state.isAuthenticated = false;
@@ -164,13 +152,10 @@ export const useAuthStore = create<AuthStore>()(
 						set((state) => {
 							state.user = user;
 						});
-					} catch {
-						// Silently handle fetch user errors
-					}
+					} catch {}
 				},
 
 				clearAuth: () => {
-					// Stop token refresh timer
 					get().stopTokenRefresh();
 
 					set((state) => {
@@ -194,24 +179,19 @@ export const useAuthStore = create<AuthStore>()(
 					});
 				},
 
-				// Token refresh management
 				startTokenRefresh: (expiresIn: number) => {
-					// Stop any existing timer
 					get().stopTokenRefresh();
 
-					// Set refresh timer for 1 minute before expiration
-					const refreshTime = Math.max((expiresIn - 60) * 1000, 30000); // Minimum 30 seconds
+					const refreshTime = Math.max((expiresIn - 60) * 1000, 30000);
 
 					const timer = setTimeout(async () => {
 						try {
 							const refreshResponse = await authApi.refresh();
 
-							// Start next refresh cycle if expires_in is available
 							if (refreshResponse?.expires_in) {
 								get().startTokenRefresh(refreshResponse.expires_in);
 							}
 						} catch (error) {
-							// If refresh fails, logout user
 							console.error("Token refresh failed:", error);
 							get().logout();
 						}

@@ -28,7 +28,6 @@ import { useUI, useUIActions } from "@/stores/client.store";
 import type { Collection, RecordData, RecordWithCollection } from "@/types/api";
 
 export default function RecordsComponent() {
-	// Use stores and hooks
 	const { user } = useAuthStore();
 	const { data: collectionsData } = useCollections();
 	const collections = useMemo(
@@ -36,13 +35,11 @@ export default function RecordsComponent() {
 		[collectionsData?.collections],
 	);
 
-	// Local state for pagination and search (replacing useRecords store)
 	const [localSearchTerm, setLocalSearchTerm] = useState("");
 	const searchTerm = useDebounce(localSearchTerm, 300);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize] = useState(20);
 
-	// Reset page when search term changes
 	useEffect(() => {
 		setCurrentPage(1);
 	}, [searchTerm]);
@@ -61,14 +58,12 @@ export default function RecordsComponent() {
 		recordId: number;
 	} | null>(null);
 
-	// Edit sheet state
 	const [editingRecord, setEditingRecord] =
 		useState<RecordWithCollection | null>(null);
 	const [editingCollection, setEditingCollection] = useState<Collection | null>(
 		null,
 	);
 
-	// React Query mutations
 	const deleteRecordMutation = useDeleteRecord();
 	const updateRecordMutation = useUpdateRecord();
 
@@ -83,7 +78,6 @@ export default function RecordsComponent() {
 		}
 	}, [sheets.editRecord, editingRecord, collections]);
 
-	// Handle query error
 	useEffect(() => {
 		if (error) {
 			const errorMessage =
@@ -120,7 +114,7 @@ export default function RecordsComponent() {
 				onSuccess: () => {
 					closeModal("deleteRecord");
 					setRecordToDelete(null);
-					// Refetch data to update the list
+
 					refetch();
 				},
 				onError: () => {
@@ -155,12 +149,12 @@ export default function RecordsComponent() {
 					setEditingRecord(null);
 					setEditingCollection(null);
 					closeSheet("editRecord");
-					// Refetch data to update the list
+
 					refetch();
 				},
 				onError: (error) => {
 					closeSheet("editRecord");
-					throw error; // Re-throw to let EditRecordSheet handle it
+					throw error;
 				},
 			},
 		);
@@ -187,7 +181,6 @@ export default function RecordsComponent() {
 		return stringValue;
 	};
 
-	// Get records from query
 	const allRecords = data?.records || [];
 	const totalRecords = data?.pagination.total_count || 0;
 
@@ -222,7 +215,6 @@ export default function RecordsComponent() {
 			key: "data",
 			title: "Data",
 			render: (_, record) => {
-				// Filter out ownership-related fields and ID since they're shown in separate columns
 				const excludedFields = [
 					"id",
 					"owner_id",
@@ -260,7 +252,6 @@ export default function RecordsComponent() {
 			title: "Ownership",
 			className: "w-32",
 			render: (_, record) => {
-				// Extract ownership fields from record.data
 				const getUserId = (value: unknown): number | undefined => {
 					if (typeof value === "number") return value;
 					if (typeof value === "string") {
@@ -305,7 +296,6 @@ export default function RecordsComponent() {
 			align: "left",
 			className: "w-24",
 			render: (_, record) => {
-				// Extract current owner ID for transfer ownership
 				const getUserId = (value: unknown): number | undefined => {
 					if (typeof value === "number") return value;
 					if (typeof value === "string") {
@@ -386,14 +376,13 @@ export default function RecordsComponent() {
 				onSearchChange={(value) => setLocalSearchTerm(value)}
 			/>
 
-			{/* Records Table */}
 			{allRecords.length > 0 || isLoading ? (
 				<div className="space-y-4">
 					<div className="overflow-x-auto">
 						<Table<RecordWithCollection>
 							columns={columns}
 							data={allRecords}
-							loading={isLoading} // Show spinner on loading
+							loading={isLoading}
 							pagination={{
 								current: currentPage,
 								pageSize: pageSize,
@@ -402,7 +391,6 @@ export default function RecordsComponent() {
 							}}
 						/>
 					</div>
-					{/* Subtle loading indicator for pagination */}
 					{isLoading && (
 						<div className="flex items-center justify-center py-2">
 							<div className="flex items-center gap-2 text-sm text-nocta-500 dark:text-nocta-400">
@@ -416,7 +404,6 @@ export default function RecordsComponent() {
 				<EmptyRecordsState searchTerm={searchTerm} />
 			)}
 
-			{/* Delete Confirmation Dialog */}
 			<DeleteRecordDialog
 				open={modals.deleteRecord || false}
 				onOpenChange={(open) =>
@@ -426,7 +413,6 @@ export default function RecordsComponent() {
 				onCancel={cancelDeleteRecord}
 			/>
 
-			{/* Edit Record Sheet */}
 			<EditRecordSheet
 				open={sheets.editRecord || false}
 				onOpenChange={(open) =>

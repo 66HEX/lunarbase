@@ -14,7 +14,6 @@ use crate::{
     utils::{ApiResponse, AuthError, Claims},
 };
 
-// Helper function to convert Claims to User for ownership checks
 async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
     use crate::schema::users;
     use diesel::prelude::*;
@@ -41,7 +40,6 @@ pub struct GetOwnedRecordsQuery {
     pub offset: Option<i64>,
 }
 
-/// Transfer ownership of a record
 #[utoipa::path(
     post,
     path = "/collections/{collection_name}/records/{record_id}/ownership/transfer",
@@ -67,17 +65,14 @@ pub async fn transfer_record_ownership(
     Path((collection_name, record_id)): Path<(String, i32)>,
     Json(request): Json<TransferOwnershipRequest>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Convert claims to user for ownership service
     let user = claims_to_user(&claims, &state).await?;
 
-    // Get the current record to check ownership
     let record = state
         .collection_service
         .get_record(&collection_name, record_id)
         .await
         .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
 
-    // Transfer ownership
     state
         .ownership_service
         .transfer_ownership(
@@ -98,7 +93,6 @@ pub async fn transfer_record_ownership(
     }))))
 }
 
-/// Get records owned by the current user
 #[utoipa::path(
     get,
     path = "/collections/{collection_name}/ownership/my-records",
@@ -123,7 +117,6 @@ pub async fn get_my_owned_records(
     Path(collection_name): Path<String>,
     Query(params): Query<GetOwnedRecordsQuery>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Convert claims to user for ownership service
     let user = claims_to_user(&claims, &state).await?;
 
     let owned_record_ids = state
@@ -131,7 +124,6 @@ pub async fn get_my_owned_records(
         .get_owned_records(&user, &collection_name, params.limit, params.offset)
         .await?;
 
-    // Get full record details for owned records
     let mut owned_records = Vec::new();
     for record_id in owned_record_ids {
         if let Ok(record) = state
@@ -151,7 +143,6 @@ pub async fn get_my_owned_records(
     }))))
 }
 
-/// Get records owned by a specific user (admin only)
 #[utoipa::path(
     get,
     path = "/collections/{collection_name}/ownership/users/{user_id}/records",
@@ -178,12 +169,10 @@ pub async fn get_user_owned_records(
     Path((collection_name, user_id)): Path<(String, i32)>,
     Query(params): Query<GetOwnedRecordsQuery>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Only admins can view other users' owned records
     if requesting_claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get the target user
     use crate::schema::users;
     use diesel::prelude::*;
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
@@ -199,7 +188,6 @@ pub async fn get_user_owned_records(
         .get_owned_records(&target_user, &collection_name, params.limit, params.offset)
         .await?;
 
-    // Get full record details for owned records
     let mut owned_records = Vec::new();
     for record_id in owned_record_ids {
         if let Ok(record) = state
@@ -220,7 +208,6 @@ pub async fn get_user_owned_records(
     }))))
 }
 
-/// Check if current user owns a specific record
 #[utoipa::path(
     get,
     path = "/collections/{collection_name}/records/{record_id}/ownership",
@@ -243,24 +230,20 @@ pub async fn check_record_ownership(
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Convert claims to user for ownership service
     let user = claims_to_user(&claims, &state).await?;
 
-    // Get the record
     let record = state
         .collection_service
         .get_record(&collection_name, record_id)
         .await
         .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
 
-    // Check ownership
     let is_owner = state.ownership_service.check_ownership(&user, &record)?;
 
     let ownership_permissions = state
         .ownership_service
         .get_ownership_permissions(&user, &record)?;
 
-    // Extract owner_id from record data
     let owner_id = record
         .data
         .get("owner_id")
@@ -295,7 +278,6 @@ pub async fn check_record_ownership(
     }))))
 }
 
-// Set ownership when creating a record (internal helper)
 pub async fn set_record_ownership_on_create(
     user: &User,
     record_data: &mut Value,
@@ -308,8 +290,6 @@ pub async fn set_record_ownership_on_create(
     Ok(())
 }
 
-// Get ownership statistics for admin
-/// Get ownership statistics for a collection
 #[utoipa::path(
     get,
     path = "/collections/{collection_name}/ownership/stats",
@@ -332,25 +312,21 @@ pub async fn get_ownership_stats(
     Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Only admins can view ownership statistics
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Get basic stats
     use diesel::prelude::*;
     let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
 
     let table_name = format!("records_{}", collection_name);
 
-    // Count total records
     let total_records_query = format!("SELECT COUNT(*) as count FROM {}", table_name);
 
     #[derive(QueryableByName)]
@@ -367,7 +343,6 @@ pub async fn get_ownership_stats(
         .map(|r| r.count)
         .unwrap_or(0);
 
-    // Count records with ownership (have owner_id or author_id)
     let owned_records_query = format!(
         "SELECT COUNT(*) as count FROM {} WHERE owner_id IS NOT NULL OR author_id IS NOT NULL",
         table_name

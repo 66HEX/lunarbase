@@ -28,16 +28,13 @@ pub fn setup_logging() {
 }
 
 pub async fn setup_cors(app_state: &AppState) -> CorsLayer {
-    // Get CORS origins from configuration
     let mut cors_origins = app_state.auth_state.get_cors_allowed_origins().await;
 
-    // Add required origins for external services
     cors_origins.extend(vec![
         "https://lh3.googleusercontent.com".to_string(),
         "https://avatars.githubusercontent.com".to_string(),
     ]);
 
-    // Parse origins
     let parsed_origins: Vec<_> = cors_origins
         .iter()
         .filter_map(|origin| origin.parse().ok())
@@ -65,7 +62,6 @@ pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     let cors_layer = setup_cors(&app_state).await;
     let mut router = app.layer(cors_layer).layer(TraceLayer::new_for_http());
 
-    // Skip metrics layer in test environment to avoid global recorder conflicts
     if !cfg!(test) {
         router = router
             .layer(setup_metrics_layer())

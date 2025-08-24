@@ -25,10 +25,6 @@ use crate::{
     },
 };
 
-/// Register a new user
-///
-/// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
-/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/register",
@@ -45,7 +41,6 @@ pub async fn register(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
-    // Extract client IP for rate limiting
     let connect_info = request
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
@@ -53,7 +48,6 @@ pub async fn register(
     let client_ip = extract_client_ip(request.headers(), connect_info);
     let rate_limit_key = format!("register:{}", client_ip);
 
-    // Rate limiting check
     if !app_state
         .auth_state
         .rate_limiter
@@ -62,21 +56,17 @@ pub async fn register(
         return Err(AuthError::RateLimitExceeded);
     }
 
-    // Extract JSON payload from request
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await
         .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    // Validate request payload
     payload.validate().map_err(AuthError::ValidationError)?;
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Check if user already exists (timing attack protection)
     let existing_user = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
@@ -85,14 +75,12 @@ pub async fn register(
         .map_err(|_| AuthError::DatabaseError)?;
 
     if existing_user.is_some() {
-        // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
         return Err(AuthError::ValidationError(vec![
             "Email already registered".to_string(),
         ]));
     }
 
-    // Check username availability (timing attack protection)
     let existing_username = users::table
         .filter(users::username.eq(&payload.username))
         .select(User::as_select())
@@ -101,14 +89,12 @@ pub async fn register(
         .map_err(|_| AuthError::DatabaseError)?;
 
     if existing_username.is_some() {
-        // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
         return Err(AuthError::ValidationError(vec![
             "Username already taken".to_string(),
         ]));
     }
 
-    // Create new user with secure password hashing
     let new_user = NewUser::new(
         payload.email,
         &payload.password,
@@ -117,26 +103,22 @@ pub async fn register(
     )
     .map_err(|_| AuthError::InternalError)?;
 
-    // Insert user into database
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Get the inserted user
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Send verification email (non-blocking)
     if let Err(e) = app_state
         .email_service
         .send_verification_email(user.id, &user.email, &user.username)
         .await
     {
-        // Log error but don't fail registration
         tracing::warn!(
             "Failed to send verification email to {}: {:?}",
             user.email,
@@ -144,7 +126,6 @@ pub async fn register(
         );
     }
 
-    // Generate tokens
     let access_token = app_state
         .auth_state
         .jwt_service
@@ -157,17 +138,15 @@ pub async fn register(
         .generate_refresh_token(user.id)
         .await?;
 
-    // Set tokens as httpOnly cookies
     let cookie_service = CookieService::new();
     let mut headers = HeaderMap::new();
     cookie_service.set_access_token_cookie(&mut headers, &access_token);
     cookie_service.set_refresh_token_cookie(&mut headers, &refresh_token);
 
-    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(),  // Empty for security
-        refresh_token: String::new(), // Empty for security
+        access_token: String::new(),
+        refresh_token: String::new(),
         expires_in: app_state
             .auth_state
             .jwt_service
@@ -182,7 +161,6 @@ pub async fn register(
     ))
 }
 
-/// Verify email endpoint
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct VerifyEmailRequest {
     #[schema(example = "verification_token_here")]
@@ -204,16 +182,13 @@ pub async fn verify_email(
     State(app_state): State<AppState>,
     Json(payload): Json<VerifyEmailRequest>,
 ) -> Result<Json<ApiResponse<String>>, AuthError> {
-    // Verify the token
     let user_id = app_state.email_service.verify_token(&payload.token).await?;
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Update user's is_verified status
     diesel::update(users::table.filter(users::id.eq(user_id)))
         .set(users::is_verified.eq(true))
         .execute(&mut conn)
@@ -224,7 +199,6 @@ pub async fn verify_email(
     )))
 }
 
-/// Verify email via GET request (for email links)
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct VerifyEmailQuery {
     #[schema(example = "verification_token_here")]
@@ -247,47 +221,34 @@ pub async fn verify_email_get(
     State(app_state): State<AppState>,
     Query(query): Query<VerifyEmailQuery>,
 ) -> Result<Redirect, AuthError> {
-    // Verify the token
     match app_state.email_service.verify_token(&query.token).await {
         Ok(user_id) => {
-            // Get database connection
             let mut conn = app_state
                 .db_pool
                 .get()
                 .map_err(|_| AuthError::DatabaseError)?;
 
-            // Update user's is_verified status
             match diesel::update(users::table.filter(users::id.eq(user_id)))
                 .set(users::is_verified.eq(true))
                 .execute(&mut conn)
             {
-                Ok(_) => {
-                    // Redirect to admin panel after successful verification
-                    Ok(Redirect::to(&format!(
-                        "{}/admin",
-                        app_state.email_service.get_frontend_url()
-                    )))
-                }
-                Err(_) => {
-                    // Redirect to frontend with error message
-                    Ok(Redirect::to(&format!(
-                        "{}/email-verified?success=false&error=database",
-                        app_state.email_service.get_frontend_url()
-                    )))
-                }
+                Ok(_) => Ok(Redirect::to(&format!(
+                    "{}/admin",
+                    app_state.email_service.get_frontend_url()
+                ))),
+                Err(_) => Ok(Redirect::to(&format!(
+                    "{}/email-verified?success=false&error=database",
+                    app_state.email_service.get_frontend_url()
+                ))),
             }
         }
-        Err(_) => {
-            // Redirect to frontend with error message
-            Ok(Redirect::to(&format!(
-                "{}/email-verified?success=false&error=invalid_token",
-                app_state.email_service.get_frontend_url()
-            )))
-        }
+        Err(_) => Ok(Redirect::to(&format!(
+            "{}/email-verified?success=false&error=invalid_token",
+            app_state.email_service.get_frontend_url()
+        ))),
     }
 }
 
-/// Resend verification email endpoint
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ResendVerificationRequest {
     #[schema(example = "user@example.com")]
@@ -324,25 +285,21 @@ pub async fn resend_verification(
     State(app_state): State<AppState>,
     Json(payload): Json<ResendVerificationRequest>,
 ) -> Result<Json<ApiResponse<String>>, AuthError> {
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Find user by email
     let user: User = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::UserNotFound)?;
 
-    // Check if user is already verified
     if user.is_verified {
         return Err(AuthError::UserAlreadyVerified);
     }
 
-    // Send verification email
     app_state
         .email_service
         .send_verification_email(user.id, &user.email, &user.username)
@@ -353,7 +310,6 @@ pub async fn resend_verification(
     )))
 }
 
-/// Forgot password endpoint - sends password reset email
 #[utoipa::path(
     post,
     path = "/auth/forgot-password",
@@ -369,17 +325,14 @@ pub async fn forgot_password(
     State(app_state): State<AppState>,
     Json(payload): Json<ForgotPasswordRequest>,
 ) -> Result<Json<ApiResponse<String>>, AuthError> {
-    // Add artificial delay to prevent timing attacks
     let start_time = std::time::Instant::now();
     let base_delay = std::time::Duration::from_millis(500);
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Find user by email
     let user_result: Result<User, _> = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
@@ -387,9 +340,7 @@ pub async fn forgot_password(
 
     match user_result {
         Ok(user) => {
-            // Only send reset email for active users
             if user.is_active {
-                // Send password reset email
                 if let Err(e) = app_state
                     .email_service
                     .send_password_reset_email(user.id, &user.email, &user.username)
@@ -404,7 +355,6 @@ pub async fn forgot_password(
             }
         }
         Err(_) => {
-            // User not found - but we don't reveal this for security
             debug!(
                 "Password reset requested for non-existent email: {}",
                 payload.email
@@ -412,19 +362,16 @@ pub async fn forgot_password(
         }
     }
 
-    // Ensure minimum delay to prevent timing attacks
     let elapsed = start_time.elapsed();
     if elapsed < base_delay {
         tokio::time::sleep(base_delay - elapsed).await;
     }
 
-    // Always return success to prevent email enumeration
     Ok(Json(ApiResponse::success(
         "If an account with that email exists, a password reset link has been sent".to_string(),
     )))
 }
 
-/// Reset password endpoint - resets password using token
 #[utoipa::path(
     post,
     path = "/auth/reset-password",
@@ -447,32 +394,27 @@ pub async fn reset_password(
     use diesel::prelude::*;
     use rand::rngs::OsRng;
 
-    // Validate password strength
     if payload.new_password.len() < 8 {
         return Err(AuthError::WeakPassword);
     }
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Verify the reset token
     let user_id = app_state
         .email_service
         .verify_token_with_type(&payload.token, TokenType::PasswordReset)
         .await
         .map_err(|_| AuthError::PasswordResetTokenInvalid)?;
 
-    // Find user by id
     let user: User = users::table
         .filter(users::id.eq(user_id))
         .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::UserNotFound)?;
 
-    // Hash the new password using the same method as in User model
     let salt = SaltString::generate(&mut OsRng);
     let peppered_password = format!("{}{}", payload.new_password, app_state.password_pepper);
     let argon2 = Argon2::new(
@@ -485,7 +427,6 @@ pub async fn reset_password(
         .map_err(|_| AuthError::InternalError)?
         .to_string();
 
-    // Update user's password and clear any account locks
     diesel::update(users::table.filter(users::id.eq(user.id)))
         .set((
             users::password_hash.eq(&password_hash),
@@ -503,7 +444,6 @@ pub async fn reset_password(
     )))
 }
 
-// OAuth DTOs
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct OAuthCallbackQuery {
     #[schema(example = "authorization_code_here")]
@@ -522,9 +462,6 @@ pub struct OAuthAuthorizationResponse {
     pub state: String,
 }
 
-/// Initiate OAuth authorization
-///
-/// Redirects the user to the OAuth provider's authorization page.
 #[utoipa::path(
     get,
     path = "/auth/oauth/{provider}",
@@ -544,7 +481,6 @@ pub async fn oauth_authorize(
 ) -> Result<Redirect, AuthError> {
     let oauth_service = &app_state.oauth_service;
 
-    // Get authorization URL
     let (auth_url, _state) = oauth_service
         .get_authorization_url(&provider)
         .map_err(|_| {
@@ -554,9 +490,6 @@ pub async fn oauth_authorize(
     Ok(Redirect::temporary(&auth_url))
 }
 
-/// Handle OAuth callback
-///
-/// Processes the OAuth callback from the provider and creates/logs in the user.
 #[utoipa::path(
     get,
     path = "/auth/oauth/{provider}/callback",
@@ -575,7 +508,6 @@ pub async fn oauth_callback(
     axum::extract::Path(provider): axum::extract::Path<String>,
     Query(query): Query<OAuthCallbackQuery>,
 ) -> Result<(HeaderMap, Redirect), AuthError> {
-    // Check for OAuth errors
     if let Some(error) = query.error {
         let error_msg = query.error_description.unwrap_or(error);
         return Ok((
@@ -590,7 +522,6 @@ pub async fn oauth_callback(
 
     let oauth_service = &app_state.oauth_service;
 
-    // Check for required parameters
     let code = query.code.ok_or_else(|| {
         AuthError::ValidationError(vec!["Missing authorization code".to_string()])
     })?;
@@ -599,7 +530,6 @@ pub async fn oauth_callback(
         .state
         .ok_or_else(|| AuthError::ValidationError(vec!["Missing state parameter".to_string()]))?;
 
-    // Exchange code for access token
     let access_token = oauth_service
         .exchange_code_for_token(&provider, &code, &state)
         .await
@@ -607,7 +537,6 @@ pub async fn oauth_callback(
             AuthError::ValidationError(vec![format!("Failed to exchange OAuth code: {}", e)])
         })?;
 
-    // Get user info from OAuth provider
     let oauth_user = oauth_service
         .get_user_info(&provider, &access_token)
         .await
@@ -617,13 +546,11 @@ pub async fn oauth_callback(
             ])
         })?;
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Check if user exists by email
     let existing_user = users::table
         .filter(users::email.eq(&oauth_user.email))
         .select(User::as_select())
@@ -632,7 +559,6 @@ pub async fn oauth_callback(
         .map_err(|_| AuthError::DatabaseError)?;
 
     let user = if let Some(mut user) = existing_user {
-        // Update last login time and avatar URL
         let update_user = crate::models::user::UpdateUser {
             email: None,
             password_hash: None,
@@ -651,16 +577,13 @@ pub async fn oauth_callback(
             .execute(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        // Refresh user data
         user.last_login_at = Some(chrono::Utc::now().naive_utc());
         user
     } else {
-        // Create new user from OAuth info
         let username = oauth_user
             .name
             .unwrap_or_else(|| format!("{}_{}", provider, &oauth_user.id[..8]));
 
-        // Generate a random password since OAuth users don't need one
         let random_password = uuid::Uuid::new_v4().to_string();
 
         let new_user = NewUser::new_with_avatar(
@@ -678,25 +601,21 @@ pub async fn oauth_callback(
             .execute(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        // Get the created user and set as verified (OAuth users are automatically verified)
         let mut created_user: User = users::table
             .filter(users::email.eq(&oauth_user.email))
             .select(User::as_select())
             .first(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        // Update the user to set is_verified = true for OAuth users
         diesel::update(users::table.filter(users::id.eq(created_user.id)))
             .set(users::is_verified.eq(true))
             .execute(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        // Update the local user object to reflect the change
         created_user.is_verified = true;
         created_user
     };
 
-    // Generate JWT tokens
     let jwt_access_token = app_state
         .auth_state
         .jwt_service
@@ -711,13 +630,11 @@ pub async fn oauth_callback(
         .await
         .map_err(|_| AuthError::InternalError)?;
 
-    // Set tokens as httpOnly cookies
     let cookie_service = CookieService::new();
     let mut headers = HeaderMap::new();
     cookie_service.set_access_token_cookie(&mut headers, &jwt_access_token);
     cookie_service.set_refresh_token_cookie(&mut headers, &jwt_refresh_token);
 
-    // Redirect to frontend success page
     Ok((
         headers,
         Redirect::temporary(&format!(
@@ -727,7 +644,6 @@ pub async fn oauth_callback(
     ))
 }
 
-/// Logout endpoint - blacklists tokens
 #[utoipa::path(
     post,
     path = "/auth/logout",
@@ -746,8 +662,6 @@ pub async fn logout(
     Extension(claims): Extension<Claims>,
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<LogoutResponse>>), AuthError> {
-    // Get the current access token from the JWT ID in claims
-    // Since we have the claims, we can blacklist using the JTI
     let expires_at = crate::utils::jwt_service::JwtService::timestamp_to_naive_datetime(claims.exp);
     let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::InternalError)?;
 
@@ -763,7 +677,6 @@ pub async fn logout(
         )
         .map_err(|_| AuthError::InternalError)?;
 
-    // Try to get refresh token from cookie and blacklist it
     if let Some(refresh_token) = CookieService::extract_refresh_token(request.headers()) {
         app_state
             .auth_state
@@ -772,7 +685,6 @@ pub async fn logout(
             .map_err(|_| AuthError::InternalError)?;
     }
 
-    // Clear cookies
     let cookie_service = CookieService::new();
     let mut headers = HeaderMap::new();
     cookie_service.clear_all_tokens(&mut headers);
@@ -784,10 +696,6 @@ pub async fn logout(
     Ok((headers, Json(ApiResponse::success(logout_response))))
 }
 
-/// User login endpoint with timing attack protection and account lockout
-///
-/// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
-/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/login",
@@ -805,7 +713,6 @@ pub async fn login(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
-    // Extract client IP for rate limiting
     let connect_info = request
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
@@ -813,7 +720,6 @@ pub async fn login(
     let client_ip = extract_client_ip(request.headers(), connect_info);
     let rate_limit_key = format!("login:{}", client_ip);
 
-    // Rate limiting check
     if !app_state
         .auth_state
         .rate_limiter
@@ -822,25 +728,20 @@ pub async fn login(
         return Err(AuthError::RateLimitExceeded);
     }
 
-    // Extract JSON payload from request
     let Json(payload): Json<LoginRequest> = Json::from_request(request, &app_state)
         .await
         .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    // Validate request payload
     payload.validate().map_err(AuthError::ValidationError)?;
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Add base delay for timing attack protection
     let base_delay = Duration::from_millis(100);
     let start_time = std::time::Instant::now();
 
-    // Find user by email
     let user = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
@@ -851,7 +752,6 @@ pub async fn login(
     let user = match user {
         Some(user) => user,
         None => {
-            // Ensure minimum delay to prevent timing attacks
             let elapsed = start_time.elapsed();
             if elapsed < base_delay {
                 tokio::time::sleep(base_delay - elapsed).await;
@@ -860,7 +760,6 @@ pub async fn login(
         }
     };
 
-    // Check if account is locked
     if user.is_locked() {
         let elapsed = start_time.elapsed();
         if elapsed < base_delay {
@@ -869,7 +768,6 @@ pub async fn login(
         return Err(AuthError::AccountLocked);
     }
 
-    // Check if account is verified (if verification is enabled)
     if !user.is_verified {
         let elapsed = start_time.elapsed();
         if elapsed < base_delay {
@@ -878,17 +776,14 @@ pub async fn login(
         return Err(AuthError::AccountNotVerified);
     }
 
-    // Verify password
     let password_valid = user
         .verify_password(&payload.password, &app_state.password_pepper)
         .map_err(|_| AuthError::InternalError)?;
 
     if !password_valid {
-        // Get configuration values
         let max_login_attempts = app_state.auth_state.get_max_login_attempts().await;
         let lockout_duration_minutes = app_state.auth_state.get_lockout_duration_minutes().await;
 
-        // Increment failed login attempts
         let new_attempts = user.failed_login_attempts + 1;
         let locked_until = if new_attempts >= max_login_attempts {
             Some(
@@ -907,7 +802,6 @@ pub async fn login(
             .execute(&mut conn)
             .map_err(|_| AuthError::DatabaseError)?;
 
-        // Ensure minimum delay to prevent timing attacks
         let elapsed = start_time.elapsed();
         if elapsed < base_delay {
             tokio::time::sleep(base_delay - elapsed).await;
@@ -916,7 +810,6 @@ pub async fn login(
         return Err(AuthError::InvalidCredentials);
     }
 
-    // Reset failed login attempts on successful login
     diesel::update(users::table.find(user.id))
         .set((
             users::failed_login_attempts.eq(0),
@@ -926,7 +819,6 @@ pub async fn login(
         .execute(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Generate tokens
     let access_token = app_state
         .auth_state
         .jwt_service
@@ -939,23 +831,20 @@ pub async fn login(
         .generate_refresh_token(user.id)
         .await?;
 
-    // Set tokens as httpOnly cookies
     let cookie_service = CookieService::new();
     let mut headers = HeaderMap::new();
     cookie_service.set_access_token_cookie(&mut headers, &access_token);
     cookie_service.set_refresh_token_cookie(&mut headers, &refresh_token);
 
-    // Ensure minimum delay to prevent timing attacks
     let elapsed = start_time.elapsed();
     if elapsed < base_delay {
         tokio::time::sleep(base_delay - elapsed).await;
     }
 
-    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(),  // Empty for security
-        refresh_token: String::new(), // Empty for security
+        access_token: String::new(),
+        refresh_token: String::new(),
         expires_in: app_state
             .auth_state
             .jwt_service
@@ -966,10 +855,6 @@ pub async fn login(
     Ok((headers, Json(ApiResponse::success(auth_response))))
 }
 
-/// Refresh token endpoint
-///
-/// **Note**: Refresh token is read from httpOnly cookies, and new tokens are provided via httpOnly cookies.
-/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/refresh",
@@ -984,11 +869,9 @@ pub async fn refresh_token(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
-    // Extract refresh token from cookie
     let refresh_token =
         CookieService::extract_refresh_token(request.headers()).ok_or(AuthError::TokenInvalid)?;
 
-    // Validate refresh token
     let refresh_claims = app_state
         .auth_state
         .jwt_service
@@ -999,25 +882,21 @@ pub async fn refresh_token(
         .parse()
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Find user in database
     let user = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Check if user is still active
     if !user.is_active {
         return Err(AuthError::TokenInvalid);
     }
 
-    // Generate new tokens
     let access_token = app_state
         .auth_state
         .jwt_service
@@ -1030,17 +909,15 @@ pub async fn refresh_token(
         .generate_refresh_token(user.id)
         .await?;
 
-    // Set new tokens as httpOnly cookies
     let cookie_service = CookieService::new();
     let mut headers = HeaderMap::new();
     cookie_service.set_access_token_cookie(&mut headers, &access_token);
     cookie_service.set_refresh_token_cookie(&mut headers, &new_refresh_token);
 
-    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(),  // Empty for security
-        refresh_token: String::new(), // Empty for security
+        access_token: String::new(),
+        refresh_token: String::new(),
         expires_in: app_state
             .auth_state
             .jwt_service
@@ -1051,7 +928,6 @@ pub async fn refresh_token(
     Ok((headers, Json(ApiResponse::success(auth_response))))
 }
 
-/// Get current user profile (protected endpoint)
 #[utoipa::path(
     get,
     path = "/auth/me",
@@ -1068,18 +944,15 @@ pub async fn me(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<Json<ApiResponse<UserResponse>>, AuthError> {
-    // Extract user claims from request (set by auth middleware)
     let claims = extract_user_claims(&request)?;
 
     let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Find user in database
     let user = users::table
         .find(user_id)
         .select(User::as_select())
@@ -1089,10 +962,6 @@ pub async fn me(
     Ok(Json(ApiResponse::success(user.to_response())))
 }
 
-/// Admin registration endpoint - allows creating first admin or additional admins
-///
-/// **Note**: Authentication tokens are provided via httpOnly cookies, not in the JSON response.
-/// The access_token and refresh_token fields in the response will be empty strings for security.
 #[utoipa::path(
     post,
     path = "/auth/register-admin",
@@ -1109,7 +978,6 @@ pub async fn register_admin(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
-    // Extract client IP for rate limiting
     let connect_info = request
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
@@ -1117,7 +985,6 @@ pub async fn register_admin(
     let client_ip = extract_client_ip(request.headers(), connect_info);
     let rate_limit_key = format!("register_admin:{}", client_ip);
 
-    // Rate limiting check
     if !app_state
         .auth_state
         .rate_limiter
@@ -1126,21 +993,17 @@ pub async fn register_admin(
         return Err(AuthError::RateLimitExceeded);
     }
 
-    // Extract JSON payload from request
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await
         .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    // Validate request payload
     payload.validate().map_err(AuthError::ValidationError)?;
 
-    // Get database connection
     let mut conn = app_state
         .db_pool
         .get()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Check if any admin exists
     let existing_admin = users::table
         .filter(users::role.eq("admin"))
         .select(User::as_select())
@@ -1148,14 +1011,12 @@ pub async fn register_admin(
         .optional()
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // If admin exists, deny registration (only first admin can be created this way)
     if existing_admin.is_some() {
         return Err(AuthError::ValidationError(vec![
             "Admin already exists. Additional admins must be created by existing admins through the admin panel.".to_string()
         ]));
     }
 
-    // Check if user already exists (timing attack protection)
     let existing_user = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
@@ -1164,14 +1025,12 @@ pub async fn register_admin(
         .map_err(|_| AuthError::DatabaseError)?;
 
     if existing_user.is_some() {
-        // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
         return Err(AuthError::ValidationError(vec![
             "Email already registered".to_string(),
         ]));
     }
 
-    // Check username availability (timing attack protection)
     let existing_username = users::table
         .filter(users::username.eq(&payload.username))
         .select(User::as_select())
@@ -1180,14 +1039,12 @@ pub async fn register_admin(
         .map_err(|_| AuthError::DatabaseError)?;
 
     if existing_username.is_some() {
-        // Add artificial delay to prevent timing attacks
         tokio::time::sleep(Duration::from_millis(100)).await;
         return Err(AuthError::ValidationError(vec![
             "Username already taken".to_string(),
         ]));
     }
 
-    // Create new admin user
     let new_user = NewUser::new_with_role(
         payload.email,
         &payload.password,
@@ -1197,20 +1054,17 @@ pub async fn register_admin(
     )
     .map_err(|_| AuthError::InternalError)?;
 
-    // Insert user into database
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Get the inserted user
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(User::as_select())
         .first(&mut conn)
         .map_err(|_| AuthError::DatabaseError)?;
 
-    // Generate tokens
     let access_token = app_state
         .auth_state
         .jwt_service
@@ -1223,17 +1077,15 @@ pub async fn register_admin(
         .generate_refresh_token(user.id)
         .await?;
 
-    // Set tokens as httpOnly cookies
     let cookie_service = CookieService::new();
     let mut headers = HeaderMap::new();
     cookie_service.set_access_token_cookie(&mut headers, &access_token);
     cookie_service.set_refresh_token_cookie(&mut headers, &refresh_token);
 
-    // Return user data without tokens (tokens are now in cookies)
     let auth_response = AuthResponse {
         user: user.to_response(),
-        access_token: String::new(),  // Empty for security
-        refresh_token: String::new(), // Empty for security
+        access_token: String::new(),
+        refresh_token: String::new(),
         expires_in: app_state
             .auth_state
             .jwt_service

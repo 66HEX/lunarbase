@@ -47,7 +47,6 @@ impl EmailService {
         }
     }
 
-    /// Generate a verification token for a user
     pub async fn generate_verification_token(
         &self,
         user_id: i32,
@@ -62,7 +61,6 @@ impl EmailService {
         .await
     }
 
-    /// Generate a password reset token for a user
     pub async fn generate_password_reset_token(
         &self,
         user_id: i32,
@@ -72,7 +70,6 @@ impl EmailService {
             .await
     }
 
-    /// Generate a token with specified type and expiration
     async fn generate_token(
         &self,
         user_id: i32,
@@ -93,29 +90,25 @@ impl EmailService {
 
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Insert new token
         diesel::insert_into(verification_tokens::table)
             .values(&new_token)
             .execute(&mut conn)
             .map_err(|_| AuthError::InternalError)?;
 
-        // Clean up expired tokens (this is also handled by the database trigger)
         let now = Utc::now().naive_utc();
         diesel::delete(verification_tokens::table)
             .filter(verification_tokens::expires_at.lt(now))
             .execute(&mut conn)
-            .ok(); // Ignore errors for cleanup
+            .ok();
 
         Ok(token)
     }
 
-    /// Verify a token and return the user_id if valid
     pub async fn verify_token(&self, token: &str) -> Result<i32, AuthError> {
         self.verify_token_with_type(token, TokenType::EmailVerification)
             .await
     }
 
-    /// Verify a token of specific type and return the user_id if valid
     pub async fn verify_token_with_type(
         &self,
         token: &str,
@@ -123,7 +116,6 @@ impl EmailService {
     ) -> Result<i32, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Find the token
         let verification_token: VerificationToken = verification_tokens::table
             .filter(verification_tokens::token.eq(token))
             .first(&mut conn)
@@ -131,13 +123,11 @@ impl EmailService {
                 AuthError::ValidationError(vec!["Invalid verification token".to_string()])
             })?;
 
-        // Check if token is expired
         if verification_token.expires_at <= Utc::now().naive_utc() {
-            // Remove expired token
             diesel::delete(verification_tokens::table)
                 .filter(verification_tokens::token.eq(token))
                 .execute(&mut conn)
-                .ok(); // Ignore errors for cleanup
+                .ok();
             return Err(AuthError::ValidationError(vec![
                 "Verification token has expired".to_string(),
             ]));
@@ -145,7 +135,6 @@ impl EmailService {
 
         let user_id = verification_token.user_id;
 
-        // Remove the token after successful verification
         diesel::delete(verification_tokens::table)
             .filter(verification_tokens::token.eq(token))
             .execute(&mut conn)
@@ -154,7 +143,6 @@ impl EmailService {
         Ok(user_id)
     }
 
-    /// Send verification email to user
     pub async fn send_verification_email(
         &self,
         user_id: i32,
@@ -171,20 +159,16 @@ impl EmailService {
             return Ok(());
         };
 
-        // Generate verification token
         let token = self
             .generate_verification_token(user_id, email.to_string())
             .await?;
 
-        // Create verification URL
         let verification_url = format!("{}/api/verify-email?token={}", self.frontend_url, token);
 
-        // Create email content
         let subject = "Verify your email address";
         let html_content = self.create_verification_email_html(username, &verification_url);
         let text_content = self.create_verification_email_text(username, &verification_url);
 
-        // Send email
         let email_request = CreateEmailBaseOptions::new(&self.from_email, [email], subject)
             .with_html(&html_content)
             .with_text(&text_content);
@@ -201,7 +185,6 @@ impl EmailService {
         }
     }
 
-    /// Send password reset email to user
     pub async fn send_password_reset_email(
         &self,
         user_id: i32,
@@ -218,20 +201,16 @@ impl EmailService {
             return Ok(());
         };
 
-        // Generate password reset token
         let token = self
             .generate_password_reset_token(user_id, email.to_string())
             .await?;
 
-        // Create password reset URL
         let reset_url = format!("{}/admin/reset-password?token={}", self.frontend_url, token);
 
-        // Create email content
         let subject = "Reset your password";
         let html_content = self.create_password_reset_email_html(username, &reset_url);
         let text_content = self.create_password_reset_email_text(username, &reset_url);
 
-        // Send email
         let email_request = CreateEmailBaseOptions::new(&self.from_email, [email], subject)
             .with_html(&html_content)
             .with_text(&text_content);
@@ -248,7 +227,6 @@ impl EmailService {
         }
     }
 
-    /// Create HTML content for verification email
     fn create_verification_email_html(&self, username: &str, verification_url: &str) -> String {
         format!(
             r#"
@@ -398,7 +376,6 @@ impl EmailService {
         )
     }
 
-    /// Create plain text content for verification email
     fn create_verification_email_text(&self, username: &str, verification_url: &str) -> String {
         format!(
             r#"LunarBase
@@ -427,7 +404,6 @@ Need help? Contact your system administrator.
         )
     }
 
-    /// Create HTML content for password reset email
     fn create_password_reset_email_html(&self, username: &str, reset_url: &str) -> String {
         format!(
             r#"
@@ -577,7 +553,6 @@ Need help? Contact your system administrator.
         )
     }
 
-    /// Create plain text content for password reset email
     fn create_password_reset_email_text(&self, username: &str, reset_url: &str) -> String {
         format!(
             r#" LunarBase Admin Panel
@@ -608,7 +583,6 @@ Need help? Contact your system administrator.
         )
     }
 
-    /// Check if email service is configured
     pub fn is_configured(&self) -> bool {
         self.resend_client.is_some()
     }

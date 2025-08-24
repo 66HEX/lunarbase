@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import type { FileUploadFile } from "@/components/ui/file-upload";
 
-// Field type icons (same as in collections for consistency)
 export const fieldTypeIcons = {
 	text: Type,
 	number: Hash,
@@ -24,13 +23,11 @@ export const fieldTypeIcons = {
 	relation: Database,
 };
 
-// Field type validation patterns
 export const fieldValidationPatterns = {
 	email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 	url: /^https?:\/\/.+/,
 };
 
-// Field validation messages
 export const fieldValidationMessages = {
 	email: "Please enter a valid email address",
 	url: "Please enter a valid URL (starting with http:// or https://)",
@@ -39,7 +36,6 @@ export const fieldValidationMessages = {
 	required: (fieldName: string) => `${fieldName} is required`,
 };
 
-// Default values for different field types
 export const getDefaultFieldValue = (
 	fieldType: string,
 	defaultValue?: unknown,
@@ -60,7 +56,6 @@ export const getDefaultFieldValue = (
 	}
 };
 
-// Field type processing for form submission
 export const processFieldValue = (
 	fieldType: string,
 	value: unknown,
@@ -86,8 +81,6 @@ export const processFieldValue = (
 			}
 			return value;
 		case "file":
-			// For file fields, we expect an array of FileUploadFile objects
-			// Extract the actual File objects for form submission
 			if (Array.isArray(value)) {
 				return value
 					.map((fileUpload: FileUploadFile) => fileUpload.file)
@@ -100,12 +93,10 @@ export const processFieldValue = (
 	return value;
 };
 
-// Field validation function
 export const validateFieldValue = (
 	field: { name: string; field_type: string; required: boolean },
 	value: unknown,
 ): string | null => {
-	// Special handling for file fields
 	if (field.field_type === "file") {
 		if (field.required && (!Array.isArray(value) || value.length === 0)) {
 			return fieldValidationMessages.required(field.name);
@@ -165,7 +156,6 @@ export const validateFieldValue = (
 	return null;
 };
 
-// Toast messages for record operations
 export const recordToastMessages = {
 	validationError: {
 		title: "Validation Error",

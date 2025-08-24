@@ -8,7 +8,6 @@ use tracing::debug;
 
 use crate::embedded_assets::AdminAssets;
 
-/// Serve the main admin HTML page from embedded assets
 pub async fn serve_embedded_admin_html() -> impl IntoResponse {
     match AdminAssets::get_asset_with_mime("admin/index.html") {
         Some((content, mime_type)) => {
@@ -16,7 +15,6 @@ pub async fn serve_embedded_admin_html() -> impl IntoResponse {
             ([(header::CONTENT_TYPE, mime_type)], Html(html.to_string())).into_response()
         }
         None => {
-            // Fallback for development or when assets are not embedded
             tracing::warn!("Embedded admin assets not found, this might be a development build");
             (
                 StatusCode::NOT_FOUND,
@@ -27,10 +25,8 @@ pub async fn serve_embedded_admin_html() -> impl IntoResponse {
     }
 }
 
-/// Serve embedded static assets with proper MIME types
 pub async fn serve_embedded_assets(Path(path): Path<String>) -> Response {
     debug!("serve_embedded_assets called with path: {}", path);
-    // Ensure the path starts with admin/ for security
     let normalized_path = if path.starts_with("admin/") {
         path
     } else {
@@ -51,10 +47,8 @@ pub async fn serve_embedded_assets(Path(path): Path<String>) -> Response {
                 "Asset not found for path: {}, checking SPA fallback conditions",
                 normalized_path
             );
-            // For SPA routing, fallback to index.html for non-asset requests
             if !normalized_path.contains('.') || normalized_path.ends_with('/') {
                 debug!("SPA fallback for path: {}", normalized_path);
-                // Return the HTML content directly with proper headers for SPA routing
                 match AdminAssets::get_asset_with_mime("admin/index.html") {
                     Some((content, _)) => {
                         debug!("Serving index.html for SPA route: {}", normalized_path);
@@ -76,7 +70,6 @@ pub async fn serve_embedded_assets(Path(path): Path<String>) -> Response {
     }
 }
 
-/// Serve a specific embedded asset by path
 pub async fn serve_embedded_asset_by_path(Path(asset_path): Path<String>) -> impl IntoResponse {
     let normalized_path = if asset_path.starts_with("admin/") {
         asset_path
@@ -94,21 +87,18 @@ pub async fn serve_embedded_asset_by_path(Path(asset_path): Path<String>) -> imp
     }
 }
 
-/// Handle admin SPA routes that should serve the main HTML
 pub async fn handle_embedded_admin_routes() -> impl IntoResponse {
     serve_embedded_admin_html().await
 }
 
-/// Create a proper HTTP response for an embedded asset
 fn create_asset_response(content: Cow<'static, [u8]>, mime_type: &'static str) -> Response {
     let mut response = Response::builder()
         .status(StatusCode::OK)
         .header(header::CONTENT_TYPE, mime_type)
-        .header(header::CACHE_CONTROL, "public, max-age=31536000") // 1 year cache for assets
+        .header(header::CACHE_CONTROL, "public, max-age=31536000")
         .body(axum::body::Body::from(content.into_owned()))
         .unwrap();
 
-    // Add security headers
     response
         .headers_mut()
         .insert(header::X_CONTENT_TYPE_OPTIONS, "nosniff".parse().unwrap());
@@ -116,7 +106,6 @@ fn create_asset_response(content: Cow<'static, [u8]>, mime_type: &'static str) -
     response
 }
 
-/// Check if embedded assets are available (useful for health checks)
 pub async fn embedded_assets_health() -> impl IntoResponse {
     if AdminAssets::is_available() {
         (StatusCode::OK, "Embedded admin assets are available")
@@ -128,7 +117,6 @@ pub async fn embedded_assets_health() -> impl IntoResponse {
     }
 }
 
-/// List all available embedded assets (for debugging)
 pub async fn list_embedded_assets() -> impl IntoResponse {
     let assets = AdminAssets::list_assets();
     (
@@ -144,7 +132,6 @@ mod tests {
     #[tokio::test]
     async fn test_serve_embedded_admin_html() {
         let response = serve_embedded_admin_html().await.into_response();
-        // In development, this might return 404, in release it should return the HTML
         assert!(response.status() == StatusCode::OK || response.status() == StatusCode::NOT_FOUND);
     }
 

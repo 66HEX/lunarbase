@@ -119,7 +119,6 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 
 	const [copied, setCopied] = useState(false);
 
-	// Validate JSON
 	const validateJson = useCallback((jsonString: string) => {
 		if (!jsonString.trim()) {
 			setIsValid(true);
@@ -137,7 +136,6 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 		}
 	}, []);
 
-	// Format JSON
 	const formatJson = useCallback(() => {
 		if (!value.trim()) return;
 
@@ -147,12 +145,9 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 			onChange(formatted);
 			setIsFormatted(true);
 			setTimeout(() => setIsFormatted(false), 2000);
-		} catch {
-			// Don't format if invalid
-		}
+		} catch {}
 	}, [value, onChange]);
 
-	// Copy to clipboard
 	const copyToClipboard = useCallback(async () => {
 		try {
 			await navigator.clipboard.writeText(value);
@@ -163,12 +158,10 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 		}
 	}, [value]);
 
-	// Reset to empty
 	const resetJson = useCallback(() => {
 		onChange("");
 	}, [onChange]);
 
-	// Handle input change
 	const handleChange = useCallback(
 		(e: React.ChangeEvent<HTMLTextAreaElement>) => {
 			const newValue = e.target.value;
@@ -178,12 +171,10 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 		[onChange, validateJson],
 	);
 
-	// Validate on value change
 	useEffect(() => {
 		validateJson(value);
 	}, [value, validateJson]);
 
-	// Determine the effective variant
 	const effectiveVariant = !isValid
 		? "error"
 		: isValid && value.trim()

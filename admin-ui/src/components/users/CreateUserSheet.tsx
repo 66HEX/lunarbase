@@ -108,26 +108,22 @@ export function CreateUserSheet({
 
 		createUserMutation.mutate(userData, {
 			onSuccess: () => {
-				// Reset form and close sheet
 				setFormData(defaultUserFormData);
 				setFieldErrors({});
 				onOpenChange(false);
 			},
-			onError: () => {
-				// Error handling is done in the mutation hook
-			},
+			onError: () => {},
 		});
 	};
 
 	const updateFormData = (field: keyof CreateUserRequest, value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
-		// Clear field error when user starts typing
+
 		if (fieldErrors[field]) {
 			setFieldErrors((prev) => ({ ...prev, [field]: "" }));
 		}
 	};
 
-	// Reset form when sheet opens
 	useEffect(() => {
 		if (isOpen) {
 			setFormData(defaultUserFormData);
@@ -139,15 +135,13 @@ export function CreateUserSheet({
 		<Sheet
 			open={isOpen}
 			onOpenChange={(newOpen) => {
-				// Only allow closing if explicitly allowed and not submitting
 				if (!newOpen && (!allowClose || createUserMutation.isPending)) {
-					// Prevent closing - do nothing
 					return;
 				}
-				// Allow opening or closing when conditions are met
+
 				onOpenChange(newOpen);
 				if (newOpen) {
-					setAllowClose(true); // Allow closing when opening
+					setAllowClose(true);
 				}
 			}}
 		>
@@ -169,7 +163,6 @@ export function CreateUserSheet({
 						}}
 					>
 						<div className="space-y-6">
-							{/* Email */}
 							<FormField name="email" error={fieldErrors.email}>
 								<FormLabel required>Email Address</FormLabel>
 								<FormControl>
@@ -186,7 +179,6 @@ export function CreateUserSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Username */}
 							<FormField name="username" error={fieldErrors.username}>
 								<FormLabel>Username</FormLabel>
 								<FormControl>
@@ -204,7 +196,6 @@ export function CreateUserSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Password */}
 							<FormField name="password" error={fieldErrors.password}>
 								<FormLabel required>Password</FormLabel>
 								<FormControl>
@@ -223,7 +214,6 @@ export function CreateUserSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Role */}
 							<FormField name="role" error={fieldErrors.role}>
 								<FormLabel required>Role</FormLabel>
 								<FormControl>
@@ -236,22 +226,19 @@ export function CreateUserSheet({
 										value={formData.role}
 										onValueChange={(value) => {
 											if (value) {
-												// Prevent sheet from closing during value change
 												setAllowClose(false);
 												updateFormData(
 													"role",
 													value as CreateUserRequest["role"],
 												);
-												// Allow closing after a longer delay
+
 												setTimeout(() => setAllowClose(true), 300);
 											}
 										}}
 										onOpenChange={(isOpen) => {
-											// Prevent sheet from closing when select is open
 											if (isOpen) {
 												setAllowClose(false);
 											}
-											// Don't restore allowClose here - let onValueChange handle it
 										}}
 									>
 										<SelectTrigger className="w-full">

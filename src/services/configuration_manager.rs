@@ -12,7 +12,6 @@ use crate::utils::AuthError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
-/// Configuration manager that loads and caches system settings from database
 #[derive(Clone)]
 pub struct ConfigurationManager {
     pool: DbPool,
@@ -27,7 +26,6 @@ impl ConfigurationManager {
         }
     }
 
-    /// Initialize the configuration manager by loading all settings from database
     pub async fn initialize(&self) -> Result<(), AuthError> {
         debug!("Initializing configuration manager...");
         self.reload_cache().await?;
@@ -35,7 +33,6 @@ impl ConfigurationManager {
         Ok(())
     }
 
-    /// Reload all settings from database into cache
     pub async fn reload_cache(&self) -> Result<(), AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
@@ -59,14 +56,12 @@ impl ConfigurationManager {
         Ok(())
     }
 
-    /// Get a setting value as string
     pub async fn get_string(&self, category: &str, key: &str) -> Option<String> {
         let cache_key = format!("{}:{}", category, key);
         let cache = self.cache.read().await;
         cache.get(&cache_key).cloned()
     }
 
-    /// Get a setting value as integer
     pub async fn get_i32(&self, category: &str, key: &str) -> Option<i32> {
         self.get_string(category, key)
             .await?
@@ -78,7 +73,6 @@ impl ConfigurationManager {
             .ok()
     }
 
-    /// Get a setting value as unsigned integer
     pub async fn get_u32(&self, category: &str, key: &str) -> Option<u32> {
         self.get_string(category, key)
             .await?
@@ -90,7 +84,6 @@ impl ConfigurationManager {
             .ok()
     }
 
-    /// Get a setting value as boolean
     pub async fn get_bool(&self, category: &str, key: &str) -> Option<bool> {
         let value = self.get_string(category, key).await?;
         match value.to_lowercase().as_str() {
@@ -106,7 +99,6 @@ impl ConfigurationManager {
         }
     }
 
-    /// Get a setting value as JSON
     pub async fn get_json(&self, category: &str, key: &str) -> Option<Value> {
         let value = self.get_string(category, key).await?;
         serde_json::from_str(&value)
@@ -120,7 +112,6 @@ impl ConfigurationManager {
             .ok()
     }
 
-    /// Get a setting value as vector of strings (from JSON array)
     pub async fn get_string_array(&self, category: &str, key: &str) -> Option<Vec<String>> {
         let json_value = self.get_json(category, key).await?;
         if let Value::Array(arr) = json_value {
@@ -140,7 +131,6 @@ impl ConfigurationManager {
         }
     }
 
-    /// Get a setting value with fallback to default
     pub async fn get_string_or_default(&self, category: &str, key: &str, default: &str) -> String {
         self.get_string(category, key).await.unwrap_or_else(|| {
             warn!(
@@ -151,7 +141,6 @@ impl ConfigurationManager {
         })
     }
 
-    /// Get a setting value as i32 with fallback to default
     pub async fn get_i32_or_default(&self, category: &str, key: &str, default: i32) -> i32 {
         self.get_i32(category, key).await.unwrap_or_else(|| {
             warn!(
@@ -162,7 +151,6 @@ impl ConfigurationManager {
         })
     }
 
-    /// Get a setting value as u32 with fallback to default
     pub async fn get_u32_or_default(&self, category: &str, key: &str, default: u32) -> u32 {
         self.get_u32(category, key).await.unwrap_or_else(|| {
             warn!(
@@ -173,7 +161,6 @@ impl ConfigurationManager {
         })
     }
 
-    /// Get a setting value as bool with fallback to default
     pub async fn get_bool_or_default(&self, category: &str, key: &str, default: bool) -> bool {
         self.get_bool(category, key).await.unwrap_or_else(|| {
             warn!(
@@ -184,7 +171,6 @@ impl ConfigurationManager {
         })
     }
 
-    /// Get a setting value as string array with fallback to default
     pub async fn get_string_array_or_default(
         &self,
         category: &str,
@@ -202,7 +188,6 @@ impl ConfigurationManager {
             })
     }
 
-    /// Update cache when a setting is changed
     pub async fn update_cache(&self, category: &str, key: &str, value: &str) {
         let cache_key = format!("{}:{}", category, key);
         let mut cache = self.cache.write().await;
@@ -210,7 +195,6 @@ impl ConfigurationManager {
         debug!("Updated cache for setting {}:{}", category, key);
     }
 
-    /// Remove setting from cache
     pub async fn remove_from_cache(&self, category: &str, key: &str) {
         let cache_key = format!("{}:{}", category, key);
         let mut cache = self.cache.write().await;
@@ -218,24 +202,20 @@ impl ConfigurationManager {
         debug!("Removed setting {}:{} from cache", category, key);
     }
 
-    /// Get all cached settings (for debugging)
     pub async fn get_all_cached(&self) -> HashMap<String, String> {
         let cache = self.cache.read().await;
         cache.clone()
     }
 
-    /// Check if cache is empty
     pub async fn is_cache_empty(&self) -> bool {
         let cache = self.cache.read().await;
         cache.is_empty()
     }
 }
 
-/// Helper trait to make configuration access easier
 pub trait ConfigurationAccess: Sync {
     fn config_manager(&self) -> &ConfigurationManager;
 
-    /// Get JWT lifetime in hours
     fn get_jwt_lifetime_hours(&self) -> impl std::future::Future<Output = i32> + Send {
         async {
             self.config_manager()
@@ -244,7 +224,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get lockout duration in minutes
     fn get_lockout_duration_minutes(&self) -> impl std::future::Future<Output = i32> + Send {
         async {
             self.config_manager()
@@ -253,7 +232,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get max login attempts
     fn get_max_login_attempts(&self) -> impl std::future::Future<Output = i32> + Send {
         async {
             self.config_manager()
@@ -262,7 +240,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get rate limit requests per minute
     fn get_rate_limit_requests_per_minute(&self) -> impl std::future::Future<Output = i32> + Send {
         async {
             self.config_manager()
@@ -271,7 +248,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get CORS allowed origins
     fn get_cors_allowed_origins(&self) -> impl std::future::Future<Output = Vec<String>> + Send {
         async {
             self.config_manager()
@@ -287,7 +263,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get database connection pool size
     fn get_connection_pool_size(&self) -> impl std::future::Future<Output = u32> + Send {
         async {
             self.config_manager()
@@ -296,7 +271,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get backup enabled flag
     fn get_backup_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
         async {
             self.config_manager()
@@ -305,7 +279,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get backup retention in days
     fn get_backup_retention_days(&self) -> impl std::future::Future<Output = u32> + Send {
         async {
             self.config_manager()
@@ -314,7 +287,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get backup schedule (cron expression)
     fn get_backup_schedule(&self) -> impl std::future::Future<Output = String> + Send {
         async {
             self.config_manager()
@@ -323,7 +295,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get backup compression enabled flag
     fn get_backup_compression(&self) -> impl std::future::Future<Output = bool> + Send {
         async {
             self.config_manager()
@@ -332,7 +303,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get backup prefix
     fn get_backup_prefix(&self) -> impl std::future::Future<Output = String> + Send {
         async {
             self.config_manager()
@@ -341,7 +311,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    /// Get backup minimum size in bytes
     fn get_backup_min_size_bytes(&self) -> impl std::future::Future<Output = u64> + Send {
         async {
             self.config_manager()

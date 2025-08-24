@@ -52,7 +52,6 @@ impl CollectionService {
         self
     }
 
-    // Helper method to emit WebSocket events
     async fn emit_record_event(
         &self,
         collection_name: &str,
@@ -72,7 +71,6 @@ impl CollectionService {
         }
     }
 
-    // DDL Operations for dynamic tables
     fn get_records_table_name(&self, collection_name: &str) -> String {
         format!("records_{}", collection_name)
     }
@@ -101,8 +99,6 @@ impl CollectionService {
         sql.push_str("    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\n");
 
         for field in &schema.fields {
-            // Skip 'id' field since it's already added as PRIMARY KEY
-            // Also skip ownership fields since they're added automatically
             if field.name.to_lowercase() == "id"
                 || field.name == "author_id"
                 || field.name == "owner_id"
@@ -150,7 +146,6 @@ impl CollectionService {
             ));
         }
 
-        // Add ownership fields
         sql.push_str("    author_id INTEGER,\n");
         sql.push_str("    owner_id INTEGER,\n");
         sql.push_str("    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n");
@@ -180,7 +175,6 @@ impl CollectionService {
         })?;
         tracing::debug!("Records table created successfully");
 
-        // Create indexes
         let table_name = self.get_records_table_name(collection_name);
         let index_sql = format!(
             "CREATE INDEX idx_{}_created_at ON {} (created_at)",
@@ -193,7 +187,6 @@ impl CollectionService {
         })?;
         tracing::debug!("Index created successfully");
 
-        // Create update trigger
         let trigger_sql = format!(
             "CREATE TRIGGER update_{}_updated_at 
              AFTER UPDATE ON {}
@@ -219,19 +212,16 @@ impl CollectionService {
     ) -> Result<(), AuthError> {
         let table_name = self.get_records_table_name(collection_name);
 
-        // Drop trigger first
         let drop_trigger_sql = format!("DROP TRIGGER IF EXISTS update_{}_updated_at", table_name);
         diesel::sql_query(&drop_trigger_sql)
             .execute(conn)
             .map_err(|_| AuthError::InternalError)?;
 
-        // Drop index
         let drop_index_sql = format!("DROP INDEX IF EXISTS idx_{}_created_at", table_name);
         diesel::sql_query(&drop_index_sql)
             .execute(conn)
             .map_err(|_| AuthError::InternalError)?;
 
-        // Drop table
         let drop_table_sql = format!("DROP TABLE IF EXISTS {}", table_name);
         diesel::sql_query(&drop_table_sql)
             .execute(conn)
@@ -249,7 +239,6 @@ impl CollectionService {
     ) -> Result<(), AuthError> {
         let table_name = self.get_records_table_name(collection_name);
 
-        // Create maps for easier comparison
         let old_fields: std::collections::HashMap<String, &FieldDefinition> = old_schema
             .fields
             .iter()
@@ -261,7 +250,6 @@ impl CollectionService {
             .map(|f| (f.name.clone(), f))
             .collect();
 
-        // Check if we need to drop any columns
         let fields_to_drop: Vec<String> = old_fields
             .keys()
             .filter(|field_name| {
@@ -270,7 +258,6 @@ impl CollectionService {
             .cloned()
             .collect();
 
-        // If we need to drop columns, use table recreation strategy
         if !fields_to_drop.is_empty() {
             debug!(
                 "Dropping columns {:?} from table {}, using table recreation strategy",
@@ -279,7 +266,6 @@ impl CollectionService {
             return self.recreate_table_with_schema(conn, collection_name, new_schema);
         }
 
-        // Otherwise, just add new columns (existing logic)
         for field in &new_schema.fields {
             if !old_fields.contains_key(&field.name) && field.name.to_lowercase() != "id" {
                 let field_type = self.map_field_type_to_sql(&field.field_type);
@@ -311,7 +297,6 @@ impl CollectionService {
                         _ => String::new(),
                     }
                 } else if field.required {
-                    // For required fields without default, provide a sensible default
                     match field.field_type {
                         FieldType::Text
                         | FieldType::Email
@@ -346,8 +331,6 @@ impl CollectionService {
         Ok(())
     }
 
-    /// Recreates the table with new schema, preserving all existing data
-    /// This is used when columns need to be dropped (SQLite limitation workaround)
     fn recreate_table_with_schema(
         &self,
         conn: &mut SqliteConnection,
@@ -359,7 +342,6 @@ impl CollectionService {
 
         debug!("Starting table recreation for {}", table_name);
 
-        // Step 1: Create new table with updated schema
         let create_temp_sql =
             self.generate_create_table_sql_with_name(&temp_table_name, new_schema);
         tracing::debug!("Creating temporary table with SQL: {}", create_temp_sql);
@@ -370,8 +352,6 @@ impl CollectionService {
                 AuthError::InternalError
             })?;
 
-        // Step 2: Copy data from old table to new table
-        // Only copy columns that exist in both schemas
         let common_columns = self.get_common_columns(collection_name, new_schema, conn)?;
         let columns_list = common_columns.join(", ");
 
@@ -385,16 +365,13 @@ impl CollectionService {
             .execute(conn)
             .map_err(|e| {
                 tracing::error!("Failed to copy data to temporary table: {:?}", e);
-                // Clean up temporary table on failure
                 let _ = diesel::sql_query(&format!("DROP TABLE IF EXISTS {}", temp_table_name))
                     .execute(conn);
                 AuthError::InternalError
             })?;
 
-        // Step 3: Drop old table (including triggers and indexes)
         self.drop_records_table(conn, collection_name)?;
 
-        // Step 4: Rename temporary table to original name
         let rename_sql = format!("ALTER TABLE {} RENAME TO {}", temp_table_name, table_name);
         tracing::debug!("Renaming table with SQL: {}", rename_sql);
         diesel::sql_query(&rename_sql).execute(conn).map_err(|e| {
@@ -402,14 +379,12 @@ impl CollectionService {
             AuthError::InternalError
         })?;
 
-        // Step 5: Recreate indexes and triggers
         self.create_table_indexes_and_triggers(conn, collection_name)?;
 
         debug!("Table recreation completed successfully for {}", table_name);
         Ok(())
     }
 
-    /// Generate CREATE TABLE SQL with custom table name
     fn generate_create_table_sql_with_name(
         &self,
         table_name: &str,
@@ -419,8 +394,6 @@ impl CollectionService {
         sql.push_str("    id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,\n");
 
         for field in &schema.fields {
-            // Skip 'id' field since it's already added as PRIMARY KEY
-            // Also skip ownership fields since they're added automatically
             if field.name.to_lowercase() == "id"
                 || field.name == "author_id"
                 || field.name == "owner_id"
@@ -468,7 +441,6 @@ impl CollectionService {
             ));
         }
 
-        // Add ownership fields
         sql.push_str("    author_id INTEGER,\n");
         sql.push_str("    owner_id INTEGER,\n");
         sql.push_str("    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,\n");
@@ -478,7 +450,6 @@ impl CollectionService {
         sql
     }
 
-    /// Get columns that exist in both old table and new schema
     fn get_common_columns(
         &self,
         collection_name: &str,
@@ -487,7 +458,6 @@ impl CollectionService {
     ) -> Result<Vec<String>, AuthError> {
         let table_name = self.get_records_table_name(collection_name);
 
-        // Get existing columns from the table
         let pragma_sql = format!("PRAGMA table_info({})", table_name);
 
         #[derive(Debug, diesel::QueryableByName)]
@@ -505,14 +475,12 @@ impl CollectionService {
         let existing_column_names: std::collections::HashSet<String> =
             existing_columns.into_iter().map(|col| col.name).collect();
 
-        // Start with system columns that should always exist
         let mut common_columns = vec![
             "id".to_string(),
             "created_at".to_string(),
             "updated_at".to_string(),
         ];
 
-        // Add ownership columns if they exist in the old table
         let ownership_fields = ["owner_id", "author_id"];
         for field_name in &ownership_fields {
             if existing_column_names.contains(*field_name) {
@@ -520,7 +488,6 @@ impl CollectionService {
             }
         }
 
-        // Add schema fields that exist in the old table
         for field in &new_schema.fields {
             if field.name.to_lowercase() != "id" && existing_column_names.contains(&field.name) {
                 common_columns.push(field.name.clone());
@@ -531,7 +498,6 @@ impl CollectionService {
         Ok(common_columns)
     }
 
-    /// Create indexes and triggers for the table
     fn create_table_indexes_and_triggers(
         &self,
         conn: &mut SqliteConnection,
@@ -539,7 +505,6 @@ impl CollectionService {
     ) -> Result<(), AuthError> {
         let table_name = self.get_records_table_name(collection_name);
 
-        // Create index
         let index_sql = format!(
             "CREATE INDEX idx_{}_created_at ON {} (created_at)",
             table_name, table_name
@@ -550,7 +515,6 @@ impl CollectionService {
             AuthError::InternalError
         })?;
 
-        // Create update trigger
         let trigger_sql = format!(
             "CREATE TRIGGER update_{}_updated_at 
              AFTER UPDATE ON {}
@@ -568,17 +532,14 @@ impl CollectionService {
         Ok(())
     }
 
-    // Create default permissions for a collection
     async fn create_default_permissions(&self, collection_id: i32) -> Result<(), AuthError> {
         if let Some(permission_service) = &self.permission_service {
             let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-            // Get all roles from the database
             let roles = roles::table
                 .load::<Role>(&mut conn)
                 .map_err(|_| AuthError::InternalError)?;
 
-            // Define default permissions for each role
             for role in roles {
                 let permissions = match role.name.as_str() {
                     "admin" => SetCollectionPermissionRequest {
@@ -605,20 +566,16 @@ impl CollectionService {
                         can_delete: false,
                         can_list: true,
                     },
-                    _ => {
-                        // For any other roles, give minimal permissions
-                        SetCollectionPermissionRequest {
-                            role_name: role.name.clone(),
-                            can_create: false,
-                            can_read: true,
-                            can_update: false,
-                            can_delete: false,
-                            can_list: true,
-                        }
-                    }
+                    _ => SetCollectionPermissionRequest {
+                        role_name: role.name.clone(),
+                        can_create: false,
+                        can_read: true,
+                        can_update: false,
+                        can_delete: false,
+                        can_list: true,
+                    },
                 };
 
-                // Create the permission using PermissionService
                 if let Err(e) = permission_service
                     .set_collection_permission(collection_id, role.id, &permissions)
                     .await
@@ -647,13 +604,10 @@ impl CollectionService {
                     "NULL".to_string()
                 }
             }
-            FieldType::Json => {
-                // For JSON fields, serialize the entire value to a JSON string
-                match serde_json::to_string(value) {
-                    Ok(json_str) => format!("'{}'", json_str.replace("'", "''")),
-                    Err(_) => "NULL".to_string(),
-                }
-            }
+            FieldType::Json => match serde_json::to_string(value) {
+                Ok(json_str) => format!("'{}'", json_str.replace("'", "''")),
+                Err(_) => "NULL".to_string(),
+            },
             FieldType::Number => {
                 if let Some(n) = value.as_f64() {
                     n.to_string()
@@ -686,7 +640,6 @@ impl CollectionService {
     ) -> Result<RecordResponse, AuthError> {
         use diesel::sql_types::*;
 
-        // Get collection schema first
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(conn)
@@ -696,7 +649,6 @@ impl CollectionService {
             .get_schema()
             .map_err(|_| AuthError::InternalError)?;
 
-        // Define a dynamic row structure for the query
         #[derive(Debug, diesel::QueryableByName)]
         struct DynamicRow {
             #[diesel(sql_type = Integer)]
@@ -707,7 +659,6 @@ impl CollectionService {
             updated_at: String,
         }
 
-        // Execute base query to get system columns
         let base_result: Vec<DynamicRow> = diesel::sql_query(sql)
             .load(conn)
             .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
@@ -718,7 +669,6 @@ impl CollectionService {
 
         let base_row = &base_result[0];
 
-        // Get field values using separate queries (more reliable than dynamic parsing)
         let mut data = Map::new();
         let table_name = self.get_records_table_name(collection_name);
 
@@ -769,10 +719,9 @@ impl CollectionService {
 
                     if let Some(row) = result.first() {
                         if let Some(json_str) = &row.value {
-                            // Try to parse the JSON string back to a Value
                             match serde_json::from_str(json_str) {
                                 Ok(json_value) => json_value,
-                                Err(_) => Value::String(json_str.clone()), // Fallback to string if parsing fails
+                                Err(_) => Value::String(json_str.clone()),
                             }
                         } else {
                             Value::Null
@@ -798,7 +747,6 @@ impl CollectionService {
 
                     if let Some(row) = result.first() {
                         if let Some(n) = row.value {
-                            // Check if it's a whole number (integer)
                             if n.fract() == 0.0 && n >= i64::MIN as f64 && n <= i64::MAX as f64 {
                                 Value::Number(serde_json::Number::from(n as i64))
                             } else {
@@ -864,7 +812,6 @@ impl CollectionService {
             data.insert(field.name.clone(), field_value);
         }
 
-        // Add ownership fields if they exist in the table
         let ownership_fields = ["owner_id", "author_id"];
         for field_name in &ownership_fields {
             #[derive(Debug, diesel::QueryableByName)]
@@ -878,7 +825,6 @@ impl CollectionService {
                 field_name, table_name, base_row.id
             );
 
-            // Try to query the ownership field, ignore if column doesn't exist
             if let Ok(result) = diesel::sql_query(&query_with_alias).load::<OwnershipField>(conn) {
                 if let Some(row) = result.first() {
                     if let Some(value) = row.value {
@@ -900,7 +846,6 @@ impl CollectionService {
         })
     }
 
-    // Collection management methods
     pub async fn create_collection(
         &self,
         request: CreateCollectionRequest,
@@ -914,12 +859,10 @@ impl CollectionService {
 
         tracing::debug!("Got database connection successfully");
 
-        // Validate collection name
         tracing::debug!("Validating collection name: {}", request.name);
         self.validate_collection_name(&request.name)?;
         tracing::debug!("Collection name validation passed");
 
-        // Check if collection with this name already exists
         tracing::debug!("Checking if collection already exists");
         let existing = collections::table
             .filter(collections::name.eq(&request.name))
@@ -938,7 +881,6 @@ impl CollectionService {
         }
         tracing::debug!("Collection does not exist, proceeding");
 
-        // Validate schema
         tracing::debug!("Validating schema");
         self.validate_schema(&request.schema)?;
         tracing::debug!("Schema validation passed");
@@ -958,7 +900,6 @@ impl CollectionService {
             is_system: false,
         };
 
-        // Insert collection metadata
         tracing::debug!("Inserting collection metadata");
         diesel::insert_into(collections::table)
             .values(&new_collection)
@@ -969,7 +910,6 @@ impl CollectionService {
             })?;
         tracing::debug!("Collection metadata inserted successfully");
 
-        // Create dedicated records table
         tracing::debug!("Creating records table for collection: {}", request.name);
         self.create_records_table(&mut conn, &request.name, &request.schema)?;
         tracing::debug!("Records table created successfully");
@@ -1052,23 +992,19 @@ impl CollectionService {
     ) -> Result<CollectionResponse, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Find the collection
         let collection = collections::table
             .filter(collections::name.eq(name))
             .first::<Collection>(&mut conn)
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-        // Check if it's a system collection
         if collection.is_system {
             return Err(AuthError::Forbidden(
                 "Cannot modify system collections".to_string(),
             ));
         }
 
-        // If name is being changed, validate it and rename the records table
         if let Some(ref new_name) = request.name {
             if new_name != &collection.name {
-                // Validate new name
                 if !new_name.chars().all(|c| c.is_alphanumeric() || c == '_') || new_name.is_empty()
                 {
                     return Err(AuthError::BadRequest(
@@ -1077,7 +1013,6 @@ impl CollectionService {
                     ));
                 }
 
-                // Check if new name already exists
                 let existing = collections::table
                     .filter(collections::name.eq(new_name))
                     .first::<Collection>(&mut conn)
@@ -1090,7 +1025,6 @@ impl CollectionService {
                     ));
                 }
 
-                // Rename the records table
                 let old_table_name = self.get_records_table_name(&collection.name);
                 let new_table_name = self.get_records_table_name(new_name);
 
@@ -1111,16 +1045,13 @@ impl CollectionService {
             schema_json: None,
         };
 
-        // If schema is being updated, validate it and update table structure
         if let Some(schema) = request.schema {
             self.validate_schema(&schema)?;
 
-            // Get current schema for comparison
             let current_schema = collection
                 .get_schema()
                 .map_err(|_| AuthError::InternalError)?;
 
-            // Update table structure if schema changed
             self.update_records_table_schema(
                 &mut conn,
                 &collection.name,
@@ -1150,20 +1081,17 @@ impl CollectionService {
     pub async fn delete_collection(&self, name: &str) -> Result<(), AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Find the collection
         let collection = collections::table
             .filter(collections::name.eq(name))
             .first::<Collection>(&mut conn)
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-        // Check if it's a system collection
         if collection.is_system {
             return Err(AuthError::Forbidden(
                 "Cannot delete system collections".to_string(),
             ));
         }
 
-        // Delete all permissions for this collection first
         if let Some(permission_service) = &self.permission_service {
             if let Err(e) = permission_service
                 .delete_collection_permissions(collection.id)
@@ -1179,7 +1107,6 @@ impl CollectionService {
             }
         }
 
-        // Delete all files associated with records in this collection before dropping the table
         let schema = collection
             .get_schema()
             .map_err(|_| AuthError::InternalError)?;
@@ -1192,10 +1119,8 @@ impl CollectionService {
             );
         }
 
-        // Drop records table
         self.drop_records_table(&mut conn, name)?;
 
-        // Delete collection metadata
         diesel::delete(collections::table.filter(collections::id.eq(collection.id)))
             .execute(&mut conn)
             .map_err(|_| AuthError::InternalError)?;
@@ -1203,7 +1128,6 @@ impl CollectionService {
         Ok(())
     }
 
-    // Record management methods using dynamic tables
     pub async fn create_record(
         &self,
         collection_name: &str,
@@ -1221,23 +1145,19 @@ impl CollectionService {
     ) -> Result<RecordResponse, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Find the collection
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-        // Parse and validate data against schema
         let schema = collection
             .get_schema()
             .map_err(|_| AuthError::InternalError)?;
 
-        // Process file uploads if any
         let mut data = request.data.clone();
         if let Some(files) = &request.files {
             let file_urls = self.process_file_uploads(&schema, files).await?;
 
-            // Add file URLs to data
             if let Value::Object(ref mut map) = data {
                 for (field_name, url) in file_urls {
                     map.insert(field_name, Value::String(url));
@@ -1247,12 +1167,10 @@ impl CollectionService {
 
         let validated_data = self.validate_record_data(&schema, &data)?;
 
-        // Build INSERT SQL for dynamic table
         let table_name = self.get_records_table_name(collection_name);
         let mut columns = Vec::new();
         let mut values = Vec::new();
 
-        // Add schema-defined fields
         for field in &schema.fields {
             if let Some(field_value) = validated_data.get(&field.name) {
                 columns.push(field.name.clone());
@@ -1261,11 +1179,9 @@ impl CollectionService {
             }
         }
 
-        // Add ownership fields from request.data (these were added by ownership_service)
         let ownership_fields = ["owner_id", "author_id"];
         for field_name in &ownership_fields {
             if let Some(field_value) = request.data.get(field_name) {
-                // Only add if not already included from schema
                 if !columns.contains(&field_name.to_string()) {
                     columns.push(field_name.to_string());
                     let sql_value = self.value_to_sql_string(field_value, &FieldType::Number);
@@ -1285,11 +1201,9 @@ impl CollectionService {
             .execute(&mut conn)
             .map_err(|_| AuthError::InternalError)?;
 
-        // Get the inserted record
         let select_sql = format!("SELECT * FROM {} ORDER BY id DESC LIMIT 1", table_name);
         let record_response = self.query_record_by_sql(&mut conn, &select_sql, collection_name)?;
 
-        // Emit WebSocket event
         let event = crate::models::RecordEvent::Created {
             record_id: record_response.id.to_string(),
             record: serde_json::to_value(&record_response.data).unwrap_or_default(),
@@ -1307,7 +1221,6 @@ impl CollectionService {
     ) -> Result<RecordResponse, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Verify collection exists
         collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
@@ -1342,7 +1255,6 @@ impl CollectionService {
             AuthError::InternalError
         })?;
 
-        // Verify collection exists and get schema
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
@@ -1356,24 +1268,20 @@ impl CollectionService {
             AuthError::InternalError
         })?;
 
-        // Create QueryEngine from parameters
         let query_engine = QueryEngine::new(sort, filter, search, limit, offset).map_err(|e| {
             tracing::error!("Failed to create QueryEngine: {:?}", e);
             e
         })?;
 
-        // Build complete SQL query using QueryEngine
         let table_name = self.get_records_table_name(collection_name);
         let (sql, parameters) = query_engine.build_complete_query(&table_name, &schema)?;
 
-        // Execute query with improved parameter safety
         tracing::debug!(
             "Executing SQL: {} with {} parameters",
             sql,
             parameters.len()
         );
 
-        // Get all matching records with safer parameter handling
         use diesel::sql_types::*;
 
         #[derive(Debug, diesel::QueryableByName)]
@@ -1382,10 +1290,8 @@ impl CollectionService {
             id: i32,
         }
 
-        // Use SQLite parameter binding with proper escaping
         let mut final_sql = sql;
         for param in parameters.iter() {
-            // Properly escape the parameter value using SQLite standard
             let escaped_param = param.replace("'", "''");
             final_sql = final_sql.replacen("?", &format!("'{}'", escaped_param), 1);
         }
@@ -1426,37 +1332,30 @@ impl CollectionService {
     ) -> Result<RecordResponse, AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Find the collection
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-        // Parse and validate data against schema
         let schema = collection
             .get_schema()
             .map_err(|_| AuthError::InternalError)?;
 
-        // Get the current record to check for existing files that need to be deleted
         let table_name = self.get_records_table_name(collection_name);
         let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
         let old_record = self
             .query_record_by_sql(&mut conn, &select_sql, collection_name)
             .ok();
 
-        // Process file uploads if any
         let mut data = request.data.clone();
         if let Some(files) = &request.files {
-            // Delete old files for fields that are being updated with new files
             if let Some(ref old_rec) = old_record {
                 if let Some(s3_service) = &self.s3_service {
                     for (field_name, _) in files {
-                        // Check if this field is a file field in the schema
                         if let Some(field_def) =
                             schema.fields.iter().find(|f| f.name == *field_name)
                         {
                             if field_def.field_type == FieldType::File {
-                                // Get the old file URL and delete it
                                 if let Some(old_url) = old_rec.data.get(field_name) {
                                     if let Some(url_str) = old_url.as_str() {
                                         if !url_str.is_empty() {
@@ -1484,7 +1383,6 @@ impl CollectionService {
 
             let file_urls = self.process_file_uploads(&schema, files).await?;
 
-            // Add file URLs to data
             if let Value::Object(ref mut map) = data {
                 for (field_name, url) in file_urls {
                     map.insert(field_name, Value::String(url));
@@ -1494,11 +1392,9 @@ impl CollectionService {
 
         let validated_data = self.validate_record_data(&schema, &data)?;
 
-        // Build UPDATE SQL for dynamic table
         let table_name = self.get_records_table_name(collection_name);
         let mut set_clauses = Vec::new();
 
-        // Add schema-defined fields
         for field in &schema.fields {
             if let Some(field_value) = validated_data.get(&field.name) {
                 let sql_value = self.value_to_sql_string(field_value, &field.field_type);
@@ -1506,11 +1402,9 @@ impl CollectionService {
             }
         }
 
-        // Add ownership fields from data (if being updated)
         let ownership_fields = ["owner_id", "author_id"];
         for field_name in &ownership_fields {
             if let Some(field_value) = data.get(field_name) {
-                // Check if this field wasn't already processed from schema
                 let already_processed = schema.fields.iter().any(|f| f.name == *field_name);
                 if !already_processed {
                     let sql_value = self.value_to_sql_string(field_value, &FieldType::Number);
@@ -1525,9 +1419,6 @@ impl CollectionService {
             ]));
         }
 
-        // Note: old_record was already fetched earlier for file deletion
-
-        // Apply the update
         let update_sql = format!(
             "UPDATE {} SET {}, updated_at = CURRENT_TIMESTAMP WHERE id = {}",
             table_name,
@@ -1543,10 +1434,8 @@ impl CollectionService {
             return Err(AuthError::NotFound("Record not found".to_string()));
         }
 
-        // Get the updated record
         let record_response = self.query_record_by_sql(&mut conn, &select_sql, collection_name)?;
 
-        // Emit WebSocket event with old record data
         let event = crate::models::RecordEvent::Updated {
             record_id: record_response.id.to_string(),
             record: serde_json::to_value(&record_response.data).unwrap_or_default(),
@@ -1567,7 +1456,6 @@ impl CollectionService {
             .await
     }
 
-    /// Delete all files associated with records in a collection from S3
     async fn delete_collection_files(
         &self,
         collection_name: &str,
@@ -1575,16 +1463,14 @@ impl CollectionService {
     ) -> Vec<String> {
         let mut errors = Vec::new();
 
-        // Check if there are any file fields in the schema
         let has_file_fields = schema
             .fields
             .iter()
             .any(|field| field.field_type == FieldType::File);
         if !has_file_fields {
-            return errors; // No file fields, nothing to delete
+            return errors;
         }
 
-        // Get all records from the collection
         match self
             .list_records(collection_name, None, None, None, None, None)
             .await
@@ -1606,7 +1492,6 @@ impl CollectionService {
         errors
     }
 
-    /// Delete files associated with a record from S3
     async fn delete_record_files(
         &self,
         schema: &CollectionSchema,
@@ -1614,7 +1499,6 @@ impl CollectionService {
     ) -> Vec<String> {
         let mut errors = Vec::new();
 
-        // Check if S3 service is available
         let s3_service = match &self.s3_service {
             Some(service) => service,
             None => {
@@ -1623,7 +1507,6 @@ impl CollectionService {
             }
         };
 
-        // Find all file fields in schema
         let file_fields: Vec<&FieldDefinition> = schema
             .fields
             .iter()
@@ -1631,10 +1514,9 @@ impl CollectionService {
             .collect();
 
         if file_fields.is_empty() {
-            return errors; // No file fields in this collection
+            return errors;
         }
 
-        // Extract file URLs from record data and delete them
         for field in file_fields {
             if let Some(file_url_value) = record_data.get(&field.name) {
                 if let Some(file_url) = file_url_value.as_str() {
@@ -1671,26 +1553,22 @@ impl CollectionService {
     ) -> Result<(), AuthError> {
         let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
 
-        // Verify collection exists
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
             .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-        // Get collection schema
         let schema = collection
             .get_schema()
             .map_err(|_| AuthError::InternalError)?;
 
         let table_name = self.get_records_table_name(collection_name);
 
-        // Get record before deletion (for files and event)
         let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
         let old_record = self
             .query_record_by_sql(&mut conn, &select_sql, collection_name)
             .ok();
 
-        // Delete record from database
         let delete_sql = format!("DELETE FROM {} WHERE id = {}", table_name, record_id);
         let deleted_rows = diesel::sql_query(&delete_sql)
             .execute(&mut conn)
@@ -1700,7 +1578,6 @@ impl CollectionService {
             return Err(AuthError::NotFound("Record not found".to_string()));
         }
 
-        // Delete associated files from S3 (if record existed)
         if let Some(ref record) = old_record {
             let file_deletion_errors = self.delete_record_files(&schema, &record.data).await;
             if !file_deletion_errors.is_empty() {
@@ -1713,7 +1590,6 @@ impl CollectionService {
             }
         }
 
-        // Emit WebSocket event
         let event = crate::models::RecordEvent::Deleted {
             record_id: record_id.to_string(),
             old_record: old_record.map(|r| serde_json::to_value(&r.data).unwrap_or_default()),
@@ -1752,7 +1628,6 @@ impl CollectionService {
         let mut smallest_collection: Option<String> = None;
 
         for collection in &collections {
-            // Count records in this collection
             let table_name = self.get_records_table_name(&collection.name);
             let count_sql = format!("SELECT COUNT(*) as count FROM {}", table_name);
 
@@ -1767,13 +1642,12 @@ impl CollectionService {
 
             let record_count = match count_result {
                 Ok(result) => result.count,
-                Err(_) => 0, // Table might not exist yet
+                Err(_) => 0,
             };
 
             total_records += record_count;
             records_per_collection.insert(collection.name.clone(), record_count);
 
-            // Track largest and smallest collections
             if record_count > max_records {
                 max_records = record_count;
                 largest_collection = Some(collection.name.clone());
@@ -1783,7 +1657,6 @@ impl CollectionService {
                 smallest_collection = Some(collection.name.clone());
             }
 
-            // Count field types
             for field in &collection.schema.fields {
                 let field_type = format!("{:?}", field.field_type);
                 *field_types_distribution.entry(field_type).or_insert(0) += 1;
@@ -1796,7 +1669,6 @@ impl CollectionService {
             0.0
         };
 
-        // Handle edge case where all collections are empty
         if min_records == i64::MAX {
             smallest_collection = collections.first().map(|c| c.name.clone());
         }
@@ -1811,7 +1683,6 @@ impl CollectionService {
         ))
     }
 
-    // Validation methods
     fn validate_collection_name(&self, name: &str) -> Result<(), AuthError> {
         if name.is_empty() {
             return Err(AuthError::ValidationError(vec![
@@ -1825,14 +1696,12 @@ impl CollectionService {
             ]));
         }
 
-        // Check for valid characters (alphanumeric and underscore only)
         if !name.chars().all(|c| c.is_alphanumeric() || c == '_') {
             return Err(AuthError::ValidationError(vec![
                 "Collection name can only contain letters, numbers, and underscores".to_string(),
             ]));
         }
 
-        // Check for reserved names
         let reserved_names = ["users", "auth", "admin", "api", "system"];
         if reserved_names.contains(&name) {
             return Err(AuthError::ValidationError(vec![
@@ -1851,11 +1720,9 @@ impl CollectionService {
         }
 
         let mut field_names = std::collections::HashSet::new();
-        // Reserved field names that conflict with system columns (id is now allowed and will be skipped)
         let reserved_field_names = ["created_at", "updated_at"];
 
         for field in &schema.fields {
-            // Check for duplicate field names
             if !field_names.insert(&field.name) {
                 return Err(AuthError::ValidationError(vec![format!(
                     "Duplicate field name: {}",
@@ -1863,7 +1730,6 @@ impl CollectionService {
                 )]));
             }
 
-            // Check for reserved field names
             if reserved_field_names.contains(&field.name.as_str()) {
                 return Err(AuthError::ValidationError(vec![format!(
                     "Field name '{}' is reserved and cannot be used",
@@ -1871,7 +1737,6 @@ impl CollectionService {
                 )]));
             }
 
-            // Validate field name
             if field.name.is_empty() || field.name.len() > 50 {
                 return Err(AuthError::ValidationError(vec![
                     "Field name must be 1-50 characters".to_string(),
@@ -1888,7 +1753,6 @@ impl CollectionService {
         Ok(())
     }
 
-    /// Process file uploads for fields of type "file"
     async fn process_file_uploads(
         &self,
         schema: &CollectionSchema,
@@ -1897,7 +1761,6 @@ impl CollectionService {
         let mut file_urls = std::collections::HashMap::new();
         let mut uploaded_files = Vec::new();
 
-        // Check if S3 service is available
         let s3_service = match &self.s3_service {
             Some(service) => service,
             None => {
@@ -1907,13 +1770,10 @@ impl CollectionService {
             }
         };
 
-        // Validate that all file fields exist in schema and are of type "file"
         for (field_name, _file_upload) in files {
             let field_def = schema.fields.iter().find(|f| &f.name == field_name);
             match field_def {
-                Some(field) if matches!(field.field_type, FieldType::File) => {
-                    // Field exists and is of type "file", proceed with upload
-                }
+                Some(field) if matches!(field.field_type, FieldType::File) => {}
                 Some(_) => {
                     return Err(AuthError::ValidationError(vec![format!(
                         "Field '{}' is not of type 'file'",
@@ -1929,14 +1789,11 @@ impl CollectionService {
             }
         }
 
-        // Upload files to S3
         for (field_name, file_upload) in files {
-            // Decode base64 data
             let file_data =
                 match base64::engine::general_purpose::STANDARD.decode(&file_upload.data) {
                     Ok(data) => data,
                     Err(_) => {
-                        // Cleanup previously uploaded files
                         s3_service.cleanup_files(uploaded_files).await;
                         return Err(AuthError::ValidationError(vec![format!(
                             "Invalid base64 data for file field '{}'",
@@ -1945,7 +1802,6 @@ impl CollectionService {
                     }
                 };
 
-            // Upload file to S3
             match s3_service
                 .upload_file(
                     file_data,
@@ -1959,7 +1815,6 @@ impl CollectionService {
                     file_urls.insert(field_name.clone(), result.file_url);
                 }
                 Err(e) => {
-                    // Cleanup previously uploaded files
                     s3_service.cleanup_files(uploaded_files).await;
                     tracing::error!("Failed to upload file for field '{}': {}", field_name, e);
                     return Err(AuthError::ValidationError(vec![format!(
@@ -1981,16 +1836,13 @@ impl CollectionService {
         let mut validated = Map::new();
 
         if let Some(data_obj) = data.as_object() {
-            // Validate each field in the schema
             for field in &schema.fields {
-                // Skip 'id' field as it's auto-generated by the database
                 if field.name == "id" {
                     continue;
                 }
 
                 let field_value = data_obj.get(&field.name);
 
-                // Check required fields
                 if field.required && (field_value.is_none() || field_value == Some(&Value::Null)) {
                     return Err(AuthError::ValidationError(vec![format!(
                         "Field '{}' is required",
@@ -1998,18 +1850,16 @@ impl CollectionService {
                     )]));
                 }
 
-                // If field is not provided but has default value, use default
                 let value_to_validate = if field_value.is_none() {
                     if let Some(default) = &field.default_value {
                         default
                     } else {
-                        continue; // Skip optional fields without values
+                        continue;
                     }
                 } else {
                     field_value.unwrap()
                 };
 
-                // Validate field type and constraints
                 let validated_value = self.validate_field_value(&field, value_to_validate)?;
                 validated.insert(field.name.clone(), validated_value);
             }
@@ -2027,7 +1877,6 @@ impl CollectionService {
         field: &FieldDefinition,
         value: &Value,
     ) -> Result<Value, AuthError> {
-        // Type validation
         match field.field_type {
             FieldType::Text => {
                 if let Some(s) = value.as_str() {
@@ -2123,7 +1972,6 @@ impl CollectionService {
             }
             FieldType::Email => {
                 if let Some(s) = value.as_str() {
-                    // Simple email validation
                     if s.contains('@') && s.contains('.') {
                         Ok(value.clone())
                     } else {
@@ -2139,10 +1987,9 @@ impl CollectionService {
                     )]))
                 }
             }
-            FieldType::Json => Ok(value.clone()), // Any JSON value is valid
+            FieldType::Json => Ok(value.clone()),
             FieldType::Date => {
                 if let Some(s) = value.as_str() {
-                    // Validate date format (YYYY-MM-DD)
                     match chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d") {
                         Ok(_) => Ok(value.clone()),
                         Err(_) => Err(AuthError::ValidationError(vec![format!(
@@ -2159,9 +2006,7 @@ impl CollectionService {
             }
             FieldType::Url => {
                 if let Some(s) = value.as_str() {
-                    // Basic URL validation
                     if s.starts_with("http://") || s.starts_with("https://") {
-                        // Further validation could include proper URL parsing
                         if s.contains('.') && s.len() > 10 {
                             Ok(value.clone())
                         } else {
@@ -2186,7 +2031,6 @@ impl CollectionService {
             FieldType::File => {
                 if let Some(s) = value.as_str() {
                     // TODO: For now, treat file as a path string - in future this could be enhanced
-                    // to validate file existence, size limits, file types, etc.
                     if !s.is_empty() && s.len() <= 500 {
                         Ok(value.clone())
                     } else {
@@ -2203,9 +2047,7 @@ impl CollectionService {
                 }
             }
             FieldType::Relation => {
-                // Relation should be an ID reference to another record
                 if let Some(s) = value.as_str() {
-                    // Basic validation - should be a non-empty string ID
                     if !s.is_empty() && s.len() <= 50 {
                         Ok(value.clone())
                     } else {
@@ -2215,7 +2057,6 @@ impl CollectionService {
                         )]))
                     }
                 } else if let Some(_n) = value.as_i64() {
-                    // Also accept numeric IDs
                     Ok(value.clone())
                 } else {
                     Err(AuthError::ValidationError(vec![format!(

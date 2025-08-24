@@ -69,7 +69,7 @@ export function EditCollectionSheet({
 	};
 
 	const removeEditField = (index: number) => {
-		if (index === 0) return; // Don't allow removing the ID field
+		if (index === 0) return;
 		setEditFields((prev) => prev.filter((_, i) => i !== index));
 	};
 
@@ -130,7 +130,6 @@ export function EditCollectionSheet({
 				data: request,
 			});
 
-			// Close sheet and reset form
 			onOpenChange(false);
 			setEditCollectionName("");
 			setEditFields([]);
@@ -142,7 +141,6 @@ export function EditCollectionSheet({
 		}
 	};
 
-	// Initialize form when collection changes
 	useEffect(() => {
 		if (collection && isOpen) {
 			setEditCollectionName(collection.name);
@@ -171,7 +169,6 @@ export function EditCollectionSheet({
 						}}
 					>
 						<div className="space-y-6">
-							{/* Collection Name */}
 							<FormField
 								name="editCollectionName"
 								error={editFieldErrors.editCollectionName}
@@ -195,7 +192,6 @@ export function EditCollectionSheet({
 								<FormMessage />
 							</FormField>
 
-							{/* Schema Fields */}
 							<div className="space-y-4">
 								<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 									Schema Fields
@@ -229,9 +225,7 @@ export function EditCollectionSheet({
 													)}
 												</div>
 
-												{/* Fields in one row */}
 												<div className="grid grid-cols-12 gap-3 items-start">
-													{/* Field Name */}
 													<div className="col-span-4">
 														<FormField
 															name={`edit_field_${index}_name`}
@@ -267,7 +261,6 @@ export function EditCollectionSheet({
 														</FormField>
 													</div>
 
-													{/* Field Type */}
 													<div className="col-span-3">
 														<FormField name={`edit_field_${index}_type`}>
 															<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
@@ -302,7 +295,6 @@ export function EditCollectionSheet({
 														</FormField>
 													</div>
 
-													{/* Default Value */}
 													<div className="col-span-3">
 														<FormField name={`edit_field_${index}_default`}>
 															<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
@@ -330,7 +322,6 @@ export function EditCollectionSheet({
 														</FormField>
 													</div>
 
-													{/* Required Checkbox */}
 													<div className="col-span-2 flex items-center h-full">
 														<label className="flex items-center gap-2 cursor-pointer pt-6">
 															<Checkbox
@@ -353,7 +344,6 @@ export function EditCollectionSheet({
 									})}
 								</div>
 
-								{/* Add Field Button */}
 								<Button
 									type="button"
 									variant="primary"

@@ -26,10 +26,8 @@ export function OwnershipBadge({
 		);
 	}
 
-	// Check if current user is the owner
 	const isCurrentUserOwner = ownership.owner_id === currentUserId;
 
-	// Determine ownership type and display
 	let ownershipType = "Unknown";
 	let badgeVariant = variant;
 

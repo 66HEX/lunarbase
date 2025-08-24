@@ -41,20 +41,16 @@ import { useClientStore } from "@/stores/client.store";
 import type { Collection } from "@/types/api";
 
 export default function CollectionsComponent() {
-	// React Query for data fetching
 	const { data, isLoading, error } = useCollections();
 
-	// Mutation for deleting collections
 	const deleteCollectionMutation = useDeleteCollection();
 
-	// Prefetch hook
 	const { prefetchCollectionRecords, prefetchCollection } = usePrefetch();
 
 	const collections = data?.collections || [];
 	const collectionRecordCounts = data?.recordCounts || {};
 	const loading = isLoading;
 
-	// UI store for modals and sheets
 	const modals = useClientStore((state) => state.ui.modals);
 	const sheets = useClientStore((state) => state.ui.sheets);
 	const openModal = useClientStore((state) => state.openModal);
@@ -62,7 +58,6 @@ export default function CollectionsComponent() {
 	const openSheet = useClientStore((state) => state.openSheet);
 	const closeSheet = useClientStore((state) => state.closeSheet);
 
-	// Local UI states
 	const [localSearchTerm, setLocalSearchTerm] = useState("");
 	const searchTerm = useDebounce(localSearchTerm, 300);
 	const [collectionToDelete, setCollectionToDelete] = useState<string | null>(
@@ -72,15 +67,12 @@ export default function CollectionsComponent() {
 		string | null
 	>(null);
 
-	// Handle opening collection details
 	const handleOpenDetails = (collectionName: string) => {
 		setSelectedCollectionName(collectionName);
 		openSheet("collectionDetails");
 	};
 
-	// Handle opening collection edit
 	const handleOpenEdit = (collectionName: string) => {
-		// Check if collection has records
 		if (hasRecords(collectionName)) {
 			toast({
 				title: "Editing Blocked",
@@ -96,23 +88,20 @@ export default function CollectionsComponent() {
 		openModal("editCollection");
 	};
 
-	// Handle opening collection permissions
 	const handleOpenPermissions = (collectionName: string) => {
 		setSelectedCollectionName(collectionName);
 		openModal("permissions");
 	};
-	// Helper function to check if collection has records
+
 	const hasRecords = (collectionName: string): boolean => {
 		return collectionRecordCounts[collectionName] > 0;
 	};
 
-	// Helper function to find collection by name
 	const findCollectionByName = (name: string | null): Collection | null => {
 		if (!name) return null;
 		return collections.find((collection) => collection.name === name) || null;
 	};
 
-	// Get selected collection object
 	const selectedCollection = findCollectionByName(selectedCollectionName);
 
 	const handleDeleteCollection = async (name: string) => {
@@ -125,11 +114,10 @@ export default function CollectionsComponent() {
 
 		try {
 			await deleteCollectionMutation.mutateAsync(collectionToDelete);
-			// Close dialog
+
 			closeModal("deleteCollection");
 			setCollectionToDelete(null);
 		} catch {
-			// Error handling is done in the mutation hook
 			closeModal("deleteCollection");
 			setCollectionToDelete(null);
 		}
@@ -178,7 +166,6 @@ export default function CollectionsComponent() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
 			<CollectionsHeader
 				collectionsCount={collections.length}
 				searchTerm={localSearchTerm}
@@ -186,7 +173,6 @@ export default function CollectionsComponent() {
 				onCreateCollection={() => openModal("createCollection")}
 			/>
 
-			{/* Collections Grid */}
 			{filteredCollections.length > 0 || (loading && !data) ? (
 				<div className="space-y-4">
 					<div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -256,7 +242,6 @@ export default function CollectionsComponent() {
 								</CardHeader>
 								<CardContent className="p-3 pt-0 flex flex-col h-64">
 									<div className="flex flex-col h-full">
-										{/* Schema Preview */}
 										<div className="space-y-2">
 											<h4 className="text-sm font-medium text-nocta-900 dark:text-nocta-100">
 												Schema Fields
@@ -296,9 +281,7 @@ export default function CollectionsComponent() {
 											</div>
 										</div>
 
-										{/* Footer - always at bottom */}
 										<div className="mt-auto space-y-2.5">
-											{/* Metadata */}
 											<div className="pt-2.5 border-t border-nocta-200 dark:border-nocta-800/50">
 												<div className="flex items-center justify-center text-xs text-nocta-500 dark:text-nocta-500">
 													<div className="flex items-center gap-1">
@@ -313,7 +296,6 @@ export default function CollectionsComponent() {
 												</div>
 											</div>
 
-											{/* Actions */}
 											<div className="flex items-center gap-1.5">
 												<Button
 													variant="primary"
@@ -384,7 +366,6 @@ export default function CollectionsComponent() {
 				</Card>
 			)}
 
-			{/* Delete Confirmation Dialog */}
 			<Dialog
 				open={modals.deleteCollection}
 				onOpenChange={(open) => !open && closeModal("deleteCollection")}
@@ -412,7 +393,6 @@ export default function CollectionsComponent() {
 				</DialogContent>
 			</Dialog>
 
-			{/* Sheet components */}
 			<CreateCollectionSheet
 				isOpen={modals.createCollection}
 				onOpenChange={(open) => !open && closeModal("createCollection")}

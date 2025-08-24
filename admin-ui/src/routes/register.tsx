@@ -43,7 +43,7 @@ export default function RegisterComponent() {
 
 	const handleInputChange = (field: keyof RegisterRequest, value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
-		// Clear field error when user starts typing
+
 		if (errors[field]) {
 			setErrors((prev) => ({ ...prev, [field]: "" }));
 		}
@@ -116,7 +116,6 @@ export default function RegisterComponent() {
 		return (
 			<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 				<div className="w-sm space-y-8">
-					{/* Header */}
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
 							<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -128,7 +127,6 @@ export default function RegisterComponent() {
 						</h1>
 					</div>
 
-					{/* Success Message */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-green-600">
@@ -172,7 +170,6 @@ export default function RegisterComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-				{/* Header */}
 				<div className="text-center">
 					<div className="flex justify-center mb-4">
 						<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -184,7 +181,6 @@ export default function RegisterComponent() {
 					</h1>
 				</div>
 
-				{/* Registration Form */}
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">
@@ -271,7 +267,6 @@ export default function RegisterComponent() {
 								</Button>
 							</FormActions>
 
-							{/* Login Link */}
 							<div className="mt-6 text-center">
 								<p className="text-sm text-nocta-600 dark:text-nocta-400">
 									Already have an account?{" "}
@@ -287,7 +282,6 @@ export default function RegisterComponent() {
 					</CardContent>
 				</Card>
 
-				{/* Footer */}
 				<div className="text-center text-sm text-nocta-600 dark:text-nocta-400">
 					<p>© 2025 LunarBase. All rights reserved.</p>
 					<p className="mt-1">Need help? Contact your system administrator.</p>
@@ -300,8 +294,6 @@ export default function RegisterComponent() {
 export const Route = createFileRoute("/register")({
 	component: RegisterComponent,
 	beforeLoad: async () => {
-		// Check if already authenticated by checking if user exists in store
-		// Don't call checkAuth() here as it would cause 401 error on register page
 		const { user } = useAuthStore.getState();
 		if (user) {
 			throw redirect({

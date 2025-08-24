@@ -15,8 +15,6 @@ import { useUI, useUIActions } from "@/stores/client.store";
 export const Route = createRootRoute({
 	component: RootComponent,
 	beforeLoad: async ({ location }) => {
-		// Allow access to login, register and auth pages without authentication
-		// Check both /login and /admin/login due to basepath configuration
 		if (
 			location.pathname === "/login" ||
 			location.pathname === "/register" ||
@@ -32,7 +30,6 @@ export const Route = createRootRoute({
 			return;
 		}
 
-		// Check if user is authenticated using auth store
 		const { checkAuth } = useAuthStore.getState();
 		const isAuthenticated = await checkAuth();
 		if (!isAuthenticated) {
@@ -55,7 +52,6 @@ function RootComponent() {
 	const { sidebar } = useUI();
 	const { setSidebarOpen } = useUIActions();
 
-	// Fetch user data if authenticated but user data is not loaded
 	useEffect(() => {
 		if (isAuthenticated && !user && fetchUser) {
 			fetchUser();
@@ -76,15 +72,12 @@ function RootComponent() {
 
 	return (
 		<div className="min-h-screen">
-			{/* Sidebar - hidden on login page */}
 			{!isLoginPage && <Sidebar />}
 
-			{/* Main content */}
 			<div
 				className={isLoginPage ? "" : "lg:pl-72 transition-all duration-300"}
 			>
 				<div className="min-h-screen flex flex-col">
-					{/* Mobile header with hamburger menu */}
 					{!isLoginPage && (
 						<header className="lg:hidden bg-white dark:bg-nocta-900 border-b border-nocta-200 dark:border-nocta-800 p-2">
 							<div className="flex items-center justify-between">
@@ -99,12 +92,11 @@ function RootComponent() {
 								<h1 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
 									LunarBase
 								</h1>
-								<div className="w-10" /> {/* Spacer for centering */}
+								<div className="w-10" />{" "}
 							</div>
 						</header>
 					)}
 
-					{/* Page content */}
 					<main
 						className={
 							isLoginPage

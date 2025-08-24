@@ -39,7 +39,6 @@ impl RateLimiter {
         let mut requests = self.requests.lock().unwrap();
         let now = Instant::now();
 
-        // Clean old requests
         let window_start = now - self.window;
 
         let user_requests = requests
@@ -56,7 +55,6 @@ impl RateLimiter {
     }
 }
 
-/// Auth middleware state
 #[derive(Clone)]
 pub struct AuthState {
     pub jwt_service: Arc<JwtService>,
@@ -70,11 +68,10 @@ impl AuthState {
         pool: Pool<ConnectionManager<SqliteConnection>>,
         config_manager: ConfigurationManager,
     ) -> Self {
-        // Get rate limit configuration from database
         let requests_per_minute = config_manager
             .get_u32_or_default("api", "rate_limit_requests_per_minute", 100)
             .await;
-        let window_seconds = 60; // 1 minute window
+        let window_seconds = 60;
 
         Self {
             jwt_service: Arc::new(JwtService::new(
@@ -87,10 +84,9 @@ impl AuthState {
         }
     }
 
-    /// Update rate limiter settings from configuration
     pub async fn update_rate_limiter(&mut self) {
         let requests_per_minute = self.get_rate_limit_requests_per_minute().await;
-        let window_seconds = 60; // 1 minute window
+        let window_seconds = 60;
         self.rate_limiter
             .update_limits(requests_per_minute as usize, window_seconds);
     }
@@ -102,7 +98,6 @@ impl ConfigurationAccess for AuthState {
     }
 }
 
-/// Helper to extract user claims from request extensions
 pub fn extract_user_claims(request: &Request) -> Result<Claims, AuthError> {
     request
         .extensions()
@@ -111,16 +106,13 @@ pub fn extract_user_claims(request: &Request) -> Result<Claims, AuthError> {
         .map(|claims| claims.clone())
 }
 
-/// Authentication middleware
 pub async fn auth_middleware(
     State(auth_state): State<AuthState>,
     mut request: Request,
     next: Next,
 ) -> Result<Response, AuthError> {
-    // Debug: log all headers
     tracing::debug!("Request headers: {:?}", request.headers());
 
-    // Try to get token from cookie first, then fallback to Authorization header
     let token = if let Some(cookie_token) = CookieService::extract_access_token(request.headers()) {
         tracing::debug!(
             "Found token in cookie: {}",
@@ -133,14 +125,12 @@ pub async fn auth_middleware(
         .and_then(|header| header.to_str().ok())
     {
         tracing::debug!("Found token in Authorization header");
-        // Extract token from header (fallback for compatibility)
         JwtService::extract_token_from_header(auth_header)?.to_string()
     } else {
         tracing::debug!("No token found in cookies or Authorization header");
         return Err(AuthError::TokenInvalid);
     };
 
-    // Rate limiting check
     let client_ip = request
         .headers()
         .get("x-forwarded-for")
@@ -152,24 +142,20 @@ pub async fn auth_middleware(
         return Err(AuthError::RateLimitExceeded);
     }
 
-    // Validate token with blacklist and user verification check
     let claims = auth_state
         .jwt_service
         .validate_access_token_with_verification(&token)?;
 
-    // Inject claims into request extensions for downstream handlers
     request.extensions_mut().insert(claims);
 
     Ok(next.run(request).await)
 }
 
-/// Optional authentication middleware (doesn't fail if no token)
 pub async fn optional_auth_middleware(
     State(auth_state): State<AuthState>,
     mut request: Request,
     next: Next,
 ) -> Response {
-    // Try to get token from cookie first, then fallback to Authorization header
     let token = if let Some(cookie_token) = CookieService::extract_access_token(request.headers()) {
         Some(cookie_token)
     } else if let Some(auth_header) = request
@@ -177,7 +163,6 @@ pub async fn optional_auth_middleware(
         .get(AUTHORIZATION)
         .and_then(|header| header.to_str().ok())
     {
-        // Try to extract token from header (fallback for compatibility)
         JwtService::extract_token_from_header(auth_header)
             .ok()
             .map(|s| s.to_string())
@@ -185,7 +170,6 @@ pub async fn optional_auth_middleware(
         None
     };
 
-    // Try to validate token if we have one
     if let Some(token) = token {
         if let Ok(claims) = auth_state
             .jwt_service
@@ -198,7 +182,6 @@ pub async fn optional_auth_middleware(
     next.run(request).await
 }
 
-/// Check if user has required role
 pub fn check_user_role(claims: &Claims, required_role: &str) -> bool {
     claims.role == required_role || claims.role == "admin"
 }

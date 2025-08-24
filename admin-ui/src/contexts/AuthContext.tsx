@@ -13,7 +13,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 	const navigate = useNavigate();
 	const { isAuthenticated, checkAuth, logout: storeLogout } = useAuthStore();
 
-	// Function to logout
 	const logout = useCallback(async () => {
 		try {
 			await storeLogout();
@@ -23,7 +22,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	}, [navigate, storeLogout]);
 
-	// Function to check authentication status
 	const checkAuthStatus = useCallback(async () => {
 		setIsLoading(true);
 		try {
@@ -38,7 +36,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 		}
 	}, [checkAuth, navigate]);
 
-	// Initial authentication check
 	useEffect(() => {
 		checkAuthStatus();
 	}, [checkAuthStatus]);

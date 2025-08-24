@@ -69,7 +69,6 @@ pub struct CollectionResponse {
 pub struct CreateRecordRequest {
     #[schema(example = json!({"name": "Product 1", "price": 99.99}))]
     pub data: Value,
-    /// Optional files to upload for fields of type "file"
     #[serde(skip_serializing_if = "Option::is_none")]
     pub files: Option<std::collections::HashMap<String, FileUpload>>,
 }
@@ -80,7 +79,6 @@ pub struct FileUpload {
     pub filename: String,
     #[schema(example = "application/pdf")]
     pub content_type: String,
-    /// Base64 encoded file data
     #[schema(example = "JVBERi0xLjQKJdPr6eEKMSAwIG9iago8PAovVHlwZSAvQ2F0YWxvZwo...")]
     pub data: String,
 }
@@ -152,7 +150,6 @@ pub struct ValidationRules {
     pub enum_values: Option<Vec<String>>,
 }
 
-// Helper methods for Collection
 impl Collection {
     pub fn get_schema(&self) -> Result<CollectionSchema, serde_json::Error> {
         serde_json::from_str(&self.schema_json)
@@ -182,7 +179,6 @@ impl CollectionResponse {
     }
 }
 
-// Insert model
 #[derive(Debug, Insertable)]
 #[diesel(table_name = collections)]
 pub struct NewCollection {
@@ -193,7 +189,6 @@ pub struct NewCollection {
     pub is_system: bool,
 }
 
-// Update model
 #[derive(Debug, AsChangeset)]
 #[diesel(table_name = collections)]
 pub struct UpdateCollection {

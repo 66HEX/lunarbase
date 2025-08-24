@@ -31,7 +31,6 @@ use lunarbase::services::{ConfigurationAccess, ConfigurationManager};
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
-// Connection tracking for metrics
 #[derive(Clone)]
 struct ConnectionTracker {
     tls_connections: Arc<AtomicUsize>,
@@ -75,7 +74,6 @@ impl ConnectionTracker {
     }
 }
 
-// Service wrapper for tracking connections
 #[derive(Clone)]
 struct ConnectionTrackingService<S> {
     inner: S,
@@ -109,18 +107,13 @@ where
         let mut inner = self.inner.clone();
         let tracker = self.tracker.clone();
 
-        // Increment TLS connection count (since this service only wraps TLS connections)
         tracker.increment_tls();
 
-        // For TLS connections, HTTP/2 is negotiated via ALPN
-        // We increment HTTP/2 counter since this tracker is only used when TLS is enabled
-        // and axum_server enables HTTP/2 by default for TLS connections
         tracker.increment_http2();
 
         Box::pin(async move {
             let result = inner.call(req).await;
 
-            // Decrement counters when connection ends
             tracker.decrement_tls();
             tracker.decrement_http2();
 
@@ -129,7 +122,6 @@ where
     }
 }
 
-// Layer for applying the connection tracking service
 #[derive(Clone)]
 struct ConnectionTrackingLayer {
     tracker: ConnectionTracker,
@@ -192,23 +184,18 @@ use lunarbase::{ApiDoc, AppState, Config};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize Rustls CryptoProvider before any TLS operations
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
         .map_err(|_| "Failed to install default crypto provider")?;
-    // Logging initialization
     setup_logging();
     info!("Starting LunarBase server...");
 
-    // Configuration loading
     let config = Config::from_env()?;
     info!("Configuration loaded successfully");
 
-    // Database connection pool creation (initial pool for migrations)
     let initial_pool = create_pool(&config.database_url)?;
     info!("Initial database pool created successfully");
 
-    // Run database migrations automatically
     {
         let mut conn = initial_pool.get()?;
         conn.run_pending_migrations(MIGRATIONS)
@@ -216,11 +203,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         info!("Database migrations completed successfully");
     }
 
-    // Initialize configuration manager to get connection pool size
     let config_manager = ConfigurationManager::new(initial_pool.clone());
     config_manager.initialize().await?;
 
-    // Create a temporary struct that implements ConfigurationAccess to get the pool size
     struct TempConfigAccess {
         config_manager: ConfigurationManager,
     }
@@ -237,14 +222,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let connection_pool_size = temp_access.get_connection_pool_size().await;
     info!("Using connection pool size: {}", connection_pool_size);
 
-    // Create final pool with configured size
     let pool = create_pool_with_size(&config.database_url, connection_pool_size)?;
     info!(
         "Final database pool created with size: {}",
         connection_pool_size
     );
 
-    // Application state creation
     let app_state = AppState::new(
         pool,
         &config.jwt_secret,
@@ -253,7 +236,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     )
     .await?;
 
-    // Automatic admin creation from environment variables
     if let Err(e) = app_state
         .admin_service
         .ensure_admin_exists(&config, &app_state.password_pepper)
@@ -262,43 +244,33 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         warn!("Failed to create admin from environment variables: {}", e);
     }
 
-    // Clone metrics_state before moving app_state
     let metrics_state_clone = app_state.metrics_state.clone();
 
-    // Routing creation
     let app = create_router(app_state).await;
 
-    // Server address configuration
     let addr = config.server_address().parse::<SocketAddr>()?;
     info!("Server will listen on {}", addr);
 
-    // Check if TLS is enabled
     if config.enable_tls.unwrap_or(false) {
-        // TLS configuration
         let tls_config = create_tls_config(&config).await?;
         info!("TLS enabled - starting HTTPS server with HTTP/2 support");
 
-        // Display clickable URL for HTTPS
         let https_url = format!("https://{}:{}", config.server_host, config.server_port);
         info!("API: {}/api", https_url);
         info!("API Docs: {}/docs", https_url);
         info!("Admin panel: {}/admin", https_url);
 
-        // Create connection tracker for TLS/HTTP2 metrics
         let connection_tracker = ConnectionTracker::new(metrics_state_clone);
         let tracking_layer = ConnectionTrackingLayer::new(connection_tracker);
 
-        // Apply connection tracking layer to the app
         let tracked_app = app.layer(tracking_layer);
 
         axum_server::bind_rustls(addr, tls_config)
             .serve(tracked_app.into_make_service())
             .await?;
     } else {
-        // HTTP/1.1 server (fallback)
         info!("TLS disabled - starting HTTP server (HTTP/1.1 only)");
 
-        // Display clickable URL for HTTP
         let http_url = format!("http://{}:{}", config.server_host, config.server_port);
         info!("API: {}/api", http_url);
         info!("API Docs: {}/docs", http_url);
@@ -330,7 +302,6 @@ async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std:
     info!("Loading TLS certificate from: {}", cert_path);
     info!("Loading TLS private key from: {}", key_path);
 
-    // Load certificate chain
     let cert_file = File::open(cert_path)
         .map_err(|e| format!("Failed to open certificate file {}: {}", cert_path, e))?;
     let mut cert_reader = BufReader::new(cert_file);
@@ -342,7 +313,6 @@ async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std:
         return Err("No certificates found in certificate file".into());
     }
 
-    // Load private key
     let key_file = File::open(key_path)
         .map_err(|e| format!("Failed to open private key file {}: {}", key_path, e))?;
     let mut key_reader = BufReader::new(key_file);
@@ -356,7 +326,6 @@ async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std:
 
     let private_key = keys.remove(0);
 
-    // Create TLS configuration with HTTP/2 support
     let tls_config = ServerConfig::builder()
         .with_no_client_auth()
         .with_single_cert(cert_chain, private_key.into())
@@ -367,7 +336,6 @@ async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std:
 }
 
 async fn create_router(app_state: AppState) -> Router {
-    // Public routes (no authentication)
     let public_routes = Router::new()
         .route("/health", get(public_health_check))
         .route("/health/simple", get(simple_health_check))
@@ -380,40 +348,31 @@ async fn create_router(app_state: AppState) -> Router {
         .route("/auth/resend-verification", post(resend_verification))
         .route("/auth/forgot-password", post(forgot_password))
         .route("/auth/reset-password", post(reset_password))
-        // OAuth endpoints
         .route("/auth/oauth/{provider}", get(oauth_authorize))
         .route("/auth/oauth/{provider}/callback", get(oauth_callback))
-        // Avatar proxy endpoint
         .route("/avatar-proxy", get(proxy_avatar))
-        // Metrics endpoints
         .route("/metrics", get(get_metrics))
         .route("/metrics/summary", get(get_metrics_summary))
-        // Public collection and record read endpoints
         .route("/collections", get(list_collections))
         .route("/collections/{name}", get(get_collection))
         .route("/collections/{name}/schema", get(get_collection_schema))
         .route("/collections/{name}/records", get(list_records))
         .route("/collections/{name}/records/{id}", get(get_record))
-        // WebSocket endpoints
         .route("/ws", get(websocket_handler))
         .route("/ws/status", get(websocket_status));
 
-    // Protected routes (authentication)
     let protected_routes = Router::new()
         .route("/auth/me", get(me))
         .route("/auth/logout", post(logout))
         .route("/health/admin", get(health_check))
-        // Collection management (admin only)
         .route("/collections", post(create_collection))
         .route("/collections/{name}", put(update_collection))
         .route("/collections/{name}", delete(delete_collection))
         .route("/collections/stats", get(get_collections_stats))
-        // Record management
         .route("/records", get(list_all_records))
         .route("/collections/{name}/records", post(create_record))
         .route("/collections/{name}/records/{id}", put(update_record))
         .route("/collections/{name}/records/{id}", delete(delete_record))
-        // Permission management (admin only)
         .route("/permissions/roles", post(create_role))
         .route("/permissions/roles", get(list_roles))
         .route("/permissions/roles/{role_name}", get(get_role))
@@ -441,7 +400,6 @@ async fn create_router(app_state: AppState) -> Router {
             "/permissions/users/{user_id}/collections",
             get(get_user_accessible_collections),
         )
-        // Record-level permissions
         .route(
             "/permissions/collections/{name}/records/{record_id}",
             post(set_record_permission),
@@ -458,7 +416,6 @@ async fn create_router(app_state: AppState) -> Router {
             "/permissions/collections/{name}/records/{record_id}/users",
             get(list_record_permissions),
         )
-        // Ownership management
         .route(
             "/ownership/collections/{name}/records/{record_id}/transfer",
             post(transfer_record_ownership),
@@ -479,14 +436,12 @@ async fn create_router(app_state: AppState) -> Router {
             "/ownership/collections/{name}/stats",
             get(get_ownership_stats),
         )
-        // User management (admin only)
         .route("/users", get(list_users))
         .route("/users", post(create_user))
         .route("/users/{user_id}", get(get_user))
         .route("/users/{user_id}", put(update_user))
         .route("/users/{user_id}", delete(delete_user))
         .route("/users/{user_id}/unlock", post(unlock_user))
-        // WebSocket admin endpoints
         .route("/ws/stats", get(websocket_stats))
         .route("/ws/connections", get(get_connections))
         .route(
@@ -495,7 +450,6 @@ async fn create_router(app_state: AppState) -> Router {
         )
         .route("/ws/broadcast", post(broadcast_message))
         .route("/ws/activity", get(get_activity))
-        // Configuration management endpoints (admin only)
         .route("/admin/configuration", get(get_all_settings))
         .route(
             "/admin/configuration/{category}",
@@ -518,7 +472,6 @@ async fn create_router(app_state: AppState) -> Router {
             "/admin/configuration/{category}/{setting_key}/reset",
             post(reset_setting),
         )
-        // Backup management endpoints (admin only)
         .route("/admin/backup", post(create_manual_backup))
         .route("/admin/backup/health", get(get_backup_health))
         .layer(middleware::from_fn_with_state(
@@ -526,7 +479,6 @@ async fn create_router(app_state: AppState) -> Router {
             auth_middleware,
         ));
 
-    // Combine routes (public and protected)
     let api_routes = Router::new().merge(public_routes).merge(protected_routes);
 
     let swagger_router = SwaggerUi::new("/docs").url("/docs/openapi.json", ApiDoc::openapi());
@@ -534,16 +486,13 @@ async fn create_router(app_state: AppState) -> Router {
     let app = Router::new()
         .nest("/api", api_routes)
         .merge(swagger_router)
-        // Embedded admin UI routes
         .route("/admin", get(serve_embedded_admin_html))
         .route("/admin/", get(serve_embedded_admin_html))
         .route("/admin/{*path}", get(serve_embedded_assets))
-        // Add metrics endpoints at root level for Prometheus scraping
         .route("/metrics", get(get_metrics))
         .route("/metrics/summary", get(get_metrics_summary))
         .with_state(app_state.clone());
 
-    // Middleware application
     add_middleware(app, app_state).await
 }
 

@@ -7,14 +7,13 @@ use crate::schema::{
     collection_permissions, record_permissions, roles, user_collection_permissions,
 };
 
-// Role model
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = roles)]
 pub struct Role {
     pub id: i32,
     pub name: String,
     pub description: Option<String>,
-    pub priority: i32, // Higher priority = more permissions
+    pub priority: i32,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -27,7 +26,6 @@ pub struct NewRole {
     pub priority: i32,
 }
 
-// Collection permissions model for role-based permissions
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = collection_permissions)]
 pub struct CollectionPermission {
@@ -55,7 +53,6 @@ pub struct NewCollectionPermission {
     pub can_list: bool,
 }
 
-// User-specific collection permissions (overrides role permissions)
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = user_collection_permissions)]
 pub struct UserCollectionPermission {
@@ -83,7 +80,6 @@ pub struct NewUserCollectionPermission {
     pub can_list: Option<bool>,
 }
 
-// Record-level permissions for fine-grained access control
 #[derive(Debug, Clone, Serialize, Deserialize, Queryable, Selectable, Identifiable, ToSchema)]
 #[diesel(table_name = record_permissions)]
 pub struct RecordPermission {
@@ -108,7 +104,6 @@ pub struct NewRecordPermission {
     pub can_delete: bool,
 }
 
-// DTOs for API requests/responses
 #[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct CreateRoleRequest {
     pub name: String,
@@ -117,11 +112,9 @@ pub struct CreateRoleRequest {
 }
 
 impl CreateRoleRequest {
-    /// Validate role creation request
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
 
-        // Role name validation
         if self.name.is_empty() {
             errors.push("Role name is required".to_string());
         } else if self.name.len() > 50 {
@@ -130,14 +123,12 @@ impl CreateRoleRequest {
             errors.push("Role name can only contain letters, numbers, and underscores".to_string());
         }
 
-        // Description validation (optional)
         if let Some(desc) = &self.description {
             if desc.len() > 255 {
                 errors.push("Role description too long (max 255 characters)".to_string());
             }
         }
 
-        // Priority validation
         if self.priority < 0 || self.priority > 100 {
             errors.push("Role priority must be between 0 and 100".to_string());
         }
@@ -184,7 +175,6 @@ pub struct SetRecordPermissionRequest {
     pub can_delete: bool,
 }
 
-// Permission check results
 #[derive(Debug, Clone)]
 pub struct PermissionResult {
     pub can_create: bool,
@@ -235,7 +225,6 @@ impl PermissionResult {
     }
 }
 
-// Permission enums for type safety
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Permission {
     Create,

@@ -72,9 +72,7 @@ impl BackupService {
             metrics_state,
         };
 
-        // Initialize backup metrics to ensure they appear in Prometheus metrics endpoint
         if let Some(ref metrics) = service.metrics_state {
-            // Initialize all backup metrics with 0 values
             let _ = metrics
                 .increment_custom_metric(
                     "backup_operations_total",
@@ -97,7 +95,6 @@ impl BackupService {
                 )
                 .await;
 
-            // Reset all metrics back to 0 to initialize them properly
             if let Some(custom_metrics) = metrics
                 .custom_metrics
                 .read()
@@ -163,7 +160,6 @@ impl BackupService {
                             result.backup_id, result.file_size
                         );
 
-                        // Run cleanup after successful backup
                         debug!("Running backup cleanup...");
                         service.cleanup_old_backups(result.file_size).await;
                     }
@@ -210,15 +206,12 @@ impl BackupService {
 
         debug!("Creating backup with ID: {}", backup_id);
 
-        // Create database backup using SQLCipher VACUUM INTO
         let temp_backup_path = format!("/tmp/backup_{}.db", backup_id);
         self.create_database_backup(&temp_backup_path).await?;
 
-        // Read the backup file
         let backup_data = fs::read(&temp_backup_path).await?;
         let _original_size = backup_data.len() as u64;
 
-        // Compress if enabled
         let (final_data, compression_ratio) = if compression_enabled {
             let compressed = self.compress_data(&backup_data)?;
             let ratio = compressed.len() as f64 / backup_data.len() as f64;
@@ -229,7 +222,6 @@ impl BackupService {
 
         let file_size = final_data.len() as u64;
 
-        // Upload to S3 if available
         let s3_url = if let Some(s3_service) = &self.s3_service {
             let s3_key = format!("backups/{}", filename);
             match s3_service
@@ -244,7 +236,6 @@ impl BackupService {
                 Ok(upload_result) => {
                     debug!("Backup uploaded to S3: {}", upload_result.file_url);
 
-                    // Log backup success metric
                     if let Some(ref metrics) = self.metrics_state {
                         if let Err(e) = metrics
                             .increment_custom_metric(
@@ -262,7 +253,6 @@ impl BackupService {
                 Err(e) => {
                     error!("Failed to upload backup to S3: {}", e);
 
-                    // Log backup failure metric
                     if let Some(ref metrics) = self.metrics_state {
                         if let Err(e) = metrics
                             .increment_custom_metric(
@@ -283,12 +273,10 @@ impl BackupService {
             None
         };
 
-        // Clean up temporary file
         if let Err(e) = fs::remove_file(&temp_backup_path).await {
             warn!("Failed to remove temporary backup file: {}", e);
         }
 
-        // Clean up old backups only if new backup was successfully uploaded
         if s3_url.is_some() {
             self.cleanup_old_backups(file_size).await;
         }
@@ -311,7 +299,6 @@ impl BackupService {
             .get()
             .map_err(|e| BackupError::DatabaseError(e.to_string()))?;
 
-        // Use SQLCipher's VACUUM INTO for atomic backup
         let query = format!("VACUUM INTO '{}'", backup_path);
         sql_query(query)
             .execute(&mut conn)
@@ -344,8 +331,6 @@ impl BackupService {
         let retention_days = self.get_backup_retention_days().await;
         let backup_prefix_config = self.get_backup_prefix().await;
 
-        // Check if new backup has a sensible size before cleaning up old backups
-        // Skip size check if new_backup_size is 0 (manual cleanup)
         if new_backup_size > 0 && new_backup_size < min_backup_size_bytes {
             warn!(
                 "New backup size ({} bytes) is below minimum threshold ({} bytes). Skipping cleanup to preserve old backups.",
@@ -359,10 +344,8 @@ impl BackupService {
             retention_days, new_backup_size
         );
 
-        // Calculate cutoff date
         let cutoff_date = Utc::now() - Duration::days(retention_days as i64);
 
-        // List all backup objects with the backup prefix
         let backup_prefix = format!("backups/{}", backup_prefix_config);
 
         match s3_service.list_objects(&backup_prefix).await {
@@ -371,7 +354,6 @@ impl BackupService {
                 let mut error_count = 0;
 
                 for object in objects {
-                    // Check if the backup is older than retention period
                     if object.last_modified < cutoff_date {
                         debug!(
                             "Deleting old backup: {} (created: {})",
@@ -401,7 +383,6 @@ impl BackupService {
                     deleted_count, error_count
                 );
 
-                // Log cleanup metrics
                 if let Some(ref metrics) = self.metrics_state {
                     if let Err(e) = metrics
                         .increment_custom_metric(
@@ -413,7 +394,6 @@ impl BackupService {
                         warn!("Failed to update cleanup metrics: {}", e);
                     }
 
-                    // Log deleted backups count as a custom metric
                     for _ in 0..deleted_count {
                         if let Err(e) = metrics
                             .increment_custom_metric(
@@ -438,27 +418,23 @@ impl BackupService {
         debug!("Manual backup requested");
         let result = self.create_backup().await?;
 
-        // Run cleanup after successful manual backup
         debug!("Running backup cleanup after manual backup...");
         self.cleanup_old_backups(result.file_size).await;
 
         Ok(result)
     }
 
-    /// Manually trigger cleanup of old backups
     pub async fn manual_cleanup(&self) {
         debug!("Manual cleanup requested");
-        // For manual cleanup, bypass size check by passing 0 (which will skip the check)
         self.cleanup_old_backups(0).await;
     }
 
     pub async fn health_check(&self) -> bool {
         let backup_enabled = self.get_backup_enabled().await;
         if !backup_enabled {
-            return true; // Service is "healthy" when disabled
+            return true;
         }
 
-        // Check if S3 service is available
         if let Some(s3_service) = &self.s3_service {
             s3_service.health_check().await.is_ok()
         } else {
@@ -467,21 +443,17 @@ impl BackupService {
     }
 
     pub async fn stop(&self) -> Result<(), BackupError> {
-        // Note: JobScheduler doesn't support shutdown through Arc
-        // The scheduler will be dropped when the service is dropped
         debug!("Backup service stopped");
         Ok(())
     }
 }
 
-// Helper function to create backup service from config manager
 pub async fn create_backup_service_from_config(
     db_pool: DatabasePool,
     s3_service: Option<Arc<S3Service>>,
     config_manager: Arc<ConfigurationManager>,
     metrics_state: Option<Arc<MetricsState>>,
 ) -> Result<Option<BackupService>, BackupError> {
-    // Create a temporary service to check if backup is enabled
     let temp_service = BackupService {
         db_pool: db_pool.clone(),
         s3_service: s3_service.clone(),

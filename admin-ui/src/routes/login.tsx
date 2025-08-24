@@ -70,7 +70,7 @@ export default function LoginComponent() {
 
 	const handleInputChange = (field: keyof LoginRequest, value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
-		// Clear field error when user starts typing
+
 		if (errors[field]) {
 			setErrors((prev) => ({ ...prev, [field]: "" }));
 		}
@@ -105,7 +105,9 @@ export default function LoginComponent() {
 		try {
 			await login(formData.email, formData.password);
 			const { user } = useAuthStore.getState();
-			const redirectTo = search.redirect || (user?.role === "admin" ? "/dashboard" : "/collections");
+			const redirectTo =
+				search.redirect ||
+				(user?.role === "admin" ? "/dashboard" : "/collections");
 			navigate({ to: redirectTo });
 		} catch (error) {
 			if (error instanceof CustomApiError) {
@@ -130,8 +132,6 @@ export default function LoginComponent() {
 	const handleOAuthLogin = async (provider: string) => {
 		try {
 			await loginWithOAuth(provider);
-			// The loginWithOAuth function will redirect to OAuth provider
-			// After successful OAuth, user will be redirected back to the app
 		} catch (error) {
 			if (error instanceof CustomApiError) {
 				setGeneralError(error.message);
@@ -144,7 +144,6 @@ export default function LoginComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-				{/* Header */}
 				<div className="text-center">
 					<div className="flex justify-center mb-4">
 						<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -156,7 +155,6 @@ export default function LoginComponent() {
 					</h1>
 				</div>
 
-				{/* Login Form */}
 				<Card>
 					<CardHeader>
 						<CardTitle className="flex items-center gap-2">Login</CardTitle>
@@ -209,7 +207,6 @@ export default function LoginComponent() {
 									<FormMessage />
 								</FormField>
 
-								{/* Forgot Password Link */}
 								<div className="text-right">
 									<Link
 										to="/forgot-password"
@@ -233,7 +230,6 @@ export default function LoginComponent() {
 								</Button>
 							</FormActions>
 
-							{/* OAuth Divider */}
 							<div className="relative my-6">
 								<div className="relative flex justify-center text-xs uppercase">
 									<span className="bg-background px-2 text-nocta-300 dark:text-nocta-700">
@@ -242,7 +238,6 @@ export default function LoginComponent() {
 								</div>
 							</div>
 
-							{/* OAuth Buttons */}
 							<div className="space-y-3">
 								{oauthProviders.map((provider) => {
 									const getProviderIcon = () => {
@@ -268,7 +263,6 @@ export default function LoginComponent() {
 								})}
 							</div>
 
-							{/* Register Link */}
 							<div className="mt-6 text-center">
 								<p className="text-sm text-nocta-600 dark:text-nocta-400">
 									Don't have an account?{" "}
@@ -284,7 +278,6 @@ export default function LoginComponent() {
 					</CardContent>
 				</Card>
 
-				{/* Footer */}
 				<div className="text-center text-sm text-nocta-600 dark:text-nocta-400">
 					<p>© 2025 LunarBase. All rights reserved.</p>
 					<p className="mt-1">Need help? Contact your system administrator.</p>
@@ -297,8 +290,6 @@ export default function LoginComponent() {
 export const Route = createFileRoute("/login")({
 	component: LoginComponent,
 	beforeLoad: async () => {
-		// Check if already authenticated by checking if user exists in store
-		// Don't call checkAuth() here as it would cause 401 error on login page
 		const { user } = useAuthStore.getState();
 		if (user) {
 			throw redirect({

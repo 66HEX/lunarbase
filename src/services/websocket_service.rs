@@ -20,7 +20,6 @@ pub type SubscriptionId = String;
 
 #[derive(Clone)]
 pub struct WebSocketService {
-    // Active connections: ConnectionId -> (sender, client_info, connected_at)
     connections: Arc<
         RwLock<
             HashMap<
@@ -33,11 +32,8 @@ pub struct WebSocketService {
             >,
         >,
     >,
-    // Event broadcaster
     event_sender: broadcast::Sender<PendingEvent>,
-    // Permission service for access control
     permission_service: Arc<PermissionService>,
-    // Activity log (limited to last 1000 entries)
     activity_log: Arc<RwLock<Vec<ActivityLogEntry>>>,
 }
 
@@ -62,7 +58,6 @@ impl WebSocketService {
         }
     }
 
-    /// Handle new WebSocket connection
     pub async fn handle_connection(self: Arc<Self>, socket: WebSocket, user_id: Option<i32>) {
         let connection_id = Uuid::new_v4();
         let mut client_connection = ClientConnection::new(user_id);
@@ -78,13 +73,11 @@ impl WebSocketService {
 
         let connected_at = Utc::now();
 
-        // Store connection
         {
             let mut connections = self.connections.write().await;
             connections.insert(connection_id, (tx, client_connection.clone(), connected_at));
         }
 
-        // Log connection activity
         self.log_activity(
             connection_id,
             user_id,
@@ -93,12 +86,10 @@ impl WebSocketService {
         )
         .await;
 
-        // Subscribe to events
         let mut event_receiver = self.event_sender.subscribe();
         let connections_clone = self.connections.clone();
         let permission_service = self.permission_service.clone();
 
-        // Task for sending messages to client
         let send_task = tokio::spawn(async move {
             while let Some(message) = rx.recv().await {
                 let json_message = match serde_json::to_string(&message) {
@@ -120,24 +111,19 @@ impl WebSocketService {
             }
         });
 
-        // Task for receiving events and routing to appropriate clients
         let event_task = tokio::spawn(async move {
             while let Ok(event) = event_receiver.recv().await {
                 let connections = connections_clone.read().await;
 
                 for (conn_id, (sender, client, _)) in connections.iter() {
-                    // Find matching subscriptions for this event
                     for (sub_id, sub_data) in &client.subscriptions {
                         if sub_data.matches_event(&event) {
-                            // Check permissions
                             if let Some(sub_user_id) = sub_data.user_id {
-                                // Get user and collection for permission check
                                 let mut conn = match permission_service.pool.get() {
                                     Ok(conn) => conn,
                                     Err(_) => continue,
                                 };
 
-                                // Get user object
                                 use crate::models::User;
                                 use crate::schema::users;
                                 use diesel::prelude::*;
@@ -150,7 +136,6 @@ impl WebSocketService {
                                     Err(_) => continue,
                                 };
 
-                                // Get collection ID
                                 use crate::models::Collection;
                                 use crate::schema::collections;
                                 let collection = match collections::table
@@ -194,7 +179,6 @@ impl WebSocketService {
             }
         });
 
-        // Handle incoming messages from client
         while let Some(msg) = receiver.next().await {
             match msg {
                 Ok(Message::Text(text)) => {
@@ -220,24 +204,20 @@ impl WebSocketService {
             }
         }
 
-        // Log disconnection activity
         self.log_activity(connection_id, user_id, "disconnected".to_string(), None)
             .await;
 
-        // Cleanup connection
         {
             let mut connections = self.connections.write().await;
             connections.remove(&connection_id);
         }
 
-        // Cancel tasks
         send_task.abort();
         event_task.abort();
 
         debug!("WebSocket connection {} closed", connection_id);
     }
 
-    /// Handle incoming client message
     async fn handle_client_message(
         &self,
         connection_id: ConnectionId,
@@ -267,7 +247,6 @@ impl WebSocketService {
         Ok(())
     }
 
-    /// Handle subscription request
     async fn handle_subscribe(
         &self,
         connection_id: ConnectionId,
@@ -276,9 +255,7 @@ impl WebSocketService {
         let mut connections = self.connections.write().await;
 
         if let Some((sender, client, _)) = connections.get_mut(&connection_id) {
-            // Check permissions if user is authenticated
             if let Some(user_id) = client.user_id {
-                // Get user and collection for permission check
                 let mut conn = self
                     .permission_service
                     .pool
@@ -316,7 +293,6 @@ impl WebSocketService {
                 }
             }
 
-            // Create subscription data
             let sub_data = SubscriptionData::new(
                 req.collection_name.clone(),
                 req.subscription_type.clone(),
@@ -324,10 +300,8 @@ impl WebSocketService {
                 client.user_id,
             );
 
-            // Add subscription to client
             client.add_subscription(req.subscription_id.clone(), sub_data);
 
-            // Send confirmation
             let confirmation = SubscriptionConfirmed {
                 subscription_id: req.subscription_id,
                 collection_name: req.collection_name,
@@ -341,7 +315,6 @@ impl WebSocketService {
         Ok(())
     }
 
-    /// Handle unsubscribe request
     async fn handle_unsubscribe(
         &self,
         connection_id: ConnectionId,
@@ -360,7 +333,6 @@ impl WebSocketService {
         Ok(())
     }
 
-    /// Broadcast event to all relevant subscribers
     pub async fn broadcast_event(&self, event: PendingEvent) -> Result<(), AuthError> {
         debug!(
             "Broadcasting event for collection: {}",
@@ -375,13 +347,11 @@ impl WebSocketService {
         Ok(())
     }
 
-    /// Get number of active connections
     pub async fn connection_count(&self) -> usize {
         let connections = self.connections.read().await;
         connections.len()
     }
 
-    /// Get number of active subscriptions
     pub async fn subscription_count(&self) -> usize {
         let connections = self.connections.read().await;
         connections
@@ -390,7 +360,6 @@ impl WebSocketService {
             .sum()
     }
 
-    /// Get connection statistics
     pub async fn get_stats(&self) -> WebSocketStats {
         let connections = self.connections.read().await;
         let mut subscriptions_by_collection: HashMap<String, usize> = HashMap::new();
@@ -419,7 +388,6 @@ impl WebSocketService {
         }
     }
 
-    /// Get detailed connection information
     pub async fn get_connection_details(
         &self,
     ) -> Vec<crate::handlers::websocket::ConnectionDetails> {
@@ -461,12 +429,10 @@ impl WebSocketService {
         details
     }
 
-    /// Disconnect a specific connection
     pub async fn disconnect_connection(&self, connection_id: ConnectionId) -> bool {
         let mut connections = self.connections.write().await;
 
         if let Some((sender, client, _)) = connections.get(&connection_id) {
-            // Log disconnection activity
             self.log_activity(
                 connection_id,
                 client.user_id,
@@ -475,7 +441,6 @@ impl WebSocketService {
             )
             .await;
 
-            // Send close message to trigger cleanup
             let _ = sender.send(crate::models::WebSocketMessage::Event(
                 crate::models::EventMessage {
                     subscription_id: "system".to_string(),
@@ -494,7 +459,6 @@ impl WebSocketService {
         }
     }
 
-    /// Broadcast admin message to connections
     pub async fn broadcast_admin_message(
         &self,
         message: &str,
@@ -507,16 +471,14 @@ impl WebSocketService {
         for (conn_id, (sender, client, _)) in connections.iter() {
             let mut should_send = true;
 
-            // Filter by target users if specified
             if let Some(target_users) = target_users {
                 if let Some(user_id) = client.user_id {
                     should_send = target_users.contains(&user_id);
                 } else {
-                    should_send = false; // Anonymous users excluded when targeting specific users
+                    should_send = false;
                 }
             }
 
-            // Filter by target collections if specified
             if should_send {
                 if let Some(target_collections) = target_collections {
                     should_send = client
@@ -544,7 +506,6 @@ impl WebSocketService {
                 if sender.send(admin_message).is_ok() {
                     sent_count += 1;
 
-                    // Log broadcast activity
                     self.log_activity(
                         *conn_id,
                         client.user_id,
@@ -559,7 +520,6 @@ impl WebSocketService {
         sent_count
     }
 
-    /// Get activity log
     pub async fn get_activity_log(
         &self,
         limit: usize,
@@ -572,7 +532,7 @@ impl WebSocketService {
 
         let activities = activity_log
             .iter()
-            .rev() // Most recent first
+            .rev()
             .skip(offset)
             .take(limit)
             .map(|entry| ActivityEntry {
@@ -590,7 +550,6 @@ impl WebSocketService {
         }
     }
 
-    /// Log activity (internal method)
     async fn log_activity(
         &self,
         connection_id: ConnectionId,
@@ -610,7 +569,6 @@ impl WebSocketService {
 
         activity_log.push(entry);
 
-        // Keep only last 1000 entries
         if activity_log.len() > 1000 {
             activity_log.remove(0);
         }

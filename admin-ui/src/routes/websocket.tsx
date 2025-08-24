@@ -27,7 +27,6 @@ function WebSocketComponent() {
 	const { stats, connections, activity, isLoading, error, refetchAll } =
 		useWebSocketData();
 
-	// UI store for modals
 	const { modals } = useUI();
 	const { openModal, closeModal } = useUIActions();
 
@@ -122,7 +121,6 @@ function WebSocketComponent() {
 
 	return (
 		<div className="space-y-4">
-			{/* Header */}
 			<WebSocketHeader
 				activeConnections={stats?.total_connections || 0}
 				onRefresh={refetchAll}
@@ -130,10 +128,8 @@ function WebSocketComponent() {
 				isLoading={isLoading}
 			/>
 
-			{/* Stats Cards */}
 			<WebSocketStats stats={stats} />
 
-			{/* Main Content Tabs */}
 			<Tabs defaultValue="connections" className="w-full">
 				<TabsList className="grid w-full grid-cols-3">
 					<TabsTrigger value="connections">Active Connections</TabsTrigger>
@@ -170,7 +166,6 @@ function WebSocketComponent() {
 				</TabsContent>
 			</Tabs>
 
-			{/* Broadcast Message Dialog */}
 			<BroadcastDialog
 				open={modals.broadcast || false}
 				onOpenChange={(open) =>

@@ -11,20 +11,21 @@ export default function AuthSuccessComponent() {
 	useEffect(() => {
 		const handleOAuthSuccess = async () => {
 			try {
-					setLoading(true);
-					// Fetch user data after successful OAuth
-					await fetchUser();
-					// Get user data and redirect based on role
-					const { user } = useAuthStore.getState();
-					const redirectTo = user?.role === "admin" ? "/dashboard" : "/collections";
-					const timer = setTimeout(() => {
-						navigate({ to: redirectTo });
-					}, 2000);
-				// Return cleanup function
+				setLoading(true);
+
+				await fetchUser();
+
+				const { user } = useAuthStore.getState();
+				const redirectTo =
+					user?.role === "admin" ? "/dashboard" : "/collections";
+				const timer = setTimeout(() => {
+					navigate({ to: redirectTo });
+				}, 2000);
+
 				return timer;
 			} catch (error) {
 				console.error("Failed to fetch user after OAuth:", error);
-				// Redirect to login on error
+
 				navigate({ to: "/login" });
 				setLoading(false);
 			}
@@ -36,7 +37,6 @@ export default function AuthSuccessComponent() {
 			setLoading(false);
 		});
 
-		// Cleanup function
 		return () => {
 			if (timer) {
 				clearTimeout(timer);
@@ -47,7 +47,6 @@ export default function AuthSuccessComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8 text-center">
-				{/* Header */}
 				<div className="text-center">
 					<div className="flex justify-center mb-4">
 						<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -59,7 +58,6 @@ export default function AuthSuccessComponent() {
 					</h1>
 				</div>
 
-				{/* Loading State */}
 				<div className="space-y-4">
 					<Spinner className="w-8 h-8 mx-auto" />
 					<p className="text-nocta-600 dark:text-nocta-400">

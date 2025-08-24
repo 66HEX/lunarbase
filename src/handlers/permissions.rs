@@ -16,7 +16,6 @@ use crate::{
     utils::{ApiResponse, AuthError, Claims},
 };
 
-// Helper function to convert Claims to User for permission checks
 async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
     use crate::schema::users;
     use diesel::prelude::*;
@@ -32,8 +31,6 @@ async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthE
         .map_err(|_| AuthError::NotFound("User not found".to_string()))
 }
 
-// Role management endpoints
-/// Create a new role
 #[utoipa::path(
     post,
     path = "/permissions/roles",
@@ -54,12 +51,10 @@ pub async fn create_role(
     Extension(claims): Extension<Claims>,
     Json(role_request): Json<CreateRoleRequest>,
 ) -> Result<Json<ApiResponse<Role>>, AuthError> {
-    // Only admins can create roles
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Validate role request
     role_request
         .validate()
         .map_err(AuthError::ValidationError)?;
@@ -69,7 +64,6 @@ pub async fn create_role(
     Ok(Json(ApiResponse::success(role)))
 }
 
-/// List all roles
 #[utoipa::path(
     get,
     path = "/permissions/roles",
@@ -87,7 +81,6 @@ pub async fn list_roles(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> Result<Json<ApiResponse<Vec<Role>>>, AuthError> {
-    // Only admins can list roles
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -97,7 +90,6 @@ pub async fn list_roles(
     Ok(Json(ApiResponse::success(roles)))
 }
 
-/// Get role by name
 #[utoipa::path(
     get,
     path = "/permissions/roles/{role_name}",
@@ -120,7 +112,6 @@ pub async fn get_role(
     Extension(claims): Extension<Claims>,
     Path(role_name): Path<String>,
 ) -> Result<Json<ApiResponse<Role>>, AuthError> {
-    // Only admins can get role details
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
@@ -156,19 +147,16 @@ pub async fn get_role_collection_permission(
     Extension(claims): Extension<Claims>,
     Path((role_name, collection_name)): Path<(String, String)>,
 ) -> Result<Json<ApiResponse<CollectionPermission>>, AuthError> {
-    // Only admins can get role collection permissions
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Get role collection permission
     let permission = state
         .permission_service
         .get_role_collection_permission(&role_name, collection.id)
@@ -181,8 +169,6 @@ pub async fn get_role_collection_permission(
     }
 }
 
-// Collection permission management
-/// Set collection permissions for a role
 #[utoipa::path(
     post,
     path = "/permissions/collections/{collection_name}",
@@ -207,19 +193,16 @@ pub async fn set_collection_permission(
     Path(collection_name): Path<String>,
     Json(permission_request): Json<SetCollectionPermissionRequest>,
 ) -> Result<Json<ApiResponse<CollectionPermission>>, AuthError> {
-    // Only admins can set collection permissions
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Get role by name to get role_id
     let role = state
         .permission_service
         .get_role_by_name(&permission_request.role_name)
@@ -233,7 +216,6 @@ pub async fn set_collection_permission(
     Ok(Json(ApiResponse::success(permission)))
 }
 
-/// Get collection permissions
 #[utoipa::path(
     get,
     path = "/permissions/collections/{collection_name}",
@@ -258,21 +240,17 @@ pub async fn get_collection_permissions(
     Path(collection_name): Path<String>,
     Query(params): Query<HashMap<String, String>>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Only admins can view collection permissions
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Check if role_name is provided in query parameters
     if let Some(role_name) = params.get("role_name") {
-        // Get role collection permission
         let permission = state
             .permission_service
             .get_role_collection_permission(role_name, collection.id)
@@ -295,10 +273,8 @@ pub async fn get_collection_permissions(
             Err(AuthError::NotFound("Permission not found".to_string()))
         }
     } else {
-        // Convert claims to user for permission service
         let user = claims_to_user(&claims, &state).await?;
 
-        // Get user's permissions for this collection
         let user_permissions = state
             .permission_service
             .get_user_collection_permissions(&user, collection.id)
@@ -318,8 +294,6 @@ pub async fn get_collection_permissions(
     }
 }
 
-// User-specific permission management
-/// Set collection permissions for a specific user
 #[utoipa::path(
     post,
     path = "/api/permissions/users/{user_id}/collections/{collection_name}",
@@ -345,12 +319,10 @@ pub async fn set_user_collection_permission(
     Path((user_id, collection_name)): Path<(i32, String)>,
     Json(permission_request): Json<SetUserCollectionPermissionRequest>,
 ) -> Result<Json<ApiResponse<UserCollectionPermission>>, AuthError> {
-    // Only admins can set user-specific permissions
     if admin_claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
@@ -365,7 +337,6 @@ pub async fn set_user_collection_permission(
     Ok(Json(ApiResponse::success(permission)))
 }
 
-/// Get collection permissions for a specific user
 #[utoipa::path(
     get,
     path = "/api/permissions/users/{user_id}/collections/{collection_name}",
@@ -394,26 +365,21 @@ pub async fn get_user_collection_permissions(
         .parse()
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Users can only view their own permissions, admins can view anyone's
     if requesting_claims.role != "admin" && requesting_user_id != user_id {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Convert claims to user for permission service
     let requesting_user = claims_to_user(&requesting_claims, &state).await?;
 
-    // For the target user, get their User object to check permissions
     let target_user = if requesting_user_id == user_id {
         requesting_user
     } else {
-        // For admin requests, fetch the target user
         use crate::schema::users;
         use diesel::prelude::*;
         let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
@@ -444,7 +410,6 @@ pub async fn get_user_collection_permissions(
     }))))
 }
 
-/// Get user's accessible collections
 #[utoipa::path(
     get,
     path = "/permissions/users/me/collections",
@@ -461,7 +426,6 @@ pub async fn get_user_accessible_collections(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Convert claims to user for permission service
     let user = claims_to_user(&claims, &state).await?;
 
     let accessible_collection_ids = state
@@ -469,7 +433,6 @@ pub async fn get_user_accessible_collections(
         .get_user_accessible_collections(&user)
         .await?;
 
-    // Get collection details for accessible collections
     let mut accessible_collections = Vec::new();
     for collection_id in accessible_collection_ids {
         if let Ok(collection) = state
@@ -482,7 +445,6 @@ pub async fn get_user_accessible_collections(
                 .get_user_collection_permissions(&user, collection_id)
                 .await?;
 
-            // Use schema directly from CollectionResponse
             let schema = &collection.schema;
 
             accessible_collections.push(json!({
@@ -511,8 +473,6 @@ pub async fn get_user_accessible_collections(
     }))))
 }
 
-// Permission check endpoint for debugging/testing
-/// Check specific permission for a collection
 #[utoipa::path(
     get,
     path = "/permissions/collections/{collection_name}/check/{permission_type}",
@@ -536,7 +496,6 @@ pub async fn check_permission(
     Extension(claims): Extension<Claims>,
     Path((collection_name, permission_type)): Path<(String, String)>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Convert claims to user for permission service
     let user = claims_to_user(&claims, &state).await?;
     let collection = state
         .collection_service

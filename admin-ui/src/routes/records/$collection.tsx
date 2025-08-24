@@ -29,10 +29,8 @@ import { useAuthStore } from "@/stores/auth-persist.store";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { ApiRecord, RecordData } from "@/types/api";
 
-// Use ApiRecord instead of Record to avoid conflict with TypeScript's built-in Record type
 type Record = ApiRecord;
 
-// Helper function to safely parse user ID from record data
 const getUserId = (value: unknown): number | undefined => {
 	if (typeof value === "number") return value;
 	if (typeof value === "string") {
@@ -42,7 +40,6 @@ const getUserId = (value: unknown): number | undefined => {
 	return undefined;
 };
 
-// Helper function for formatting field values
 const formatFieldValue = (value: unknown, maxLength: number = 50): string => {
 	if (value === null || value === undefined) return "-";
 	if (typeof value === "boolean") return value ? "Yes" : "No";
@@ -68,30 +65,24 @@ export default function RecordComponent() {
 	const { user } = useAuthStore();
 	const queryClient = useQueryClient();
 
-	// React Query mutations
 	const createRecordMutation = useCreateRecord();
 	const updateRecordMutation = useUpdateRecord();
 	const deleteRecordMutation = useDeleteRecord();
 
-	// Use React Query hook for collection data instead of manual fetching
 	const { data: collection } = useCollection(collectionName || "");
-	// Convert undefined to null for consistency with existing code
+
 	const collectionData = collection || null;
 	const [recordToDelete, setRecordToDelete] = useState<number | null>(null);
 
-	// UI store for modals and sheets
 	const { modals, sheets } = useUI();
 	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
 
-	// Search and pagination state
 	const [localSearchTerm, setLocalSearchTerm] = useState("");
 	const [currentPage, setCurrentPage] = useState(1);
 	const pageSize = 10;
 
-	// Debounce search term
 	const debouncedSearchTerm = useDebounce(localSearchTerm, 300);
 
-	// Use TanStack Query for records
 	const {
 		data: recordsData,
 		isLoading,
@@ -106,10 +97,8 @@ export default function RecordComponent() {
 	const records = recordsData?.records || [];
 	const totalCount = recordsData?.pagination?.total_count || 0;
 
-	// Local state for record data
 	const [editingRecord, setEditingRecord] = useState<Record | null>(null);
 
-	// Reset page when search term changes
 	useEffect(() => {
 		setCurrentPage(1);
 	}, [debouncedSearchTerm]);
@@ -129,7 +118,6 @@ export default function RecordComponent() {
 			},
 			{
 				onSuccess: () => {
-					// Invalidate queries to refresh data
 					queryClient.invalidateQueries({
 						queryKey: ["collectionRecords", collectionName],
 						exact: false,
@@ -155,7 +143,7 @@ export default function RecordComponent() {
 				onSuccess: () => {
 					closeSheet("editRecord");
 					setEditingRecord(null);
-					// Invalidate queries to refresh data
+
 					queryClient.invalidateQueries({
 						queryKey: ["collectionRecords", collectionName],
 						exact: false,
@@ -185,7 +173,7 @@ export default function RecordComponent() {
 				onSuccess: () => {
 					closeModal("deleteRecord");
 					setRecordToDelete(null);
-					// Invalidate queries to refresh data
+
 					queryClient.invalidateQueries({
 						queryKey: ["collectionRecords", collectionName],
 						exact: false,
@@ -269,7 +257,6 @@ export default function RecordComponent() {
 				onCreateRecord={handleCreateRecord}
 			/>
 
-			{/* Records Table */}
 			{records.length > 0 || isLoading ? (
 				<div className="space-y-4">
 					<div className="overflow-x-auto">
@@ -287,7 +274,6 @@ export default function RecordComponent() {
 									key: "data",
 									title: "Data",
 									render: (_value: unknown, record: ApiRecord) => {
-										// Filter out ownership-related fields and ID since they're shown in separate columns
 										const excludedFields = [
 											"id",
 											"owner_id",
@@ -358,7 +344,6 @@ export default function RecordComponent() {
 									className: "w-24",
 									align: "left",
 									render: (_value: unknown, record: ApiRecord) => {
-										// Extract current owner ID for transfer ownership
 										const currentOwnerId =
 											getUserId(record.data.owner_id) ||
 											getUserId(record.data.user_id) ||
@@ -372,7 +357,6 @@ export default function RecordComponent() {
 													recordId={record.id}
 													currentOwnerId={currentOwnerId}
 													onSuccess={() => {
-														// Invalidate queries to refresh data
 														queryClient.invalidateQueries({
 															queryKey: ["collectionRecords", collectionName],
 															exact: false,
@@ -422,7 +406,6 @@ export default function RecordComponent() {
 							}}
 						/>
 					</div>
-					{/* Subtle loading indicator for pagination */}
 					{isLoading && (
 						<div className="flex items-center justify-center py-2">
 							<div className="flex items-center gap-2 text-sm text-nocta-500 dark:text-nocta-400">

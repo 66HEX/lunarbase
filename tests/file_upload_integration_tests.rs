@@ -24,10 +24,8 @@ use lunarbase::schema::users;
 use lunarbase::{AppState, Config};
 
 async fn create_test_router() -> Router {
-    // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
-    // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
@@ -35,7 +33,6 @@ async fn create_test_router() -> Router {
         .await
         .expect("Failed to create AppState");
 
-    // Public routes (no authentication required)
     let public_routes = Router::new()
         .route("/collections", get(list_collections))
         .route("/collections/{name}", get(get_collection))
@@ -45,7 +42,6 @@ async fn create_test_router() -> Router {
         .route("/auth/register", post(register))
         .route("/auth/login", post(login));
 
-    // Protected routes (authentication required)
     let protected_routes = Router::new()
         .route("/collections", post(create_collection))
         .route("/collections/{name}", put(update_collection))
@@ -72,10 +68,8 @@ async fn create_test_router() -> Router {
 }
 
 async fn create_test_router_without_s3() -> Router {
-    // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
-    // Create config without S3 settings
     let mut config = Config::from_env().expect("Failed to load config");
     config.s3_bucket_name = None;
     config.s3_region = None;
@@ -89,7 +83,6 @@ async fn create_test_router_without_s3() -> Router {
         .await
         .expect("Failed to create AppState");
 
-    // Public routes (no authentication required)
     let public_routes = Router::new()
         .route("/collections", get(list_collections))
         .route("/collections/{name}", get(get_collection))
@@ -99,7 +92,6 @@ async fn create_test_router_without_s3() -> Router {
         .route("/auth/register", post(register))
         .route("/auth/login", post(login));
 
-    // Protected routes (authentication required)
     let protected_routes = Router::new()
         .route("/collections", post(create_collection))
         .route("/collections/{name}", put(update_collection))
@@ -142,13 +134,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     );
     let unique_email = format!("{}@test.com", unique_username);
 
-    // Create user directly in database with is_verified = true
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let mut conn = db_pool.get().expect("Failed to get database connection");
     let test_password_pepper = "test_pepper".to_string();
 
-    // Create new user with verification status set to true for tests
     let new_user = NewUser::new_verified(
         unique_email.clone(),
         "TestPassword123!",
@@ -159,13 +149,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     )
     .expect("Failed to create new user");
 
-    // Insert user into database
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
         .expect("Failed to insert user");
 
-    // Get the inserted user
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(User::as_select())
@@ -184,7 +172,7 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs() as i64;
-    let exp = now + 3600; // 1 hour
+    let exp = now + 3600;
 
     let claims = Claims {
         sub: user_id.to_string(),
@@ -247,7 +235,6 @@ async fn test_file_upload_s3_disabled() {
 
     let collection_name = unique_collection_name("test_files");
 
-    // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
@@ -277,12 +264,10 @@ async fn test_file_upload_s3_disabled() {
     }
     assert_eq!(status, StatusCode::CREATED);
 
-    // Try to upload a file when S3 is disabled
     let record_data = json!({
         "name": "Test Record"
     });
 
-    // Create multipart body with data field and file field
     let boundary = "test_boundary";
     let multipart_body = format!(
         "--{}\r\nContent-Disposition: form-data; name=\"data\"\r\n\r\n{}\r\n--{}\r\nContent-Disposition: form-data; name=\"file_avatar\"; filename=\"test.txt\"\r\nContent-Type: text/plain\r\n\r\nHello World\r\n--{}--",
@@ -319,7 +304,6 @@ async fn test_file_upload_s3_disabled() {
         );
     }
 
-    // Should fail because S3 is not configured
     eprintln!("Response body: {}", response_text);
     assert_eq!(status, StatusCode::BAD_REQUEST);
     assert!(response_text.contains("VALIDATION_ERROR"));
@@ -333,7 +317,6 @@ async fn test_create_record_without_files() {
 
     let collection_name = unique_collection_name("test_no_files");
 
-    // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
@@ -353,7 +336,6 @@ async fn test_create_record_without_files() {
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    // Create record without any files using multipart/form-data
     let record_data = json!({
         "name": "Test Record Without Files"
     });
@@ -379,7 +361,6 @@ async fn test_create_record_without_files() {
 
     let response = app2.oneshot(request).await.unwrap();
 
-    // Should succeed
     assert_eq!(response.status(), StatusCode::CREATED);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -401,7 +382,6 @@ async fn test_invalid_multipart_data() {
 
     let collection_name = unique_collection_name("test_invalid_multipart");
 
-    // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
@@ -421,7 +401,6 @@ async fn test_invalid_multipart_data() {
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    // Send invalid multipart data
     let invalid_multipart_body = "--boundary\r\nContent-Disposition: form-data; name=\"invalid\"\r\n\r\ninvalid data\r\n--boundary--";
 
     let request = Request::builder()
@@ -434,7 +413,6 @@ async fn test_invalid_multipart_data() {
 
     let response = app2.oneshot(request).await.unwrap();
 
-    // Should fail with bad request
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 }
 
@@ -446,7 +424,6 @@ async fn test_file_field_validation() {
 
     let collection_name = unique_collection_name("test_file_validation");
 
-    // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
@@ -466,11 +443,10 @@ async fn test_file_field_validation() {
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    // Try to upload with invalid field types using multipart/form-data
     let file_data = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==";
 
     let record_data = json!({
-        "name": file_data, // This should be text, not a file
+        "name": file_data,
     });
 
     let boundary = "boundary";
@@ -495,7 +471,6 @@ async fn test_file_field_validation() {
 
     let response = app2.oneshot(request).await.unwrap();
 
-    // Debug: Print response status and body
     let status = response.status();
     println!("test_file_field_validation - Response status: {}", status);
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -505,10 +480,8 @@ async fn test_file_field_validation() {
         response_text
     );
 
-    // Should fail - invalid data type for text field
     assert_eq!(status, StatusCode::BAD_REQUEST);
 
-    // Check that it's a validation error
     assert!(response_text.contains("VALIDATION_ERROR"));
 }
 
@@ -520,7 +493,6 @@ async fn test_nonexistent_file_field() {
 
     let collection_name = unique_collection_name("test_nonexistent_field");
 
-    // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
@@ -540,7 +512,6 @@ async fn test_nonexistent_file_field() {
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    // Try to upload to a field that doesn't exist using multipart/form-data
     let record_data = json!({
         "name": "Test Record",
         "nonexistent_file_field": "some_value"
@@ -567,7 +538,6 @@ async fn test_nonexistent_file_field() {
 
     let response = app2.oneshot(request).await.unwrap();
 
-    // Debug: Print response status and body
     let status = response.status();
     println!("test_nonexistent_file_field - Response status: {}", status);
     let body = response.into_body().collect().await.unwrap().to_bytes();
@@ -577,13 +547,11 @@ async fn test_nonexistent_file_field() {
         response_text
     );
 
-    // Should succeed - nonexistent fields are ignored
     assert_eq!(status, StatusCode::CREATED);
 
-    // Check that the record was created successfully
     let response_json: Value = serde_json::from_slice(&body).unwrap();
     assert_eq!(response_json["data"]["data"]["name"], "Test Record");
-    // nonexistent_file_field should not be present in the response
+
     assert!(response_json["data"]["data"]["nonexistent_file_field"].is_null());
 }
 
@@ -595,7 +563,6 @@ async fn test_invalid_base64_data() {
 
     let collection_name = unique_collection_name("test_invalid_base64");
 
-    // Create collection with file fields
     let schema = create_test_schema();
     let create_collection_request = json!({
         "name": collection_name,
@@ -615,7 +582,6 @@ async fn test_invalid_base64_data() {
     let response = app1.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CREATED);
 
-    // Try to upload invalid base64 data using multipart/form-data
     let record_data = json!({
         "name": "Test Record"
     });
@@ -642,7 +608,6 @@ async fn test_invalid_base64_data() {
 
     let response = app2.oneshot(request).await.unwrap();
 
-    // Should fail with bad request
     assert_eq!(response.status(), StatusCode::BAD_REQUEST);
 
     let body = response.into_body().collect().await.unwrap().to_bytes();

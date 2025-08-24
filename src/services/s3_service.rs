@@ -50,17 +50,14 @@ impl S3Service {
     ) -> Result<Self, S3ServiceError> {
         let mut config_loader = aws_config::defaults(BehaviorVersion::latest());
 
-        // Set region if provided
         if let Some(region) = region {
             config_loader = config_loader.region(aws_config::Region::new(region));
         }
 
-        // Set custom endpoint if provided (for LocalStack)
         if let Some(endpoint) = endpoint_url.clone() {
             config_loader = config_loader.endpoint_url(endpoint);
         }
 
-        // Set credentials if provided
         if let (Some(access_key), Some(secret_key)) = (access_key_id, secret_access_key) {
             let credentials = aws_sdk_s3::config::Credentials::new(
                 access_key,
@@ -74,10 +71,8 @@ impl S3Service {
 
         let config = config_loader.load().await;
 
-        // Create S3 client with LocalStack-specific configuration
         let mut s3_config_builder = aws_sdk_s3::config::Builder::from(&config);
 
-        // For LocalStack, we need to use path-style addressing
         if let Some(ref _endpoint) = endpoint_url {
             s3_config_builder = s3_config_builder.force_path_style(true);
         }
@@ -85,7 +80,6 @@ impl S3Service {
         let s3_config = s3_config_builder.build();
         let client = Client::from_conf(s3_config);
 
-        // Test connection by checking if bucket exists
         match client.head_bucket().bucket(&bucket_name).send().await {
             Ok(_) => {}
             Err(e) => {
@@ -107,7 +101,6 @@ impl S3Service {
         })
     }
 
-    /// Upload a single file to S3
     pub async fn upload_file(
         &self,
         file_data: Vec<u8>,
@@ -157,7 +150,6 @@ impl S3Service {
         })
     }
 
-    /// Upload file with custom key (preserving original filename)
     pub async fn upload_file_with_key(
         &self,
         file_data: Vec<u8>,
@@ -196,10 +188,9 @@ impl S3Service {
         })
     }
 
-    /// Upload multiple files to S3
     pub async fn upload_files(
         &self,
-        files: Vec<(Vec<u8>, String, String)>, // (data, filename, content_type)
+        files: Vec<(Vec<u8>, String, String)>,
     ) -> Result<Vec<FileUploadResult>, S3ServiceError> {
         let mut results = Vec::new();
         let mut uploaded_keys = Vec::new();
@@ -214,7 +205,6 @@ impl S3Service {
                     results.push(result);
                 }
                 Err(e) => {
-                    // If any upload fails, clean up previously uploaded files
                     self.cleanup_files(uploaded_keys).await;
                     return Err(e);
                 }
@@ -224,9 +214,7 @@ impl S3Service {
         Ok(results)
     }
 
-    /// Delete a file from S3
     pub async fn delete_file(&self, file_url: &str) -> Result<(), S3ServiceError> {
-        // Extract S3 key from URL
         let s3_key = self.extract_s3_key_from_url(file_url)?;
 
         self.client
@@ -241,7 +229,6 @@ impl S3Service {
         Ok(())
     }
 
-    /// Clean up multiple files (used for rollback on errors)
     pub async fn cleanup_files(&self, file_urls: Vec<String>) {
         for file_url in file_urls {
             if let Err(e) = self.delete_file(&file_url).await {
@@ -250,15 +237,8 @@ impl S3Service {
         }
     }
 
-    /// Extract S3 key from file URL
     fn extract_s3_key_from_url(&self, file_url: &str) -> Result<String, S3ServiceError> {
-        // Handle different URL formats:
-        // https://bucket.s3.amazonaws.com/uploads/file.jpg
-        // https://s3.amazonaws.com/bucket/uploads/file.jpg
-        // http://localhost:4566/bucket/uploads/file.jpg (LocalStack)
-
         if file_url.contains(&format!("{}.s3.amazonaws.com", self.bucket_name)) {
-            // Format: https://bucket.s3.amazonaws.com/key
             let parts: Vec<&str> = file_url
                 .split(&format!("{}.s3.amazonaws.com/", self.bucket_name))
                 .collect();
@@ -266,7 +246,6 @@ impl S3Service {
                 return Ok(parts[1].to_string());
             }
         } else if file_url.contains("s3.amazonaws.com") {
-            // Format: https://s3.amazonaws.com/bucket/key
             let parts: Vec<&str> = file_url
                 .split(&format!("s3.amazonaws.com/{}/", self.bucket_name))
                 .collect();
@@ -274,7 +253,6 @@ impl S3Service {
                 return Ok(parts[1].to_string());
             }
         } else if file_url.contains(&self.bucket_name) {
-            // Format: http://localhost:4566/bucket/key (LocalStack)
             let parts: Vec<&str> = file_url.split(&format!("/{}/", self.bucket_name)).collect();
             if parts.len() == 2 {
                 return Ok(parts[1].to_string());
@@ -287,7 +265,6 @@ impl S3Service {
         )))
     }
 
-    /// Check if S3 service is properly configured and accessible
     pub async fn health_check(&self) -> Result<(), S3ServiceError> {
         self.client
             .head_bucket()
@@ -298,7 +275,6 @@ impl S3Service {
         Ok(())
     }
 
-    /// List objects in S3 with a given prefix
     pub async fn list_objects(&self, prefix: &str) -> Result<Vec<S3Object>, S3ServiceError> {
         let response = self
             .client
@@ -314,7 +290,6 @@ impl S3Service {
             if let (Some(key), Some(last_modified), Some(size)) =
                 (object.key(), object.last_modified(), object.size())
             {
-                // Convert AWS DateTime to chrono DateTime
                 let chrono_datetime = DateTime::<Utc>::from_timestamp(
                     last_modified.secs(),
                     last_modified.subsec_nanos(),
@@ -332,7 +307,6 @@ impl S3Service {
         Ok(objects)
     }
 
-    /// Delete object by key
     pub async fn delete_object(&self, key: &str) -> Result<(), S3ServiceError> {
         self.client
             .delete_object()
@@ -346,17 +320,14 @@ impl S3Service {
         Ok(())
     }
 
-    /// Get bucket name
     pub fn bucket_name(&self) -> &str {
         &self.bucket_name
     }
 }
 
-/// Helper function to create S3Service from config
 pub async fn create_s3_service_from_config(
     config: &crate::config::Config,
 ) -> Result<Option<S3Service>, S3ServiceError> {
-    // Check if all required S3 configuration is present
     let bucket_name = match &config.s3_bucket_name {
         Some(name) => name.clone(),
         None => {

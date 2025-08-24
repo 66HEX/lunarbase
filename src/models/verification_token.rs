@@ -72,8 +72,6 @@ impl NewVerificationToken {
         expires_at: NaiveDateTime,
         _token_type: TokenType,
     ) -> Self {
-        // Note: Since the database schema doesn't have a token_type column yet,
-        // we'll store the type information in a comment for future migration
         Self {
             token,
             user_id,

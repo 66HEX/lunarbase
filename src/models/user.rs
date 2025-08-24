@@ -8,7 +8,6 @@ use utoipa::ToSchema;
 
 use crate::schema::users;
 
-// Database model
 #[derive(Debug, Queryable, Selectable, Identifiable, AsChangeset, Serialize, ToSchema)]
 #[diesel(table_name = users)]
 #[diesel(check_for_backend(diesel::sqlite::Sqlite))]
@@ -39,7 +38,6 @@ pub struct User {
     pub updated_at: NaiveDateTime,
 }
 
-// Update model for AsChangeset (excluding readonly fields)
 #[derive(Debug, AsChangeset)]
 #[diesel(table_name = users)]
 pub struct UpdateUser {
@@ -55,7 +53,6 @@ pub struct UpdateUser {
     pub avatar_url: Option<Option<String>>,
 }
 
-// Insert model
 #[derive(Debug, Insertable)]
 #[diesel(table_name = users)]
 pub struct NewUser {
@@ -67,7 +64,6 @@ pub struct NewUser {
     pub avatar_url: Option<String>,
 }
 
-// Request DTOs
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct RegisterRequest {
     #[schema(example = "user@example.com")]
@@ -86,7 +82,6 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-// Response DTOs
 #[derive(Debug, Serialize, ToSchema)]
 pub struct UserResponse {
     #[schema(example = 1)]
@@ -119,9 +114,7 @@ pub struct AuthResponse {
     pub expires_in: i64,
 }
 
-// Security and validation implementation
 impl User {
-    /// Check if user account is locked due to failed login attempts
     pub fn is_locked(&self) -> bool {
         if let Some(locked_until) = self.locked_until {
             Utc::now().naive_utc() < locked_until
@@ -130,7 +123,6 @@ impl User {
         }
     }
 
-    /// Verify password with timing attack protection using pepper
     pub fn verify_password(
         &self,
         password: &str,
@@ -138,7 +130,6 @@ impl User {
     ) -> Result<bool, argon2::password_hash::Error> {
         let parsed_hash = PasswordHash::new(&self.password_hash)?;
 
-        // Combine password with pepper for verification
         let peppered_password = format!("{}{}", password, pepper);
 
         Ok(Argon2::default()
@@ -146,7 +137,6 @@ impl User {
             .is_ok())
     }
 
-    /// Convert to safe response (no sensitive data)
     pub fn to_response(&self) -> UserResponse {
         UserResponse {
             id: self.id,
@@ -166,28 +156,24 @@ impl User {
         }
     }
 
-    /// Check if user has required role
     pub fn has_role(&self, required_role: &str) -> bool {
         self.role == required_role || self.role == "admin"
     }
 }
 
 impl NewUser {
-    /// Create new user with secure password hashing using pepper
     pub fn new(
         email: String,
         password: &str,
         username: String,
         pepper: &str,
     ) -> Result<Self, String> {
-        // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
 
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
 
-        // Combine password with pepper for additional security
         let peppered_password = format!("{}{}", password, pepper);
 
         let argon2 = Argon2::new(
@@ -210,7 +196,6 @@ impl NewUser {
         })
     }
 
-    /// Create new user with custom role and secure password hashing using pepper
     pub fn new_with_role(
         email: String,
         password: &str,
@@ -218,14 +203,12 @@ impl NewUser {
         role: String,
         pepper: &str,
     ) -> Result<Self, String> {
-        // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
 
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
 
-        // Combine password with pepper for additional security
         let peppered_password = format!("{}{}", password, pepper);
 
         let argon2 = Argon2::new(
@@ -248,7 +231,6 @@ impl NewUser {
         })
     }
 
-    /// Create new user with avatar URL (for OAuth users)
     pub fn new_with_avatar(
         email: String,
         password: &str,
@@ -257,14 +239,12 @@ impl NewUser {
         avatar_url: Option<String>,
         pepper: &str,
     ) -> Result<Self, String> {
-        // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
 
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
 
-        // Combine password with pepper for additional security
         let peppered_password = format!("{}{}", password, pepper);
 
         let argon2 = Argon2::new(
@@ -287,7 +267,6 @@ impl NewUser {
         })
     }
 
-    /// Create new user with custom verification status (for testing)
     pub fn new_verified(
         email: String,
         password: &str,
@@ -296,14 +275,12 @@ impl NewUser {
         is_verified: bool,
         pepper: &str,
     ) -> Result<Self, String> {
-        // Generate cryptographically secure random salt
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
 
         let salt = SaltString::encode_b64(&salt_bytes)
             .map_err(|e| format!("Salt generation failed: {}", e))?;
 
-        // Combine password with pepper for additional security
         let peppered_password = format!("{}{}", password, pepper);
 
         let argon2 = Argon2::new(
@@ -327,27 +304,22 @@ impl NewUser {
     }
 }
 
-// Validation traits
 impl RegisterRequest {
-    /// Validate registration request with comprehensive checks
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
 
-        // Email validation
         if self.email.is_empty() {
             errors.push("Email is required".to_string());
         } else if !self.is_valid_email() {
             errors.push("Invalid email format".to_string());
         }
 
-        // Password validation
         if self.password.is_empty() {
             errors.push("Password is required".to_string());
         } else if !self.is_strong_password() {
             errors.push("Password must be at least 8 characters long and contain uppercase, lowercase, number and special character".to_string());
         }
 
-        // Username validation
         if self.username.is_empty() {
             errors.push("Username is required".to_string());
         } else if !self.is_valid_username() {
@@ -385,7 +357,6 @@ impl RegisterRequest {
 }
 
 impl LoginRequest {
-    /// Validate login request
     pub fn validate(&self) -> Result<(), Vec<String>> {
         let mut errors = Vec::new();
 

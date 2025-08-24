@@ -31,7 +31,6 @@ pub mod utils;
         (url = "https://api.lunarbase.dev", description = "Production server")
     ),
     paths(
-        // Authentication endpoints
         handlers::auth::register,
         handlers::auth::register_admin,
         handlers::auth::login,
@@ -43,7 +42,6 @@ pub mod utils;
         handlers::auth::verify_email,
         handlers::auth::resend_verification,
 
-        // Collection endpoints
         handlers::collections::create_collection,
         handlers::collections::list_collections,
         handlers::collections::get_collection,
@@ -52,7 +50,6 @@ pub mod utils;
         handlers::collections::get_collection_schema,
         handlers::collections::get_collections_stats,
 
-        // Record endpoints
         handlers::collections::create_record,
         handlers::collections::list_records,
         handlers::collections::list_all_records,
@@ -60,7 +57,6 @@ pub mod utils;
         handlers::collections::update_record,
         handlers::collections::delete_record,
 
-        // Permission endpoints
         handlers::permissions::create_role,
         handlers::permissions::list_roles,
         handlers::permissions::get_role,
@@ -70,20 +66,17 @@ pub mod utils;
         handlers::permissions::set_user_collection_permission,
         handlers::permissions::get_user_collection_permissions,
 
-        // Record Permission endpoints
         handlers::record_permissions::set_record_permission,
         handlers::record_permissions::get_record_permissions,
         handlers::record_permissions::remove_record_permission,
         handlers::record_permissions::list_record_permissions,
 
-        // Ownership endpoints
         handlers::ownership::transfer_record_ownership,
         handlers::ownership::get_my_owned_records,
         handlers::ownership::get_user_owned_records,
         handlers::ownership::check_record_ownership,
         handlers::ownership::get_ownership_stats,
 
-        // WebSocket endpoints
         handlers::websocket::websocket_handler,
         handlers::websocket::websocket_stats,
         handlers::websocket::websocket_status,
@@ -92,7 +85,6 @@ pub mod utils;
         handlers::websocket::broadcast_message,
         handlers::websocket::get_activity,
 
-        // User management endpoints
         handlers::users::list_users,
         handlers::users::get_user,
         handlers::users::create_user,
@@ -100,19 +92,15 @@ pub mod utils;
         handlers::users::delete_user,
         handlers::users::unlock_user,
 
-        // Avatar proxy endpoint
         handlers::avatar_proxy::proxy_avatar,
 
-        // Health check endpoints
         handlers::health::health_check,
         handlers::health::public_health_check,
         handlers::health::simple_health_check,
 
-        // Monitoring endpoints
         handlers::metrics::get_metrics,
         handlers::metrics::get_metrics_summary,
 
-        // Configuration endpoints
         handlers::configuration::get_all_settings,
         handlers::configuration::get_settings_by_category,
         handlers::configuration::get_setting,
@@ -121,13 +109,11 @@ pub mod utils;
         handlers::configuration::delete_setting,
         handlers::configuration::reset_setting,
 
-        // Backup endpoints
         handlers::backup::create_manual_backup,
         handlers::backup::get_backup_health,
     ),
     components(
         schemas(
-            // Request/Response models
             utils::ApiResponse<models::user::AuthResponse>,
             utils::ApiResponse<models::user::UserResponse>,
             utils::ApiResponse<models::collection::CollectionResponse>,
@@ -136,7 +122,6 @@ pub mod utils;
             utils::ApiResponse<Vec<models::collection::RecordResponse>>,
             utils::ErrorResponse,
 
-            // Auth models
             models::user::RegisterRequest,
             models::user::LoginRequest,
             models::user::UserResponse,
@@ -148,10 +133,8 @@ pub mod utils;
             handlers::auth::VerifyEmailRequest,
             handlers::auth::ResendVerificationRequest,
 
-            // Avatar proxy
             handlers::avatar_proxy::AvatarQuery,
 
-            // Collection models
             models::collection::CreateCollectionRequest,
             models::collection::UpdateCollectionRequest,
             models::collection::CollectionResponse,
@@ -160,7 +143,6 @@ pub mod utils;
             models::collection::FieldType,
             models::collection::ValidationRules,
 
-            // Record models
             models::collection::CreateRecordRequest,
             models::collection::UpdateRecordRequest,
             models::collection::RecordResponse,
@@ -169,7 +151,6 @@ pub mod utils;
             handlers::collections::RecordWithCollection,
             handlers::collections::PaginationMeta,
 
-            // Permission models
             models::permissions::Role,
             models::permissions::CollectionPermission,
             models::permissions::UserCollectionPermission,
@@ -179,17 +160,14 @@ pub mod utils;
             models::permissions::SetUserCollectionPermissionRequest,
             models::permissions::SetRecordPermissionRequest,
 
-            // Ownership models
             handlers::ownership::TransferOwnershipRequest,
             handlers::ownership::GetOwnedRecordsQuery,
 
-            // User management models
             handlers::users::CreateUserRequest,
             handlers::users::UpdateUserRequest,
             handlers::users::PaginatedUsersResponse,
             handlers::users::ListUsersQuery,
 
-            // WebSocket models
             services::WebSocketStats,
             handlers::websocket::WebSocketStatus,
             handlers::websocket::ConnectionDetails,
@@ -199,16 +177,13 @@ pub mod utils;
             handlers::websocket::ActivityEntry,
             handlers::websocket::ActivityResponse,
 
-            // Health models
             handlers::health::HealthResponse,
             handlers::health::DatabaseHealth,
             handlers::health::MemoryInfo,
             handlers::health::SystemInfo,
 
-            // Metrics
             handlers::metrics::MetricsSummary,
 
-            // Configuration
             models::system_setting::SystemSettingResponse,
             models::system_setting::SystemSettingRequest,
             models::system_setting::SettingCategory,
@@ -219,7 +194,6 @@ pub mod utils;
             utils::ApiResponse<Vec<models::system_setting::SystemSettingResponse>>,
             utils::ApiResponse<handlers::configuration::ConfigurationResponse>,
 
-            // Backup schemas
             handlers::backup::BackupResponse,
             utils::ApiResponse<handlers::backup::BackupResponse>,
             utils::ApiResponse<bool>,
@@ -271,7 +245,6 @@ use services::{
 };
 use std::sync::Arc;
 
-// Application state combining all shared state
 pub struct AppState {
     pub db_pool: DatabasePool,
     pub auth_state: middleware::AuthState,
@@ -299,7 +272,6 @@ impl AppState {
         let ownership_service = OwnershipService::new(db_pool.clone());
         let admin_service = AdminService::new(db_pool.clone());
         let metrics_state = middleware::MetricsState::new()?;
-        // Start background CPU sampler (non-blocking)
         metrics_state.start_cpu_sampler();
         let websocket_service =
             Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
@@ -307,7 +279,6 @@ impl AppState {
             .with_websocket_service(websocket_service.clone())
             .with_permission_service(permission_service.clone());
 
-        // Add S3 service if configured
         let s3_service_option = create_s3_service_from_config(config).await.ok().flatten();
         if let Some(ref s3_service) = s3_service_option {
             collection_service = collection_service.with_s3_service(s3_service.clone());
@@ -316,11 +287,9 @@ impl AppState {
         let oauth_service = utils::OAuthService::new(oauth_config);
         let email_service = EmailService::new(config, db_pool.clone());
 
-        // Initialize configuration manager
         let configuration_manager = ConfigurationManager::new(db_pool.clone());
         configuration_manager.initialize().await?;
 
-        // Add backup service if configured
         let backup_service = create_backup_service_from_config(
             db_pool.clone(),
             s3_service_option.map(Arc::new),

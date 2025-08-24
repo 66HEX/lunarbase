@@ -105,19 +105,16 @@ impl OAuthService {
 
         let mut auth_request = client.authorize_url(CsrfToken::new_random);
 
-        // Add scopes
         for scope in &provider_config.scopes {
             auth_request = auth_request.add_scope(Scope::new(scope.clone()));
         }
 
-        // Use PKCE for Google (recommended)
         if provider == "google" {
             auth_request = auth_request.set_pkce_challenge(pkce_challenge);
         }
 
         let (auth_url, csrf_token) = auth_request.url();
 
-        // Store PKCE verifier for Google OAuth
         if provider == "google" {
             if let Ok(mut verifiers) = self.pkce_verifiers.lock() {
                 verifiers.insert(csrf_token.secret().clone(), pkce_verifier);
@@ -153,7 +150,6 @@ impl OAuthService {
 
         let mut token_request = client.exchange_code(AuthorizationCode::new(code.to_string()));
 
-        // Use PKCE verifier for Google OAuth
         if provider == "google" {
             if let Ok(mut verifiers) = self.pkce_verifiers.lock() {
                 if let Some(pkce_verifier) = verifiers.remove(state) {
@@ -209,7 +205,6 @@ impl OAuthService {
         &self,
         access_token: &str,
     ) -> Result<OAuthUserInfo, Box<dyn std::error::Error>> {
-        // Get user info
         let user_response = self
             .http_client
             .get("https://api.github.com/user")
@@ -220,7 +215,6 @@ impl OAuthService {
 
         let github_user: GitHubUserInfo = user_response.json().await?;
 
-        // Get primary email if not public
         let email = if github_user.email.is_some() {
             github_user.email.unwrap()
         } else {

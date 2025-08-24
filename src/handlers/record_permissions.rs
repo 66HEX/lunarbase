@@ -12,7 +12,6 @@ use crate::{
     utils::{ApiResponse, AuthError, Claims},
 };
 
-// Helper function to convert Claims to User for permission checks
 async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
     use crate::schema::users;
     use diesel::prelude::*;
@@ -28,8 +27,6 @@ async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthE
         .map_err(|_| AuthError::NotFound("User not found".to_string()))
 }
 
-// Set record-specific permissions
-/// Set permissions for a specific record
 #[utoipa::path(
     post,
     path = "/permissions/records/{record_id}",
@@ -54,19 +51,16 @@ pub async fn set_record_permission(
     Path((collection_name, record_id)): Path<(String, i32)>,
     Json(permission_request): Json<SetRecordPermissionRequest>,
 ) -> Result<Json<ApiResponse<RecordPermission>>, AuthError> {
-    // Only admins can set record permissions
     if admin_claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Verify record exists
     let _record = state
         .collection_service
         .get_record(&collection_name, record_id)
@@ -81,8 +75,6 @@ pub async fn set_record_permission(
     Ok(Json(ApiResponse::success(permission)))
 }
 
-// Get record permissions for a specific user
-/// Get permissions for a specific record
 #[utoipa::path(
     get,
     path = "/permissions/records/{record_id}",
@@ -110,30 +102,25 @@ pub async fn get_record_permissions(
         .parse()
         .map_err(|_| AuthError::TokenInvalid)?;
 
-    // Users can only view their own record permissions, admins can view anyone's
     if requesting_claims.role != "admin" && requesting_user_id != user_id {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Verify record exists
     let _record = state
         .collection_service
         .get_record(&collection_name, record_id)
         .await
         .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
 
-    // For the target user, we need their User object to check permissions
     let target_user = if requesting_user_id == user_id {
         claims_to_user(&requesting_claims, &state).await?
     } else {
-        // For admin requests, fetch the target user
         use crate::schema::users;
         use diesel::prelude::*;
         let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
@@ -145,7 +132,6 @@ pub async fn get_record_permissions(
             .map_err(|_| AuthError::NotFound("Target user not found".to_string()))?
     };
 
-    // Check each permission type
     let can_read = state
         .permission_service
         .check_record_permission(
@@ -189,7 +175,6 @@ pub async fn get_record_permissions(
     }))))
 }
 
-/// Get record permissions for a specific user
 #[utoipa::path(
     get,
     path = "/permissions/collections/{collection_name}/records/{record_id}/users/{user_id}",
@@ -215,19 +200,16 @@ pub async fn get_user_record_permissions(
     Path((collection_name, record_id)): Path<(String, i32)>,
     Json(permission_request): Json<SetRecordPermissionRequest>,
 ) -> Result<Json<ApiResponse<RecordPermission>>, AuthError> {
-    // Only admins can set record permissions
     if admin_claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Verify record exists
     let _record = state
         .collection_service
         .get_record(&collection_name, record_id)
@@ -242,8 +224,6 @@ pub async fn get_user_record_permissions(
     Ok(Json(ApiResponse::success(permission)))
 }
 
-// Remove record permissions (revoke specific access)
-/// Remove permissions for a specific record
 #[utoipa::path(
     delete,
     path = "/permissions/collections/{collection_name}/records/{record_id}/users/{user_id}",
@@ -268,19 +248,16 @@ pub async fn remove_record_permission(
     Extension(admin_claims): Extension<Claims>,
     Path((collection_name, record_id, user_id)): Path<(String, i32, i32)>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Only admins can remove record permissions
     if admin_claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Verify record exists
     let _record = state
         .collection_service
         .get_record(&collection_name, record_id)
@@ -300,8 +277,6 @@ pub async fn remove_record_permission(
     }))))
 }
 
-// List all users with specific record permissions
-/// List all record permissions for a collection
 #[utoipa::path(
     get,
     path = "/permissions/collections/{collection_name}/records",
@@ -324,19 +299,16 @@ pub async fn list_record_permissions(
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Only admins can list record permissions
     if claims.role != "admin" {
         return Err(AuthError::InsufficientPermissions);
     }
 
-    // Get collection
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Verify record exists
     let _record = state
         .collection_service
         .get_record(&collection_name, record_id)
@@ -356,7 +328,6 @@ pub async fn list_record_permissions(
     }))))
 }
 
-/// Check ownership permissions for a specific record
 #[utoipa::path(
     get,
     path = "/permissions/collections/{collection_name}/records/{record_id}/ownership",
@@ -379,23 +350,19 @@ pub async fn check_record_ownership_permissions(
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
 ) -> Result<Json<ApiResponse<Value>>, AuthError> {
-    // Convert claims to user for ownership service
     let user = claims_to_user(&claims, &state).await?;
-    // Get collection
     let _collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
         .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
 
-    // Get the record to check ownership
     let record = state
         .collection_service
         .get_record(&collection_name, record_id)
         .await
         .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
 
-    // Check if record has a user_id field that matches current user
     let is_owner = state
         .permission_service
         .check_record_ownership(&user, &record)

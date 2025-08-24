@@ -77,7 +77,6 @@ export default function ForgotPasswordComponent() {
 		return (
 			<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 				<div className="w-sm space-y-8">
-					{/* Header */}
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
 							<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -89,7 +88,6 @@ export default function ForgotPasswordComponent() {
 						</h1>
 					</div>
 
-					{/* Success Card */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-center text-green-600 dark:text-green-400">
@@ -128,7 +126,6 @@ export default function ForgotPasswordComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-				{/* Header */}
 				<div className="text-center">
 					<div className="flex justify-center mb-4">
 						<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -140,7 +137,6 @@ export default function ForgotPasswordComponent() {
 					</h1>
 				</div>
 
-				{/* Forgot Password Form */}
 				<Card>
 					<CardHeader>
 						<CardTitle>Reset Password</CardTitle>
@@ -190,7 +186,6 @@ export default function ForgotPasswordComponent() {
 								</Button>
 							</FormActions>
 
-							{/* Back to Login Link */}
 							<div className="mt-6 text-center">
 								<p className="text-sm text-nocta-600 dark:text-nocta-400">
 									Remembered your password?{" "}

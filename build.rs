@@ -3,7 +3,6 @@ use std::path::Path;
 use std::process::Command;
 
 fn main() {
-    // Only build frontend in release mode or when explicitly requested
     let profile = env::var("PROFILE").unwrap_or_default();
     let force_build = env::var("LUNARBASE_BUILD_FRONTEND").is_ok();
 
@@ -21,7 +20,6 @@ fn main() {
             );
         }
 
-        // Check if node_modules exists, if not run npm install
         let node_modules = admin_ui_dir.join("node_modules");
         if !node_modules.exists() {
             println!("Installing frontend dependencies...");
@@ -36,7 +34,6 @@ fn main() {
             }
         }
 
-        // Build the frontend
         println!("Building frontend for embedded deployment...");
         let npm_build = Command::new("npm")
             .args(["run", "build"])
@@ -48,7 +45,6 @@ fn main() {
             panic!("Frontend build failed");
         }
 
-        // Verify that dist directory was created
         let dist_dir = admin_ui_dir.join("dist");
         if !dist_dir.exists() {
             panic!("Frontend build completed but dist directory not found");

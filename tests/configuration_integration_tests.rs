@@ -20,14 +20,11 @@ use lunarbase::{AppState, Config};
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
 async fn create_test_router() -> Router {
-    // Use consistent test secret for JWT
     let test_jwt_secret = "test_secret".to_string();
 
-    // Load test config but override JWT secret for consistency
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
 
-    // Run database migrations
     {
         let mut conn = db_pool.get().expect("Failed to get database connection");
         conn.run_pending_migrations(MIGRATIONS)
@@ -39,12 +36,10 @@ async fn create_test_router() -> Router {
         .await
         .expect("Failed to create AppState");
 
-    // Public routes (no authentication required)
     let public_routes = Router::new()
         .route("/auth/register", post(register))
         .route("/auth/login", post(login));
 
-    // Protected routes (authentication required)
     let protected_routes = Router::new()
         .route("/admin/configuration", get(get_all_settings))
         .route(
@@ -73,12 +68,10 @@ async fn create_test_router() -> Router {
             auth_middleware,
         ));
 
-    // Combine routes
     let api_routes = Router::new().merge(public_routes).merge(protected_routes);
 
     let router = Router::new().nest("/api", api_routes).with_state(app_state);
 
-    // Skip middleware in tests to avoid Prometheus global recorder conflicts
     router
 }
 
@@ -86,7 +79,6 @@ async fn create_admin_token(app: &Router) -> (i32, String) {
     create_test_user(app, "admin").await
 }
 
-// Helper function to create test user and return (user_id, token)
 async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     use diesel::prelude::*;
     use lunarbase::models::NewUser;
@@ -99,13 +91,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     );
     let unique_email = format!("{}@test.com", unique_username);
 
-    // Create user directly in database with is_verified = true
     let config = Config::from_env().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let mut conn = db_pool.get().expect("Failed to get database connection");
     let test_password_pepper = "test_pepper".to_string();
 
-    // Create new user with verification status set to true for tests
     let new_user = NewUser::new_verified(
         unique_email.clone(),
         "TestPassword123!",
@@ -116,13 +106,11 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     )
     .expect("Failed to create new user");
 
-    // Insert user into database
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
         .expect("Failed to insert user");
 
-    // Get the inserted user
     let user: lunarbase::models::User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(lunarbase::models::User::as_select())
@@ -134,7 +122,6 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     (user_id, token)
 }
 
-// Helper function to create JWT token for specific user
 fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     use jsonwebtoken::{EncodingKey, Header, encode};
     use lunarbase::utils::Claims;
@@ -144,7 +131,7 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
         .duration_since(UNIX_EPOCH)
         .unwrap()
         .as_secs() as i64;
-    let exp = now + 3600; // 1 hour
+    let exp = now + 3600;
 
     let claims = Claims {
         sub: user_id.to_string(),
@@ -164,7 +151,6 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
     .expect("Failed to create test token")
 }
 
-// Helper function to create a test setting in database
 async fn create_test_setting(category: &str, key: &str, value: &str) -> String {
     use diesel::prelude::*;
     use lunarbase::models::system_setting::NewSystemSetting;
@@ -195,7 +181,6 @@ async fn create_test_setting(category: &str, key: &str, value: &str) -> String {
     format!("{}-{}", category, key)
 }
 
-// Helper function to clean up test settings
 async fn cleanup_test_setting(category: &str, key: &str) {
     use diesel::prelude::*;
     use lunarbase::schema::system_settings;
@@ -211,7 +196,7 @@ async fn cleanup_test_setting(category: &str, key: &str) {
             .filter(system_settings::setting_key.eq(key)),
     )
     .execute(&mut conn)
-    .ok(); // Ignore errors in cleanup
+    .ok();
 }
 
 #[tokio::test]
@@ -296,7 +281,6 @@ async fn test_create_setting_success() {
     assert_eq!(json_response["data"]["setting_key"], unique_key);
     assert_eq!(json_response["data"]["setting_value"], "test_value");
 
-    // Cleanup
     cleanup_test_setting("database", &unique_key).await;
 }
 
@@ -327,7 +311,6 @@ async fn test_get_setting_success() {
     assert_eq!(json_response["data"]["setting_key"], unique_key);
     assert_eq!(json_response["data"]["setting_value"], "test_value");
 
-    // Cleanup
     cleanup_test_setting("database", &unique_key).await;
 }
 
@@ -379,7 +362,6 @@ async fn test_update_setting_success() {
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
     assert_eq!(json_response["data"]["setting_value"], "updated_value");
 
-    // Cleanup
     cleanup_test_setting("database", &unique_key).await;
 }
 
@@ -431,7 +413,6 @@ async fn test_get_settings_by_category() {
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
     assert!(json_response["data"]["settings"].is_array());
 
-    // Cleanup
     cleanup_test_setting("database", &unique_key).await;
 }
 
@@ -462,10 +443,9 @@ async fn test_reset_setting_success() {
     let body = response.into_body().collect().await.unwrap().to_bytes();
     let body_str = String::from_utf8(body.to_vec()).unwrap();
     let json_response: Value = serde_json::from_str(&body_str).unwrap();
-    // Should be reset to default value
+
     assert_eq!(json_response["data"]["setting_value"], "default");
 
-    // Cleanup
     cleanup_test_setting("database", &unique_key).await;
 }
 
@@ -520,6 +500,5 @@ async fn test_create_setting_duplicate_key() {
     let response = app.oneshot(request).await.unwrap();
     assert_eq!(response.status(), StatusCode::CONFLICT);
 
-    // Cleanup
     cleanup_test_setting("database", &unique_key).await;
 }

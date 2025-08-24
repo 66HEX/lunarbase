@@ -51,7 +51,6 @@ const statusColors = {
 };
 
 const getProxyUrl = (originalUrl: string): string => {
-	// Check if it's an external URL that needs proxying
 	if (
 		originalUrl.startsWith("https://lh3.googleusercontent.com") ||
 		originalUrl.startsWith("https://avatars.githubusercontent.com")
@@ -63,21 +62,17 @@ const getProxyUrl = (originalUrl: string): string => {
 };
 
 export default function UsersComponent() {
-	// Local state for search and pagination
 	const [localSearchTerm, setLocalSearchTerm] = useState("");
 	const searchTerm = useDebounce(localSearchTerm, 300);
 	const [currentPage, setCurrentPage] = useState(1);
 	const [pageSize] = useState(10);
 
-	// Reset page when search term changes
 	useEffect(() => {
 		setCurrentPage(1);
 	}, [searchTerm]);
 
-	// React Query mutations
 	const deleteUserMutation = useDeleteUser();
 
-	// Use React Query for data fetching with keepPreviousData
 	const { data, isLoading, error } = useUsersWithPagination({
 		currentPage,
 		pageSize,
@@ -88,7 +83,6 @@ export default function UsersComponent() {
 	const totalCount = data?.pagination?.total_count || 0;
 	const loading = isLoading;
 
-	// UI store for modals and sheets
 	const { modals, sheets } = useUI();
 	const { openModal, closeModal, openSheet, closeSheet } = useUIActions();
 
@@ -148,7 +142,6 @@ export default function UsersComponent() {
 		setCurrentPage(page);
 	};
 
-	// Convert users from store to ExtendedUser format - memoized to prevent unnecessary recalculations
 	const extendedUsers: ExtendedUser[] = useMemo(
 		() =>
 			users.map((user) => ({
@@ -339,7 +332,6 @@ export default function UsersComponent() {
 
 	return (
 		<div className="space-y-6">
-			{/* Header */}
 			<UsersHeader
 				usersCount={totalCount}
 				searchTerm={localSearchTerm}
@@ -347,7 +339,6 @@ export default function UsersComponent() {
 				onCreateUser={() => openSheet("createUser")}
 			/>
 
-			{/* Users Table */}
 			{extendedUsers.length > 0 || (loading && !data) ? (
 				<div className="space-y-4">
 					<div className="overflow-x-auto">
@@ -365,7 +356,6 @@ export default function UsersComponent() {
 							}}
 						/>
 					</div>
-					{/* Subtle loading indicator for pagination */}
 					{loading && data && (
 						<div className="flex items-center justify-center py-2">
 							<div className="flex items-center gap-2 text-sm text-nocta-500 dark:text-nocta-400">
@@ -401,27 +391,23 @@ export default function UsersComponent() {
 				</Card>
 			)}
 
-			{/* Create User Sheet */}
 			<CreateUserSheet
 				isOpen={sheets.createUser}
 				onOpenChange={(open) => !open && closeSheet("createUser")}
 			/>
 
-			{/* User Details Sheet */}
 			<UserDetailsSheet
 				isOpen={sheets.userDetails}
 				onOpenChange={(open) => !open && closeSheet("userDetails")}
 				userId={selectedUserId}
 			/>
 
-			{/* Edit User Sheet */}
 			<EditUserSheet
 				isOpen={sheets.editUser}
 				onOpenChange={(open) => !open && closeSheet("editUser")}
 				user={userToEdit}
 			/>
 
-			{/* Delete User Dialog */}
 			<Dialog
 				open={modals.deleteUser}
 				onOpenChange={(open) => !open && closeModal("deleteUser")}

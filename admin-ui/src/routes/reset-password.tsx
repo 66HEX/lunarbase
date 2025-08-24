@@ -47,12 +47,10 @@ export default function ResetPasswordComponent() {
 
 	const token = search.token;
 
-	// If no token is provided, show error
 	if (!token) {
 		return (
 			<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 				<div className="w-sm space-y-8">
-					{/* Header */}
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
 							<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -64,7 +62,6 @@ export default function ResetPasswordComponent() {
 						</h1>
 					</div>
 
-					{/* Error Card */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-center text-red-600 dark:text-red-400">
@@ -149,7 +146,6 @@ export default function ResetPasswordComponent() {
 		return (
 			<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 				<div className="w-sm space-y-8">
-					{/* Header */}
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
 							<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -161,7 +157,6 @@ export default function ResetPasswordComponent() {
 						</h1>
 					</div>
 
-					{/* Success Card */}
 					<Card>
 						<CardHeader>
 							<CardTitle className="text-center text-green-600 dark:text-green-400">
@@ -195,7 +190,6 @@ export default function ResetPasswordComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-				{/* Header */}
 				<div className="text-center">
 					<div className="flex justify-center mb-4">
 						<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
@@ -207,7 +201,6 @@ export default function ResetPasswordComponent() {
 					</h1>
 				</div>
 
-				{/* Reset Password Form */}
 				<Card>
 					<CardHeader>
 						<CardTitle>Reset Your Password</CardTitle>
@@ -275,7 +268,6 @@ export default function ResetPasswordComponent() {
 								</Button>
 							</FormActions>
 
-							{/* Back to Login Link */}
 							<div className="mt-6 text-center">
 								<p className="text-sm text-nocta-600 dark:text-nocta-400">
 									Remembered your password?{" "}

@@ -1,25 +1,21 @@
 import { Shield, UserCheck, User as UserIcon, UserX } from "lucide-react";
 
-// User role options
 export const userRoleOptions = [
 	{ value: "user", label: "User" },
 	{ value: "admin", label: "Admin" },
 ];
 
-// User role icons
 export const userRoleIcons = {
 	user: UserIcon,
 	admin: Shield,
 };
 
-// User status icons
 export const userStatusIcons = {
 	active: UserCheck,
 	inactive: UserX,
 	locked: UserX,
 };
 
-// User role variants for badges
 export const getUserRoleVariant = (role: string) => {
 	const variants: {
 		[key: string]:
@@ -36,20 +32,17 @@ export const getUserRoleVariant = (role: string) => {
 	return variants[role] || "secondary";
 };
 
-// User status variants for badges
 export const getUserStatusVariant = (isActive: boolean, isLocked: boolean) => {
 	if (isLocked) return "destructive";
 	if (isActive) return "success";
 	return "secondary";
 };
 
-// Validation patterns
 export const userValidationPatterns = {
 	email: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
 	username: /^[a-zA-Z0-9_]+$/,
 };
 
-// Validation messages
 export const userValidationMessages = {
 	email: {
 		required: "Email is required",
@@ -67,7 +60,6 @@ export const userValidationMessages = {
 	},
 };
 
-// Form field descriptions
 export const userFieldDescriptions = {
 	email: "This will be used for login and notifications",
 	username: "Optional. Can contain letters, numbers, and underscores",
@@ -76,7 +68,6 @@ export const userFieldDescriptions = {
 	isActive: "Controls whether the user can log in",
 };
 
-// Default form values
 export const defaultUserFormData = {
 	email: "",
 	password: "",

@@ -5,12 +5,10 @@ use uuid::Uuid;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "type", content = "data")]
 pub enum WebSocketMessage {
-    // Client -> Server messages
     Subscribe(SubscriptionRequest),
     Unsubscribe(UnsubscribeRequest),
     Ping,
 
-    // Server -> Client messages
     SubscriptionConfirmed(SubscriptionConfirmed),
     SubscriptionError(SubscriptionError),
     Event(EventMessage),
@@ -45,11 +43,8 @@ pub struct SubscriptionError {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum SubscriptionType {
-    // Subscribe to all record changes in collection
     Collection,
-    // Subscribe to specific record changes
     Record { record_id: String },
-    // Subscribe to records matching filters
     Query { filters: HashMap<String, String> },
 }
 
@@ -78,7 +73,6 @@ pub enum RecordEvent {
     },
 }
 
-// Internal structures for connection management
 #[derive(Debug, Clone)]
 pub struct ClientConnection {
     pub user_id: Option<i32>,
@@ -91,14 +85,14 @@ pub struct SubscriptionData {
     pub collection_name: String,
     pub subscription_type: SubscriptionType,
     pub filters: Option<HashMap<String, String>>,
-    pub user_id: Option<i32>, // For permission checking
+    pub user_id: Option<i32>,
 }
 
 #[derive(Debug, Clone)]
 pub struct PendingEvent {
     pub collection_name: String,
     pub event: RecordEvent,
-    pub user_id: Option<i32>, // User who triggered the event
+    pub user_id: Option<i32>,
 }
 
 impl ClientConnection {
@@ -138,9 +132,7 @@ impl SubscriptionData {
         }
     }
 
-    // Check if this subscription should receive an event
     pub fn matches_event(&self, event: &PendingEvent) -> bool {
-        // First check if collection matches
         if self.collection_name != event.collection_name {
             return false;
         }
@@ -163,29 +155,22 @@ impl SubscriptionData {
             },
             SubscriptionType::Query {
                 filters: subscription_filters,
-            } => {
-                // Check if the event data matches the subscription filters
-                self.matches_filters(&event.event, subscription_filters)
-            }
+            } => self.matches_filters(&event.event, subscription_filters),
         }
     }
 
-    // Check if a record event matches the specified filters
     fn matches_filters(&self, event: &RecordEvent, filters: &HashMap<String, String>) -> bool {
-        // Extract record data from the event
         let record_data = match event {
             RecordEvent::Created { record, .. } => Some(record),
             RecordEvent::Updated { record, .. } => Some(record),
             RecordEvent::Deleted { old_record, .. } => old_record.as_ref(),
         };
 
-        // If no record data is available, don't match
         let record_data = match record_data {
             Some(data) => data,
             None => return false,
         };
 
-        // Check each filter against the record data
         for (field_name, filter_expr) in filters {
             if !self.check_field_filter(record_data, field_name, filter_expr) {
                 return false;
@@ -195,8 +180,6 @@ impl SubscriptionData {
         true
     }
 
-    // Check if a specific field matches a filter expression
-    // Filter format: "operator:value" (e.g., "eq:active", "gt:100", "like:test%")
     fn check_field_filter(
         &self,
         record_data: &serde_json::Value,
@@ -205,13 +188,12 @@ impl SubscriptionData {
     ) -> bool {
         let field_value = match record_data.get(field_name) {
             Some(value) => value,
-            None => return false, // Field doesn't exist in record
+            None => return false,
         };
 
-        // Parse the filter expression (operator:value)
         let parts: Vec<&str> = filter_expr.splitn(2, ':').collect();
         if parts.len() != 2 {
-            return false; // Invalid filter format
+            return false;
         }
 
         let operator = parts[0];
@@ -230,11 +212,10 @@ impl SubscriptionData {
             "notin" => !self.compare_values_in(field_value, filter_value),
             "isnull" => field_value.is_null(),
             "isnotnull" => !field_value.is_null(),
-            _ => false, // Unknown operator
+            _ => false,
         }
     }
 
-    // Helper methods for value comparison
     fn compare_values_eq(&self, field_value: &serde_json::Value, filter_value: &str) -> bool {
         match field_value {
             serde_json::Value::String(s) => s == filter_value,
@@ -310,14 +291,12 @@ impl SubscriptionData {
 
     fn compare_values_like(&self, field_value: &serde_json::Value, filter_value: &str) -> bool {
         if let serde_json::Value::String(s) = field_value {
-            // Simple pattern matching - % as wildcard
             if filter_value.contains('%') {
                 let pattern = filter_value.replace('%', ".*");
                 if let Ok(regex) = regex::Regex::new(&format!("^{}$", pattern)) {
                     return regex.is_match(s);
                 }
             }
-            // Fallback to substring matching
             s.contains(filter_value)
         } else {
             false

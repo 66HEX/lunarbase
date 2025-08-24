@@ -7,7 +7,6 @@ interface WebSocketActivityProps {
 	activity: WebSocketActivityResponse | undefined;
 }
 
-// Activity action colors
 const actionColors = {
 	connected: "text-green-600 dark:text-green-400",
 	disconnected: "text-red-600 dark:text-red-400",
