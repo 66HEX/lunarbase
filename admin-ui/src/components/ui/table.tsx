@@ -10,7 +10,7 @@ const hasBackgroundColor = (className: string = "") => {
 };
 
 const tableContainerVariants = cva(
-	"rounded-xl shadow-md dark:shadow-lg backdrop-blur-sm overflow-hidden",
+	"rounded-xl backdrop-blur-sm overflow-hidden",
 	{
 		variants: {
 			variant: {
@@ -264,7 +264,7 @@ export const Table = <T extends Record<string, unknown>>({
 	);
 
 	return (
-		<div className="not-prose relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl overflow-hidden">
+		<div className="not-prose relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl overflow-hidden shadow-md dark:shadow-lg">
 			<span
 				aria-hidden
 				className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b to-transparent opacity-60"
@@ -407,7 +407,7 @@ export const Table = <T extends Record<string, unknown>>({
 									)
 								}
 								disabled={pagination.current <= 1}
-								className="px-3 py-1.5 text-sm rounded-lg border border-nocta-300 dark:border-nocta-600 bg-white dark:bg-nocta-900 text-nocta-700 dark:text-nocta-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nocta-100 dark:hover:bg-nocta-800 transition-colors duration-200 ease-in-out cursor-pointer"
+								className="px-3 py-1.5 text-sm rounded-lg border border-nocta-300 dark:border-nocta-800 text-nocta-700 dark:text-nocta-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nocta-100 dark:hover:bg-nocta-800 transition-colors duration-200 ease-in-out cursor-pointer"
 							>
 								Previous
 							</button>
@@ -426,7 +426,7 @@ export const Table = <T extends Record<string, unknown>>({
 									pagination.current >=
 									Math.ceil(pagination.total / pagination.pageSize)
 								}
-								className="px-3 py-1.5 text-sm rounded-lg border border-nocta-300 dark:border-nocta-600 bg-white dark:bg-nocta-900 text-nocta-700 dark:text-nocta-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nocta-100 dark:hover:bg-nocta-800 transition-colors duration-200 ease-in-out cursor-pointer"
+								className="px-3 py-1.5 text-sm rounded-lg border border-nocta-300 dark:border-nocta-800 text-nocta-700 dark:text-nocta-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-nocta-100 dark:hover:bg-nocta-800 transition-colors duration-200 ease-in-out cursor-pointer"
 							>
 								Next
 							</button>

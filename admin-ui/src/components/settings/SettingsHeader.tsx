@@ -16,7 +16,7 @@ export function SettingsHeader({ totalSettings }: SettingsHeaderProps) {
 						<Badge
 							size="sm"
 							variant="secondary"
-							className="px-2 py-0.5 text-xs font-medium"
+							className="text-xs font-medium"
 						>
 							{totalSettings} settings
 						</Badge>

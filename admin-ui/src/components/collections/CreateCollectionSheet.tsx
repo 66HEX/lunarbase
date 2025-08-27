@@ -11,6 +11,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -27,6 +28,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/spinner";
 import { useCreateCollection } from "@/hooks";
 import type { CreateCollectionRequest, FieldDefinition } from "@/types/api";
@@ -46,6 +48,7 @@ export function CreateCollectionSheet({
 	const [submitting, setSubmitting] = useState(false);
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [collectionName, setCollectionName] = useState("");
+	const [collectionDescription, setCollectionDescription] = useState("");
 	const [allowClose, setAllowClose] = useState(true);
 	const [fields, setFields] = useState<FieldDefinition[]>([
 		{
@@ -119,12 +122,14 @@ export function CreateCollectionSheet({
 		try {
 			const request: CreateCollectionRequest = {
 				name: collectionName,
+				description: collectionDescription || undefined,
 				schema: { fields },
 			};
 
 			await createCollectionMutation.mutateAsync(request);
 
 			setCollectionName("");
+			setCollectionDescription("");
 			setFields([
 				{
 					name: "id",
@@ -145,6 +150,7 @@ export function CreateCollectionSheet({
 	useEffect(() => {
 		if (isOpen) {
 			setCollectionName("");
+			setCollectionDescription("");
 			setFields([
 				{
 					name: "id",
@@ -181,39 +187,68 @@ export function CreateCollectionSheet({
 				</SheetHeader>
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
-					<Form
-						onSubmit={(e) => {
-							e.preventDefault();
-							handleCreateCollection();
-						}}
-					>
-						<div className="space-y-6">
-							<FormField
-								name="collectionName"
-								error={fieldErrors.collectionName}
+					<Tabs defaultValue="overview" className="w-full">
+						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/50">
+							<TabsTrigger value="overview">Overview</TabsTrigger>
+							<TabsTrigger value="schema">Schema Fields</TabsTrigger>
+						</TabsList>
+
+						<TabsContent value="overview" className="mt-6">
+							<Form
+								onSubmit={(e) => {
+									e.preventDefault();
+									handleCreateCollection();
+								}}
 							>
-								<FormLabel required>Collection Name</FormLabel>
-								<FormControl>
-									<Input
-										placeholder="e.g., users, products, orders"
-										className="w-full"
-										value={collectionName}
-										onChange={(e) => setCollectionName(e.target.value)}
-										variant={fieldErrors.collectionName ? "error" : "default"}
-									/>
-								</FormControl>
-								<FormDescription>
-									Must start with a letter and contain only letters, numbers,
-									and underscores
-								</FormDescription>
-								<FormMessage />
-							</FormField>
+								<div className="space-y-6">
+									<FormField
+										name="collectionName"
+										error={fieldErrors.collectionName}
+									>
+										<FormLabel required>Collection Name</FormLabel>
+										<FormControl>
+											<Input
+												placeholder="e.g., users, products, orders"
+												className="w-full"
+												value={collectionName}
+												onChange={(e) => setCollectionName(e.target.value)}
+												variant={fieldErrors.collectionName ? "error" : "default"}
+											/>
+										</FormControl>
+										<FormDescription>
+											Must start with a letter and contain only letters, numbers,
+											and underscores
+										</FormDescription>
+										<FormMessage />
+									</FormField>
 
-							<div className="space-y-4">
-								<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
-									Schema Fields
-								</h3>
+									<FormField name="collectionDescription">
+										<FormLabel>Description</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder="Optional description for this collection"
+												className="w-full"
+												value={collectionDescription}
+												onChange={(e) => setCollectionDescription(e.target.value)}
+												rows={3}
+											/>
+										</FormControl>
+										<FormDescription>
+											Provide a brief description of what this collection stores
+										</FormDescription>
+									</FormField>
+								</div>
+							</Form>
+						</TabsContent>
 
+						<TabsContent value="schema" className="mt-6">
+							<Form
+								onSubmit={(e) => {
+									e.preventDefault();
+									handleCreateCollection();
+								}}
+							>
+								<div className="space-y-4">
 								<div className="space-y-3">
 									{fields.map((field, index) => {
 										const IconComponent = fieldTypeIcons[field.field_type];
@@ -370,19 +405,20 @@ export function CreateCollectionSheet({
 								</div>
 
 								<Button
-									type="button"
-									variant="primary"
-									size="sm"
-									onClick={addField}
-									className="w-full"
-								>
-									<Plus className="w-4 h-4 mr-2" />
-									Add Field
-								</Button>
-							</div>
-						</div>
-					</Form>
-				</div>
+											type="button"
+											variant="primary"
+											size="sm"
+											onClick={addField}
+											className="w-full"
+										>
+											<Plus className="w-4 h-4 mr-2" />
+											Add Field
+										</Button>
+									</div>
+								</Form>
+							</TabsContent>
+						</Tabs>
+					</div>
 
 				<SheetFooter>
 					<SheetClose asChild>

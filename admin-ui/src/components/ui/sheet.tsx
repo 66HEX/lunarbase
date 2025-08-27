@@ -20,6 +20,7 @@ const sheetContentVariants = cva(
 				md: "",
 				lg: "",
 				xl: "",
+				xxl: "",
 				full: "",
 			},
 		},
@@ -68,6 +69,11 @@ const sheetContentVariants = cva(
 				side: "right",
 				size: "xl",
 				class: "w-[95vw] sm:w-[44rem]",
+			},
+			{
+				side: "right",
+				size: "xxl",
+				class: "w-[95vw] sm:w-[54rem]",
 			},
 			{
 				side: "right",

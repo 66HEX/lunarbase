@@ -1,8 +1,7 @@
-import { Save, X } from "lucide-react";
+import { Save } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
 import {
 	Sheet,
 	SheetClose,
@@ -13,6 +12,11 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { TableColumn } from "@/components/ui/table";
+import { Table } from "@/components/ui/table";
+import { Switch } from "@/components/ui/switch";
+
 import {
 	useAllRoleCollectionPermissions,
 	useRoles,
@@ -39,6 +43,8 @@ export function CollectionPermissionsSheet({
 	onOpenChange,
 	collection,
 }: CollectionPermissionsSheetProps) {
+	if (!collection) return null;
+
 	const saveCollectionPermissionsMutation = useSaveCollectionPermissions();
 	const { data: usersData } = useUsers();
 	const users = usersData?.users || [];
@@ -55,6 +61,8 @@ export function CollectionPermissionsSheet({
 	const [userPermissions, setUserPermissions] = useState<
 		CollectionPermissions["user_permissions"]
 	>({});
+
+
 
 	const updateRolePermission = (
 		role: string,
@@ -82,14 +90,6 @@ export function CollectionPermissionsSheet({
 				[permission]: value,
 			},
 		}));
-	};
-
-	const removeUserPermission = (userId: number) => {
-		setUserPermissions((prev) => {
-			const newPermissions = { ...prev };
-			delete newPermissions[userId.toString()];
-			return newPermissions;
-		});
 	};
 
 	const handleSavePermissions = async () => {
@@ -199,8 +199,6 @@ export function CollectionPermissionsSheet({
 		}
 	}, [collection, collectionPermissionsData]);
 
-	if (!collection) return null;
-
 	const permissionTypes: PermissionType[] = [
 		"can_create",
 		"can_read",
@@ -210,9 +208,106 @@ export function CollectionPermissionsSheet({
 	];
 	const availableRoles = Object.keys(rolePermissions);
 
+	type RoleRow = { role: string };
+	const roleColumns: TableColumn<RoleRow>[] = [
+		{
+			key: "role",
+			title: "Role",
+			className: "w-64",
+			render: (_: unknown, row: RoleRow) => (
+				<div className="flex items-center gap-3">
+					<Badge
+						variant={
+							row.role === "admin"
+								? "success"
+							: row.role === "user"
+								? "warning"
+								: "destructive"
+						}
+						size="sm"
+					>
+						{row.role}
+					</Badge>
+					<span className="text-sm text-nocta-600 dark:text-nocta-400">
+						{row.role === "admin"
+							? "Full access"
+							: row.role === "user"
+								? "Standard access"
+								: "Custom"}
+					</span>
+				</div>
+			),
+		},
+		...permissionTypes.map((perm) => ({
+			key: perm,
+			title:
+				perm.replace("can_", "").charAt(0).toUpperCase() +
+				perm.replace("can_", "").slice(1),
+			align: "center" as const,
+			className: "w-28",
+			render: (_: unknown, row: RoleRow) => (
+				<Switch
+					checked={rolePermissions[row.role]?.[perm] || false}
+					onCheckedChange={(checked: boolean) =>
+						updateRolePermission(row.role, perm, checked)
+					}
+					aria-label={`${row.role} ${perm}`}
+				/>
+			),
+		})),
+	];
+	const roleData: RoleRow[] = availableRoles.map((r) => ({ role: r }));
+
+	type UserRow = {
+		id: number;
+		email: string;
+		role: string;
+	};
+
+	const userData: UserRow[] = users.map((u) => ({ id: u.id, email: u.email, role: u.role }));
+
+	const userColumns: TableColumn<UserRow>[] = [
+		{
+			key: "user",
+			title: "User",
+			className: "w-64",
+			render: (_: unknown, u: UserRow) => (
+				<div className="flex items-center gap-3">
+					<div className="truncate">
+						<div className="text-sm text-nocta-900 dark:text-nocta-100 truncate max-w-64">
+							{u.email}
+						</div>
+					</div>
+				</div>
+			),
+		},
+		...permissionTypes.map((perm) => ({
+			key: perm,
+			title:
+				perm.replace("can_", "").charAt(0).toUpperCase() +
+				perm.replace("can_", "").slice(1),
+			align: "center" as const,
+			className: "w-28",
+			render: (_: unknown, u: UserRow) => {
+				const userPerm = userPermissions[u.id.toString()]?.[perm];
+				const defaultRolePerm = rolePermissions[u.role]?.[perm] || false;
+				const effectiveValue = userPerm !== null && userPerm !== undefined ? userPerm : defaultRolePerm;
+				return (
+					<Switch
+						checked={effectiveValue}
+						onCheckedChange={(checked: boolean) =>
+							handleUserPermissionChange(u.id, perm, checked)
+						}
+						aria-label={`${u.email} ${perm}`}
+					/>
+				);
+			},
+		})),
+	];
+
 	return (
 		<Sheet open={isOpen} onOpenChange={onOpenChange}>
-			<SheetContent side="right" size="lg">
+			<SheetContent side="right" size="xxl">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Collection Permissions
@@ -223,186 +318,39 @@ export function CollectionPermissionsSheet({
 				</SheetHeader>
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
-					<div className="space-y-6">
-						<div className="space-y-4">
-							<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
-								Role-based Permissions
-							</h3>
+					<Tabs defaultValue="roles" className="w-full">
+						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/50">
+							<TabsTrigger value="roles">Role-based Permissions</TabsTrigger>
+							<TabsTrigger value="users">User-specific Permissions</TabsTrigger>
+						</TabsList>
 
-							{permissionsLoading || rolesLoading ? (
-								<div className="flex items-center justify-center py-8">
-									<Spinner className="w-6 h-6" />
-									<span className="ml-2 text-sm text-nocta-600 dark:text-nocta-400">
-										Loading permissions...
-									</span>
-								</div>
-							) : (
-								<div className="space-y-3">
-									{availableRoles.map((role) => (
-										<div
-											key={`role-${role}`}
-											className="p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md"
-										>
-											<div className="flex items-center justify-between mb-3">
-												<div className="flex items-center gap-3">
-													<Badge
-														variant={
-															role === "admin"
-																? "success"
-																: role === "user"
-																	? "warning"
-																	: "destructive"
-														}
-														size="sm"
-													>
-														{role}
-													</Badge>
-													<span className="text-sm text-nocta-900 dark:text-nocta-100">
-														{role === "admin"
-															? "Full access to all operations"
-															: role === "user"
-																? "Standard user access"
-																: "Custom access"}
-													</span>
-												</div>
-											</div>
+						<TabsContent value="roles" className="mt-6">
+							<div className="space-y-4">
+								{permissionsLoading || rolesLoading ? (
+									<div className="flex items-center justify-center py-8">
+										<Spinner className="w-6 h-6" />
+										<span className="ml-2 text-sm text-nocta-600 dark:text-nocta-400">
+											Loading permissions...
+										</span>
+									</div>
+								) : (
+									<Table
+										columns={roleColumns as unknown as TableColumn<Record<string, unknown>>[]}
+										data={roleData as unknown as Record<string, unknown>[]}
+									/>
+								)}
+							</div>
+						</TabsContent>
 
-											<div className="grid grid-cols-2 gap-2 text-nocta-600 dark:text-nocta-400">
-												{permissionTypes.map((permission) => (
-													<label
-														key={`${role}-${permission}`}
-														className="flex items-center gap-2 text-sm"
-													>
-														<Checkbox
-															checked={
-																rolePermissions[role]?.[permission] || false
-															}
-															onCheckedChange={(checked) =>
-																updateRolePermission(
-																	role,
-																	permission,
-																	checked as boolean,
-																)
-															}
-														/>
-														<span>
-															{permission
-																.replace("can_", "")
-																.charAt(0)
-																.toUpperCase() +
-																permission.replace("can_", "").slice(1)}
-														</span>
-													</label>
-												))}
-											</div>
-										</div>
-									))}
-								</div>
-							)}
-						</div>
-
-						<div className="space-y-4">
-							<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
-								User-specific Permissions
-							</h3>
-							<p className="text-sm text-nocta-600 dark:text-nocta-400 mb-4">
-								Override role permissions for specific users
-							</p>
-
-							{users.length === 0 ? (
-								<p className="text-center text-nocta-500 dark:text-nocta-400 py-8">
-									No users available
-								</p>
-							) : (
-								<div className="space-y-3">
-									{users.map((user) => {
-										const permission = userPermissions[user.id.toString()];
-
-										return (
-											<div
-												key={user.id}
-												className="p-3 bg-nocta-50 dark:bg-nocta-800/20 rounded-lg relative"
-											>
-												<div className="flex items-center justify-between mb-3">
-													<div className="flex items-center gap-3">
-														<Badge variant="secondary" size="sm">
-															{user.role}
-														</Badge>
-														<span className="text-sm text-nocta-600 dark:text-nocta-400">
-															{user.email}
-														</span>
-													</div>
-													{permission && (
-														<Button
-															variant="ghost"
-															size="sm"
-															onClick={() => removeUserPermission(user.id)}
-															className="text-red-600 hover:text-red-700 absolute top-2 right-2"
-														>
-															<X className="w-4 h-4" />
-														</Button>
-													)}
-												</div>
-
-												<div className="grid grid-cols-2 gap-2 text-nocta-600 dark:text-nocta-400">
-													{permissionTypes.map((perm) => {
-														const permValue = permission?.[perm] ?? null;
-														const permLabel =
-															perm.replace("can_", "").charAt(0).toUpperCase() +
-															perm.replace("can_", "").slice(1);
-
-														const defaultRolePermission =
-															rolePermissions[user.role]?.[perm] || false;
-
-														const isChecked =
-															permValue === true ||
-															(permValue === null && defaultRolePermission);
-
-														return (
-															<label
-																key={perm}
-																className="flex items-center gap-2 text-sm"
-															>
-																<Checkbox
-																	checked={isChecked}
-																	onCheckedChange={() => {
-																		if (permValue === null) {
-																			handleUserPermissionChange(
-																				user.id,
-																				perm,
-																				!defaultRolePermission,
-																			);
-																		} else {
-																			handleUserPermissionChange(
-																				user.id,
-																				perm,
-																				null,
-																			);
-																		}
-																	}}
-																/>
-																<span>{permLabel}</span>
-																{permValue === false && (
-																	<span className="text-xs text-red-500">
-																		(Denied)
-																	</span>
-																)}
-																{permValue === null && (
-																	<span className="text-xs text-nocta-400">
-																		(Default)
-																	</span>
-																)}
-															</label>
-														);
-													})}
-												</div>
-											</div>
-										);
-									})}
-								</div>
-							)}
-						</div>
-					</div>
+						<TabsContent value="users" className="mt-6">
+							<div className="space-y-4">
+								<Table
+									columns={userColumns as unknown as TableColumn<Record<string, unknown>>[]}
+									data={userData as unknown as Record<string, unknown>[]}
+								/>
+							</div>
+						</TabsContent>
+					</Tabs>
 				</div>
 
 				<SheetFooter>

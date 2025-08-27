@@ -11,6 +11,7 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -27,6 +28,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/spinner";
 import { useUpdateCollection } from "@/hooks";
 import type {
@@ -54,7 +56,9 @@ export function EditCollectionSheet({
 		[key: string]: string;
 	}>({});
 	const [editCollectionName, setEditCollectionName] = useState("");
+	const [editCollectionDescription, setEditCollectionDescription] = useState("");
 	const [editFields, setEditFields] = useState<FieldDefinition[]>([]);
+	const [allowClose, setAllowClose] = useState(true);
 
 	const addEditField = () => {
 		setEditFields((prev) => [
@@ -122,6 +126,7 @@ export function EditCollectionSheet({
 		try {
 			const request: UpdateCollectionRequest = {
 				name: editCollectionName,
+				description: editCollectionDescription || undefined,
 				schema: { fields: editFields },
 			};
 
@@ -132,6 +137,7 @@ export function EditCollectionSheet({
 
 			onOpenChange(false);
 			setEditCollectionName("");
+			setEditCollectionDescription("");
 			setEditFields([]);
 			setEditFieldErrors({});
 		} catch (error) {
@@ -144,13 +150,25 @@ export function EditCollectionSheet({
 	useEffect(() => {
 		if (collection && isOpen) {
 			setEditCollectionName(collection.name);
+			setEditCollectionDescription(collection.description || "");
 			setEditFields(collection.schema.fields || []);
 			setEditFieldErrors({});
 		}
 	}, [collection, isOpen]);
 
 	return (
-		<Sheet open={isOpen} onOpenChange={onOpenChange}>
+		<Sheet
+			open={isOpen}
+			onOpenChange={(newOpen) => {
+				if (!newOpen && (!allowClose || editSubmitting)) {
+					return;
+				}
+				onOpenChange(newOpen);
+				if (newOpen) {
+					setAllowClose(true);
+				}
+			}}
+		>
 			<SheetContent side="right" size="xl">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
@@ -162,41 +180,70 @@ export function EditCollectionSheet({
 				</SheetHeader>
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
-					<Form
-						onSubmit={(e) => {
-							e.preventDefault();
-							handleUpdateCollection();
-						}}
-					>
-						<div className="space-y-6">
-							<FormField
-								name="editCollectionName"
-								error={editFieldErrors.editCollectionName}
+					<Tabs defaultValue="overview" className="w-full">
+						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/50">
+							<TabsTrigger value="overview">Overview</TabsTrigger>
+							<TabsTrigger value="schema">Schema Fields</TabsTrigger>
+						</TabsList>
+
+						<TabsContent value="overview" className="mt-6">
+							<Form
+								onSubmit={(e) => {
+									e.preventDefault();
+									handleUpdateCollection();
+								}}
 							>
-								<FormLabel required>Collection Name</FormLabel>
-								<FormControl>
-									<Input
-										placeholder="e.g., users, products, orders"
-										className="w-full"
-										value={editCollectionName}
-										onChange={(e) => setEditCollectionName(e.target.value)}
-										variant={
-											editFieldErrors.editCollectionName ? "error" : "default"
-										}
-									/>
-								</FormControl>
-								<FormDescription>
-									Must start with a letter and contain only letters, numbers,
-									and underscores
-								</FormDescription>
-								<FormMessage />
-							</FormField>
+								<div className="space-y-6">
+									<FormField
+										name="editCollectionName"
+										error={editFieldErrors.editCollectionName}
+									>
+										<FormLabel required>Collection Name</FormLabel>
+										<FormControl>
+											<Input
+												placeholder="e.g., users, products, orders"
+												className="w-full"
+												value={editCollectionName}
+												onChange={(e) => setEditCollectionName(e.target.value)}
+												variant={
+													editFieldErrors.editCollectionName ? "error" : "default"
+												}
+											/>
+										</FormControl>
+										<FormDescription>
+											Must start with a letter and contain only letters, numbers,
+											and underscores
+										</FormDescription>
+										<FormMessage />
+									</FormField>
 
-							<div className="space-y-4">
-								<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
-									Schema Fields
-								</h3>
+									<FormField name="editCollectionDescription">
+										<FormLabel>Description</FormLabel>
+										<FormControl>
+											<Textarea
+												placeholder="Optional description for this collection"
+												className="w-full"
+												value={editCollectionDescription}
+												onChange={(e) => setEditCollectionDescription(e.target.value)}
+												rows={3}
+											/>
+										</FormControl>
+										<FormDescription>
+											Provide a brief description of what this collection stores
+										</FormDescription>
+									</FormField>
+								</div>
+							</Form>
+						</TabsContent>
 
+						<TabsContent value="schema" className="mt-6">
+							<Form
+								onSubmit={(e) => {
+									e.preventDefault();
+									handleUpdateCollection();
+								}}
+							>
+								<div className="space-y-4">
 								<div className="space-y-3">
 									{editFields.map((field, index) => {
 										const IconComponent = fieldTypeIcons[field.field_type];
@@ -268,15 +315,25 @@ export function EditCollectionSheet({
 															</FormLabel>
 															<FormControl>
 																<Select
-																	value={field.field_type}
-																	onValueChange={(value) =>
-																		updateEditField(index, {
-																			field_type:
-																				value as FieldDefinition["field_type"],
-																		})
-																	}
-																	disabled={index === 0}
-																>
+															portalProps={{
+																"data-sheet-portal": "true",
+															} as React.HTMLAttributes<HTMLDivElement>}
+															value={field.field_type}
+															onValueChange={(value) => {
+																setAllowClose(false);
+																updateEditField(index, {
+																	field_type:
+																		value as FieldDefinition["field_type"],
+																});
+																setTimeout(() => setAllowClose(true), 300);
+															}}
+															onOpenChange={(isOpen) => {
+																if (isOpen) {
+																	setAllowClose(false);
+																}
+															}}
+															disabled={index === 0}
+														>
 																	<SelectTrigger className="w-full">
 																		<SelectValue />
 																	</SelectTrigger>
@@ -345,18 +402,19 @@ export function EditCollectionSheet({
 								</div>
 
 								<Button
-									type="button"
-									variant="primary"
-									size="sm"
-									onClick={addEditField}
-									className="w-full"
-								>
-									<Plus className="w-4 h-4 mr-2" />
-									Add Field
-								</Button>
-							</div>
-						</div>
-					</Form>
+										type="button"
+										variant="primary"
+										size="sm"
+										onClick={addEditField}
+										className="w-full"
+									>
+										<Plus className="w-4 h-4 mr-2" />
+										Add Field
+									</Button>
+								</div>
+							</Form>
+						</TabsContent>
+					</Tabs>
 				</div>
 
 				<SheetFooter>

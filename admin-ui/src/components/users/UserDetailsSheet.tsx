@@ -1,4 +1,4 @@
-import { Calendar, Clock, Lock, Mail, Shield, XCircle } from "lucide-react";
+import { XCircle } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +12,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+
 import { Spinner } from "@/components/ui/spinner";
 import { usersApi } from "@/lib/api";
 import type { User } from "@/types/api";
@@ -111,7 +112,9 @@ export function UserDetailsSheet({
 					<SheetTitle className="flex items-center gap-2">
 						User Details
 					</SheetTitle>
-					<SheetDescription>View user account information</SheetDescription>
+					<SheetDescription>
+						View user account information and details
+					</SheetDescription>
 				</SheetHeader>
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
@@ -132,114 +135,92 @@ export function UserDetailsSheet({
 							</div>
 						</div>
 					) : user ? (
-						<div className="space-y-6">
-							<div className="flex items-center gap-4 p-3 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg">
-								<Avatar
-									size="lg"
-									src={
-										user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined
-									}
-									fallback={getInitials(user.email)}
-								/>
-								<div className="flex-1">
-									<h3 className="text-xl font-medium text-nocta-900 dark:text-nocta-100">
-										{user.username || user.email}
-									</h3>
-									<div className="flex items-center gap-2 mt-2">
-										<Badge size="sm" variant={statusVariants[user.status]}>
-											{user.status === "active" ? "Active" : "Inactive"}
-										</Badge>
-										{user.is_verified && (
-											<Badge size="sm" variant="success">
-												Verified
+						<div className="space-y-4">
+							<div className="p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-lg space-y-4">
+								<div className="flex items-center gap-4">
+									<Avatar
+										size="lg"
+										src={
+											user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined
+										}
+										fallback={getInitials(user.email)}
+									/>
+									<div className="flex-1">
+										<h4 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
+											{user.username || user.email}
+										</h4>
+										<div className="flex items-center gap-2 mt-2">
+											<Badge size="sm" variant={statusVariants[user.status]}>
+												{user.status === "active" ? "Active" : "Inactive"}
 											</Badge>
-										)}
-										{user.locked && (
-											<Badge size="sm" variant="destructive">
-												Locked
-											</Badge>
-										)}
+											{user.is_verified && (
+												<Badge size="sm" variant="success">
+													Verified
+												</Badge>
+											)}
+											{user.locked && (
+												<Badge size="sm" variant="destructive">
+													Locked
+												</Badge>
+											)}
+										</div>
 									</div>
 								</div>
-							</div>
-
-							<div className="space-y-3">
-								<h4 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
-									Account Information
-								</h4>
-
-								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Mail className="size-4 text-nocta-500" />
+								<div className="grid grid-cols-2 gap-4">
 									<div>
-										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 											Email
-										</p>
-										<p className="text-sm text-nocta-900 dark:text-nocta-100">
+										</label>
+										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
 											{user.email}
 										</p>
 									</div>
-								</div>
-
-								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Shield className="size-4 text-nocta-500" />
 									<div>
-										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 											Role
-										</p>
-										<p className="text-sm text-nocta-900 dark:text-nocta-100">
+										</label>
+										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
 											{user.role}
 										</p>
 									</div>
 								</div>
-
-								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Clock className="size-4 text-nocta-500" />
+								<div className="grid grid-cols-2 gap-4">
 									<div>
-										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
-											Last Login
-										</p>
-										<p className="text-sm text-nocta-900 dark:text-nocta-100">
-											{user.last_login_at
-												? formatDate(user.last_login_at)
-												: "Never"}
-										</p>
-									</div>
-								</div>
-
-								<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-									<Calendar className="size-4 text-nocta-500" />
-									<div>
-										<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
-											Created At
-										</p>
-										<p className="text-sm text-nocta-900 dark:text-nocta-100">
+										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											Created
+										</label>
+										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
 											{formatDate(user.created_at)}
 										</p>
 									</div>
+									<div>
+										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											Last Login
+										</label>
+										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
+											{user.last_login_at ? formatDate(user.last_login_at) : "Never"}
+										</p>
+									</div>
 								</div>
-
 								{user.updated_at && (
-									<div className="flex items-center gap-3">
-										<Calendar className="size-4 text-nocta-500" />
+									<div className="grid grid-cols-1 gap-4">
 										<div>
-											<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 												Last Updated
-											</p>
-											<p className="text-nocta-900 dark:text-nocta-100">
+											</label>
+											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
 												{formatDate(user.updated_at)}
 											</p>
 										</div>
 									</div>
 								)}
-
 								{user.locked_until && (
-									<div className="flex items-center gap-3 p-3 bg-nocta-100 dark:bg-nocta-800/30 rounded-md">
-										<Lock className="size-4 text-nocta-500" />
+									<div className="grid grid-cols-1 gap-4">
 										<div>
-											<p className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
 												Locked Until
-											</p>
-											<p className="text-sm text-nocta-900 dark:text-nocta-100">
+											</label>
+											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
 												{formatDate(user.locked_until)}
 											</p>
 										</div>
@@ -252,7 +233,7 @@ export function UserDetailsSheet({
 
 				<SheetFooter>
 					<SheetClose asChild>
-						<Button variant="primary">Close</Button>
+						<Button variant="ghost">Close</Button>
 					</SheetClose>
 				</SheetFooter>
 			</SheetContent>

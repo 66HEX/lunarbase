@@ -43,7 +43,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 		return (
 			<div
 				ref={ref}
-				className="relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl w-full"
+				className="relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl w-full shadow-md dark:shadow-lg"
 			>
 				<span
 					aria-hidden

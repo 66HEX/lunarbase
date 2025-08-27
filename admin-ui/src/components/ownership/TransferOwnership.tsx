@@ -124,7 +124,7 @@ export function TransferOwnership({
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex-1 overflow-y-auto px-6 py-4">
-					<div className="space-y-2">
+					<div className="flex flex-col space-y-2">
 						<label className="text-sm font-medium text-gray-700 dark:text-gray-300">
 							New Owner
 						</label>
