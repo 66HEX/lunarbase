@@ -114,12 +114,12 @@ export const usePrefetch = () => {
 	 */
 	const prefetchUsersForOwnership = useCallback(
 		async (ownerIds: number[]) => {
-			const uniqueOwnerIds = [...new Set(ownerIds.filter(id => id > 0))];
+			const uniqueOwnerIds = [...new Set(ownerIds.filter((id) => id > 0))];
 			const staleTime = 5 * 60 * 1000;
 
 			const prefetchPromises = uniqueOwnerIds.map(async (ownerId) => {
 				const queryKey = ["users", "detail", ownerId];
-				
+
 				if (isDataFresh(queryKey, staleTime)) {
 					return;
 				}
@@ -168,7 +168,9 @@ export const usePrefetch = () => {
 			recordsData.records.forEach((record: any) => {
 				if (record.data) {
 					const getUserId = (data: any) => {
-						return data.user_id || data.created_by || data.owner_id || data.author_id;
+						return (
+							data.user_id || data.created_by || data.owner_id || data.author_id
+						);
 					};
 					const ownerId = getUserId(record.data);
 					if (ownerId) {
@@ -234,7 +236,12 @@ export const usePrefetch = () => {
 				recordsData.records.forEach((record: any) => {
 					if (record.data) {
 						const getUserId = (data: any) => {
-							return data.user_id || data.created_by || data.owner_id || data.author_id;
+							return (
+								data.user_id ||
+								data.created_by ||
+								data.owner_id ||
+								data.author_id
+							);
 						};
 						const ownerId = getUserId(record.data);
 						if (ownerId) {
@@ -400,10 +407,11 @@ export const usePrefetch = () => {
 							const permissionsPromises = rolesData.map(
 								async (role: { id: number; name: string }) => {
 									try {
-										const permissions = await permissionsApi.getCollectionPermissions(
-											role.name,
-											collectionName,
-										);
+										const permissions =
+											await permissionsApi.getCollectionPermissions(
+												role.name,
+												collectionName,
+											);
 										return { roleName: role.name, permissions };
 									} catch {
 										return {

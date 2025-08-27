@@ -12,10 +12,10 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import { Spinner } from "@/components/ui/spinner";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
-import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import {
 	useAllRoleCollectionPermissions,
@@ -61,8 +61,6 @@ export function CollectionPermissionsSheet({
 	const [userPermissions, setUserPermissions] = useState<
 		CollectionPermissions["user_permissions"]
 	>({});
-
-
 
 	const updateRolePermission = (
 		role: string,
@@ -220,9 +218,9 @@ export function CollectionPermissionsSheet({
 						variant={
 							row.role === "admin"
 								? "success"
-							: row.role === "user"
-								? "warning"
-								: "destructive"
+								: row.role === "user"
+									? "warning"
+									: "destructive"
 						}
 						size="sm"
 					>
@@ -264,7 +262,11 @@ export function CollectionPermissionsSheet({
 		role: string;
 	};
 
-	const userData: UserRow[] = users.map((u) => ({ id: u.id, email: u.email, role: u.role }));
+	const userData: UserRow[] = users.map((u) => ({
+		id: u.id,
+		email: u.email,
+		role: u.role,
+	}));
 
 	const userColumns: TableColumn<UserRow>[] = [
 		{
@@ -291,7 +293,10 @@ export function CollectionPermissionsSheet({
 			render: (_: unknown, u: UserRow) => {
 				const userPerm = userPermissions[u.id.toString()]?.[perm];
 				const defaultRolePerm = rolePermissions[u.role]?.[perm] || false;
-				const effectiveValue = userPerm !== null && userPerm !== undefined ? userPerm : defaultRolePerm;
+				const effectiveValue =
+					userPerm !== null && userPerm !== undefined
+						? userPerm
+						: defaultRolePerm;
 				return (
 					<Switch
 						checked={effectiveValue}
@@ -335,7 +340,11 @@ export function CollectionPermissionsSheet({
 									</div>
 								) : (
 									<Table
-										columns={roleColumns as unknown as TableColumn<Record<string, unknown>>[]}
+										columns={
+											roleColumns as unknown as TableColumn<
+												Record<string, unknown>
+											>[]
+										}
 										data={roleData as unknown as Record<string, unknown>[]}
 									/>
 								)}
@@ -345,7 +354,11 @@ export function CollectionPermissionsSheet({
 						<TabsContent value="users" className="mt-6">
 							<div className="space-y-4">
 								<Table
-									columns={userColumns as unknown as TableColumn<Record<string, unknown>>[]}
+									columns={
+										userColumns as unknown as TableColumn<
+											Record<string, unknown>
+										>[]
+									}
 									data={userData as unknown as Record<string, unknown>[]}
 								/>
 							</div>

@@ -141,7 +141,9 @@ export function UserDetailsSheet({
 									<Avatar
 										size="lg"
 										src={
-											user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined
+											user?.avatar_url
+												? getProxyUrl(user.avatar_url)
+												: undefined
 										}
 										fallback={getInitials(user.email)}
 									/>
@@ -198,7 +200,9 @@ export function UserDetailsSheet({
 											Last Login
 										</label>
 										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
-											{user.last_login_at ? formatDate(user.last_login_at) : "Never"}
+											{user.last_login_at
+												? formatDate(user.last_login_at)
+												: "Never"}
 										</p>
 									</div>
 								</div>

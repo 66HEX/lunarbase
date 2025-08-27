@@ -3,16 +3,27 @@
 ## [Unreleased]
 
 ### Added
+- Collection description field support in CreateCollectionSheet, EditCollectionSheet, and CollectionDetailsSheet
 - Change way of animating active route on sidebar for better UX
+- Prefetching permissions when hovering over collection settings button to prevent UI flickering
+- Protection against accidental sheet closure during select interactions in EditCollectionSheet
+
+### Fixed
+- Fixed automatic data refresh after user edits by adding proper React Query cache invalidation for all user queries
 
 ### Improved
 - Display username instead of owner ID in ownership column for better user experience
 - Removed all unnecessary development comments from codebase for cleaner production code
 - Enhanced prefetching system to include ownership user data when navigating to records
-- Standardized toast positioning system with consistent animation configurations
+- Standardized toast positioning with consistent animation configurations
+- Completely rewritten CollectionPermissionsSheet for better UX with clear separation between permission types (role-based vs user-specific)
+- Redesigned UserDetailsSheet with improved layout structure, organized sections, and consistent styling matching CollectionDetailsSheet
+- Redesigned UserDetailsSheet into a single clean overview section
+- Implemented tabbed interface in CreateCollectionSheet and EditCollectionSheet with "Overview" and "Schema Fields" sections for better organization and user experience
 
 ### Refactored
 - Toast system migrated from GSAP to CSS transition-driven animations, centralized easing, and improved accessibility
+- Moved CollectionPermissionsSheet from modals to sheets state management for consistency with Sheet component usage
 
 ## [0.3.0][0.3.0] - 2025-08-19
 

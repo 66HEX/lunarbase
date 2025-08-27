@@ -45,11 +45,8 @@ export default function CollectionsComponent() {
 
 	const deleteCollectionMutation = useDeleteCollection();
 
-	const {
-		prefetchCollectionRecords,
-		prefetchCollection,
-		prefetchPermissions,
-	} = usePrefetch();
+	const { prefetchCollectionRecords, prefetchCollection, prefetchPermissions } =
+		usePrefetch();
 
 	const collections = data?.collections || [];
 	const collectionRecordCounts = data?.recordCounts || {};
@@ -210,14 +207,16 @@ export default function CollectionsComponent() {
 												<Edit3 className="w-3.5 h-3.5" />
 											</Button>
 											<Button
-								variant="ghost"
-								size="sm"
-								className="w-7 h-7 p-0"
-								onClick={() => handleOpenPermissions(collection.name)}
-								onMouseEnter={() => prefetchPermissions(collection.name)}
-							>
-								<Settings className="w-3.5 h-3.5" />
-							</Button>
+												variant="ghost"
+												size="sm"
+												className="w-7 h-7 p-0"
+												onClick={() => handleOpenPermissions(collection.name)}
+												onMouseEnter={() =>
+													prefetchPermissions(collection.name)
+												}
+											>
+												<Settings className="w-3.5 h-3.5" />
+											</Button>
 											<Button
 												variant="ghost"
 												size="sm"
@@ -399,7 +398,7 @@ export default function CollectionsComponent() {
 
 			<CreateCollectionSheet
 				isOpen={sheets.createCollection}
-			onOpenChange={(open) => !open && closeSheet("createCollection")}
+				onOpenChange={(open) => !open && closeSheet("createCollection")}
 			/>
 
 			<CollectionDetailsSheet
@@ -410,7 +409,7 @@ export default function CollectionsComponent() {
 
 			<EditCollectionSheet
 				isOpen={sheets.editCollection}
-			onOpenChange={(open) => !open && closeSheet("editCollection")}
+				onOpenChange={(open) => !open && closeSheet("editCollection")}
 				collection={selectedCollection}
 			/>
 

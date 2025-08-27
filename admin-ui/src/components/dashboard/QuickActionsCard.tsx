@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { ArrowUpRight, Zap } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateCollectionSheet } from "@/components/collections";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateUserSheet } from "@/components/users";
 import { usePrefetch } from "@/hooks";
 import { useClientStore } from "@/stores/client.store";
@@ -19,10 +19,7 @@ interface QuickActionsCardProps {
 }
 
 export function QuickActionsCard({ actions }: QuickActionsCardProps) {
-	const {
-		prefetchRecords,
-		prefetchWebSocket,
-	} = usePrefetch();
+	const { prefetchRecords, prefetchWebSocket } = usePrefetch();
 	const sheets = useClientStore((state) => state.ui.sheets);
 	const openSheet = useClientStore((state) => state.openSheet);
 	const closeSheet = useClientStore((state) => state.closeSheet);
@@ -110,11 +107,15 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 			</CardContent>
 			<CreateCollectionSheet
 				isOpen={sheets.createCollection || false}
-				onOpenChange={(open) => open ? openSheet("createCollection") : closeSheet("createCollection")}
+				onOpenChange={(open) =>
+					open ? openSheet("createCollection") : closeSheet("createCollection")
+				}
 			/>
 			<CreateUserSheet
 				isOpen={sheets.createUser || false}
-				onOpenChange={(open) => open ? openSheet("createUser") : closeSheet("createUser")}
+				onOpenChange={(open) =>
+					open ? openSheet("createUser") : closeSheet("createUser")
+				}
 			/>
 		</Card>
 	);

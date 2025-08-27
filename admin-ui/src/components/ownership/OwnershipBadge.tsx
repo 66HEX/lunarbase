@@ -39,7 +39,7 @@ export function OwnershipBadge({
 			ownershipType = "You (Owner)";
 			badgeVariant = "default";
 		} else {
-			ownershipType = ownerUser?.username 
+			ownershipType = ownerUser?.username
 				? `Owner: ${ownerUser.username}`
 				: `Owner ID: ${ownership.owner_id}`;
 			badgeVariant = "secondary";

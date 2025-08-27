@@ -11,7 +11,6 @@ import {
 	FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import {
 	Select,
 	SelectContent,
@@ -28,8 +27,9 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Spinner } from "@/components/ui/spinner";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
 import { useUpdateCollection } from "@/hooks";
 import type {
 	Collection,
@@ -56,7 +56,8 @@ export function EditCollectionSheet({
 		[key: string]: string;
 	}>({});
 	const [editCollectionName, setEditCollectionName] = useState("");
-	const [editCollectionDescription, setEditCollectionDescription] = useState("");
+	const [editCollectionDescription, setEditCollectionDescription] =
+		useState("");
 	const [editFields, setEditFields] = useState<FieldDefinition[]>([]);
 	const [allowClose, setAllowClose] = useState(true);
 
@@ -206,13 +207,15 @@ export function EditCollectionSheet({
 												value={editCollectionName}
 												onChange={(e) => setEditCollectionName(e.target.value)}
 												variant={
-													editFieldErrors.editCollectionName ? "error" : "default"
+													editFieldErrors.editCollectionName
+														? "error"
+														: "default"
 												}
 											/>
 										</FormControl>
 										<FormDescription>
-											Must start with a letter and contain only letters, numbers,
-											and underscores
+											Must start with a letter and contain only letters,
+											numbers, and underscores
 										</FormDescription>
 										<FormMessage />
 									</FormField>
@@ -224,7 +227,9 @@ export function EditCollectionSheet({
 												placeholder="Optional description for this collection"
 												className="w-full"
 												value={editCollectionDescription}
-												onChange={(e) => setEditCollectionDescription(e.target.value)}
+												onChange={(e) =>
+													setEditCollectionDescription(e.target.value)
+												}
 												rows={3}
 											/>
 										</FormControl>
@@ -244,164 +249,173 @@ export function EditCollectionSheet({
 								}}
 							>
 								<div className="space-y-4">
-								<div className="space-y-3">
-									{editFields.map((field, index) => {
-										const IconComponent = fieldTypeIcons[field.field_type];
-										return (
-											<div
-												key={`edit-field-${index}`}
-												className="p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-md"
-											>
-												<div className="flex items-center justify-between mb-3">
-													<div className="flex items-center gap-2">
-														<IconComponent className="w-4 h-4 text-nocta-600 dark:text-nocta-400" />
-														<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
-															{index === 0 ? "ID Field" : `Field ${index + 1}`}
-														</span>
-													</div>
-													{index > 0 && (
-														<Button
-															type="button"
-															variant="ghost"
-															size="sm"
-															onClick={() => removeEditField(index)}
-															className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1"
-														>
-															<Trash2 className="w-4 h-4" />
-														</Button>
-													)}
-												</div>
-
-												<div className="grid grid-cols-12 gap-3 items-start">
-													<div className="col-span-4">
-														<FormField
-															name={`edit_field_${index}_name`}
-															error={
-																editFieldErrors[`edit_field_${index}_name`]
-															}
-														>
-															<FormLabel
-																required={index > 0}
-																className="text-xs font-medium text-nocta-600 dark:text-nocta-400"
-															>
-																Name
-															</FormLabel>
-															<FormControl>
-																<Input
-																	placeholder="field_name"
-																	className="w-full"
-																	value={field.name}
-																	onChange={(e) =>
-																		updateEditField(index, {
-																			name: e.target.value,
-																		})
-																	}
-																	disabled={index === 0}
-																	variant={
-																		editFieldErrors[`edit_field_${index}_name`]
-																			? "error"
-																			: "default"
-																	}
-																/>
-															</FormControl>
-															<FormMessage />
-														</FormField>
-													</div>
-
-													<div className="col-span-3">
-														<FormField name={`edit_field_${index}_type`}>
-															<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
-																Type
-															</FormLabel>
-															<FormControl>
-																<Select
-															portalProps={{
-																"data-sheet-portal": "true",
-															} as React.HTMLAttributes<HTMLDivElement>}
-															value={field.field_type}
-															onValueChange={(value) => {
-																setAllowClose(false);
-																updateEditField(index, {
-																	field_type:
-																		value as FieldDefinition["field_type"],
-																});
-																setTimeout(() => setAllowClose(true), 300);
-															}}
-															onOpenChange={(isOpen) => {
-																if (isOpen) {
-																	setAllowClose(false);
-																}
-															}}
-															disabled={index === 0}
-														>
-																	<SelectTrigger className="w-full">
-																		<SelectValue />
-																	</SelectTrigger>
-																	<SelectContent>
-																		{fieldTypeOptions.map((option) => (
-																			<SelectItem
-																				key={`edit-type-${option.value}`}
-																				value={option.value}
-																			>
-																				{option.label}
-																			</SelectItem>
-																		))}
-																	</SelectContent>
-																</Select>
-															</FormControl>
-														</FormField>
-													</div>
-
-													<div className="col-span-3">
-														<FormField name={`edit_field_${index}_default`}>
-															<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
-																Default
-															</FormLabel>
-															<FormControl>
-																<Input
-																	placeholder="Optional"
-																	className="w-full"
-																	value={
-																		typeof field.default_value === "string"
-																			? field.default_value
-																			: field.default_value
-																				? JSON.stringify(field.default_value)
-																				: ""
-																	}
-																	onChange={(e) =>
-																		updateEditField(index, {
-																			default_value: e.target.value || null,
-																		})
-																	}
-																	disabled={index === 0}
-																/>
-															</FormControl>
-														</FormField>
-													</div>
-
-													<div className="col-span-2 flex items-center h-full">
-														<label className="flex items-center gap-2 cursor-pointer pt-6">
-															<Checkbox
-																checked={field.required}
-																onCheckedChange={(checked) =>
-																	updateEditField(index, {
-																		required: checked as boolean,
-																	})
-																}
-																disabled={index === 0}
-															/>
-															<span className="text-xs text-nocta-700 dark:text-nocta-300">
-																Required
+									<div className="space-y-3">
+										{editFields.map((field, index) => {
+											const IconComponent = fieldTypeIcons[field.field_type];
+											return (
+												<div
+													key={`edit-field-${index}`}
+													className="p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-md"
+												>
+													<div className="flex items-center justify-between mb-3">
+														<div className="flex items-center gap-2">
+															<IconComponent className="w-4 h-4 text-nocta-600 dark:text-nocta-400" />
+															<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
+																{index === 0
+																	? "ID Field"
+																	: `Field ${index + 1}`}
 															</span>
-														</label>
+														</div>
+														{index > 0 && (
+															<Button
+																type="button"
+																variant="ghost"
+																size="sm"
+																onClick={() => removeEditField(index)}
+																className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1"
+															>
+																<Trash2 className="w-4 h-4" />
+															</Button>
+														)}
+													</div>
+
+													<div className="grid grid-cols-12 gap-3 items-start">
+														<div className="col-span-4">
+															<FormField
+																name={`edit_field_${index}_name`}
+																error={
+																	editFieldErrors[`edit_field_${index}_name`]
+																}
+															>
+																<FormLabel
+																	required={index > 0}
+																	className="text-xs font-medium text-nocta-600 dark:text-nocta-400"
+																>
+																	Name
+																</FormLabel>
+																<FormControl>
+																	<Input
+																		placeholder="field_name"
+																		className="w-full"
+																		value={field.name}
+																		onChange={(e) =>
+																			updateEditField(index, {
+																				name: e.target.value,
+																			})
+																		}
+																		disabled={index === 0}
+																		variant={
+																			editFieldErrors[
+																				`edit_field_${index}_name`
+																			]
+																				? "error"
+																				: "default"
+																		}
+																	/>
+																</FormControl>
+																<FormMessage />
+															</FormField>
+														</div>
+
+														<div className="col-span-3">
+															<FormField name={`edit_field_${index}_type`}>
+																<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
+																	Type
+																</FormLabel>
+																<FormControl>
+																	<Select
+																		portalProps={
+																			{
+																				"data-sheet-portal": "true",
+																			} as React.HTMLAttributes<HTMLDivElement>
+																		}
+																		value={field.field_type}
+																		onValueChange={(value) => {
+																			setAllowClose(false);
+																			updateEditField(index, {
+																				field_type:
+																					value as FieldDefinition["field_type"],
+																			});
+																			setTimeout(
+																				() => setAllowClose(true),
+																				300,
+																			);
+																		}}
+																		onOpenChange={(isOpen) => {
+																			if (isOpen) {
+																				setAllowClose(false);
+																			}
+																		}}
+																		disabled={index === 0}
+																	>
+																		<SelectTrigger className="w-full">
+																			<SelectValue />
+																		</SelectTrigger>
+																		<SelectContent>
+																			{fieldTypeOptions.map((option) => (
+																				<SelectItem
+																					key={`edit-type-${option.value}`}
+																					value={option.value}
+																				>
+																					{option.label}
+																				</SelectItem>
+																			))}
+																		</SelectContent>
+																	</Select>
+																</FormControl>
+															</FormField>
+														</div>
+
+														<div className="col-span-3">
+															<FormField name={`edit_field_${index}_default`}>
+																<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
+																	Default
+																</FormLabel>
+																<FormControl>
+																	<Input
+																		placeholder="Optional"
+																		className="w-full"
+																		value={
+																			typeof field.default_value === "string"
+																				? field.default_value
+																				: field.default_value
+																					? JSON.stringify(field.default_value)
+																					: ""
+																		}
+																		onChange={(e) =>
+																			updateEditField(index, {
+																				default_value: e.target.value || null,
+																			})
+																		}
+																		disabled={index === 0}
+																	/>
+																</FormControl>
+															</FormField>
+														</div>
+
+														<div className="col-span-2 flex items-center h-full">
+															<label className="flex items-center gap-2 cursor-pointer pt-6">
+																<Checkbox
+																	checked={field.required}
+																	onCheckedChange={(checked) =>
+																		updateEditField(index, {
+																			required: checked as boolean,
+																		})
+																	}
+																	disabled={index === 0}
+																/>
+																<span className="text-xs text-nocta-700 dark:text-nocta-300">
+																	Required
+																</span>
+															</label>
+														</div>
 													</div>
 												</div>
-											</div>
-										);
-									})}
-								</div>
+											);
+										})}
+									</div>
 
-								<Button
+									<Button
 										type="button"
 										variant="primary"
 										size="sm"
