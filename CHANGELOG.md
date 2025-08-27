@@ -5,6 +5,11 @@
 ### Added
 - Change way of animating active route on sidebar for better UX
 
+### Improved
+- Display username instead of owner ID in ownership column for better user experience
+- Removed all unnecessary development comments from codebase for cleaner production code
+- Enhanced prefetching system to include ownership user data when navigating to records
+
 ### Refactored
 - Toast system migrated from GSAP to CSS transition-driven animations, centralized easing, and improved accessibility
 

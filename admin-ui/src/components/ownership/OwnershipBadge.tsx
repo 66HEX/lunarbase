@@ -1,5 +1,6 @@
 import { Users } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { useUser } from "@/hooks/users/useUsers";
 import type { OwnershipInfo } from "@/types/api";
 
 interface OwnershipBadgeProps {
@@ -17,6 +18,8 @@ export function OwnershipBadge({
 	size = "default",
 	showIcon = true,
 }: OwnershipBadgeProps) {
+	const { data: ownerUser } = useUser(ownership?.owner_id || 0);
+
 	if (!ownership) {
 		return (
 			<Badge variant="outline" className="text-gray-500">
@@ -32,10 +35,15 @@ export function OwnershipBadge({
 	let badgeVariant = variant;
 
 	if (ownership.owner_id) {
-		ownershipType = isCurrentUserOwner
-			? "You (Owner)"
-			: `Owner ID: ${ownership.owner_id}`;
-		badgeVariant = isCurrentUserOwner ? "default" : "secondary";
+		if (isCurrentUserOwner) {
+			ownershipType = "You (Owner)";
+			badgeVariant = "default";
+		} else {
+			ownershipType = ownerUser?.username 
+				? `Owner: ${ownerUser.username}`
+				: `Owner ID: ${ownership.owner_id}`;
+			badgeVariant = "secondary";
+		}
 	}
 
 	return (

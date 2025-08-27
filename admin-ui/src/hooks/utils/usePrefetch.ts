@@ -108,7 +108,35 @@ export const usePrefetch = () => {
 	}, [queryClient, isDataFresh]);
 
 	/**
+	 * Prefetch users for ownership based on owner IDs from records
+	 */
+	const prefetchUsersForOwnership = useCallback(
+		async (ownerIds: number[]) => {
+			const uniqueOwnerIds = [...new Set(ownerIds.filter(id => id > 0))];
+			const staleTime = 5 * 60 * 1000;
+
+			const prefetchPromises = uniqueOwnerIds.map(async (ownerId) => {
+				const queryKey = ["users", "detail", ownerId];
+				
+				if (isDataFresh(queryKey, staleTime)) {
+					return;
+				}
+
+				await queryClient.prefetchQuery({
+					queryKey,
+					queryFn: () => usersApi.get(ownerId),
+					staleTime,
+				});
+			});
+
+			await Promise.all(prefetchPromises);
+		},
+		[queryClient, isDataFresh],
+	);
+
+	/**
 	 * Prefetch all records data with default parameters matching useAllRecords
+	 * Also prefetches ownership user data
 	 */
 	const prefetchRecords = useCallback(async () => {
 		const queryKey = ["allRecords", 1, 20, "", undefined, undefined];
@@ -118,7 +146,7 @@ export const usePrefetch = () => {
 			return;
 		}
 
-		await queryClient.prefetchQuery({
+		const recordsData = await queryClient.fetchQuery({
 			queryKey,
 			queryFn: async () => {
 				const queryOptions: QueryOptions = {
@@ -131,10 +159,31 @@ export const usePrefetch = () => {
 			},
 			staleTime,
 		});
-	}, [queryClient, isDataFresh]);
+
+		// Extract owner IDs from records and prefetch user data
+		if (recordsData?.records) {
+			const ownerIds: number[] = [];
+			recordsData.records.forEach((record: any) => {
+				if (record.data) {
+					const getUserId = (data: any) => {
+						return data.user_id || data.created_by || data.owner_id || data.author_id;
+					};
+					const ownerId = getUserId(record.data);
+					if (ownerId) {
+						ownerIds.push(ownerId);
+					}
+				}
+			});
+
+			if (ownerIds.length > 0) {
+				await prefetchUsersForOwnership(ownerIds);
+			}
+		}
+	}, [queryClient, isDataFresh, prefetchUsersForOwnership]);
 
 	/**
 	 * Prefetch records for a specific collection with exact same parameters as useCollectionRecords
+	 * Also prefetches ownership user data
 	 */
 	const prefetchCollectionRecords = useCallback(
 		async (collectionName: string) => {
@@ -171,13 +220,33 @@ export const usePrefetch = () => {
 				queryOptions.filter = filter;
 			}
 
-			await queryClient.prefetchQuery({
+			const recordsData = await queryClient.fetchQuery({
 				queryKey,
 				queryFn: () => recordsApi.list(collectionName, queryOptions),
 				staleTime,
 			});
+
+			// Extract owner IDs from records and prefetch user data
+			if (recordsData?.records) {
+				const ownerIds: number[] = [];
+				recordsData.records.forEach((record: any) => {
+					if (record.data) {
+						const getUserId = (data: any) => {
+							return data.user_id || data.created_by || data.owner_id || data.author_id;
+						};
+						const ownerId = getUserId(record.data);
+						if (ownerId) {
+							ownerIds.push(ownerId);
+						}
+					}
+				});
+
+				if (ownerIds.length > 0) {
+					await prefetchUsersForOwnership(ownerIds);
+				}
+			}
 		},
-		[queryClient, isDataFresh],
+		[queryClient, isDataFresh, prefetchUsersForOwnership],
 	);
 
 	/**
@@ -335,6 +404,7 @@ export const usePrefetch = () => {
 
 	return {
 		prefetchUsers,
+		prefetchUsersForOwnership,
 		prefetchCollections,
 		prefetchRecords,
 		prefetchCollectionRecords,
