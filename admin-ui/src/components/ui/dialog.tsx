@@ -6,8 +6,7 @@ import { createPortal } from "react-dom";
 import { cn } from "@/lib/utils";
 
 const dialogContentVariants = cva(
-	`relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent 
-   rounded-xl shadow-xl dark:shadow-2xl backdrop-blur-sm not-prose 
+	`relative shadow-md border border-nocta-50/10 rounded-xl not-prose 
    transition-all duration-300 ease-out`,
 	{
 		variants: {

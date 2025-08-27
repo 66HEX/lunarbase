@@ -43,7 +43,7 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 		return (
 			<div
 				ref={ref}
-				className="relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl w-full shadow-md dark:shadow-lg"
+				className="relative rounded-xl w-full shadow-md border border-nocta-50/10"
 			>
 				<span
 					aria-hidden
@@ -56,14 +56,6 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 					}}
 				/>
 
-				<span
-					aria-hidden
-					className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-xl opacity-60"
-					style={{
-						background:
-							"linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
-					}}
-				/>
 				<div
 					className={cn(
 						"bg-nocta-100 dark:bg-nocta-900 rounded-xl shadow-sm dark:shadow-lg transition-all duration-300 ease-out backdrop-blur-sm overflow-hidden not-prose",

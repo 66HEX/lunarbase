@@ -174,9 +174,9 @@ export function Sidebar() {
 				)}
 			>
 				<div className="flex flex-col h-full bg-nocta-100 dark:bg-nocta-900 shadow-sm dark:shadow-lg">
-					<div className="flex items-center justify-between p-4 border-b border-nocta-200 dark:border-nocta-800">
+					<div className="flex items-center justify-between p-4">
 						<div className="flex items-center space-x-3">
-							<div className="w-9 h-9 bg-gradient-to-br from-nocta-800 to-nocta-600 rounded-lg flex items-center justify-center shadow-md">
+							<div className="w-9 h-9 bg-nocta-700 rounded-lg flex items-center justify-center shadow-md">
 								<LunarLogo className="h-6 w-6 text-white" />
 							</div>
 							<div>
@@ -189,15 +189,15 @@ export function Sidebar() {
 							variant="ghost"
 							size="sm"
 							onClick={() => setSidebarOpen(false)}
-							className="lg:hidden p-2 text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/50"
+							className="lg:hidden p-2 text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40"
 						>
 							<X className="w-5 h-5" />
 						</Button>
 					</div>
 
-					<nav className="flex-1 px-4 py-6 space-y-1 relative">
+					<nav className="flex-1 px-4 py-3 space-y-1.5 relative">
 						<div
-							className="absolute left-4 w-[calc(100%-2rem)] h-[42px] rounded-lg bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-nocta-200 dark:to-nocta-400 transition-all duration-300 ease-in-out opacity-100 z-0"
+							className="absolute left-4 w-[calc(100%-2rem)] h-[42px] rounded-lg bg-linear-to-b from-nocta-900 to-nocta-700 dark:from-nocta-700 dark:to-nocta-700/50 hover:contrast-125 text-nocta-900 dark:text-nocta-100 focus-visible:ring-nocta-900/50 dark:focus-visible:ring-nocta-100/50 transition-all duration-300 ease-in-out opacity-100 z-0 shadow-md"
 							style={{
 								transform: `translateY(${
 									navigation
@@ -209,10 +209,30 @@ export function Sidebar() {
 												currentPath === item.href ||
 												(item.href !== "/" && currentPath.startsWith(item.href))
 											);
-										}) * 44
+										}) * 46
 								}px)`,
 							}}
-						/>
+						>
+							<span
+								aria-hidden
+								className="pointer-events-none absolute -inset-px rounded-lg bg-gradient-to-b to-transparent opacity-60"
+								style={{
+									maskImage:
+										"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+									WebkitMaskImage:
+										"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
+								}}
+							/>
+
+							<span
+								aria-hidden
+								className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-lg opacity-60"
+								style={{
+									background:
+										"linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
+								}}
+							/>
+						</div>
 						{navigation
 							.filter((item) => !item.adminOnly || user?.role === "admin")
 							.map((item) => {
@@ -254,16 +274,16 @@ export function Sidebar() {
 										key={item.name}
 										to={item.href}
 										onMouseEnter={handleMouseEnter}
-										className={`group relative flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm font-medium duration-300 ease-in-out  transition-all z-10 ${
+										className={`group relative flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm font-medium duration-300 ease-in-out transition-all z-10 ${
 											isActive
-												? "text-white dark:text-nocta-900 hover:contrast-125"
-												: "text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/50 hover:text-nocta-900 dark:hover:text-nocta-100"
+												? "text-white dark:text-white hover:contrast-125"
+												: "text-nocta-700 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40 hover:text-nocta-900 dark:hover:text-nocta-100"
 										}`}
 									>
 										<Icon
-											className={`w-5 h-5 transition-colors ${
+											className={`w-5 h-5 transition-all ${
 												isActive
-													? "text-white dark:text-nocta-900"
+													? "text-nocta-900 dark:text-nocta-100"
 													: "text-nocta-400 dark:text-nocta-500 group-hover:text-nocta-600 dark:group-hover:text-nocta-300"
 											}`}
 										/>
@@ -273,8 +293,8 @@ export function Sidebar() {
 							})}
 					</nav>
 
-					<div className="p-4 border-t border-nocta-200 dark:border-nocta-800">
-						<div className="flex items-center space-x-3 mb-3">
+					<div className="p-4">
+						<div className="flex items-center space-x-3 mb-3 p-3 bg-nocta-50 dark:bg-nocta-800/30 rounded-lg border border-nocta-200 dark:border-nocta-800">
 							<Avatar
 								size="md"
 								src={
@@ -300,7 +320,7 @@ export function Sidebar() {
 							variant="ghost"
 							size="sm"
 							onClick={handleLogout}
-							className="w-full justify-start text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/50"
+							className="w-full justify-start text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40 hover:text-nocta-900 dark:hover:text-nocta-100"
 						>
 							<LogOut className="w-4 h-4 mr-2" />
 							Logout

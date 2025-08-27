@@ -79,7 +79,7 @@ export default function ForgotPasswordComponent() {
 				<div className="w-sm space-y-8">
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
-							<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
+							<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center">
 								<LunarLogo className="h-10 w-10 text-white" />
 							</div>
 						</div>

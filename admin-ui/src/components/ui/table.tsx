@@ -264,7 +264,7 @@ export const Table = <T extends Record<string, unknown>>({
 	);
 
 	return (
-		<div className="not-prose relative p-[1px] bg-linear-to-b from-nocta-200 dark:from-nocta-600/50 to-transparent rounded-xl overflow-hidden shadow-md dark:shadow-lg">
+		<div className="not-prose relative shadow-md border border-nocta-50/10 rounded-xl overflow-hidden">
 			<span
 				aria-hidden
 				className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b to-transparent opacity-60"
@@ -273,15 +273,6 @@ export const Table = <T extends Record<string, unknown>>({
 						"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
 					WebkitMaskImage:
 						"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
-				}}
-			/>
-
-			<span
-				aria-hidden
-				className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-xl opacity-60"
-				style={{
-					background:
-						"linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent)",
 				}}
 			/>
 			<div
