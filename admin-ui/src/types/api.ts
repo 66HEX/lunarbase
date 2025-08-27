@@ -134,11 +134,13 @@ export interface Collection {
 
 export interface CreateCollectionRequest {
 	name: string;
+	description?: string;
 	schema: CollectionSchema;
 }
 
 export interface UpdateCollectionRequest {
 	name?: string;
+	description?: string;
 	schema?: CollectionSchema;
 }
 
