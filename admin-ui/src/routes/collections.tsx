@@ -45,7 +45,11 @@ export default function CollectionsComponent() {
 
 	const deleteCollectionMutation = useDeleteCollection();
 
-	const { prefetchCollectionRecords, prefetchCollection } = usePrefetch();
+	const {
+		prefetchCollectionRecords,
+		prefetchCollection,
+		prefetchPermissions,
+	} = usePrefetch();
 
 	const collections = data?.collections || [];
 	const collectionRecordCounts = data?.recordCounts || {};
@@ -85,12 +89,12 @@ export default function CollectionsComponent() {
 		}
 
 		setSelectedCollectionName(collectionName);
-		openModal("editCollection");
+		openSheet("editCollection");
 	};
 
 	const handleOpenPermissions = (collectionName: string) => {
 		setSelectedCollectionName(collectionName);
-		openModal("permissions");
+		openSheet("permissions");
 	};
 
 	const hasRecords = (collectionName: string): boolean => {
@@ -170,7 +174,7 @@ export default function CollectionsComponent() {
 				collectionsCount={collections.length}
 				searchTerm={localSearchTerm}
 				onSearchChange={setLocalSearchTerm}
-				onCreateCollection={() => openModal("createCollection")}
+				onCreateCollection={() => openSheet("createCollection")}
 			/>
 
 			{filteredCollections.length > 0 || (loading && !data) ? (
@@ -206,13 +210,14 @@ export default function CollectionsComponent() {
 												<Edit3 className="w-3.5 h-3.5" />
 											</Button>
 											<Button
-												variant="ghost"
-												size="sm"
-												className="w-7 h-7 p-0"
-												onClick={() => handleOpenPermissions(collection.name)}
-											>
-												<Settings className="w-3.5 h-3.5" />
-											</Button>
+								variant="ghost"
+								size="sm"
+								className="w-7 h-7 p-0"
+								onClick={() => handleOpenPermissions(collection.name)}
+								onMouseEnter={() => prefetchPermissions(collection.name)}
+							>
+								<Settings className="w-3.5 h-3.5" />
+							</Button>
 											<Button
 												variant="ghost"
 												size="sm"
@@ -355,7 +360,7 @@ export default function CollectionsComponent() {
 									: "Get started by creating your first data collection to organize your records."}
 							</p>
 							{!searchTerm && (
-								<Button onClick={() => openModal("createCollection")}>
+								<Button onClick={() => openSheet("createCollection")}>
 									<Plus className="w-4 h-4 mr-2" />
 									Create Collection
 								</Button>
@@ -393,8 +398,8 @@ export default function CollectionsComponent() {
 			</Dialog>
 
 			<CreateCollectionSheet
-				isOpen={modals.createCollection}
-				onOpenChange={(open) => !open && closeModal("createCollection")}
+				isOpen={sheets.createCollection}
+			onOpenChange={(open) => !open && closeSheet("createCollection")}
 			/>
 
 			<CollectionDetailsSheet
@@ -404,14 +409,14 @@ export default function CollectionsComponent() {
 			/>
 
 			<EditCollectionSheet
-				isOpen={modals.editCollection}
-				onOpenChange={(open) => !open && closeModal("editCollection")}
+				isOpen={sheets.editCollection}
+			onOpenChange={(open) => !open && closeSheet("editCollection")}
 				collection={selectedCollection}
 			/>
 
 			<CollectionPermissionsSheet
-				isOpen={modals.permissions}
-				onOpenChange={(open) => !open && closeModal("permissions")}
+				isOpen={sheets.permissions}
+				onOpenChange={(open) => !open && closeSheet("permissions")}
 				collection={selectedCollection}
 			/>
 		</div>

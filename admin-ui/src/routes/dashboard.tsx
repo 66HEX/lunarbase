@@ -33,13 +33,13 @@ function DashboardComponent() {
 	const quickActions = [
 		{
 			name: "Create Collection",
-			href: "/collections",
+			action: "create-collection",
 			icon: Database,
 			color: "bg-blue-500",
 		},
 		{
-			name: "View Users",
-			href: "/users",
+			name: "Create User",
+			action: "create-user",
 			icon: Users,
 			color: "bg-green-500",
 		},
