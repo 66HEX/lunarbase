@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.4.0][0.4.0] - 2025-08-28
 
 ### Added
 - Collection description field support in CreateCollectionSheet, EditCollectionSheet, and CollectionDetailsSheet
@@ -99,6 +99,7 @@
 - Comprehensive audit logging and activity monitoring
 
 
+[0.4.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.4.0
 [0.3.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.3.0
 [0.2.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.2.0
 [0.1.1]: https://github.com/66HEX/lunarbase/releases/tag/v0.1.1
