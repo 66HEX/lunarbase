@@ -20,10 +20,16 @@
 - Redesigned UserDetailsSheet with improved layout structure, organized sections, and consistent styling matching CollectionDetailsSheet
 - Redesigned UserDetailsSheet into a single clean overview section
 - Implemented tabbed interface in CreateCollectionSheet and EditCollectionSheet with "Overview" and "Schema Fields" sections for better organization and user experience
+- Updated EmptyRecordsState component to use CreateCollectionSheet instead of navigation link for consistent UX pattern
 
 ### Refactored
 - Toast system migrated from GSAP to CSS transition-driven animations, centralized easing, and improved accessibility
 - Moved CollectionPermissionsSheet from modals to sheets state management for consistency with Sheet component usage
+
+### Performance
+- Frontend build: enabled Lightning CSS transformer and minifier for CSS to reduce CSS size and speed up builds
+- Frontend build: tightened Terser minification (toplevel mangle, pure_getters, 2 passes, no comments) to reduce JS bundle size
+- Dev: added lightningcss as a devDependency
 
 ## [0.3.0][0.3.0] - 2025-08-19
 
