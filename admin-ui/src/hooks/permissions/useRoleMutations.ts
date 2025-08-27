@@ -16,6 +16,8 @@ export const useCreateRole = () => {
 				title: "Role created",
 				description: `Role ${newRole.name} has been created successfully.`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -23,6 +25,8 @@ export const useCreateRole = () => {
 				title: "Failed to create role",
 				description: error?.message || "An unexpected error occurred.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -50,6 +54,8 @@ export const useUpdateRole = () => {
 				title: "Role updated",
 				description: `Role ${updatedRole.name} has been updated successfully.`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -57,6 +63,8 @@ export const useUpdateRole = () => {
 				title: "Failed to update role",
 				description: error?.message || "An unexpected error occurred.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -81,6 +89,8 @@ export const useDeleteRole = () => {
 				title: "Role deleted",
 				description: `Role ${deletedRoleName} has been deleted successfully.`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -88,6 +98,8 @@ export const useDeleteRole = () => {
 				title: "Failed to delete role",
 				description: error?.message || "An unexpected error occurred.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

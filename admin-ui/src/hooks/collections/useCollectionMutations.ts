@@ -49,6 +49,8 @@ export const useCreateCollection = () => {
 				title: "Success",
 				description: `Collection "${newCollection.name}" created successfully`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -56,6 +58,8 @@ export const useCreateCollection = () => {
 				title: "Error",
 				description: error?.message || "Failed to create collection",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -112,6 +116,8 @@ export const useUpdateCollection = () => {
 				title: "Success",
 				description: `Collection "${updatedCollection.name}" updated successfully`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -119,6 +125,8 @@ export const useUpdateCollection = () => {
 				title: "Error",
 				description: error?.message || "Failed to update collection",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -170,6 +178,8 @@ export const useDeleteCollection = () => {
 				title: "Success",
 				description: `Collection "${deletedName}" deleted successfully`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -177,6 +187,8 @@ export const useDeleteCollection = () => {
 				title: "Error",
 				description: error?.message || "Failed to delete collection",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -254,6 +266,8 @@ export const useSaveCollectionPermissions = () => {
 				title: "Success",
 				description: `Permissions for "${collectionName}" saved successfully`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -261,6 +275,8 @@ export const useSaveCollectionPermissions = () => {
 				title: "Error",
 				description: error?.message || "Failed to save permissions",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

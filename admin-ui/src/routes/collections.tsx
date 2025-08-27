@@ -78,7 +78,7 @@ export default function CollectionsComponent() {
 				title: "Editing Blocked",
 				description: `Cannot edit collection "${collectionName}" because it contains records. Editing field types may cause system failure.`,
 				variant: "destructive",
-				position: "bottom-center",
+				position: "bottom-right",
 				duration: 5000,
 			});
 			return;
@@ -196,7 +196,6 @@ export default function CollectionsComponent() {
 												variant="ghost"
 												size="sm"
 												className={`w-7 h-7 p-0 ${hasRecords(collection.name) ? "opacity-50 cursor-not-allowed" : ""}`}
-												disabled={hasRecords(collection.name)}
 												onClick={() => handleOpenEdit(collection.name)}
 												title={
 													hasRecords(collection.name)

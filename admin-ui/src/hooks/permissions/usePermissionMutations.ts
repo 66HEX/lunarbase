@@ -37,6 +37,8 @@ export const useSetCollectionPermission = () => {
 				title: "Success",
 				description: "Collection permission updated successfully",
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -44,6 +46,8 @@ export const useSetCollectionPermission = () => {
 				title: "Error",
 				description: error?.message || "Failed to update collection permission",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -73,7 +77,9 @@ export const useSetUserCollectionPermissions = () => {
 			toast({
 				title: "Success",
 				description: "User permissions updated successfully",
-				variant: "default",
+				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -81,6 +87,8 @@ export const useSetUserCollectionPermissions = () => {
 				title: "Error",
 				description: error?.message || "Failed to update user permissions",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

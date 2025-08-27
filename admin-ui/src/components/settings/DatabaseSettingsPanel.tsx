@@ -47,6 +47,8 @@ export function DatabaseSettingsPanel() {
 				title: "Manual backup created successfully",
 				description: `Backup ID: ${data.backup_id}`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error) => {
@@ -54,6 +56,8 @@ export function DatabaseSettingsPanel() {
 				title: "Failed to create manual backup",
 				description: error.message,
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

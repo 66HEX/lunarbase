@@ -24,6 +24,8 @@ export const useTransferOwnership = () => {
 				title: "Ownership transferred",
 				description: "Record ownership has been successfully transferred.",
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 
 			queryClient.invalidateQueries({
@@ -45,6 +47,8 @@ export const useTransferOwnership = () => {
 				title: "Transfer failed",
 				description: error.message || "Failed to transfer ownership.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

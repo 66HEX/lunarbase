@@ -20,6 +20,8 @@ export const useCreateUser = () => {
 				title: "User created",
 				description: `User ${newUser.email} has been created successfully.`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -27,6 +29,8 @@ export const useCreateUser = () => {
 				title: "Failed to create user",
 				description: error?.message || "An unexpected error occurred.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -50,6 +54,8 @@ export const useUpdateUser = () => {
 				title: "User updated",
 				description: `User ${updatedUser.email} has been updated successfully.`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -57,6 +63,8 @@ export const useUpdateUser = () => {
 				title: "Failed to update user",
 				description: error?.message || "An unexpected error occurred.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -80,6 +88,8 @@ export const useDeleteUser = () => {
 				title: "User deleted",
 				description: "User has been deleted successfully.",
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -87,6 +97,8 @@ export const useDeleteUser = () => {
 				title: "Failed to delete user",
 				description: error?.message || "An unexpected error occurred.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -109,6 +121,8 @@ export const useUnlockUser = () => {
 				title: "User unlocked",
 				description: `User ${unlockedUser.email} has been unlocked successfully.`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -116,6 +130,8 @@ export const useUnlockUser = () => {
 				title: "Failed to unlock user",
 				description: error?.message || "An unexpected error occurred.",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

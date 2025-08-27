@@ -19,7 +19,7 @@ export function RawMetricsViewer() {
 				title: "Copied to clipboard",
 				description: "Raw metrics data has been copied to your clipboard.",
 				variant: "success",
-				position: "bottom-center",
+				position: "bottom-right",
 				duration: 3000,
 			});
 		} catch {
@@ -27,7 +27,7 @@ export function RawMetricsViewer() {
 				title: "Copy failed",
 				description: "Failed to copy metrics to clipboard.",
 				variant: "destructive",
-				position: "bottom-center",
+				position: "bottom-right",
 				duration: 3000,
 			});
 		}

@@ -88,7 +88,7 @@ export default function RecordsComponent() {
 				title: "Error",
 				description: errorMessage,
 				variant: "destructive",
-				position: "bottom-center",
+				position: "bottom-right",
 				duration: 3000,
 			});
 		}

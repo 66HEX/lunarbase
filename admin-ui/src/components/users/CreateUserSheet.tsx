@@ -88,7 +88,7 @@ export function CreateUserSheet({
 				title: "Validation Error",
 				description: "Please fix the validation errors in the form",
 				variant: "destructive",
-				position: "bottom-center",
+				position: "bottom-right",
 				duration: 3000,
 			});
 		}

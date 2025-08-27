@@ -79,6 +79,9 @@ export const useDisconnectConnectionMutation = () => {
 				title: "Connection Disconnected",
 				description:
 					"The WebSocket connection has been successfully disconnected.",
+				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -86,6 +89,8 @@ export const useDisconnectConnectionMutation = () => {
 				title: "Error",
 				description: error.message || "Failed to disconnect connection",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -109,6 +114,9 @@ export const useBroadcastMessageMutation = () => {
 			toast({
 				title: "Message Broadcasted",
 				description: `Message sent to ${data.sent_to_connections} connection(s).`,
+				variant: "default",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -116,6 +124,8 @@ export const useBroadcastMessageMutation = () => {
 				title: "Error",
 				description: error.message || "Failed to broadcast message",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

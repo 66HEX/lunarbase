@@ -27,6 +27,8 @@ export const useCreateSetting = () => {
 				title: "Setting Created",
 				description: `Setting '${data.setting_key}' has been created successfully.`,
 				variant: "default",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: CustomApiError) => {
@@ -34,6 +36,8 @@ export const useCreateSetting = () => {
 				title: "Error",
 				description: error.message || "Failed to create setting",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -70,6 +74,8 @@ export const useUpdateSetting = () => {
 				title: "Setting Updated",
 				description: `Setting '${variables.settingKey}' has been updated successfully.`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: CustomApiError) => {
@@ -77,6 +83,8 @@ export const useUpdateSetting = () => {
 				title: "Error",
 				description: error.message || "Failed to update setting",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -111,6 +119,8 @@ export const useDeleteSetting = () => {
 				title: "Setting Deleted",
 				description: `Setting '${variables.settingKey}' has been deleted successfully.`,
 				variant: "default",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: CustomApiError) => {
@@ -118,6 +128,8 @@ export const useDeleteSetting = () => {
 				title: "Error",
 				description: error.message || "Failed to delete setting",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -152,6 +164,8 @@ export const useResetSetting = () => {
 				title: "Setting Reset",
 				description: `Setting '${variables.settingKey}' has been reset to default value.`,
 				variant: "default",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: CustomApiError) => {
@@ -159,6 +173,8 @@ export const useResetSetting = () => {
 				title: "Error",
 				description: error.message || "Failed to reset setting",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

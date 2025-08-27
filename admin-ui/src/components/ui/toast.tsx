@@ -38,8 +38,8 @@ const POSITION_CONFIGS = {
 		animateOut: { x: 0, y: 100 },
 	},
 	"bottom-right": {
-		animateIn: { x: 100, y: 20 },
-		animateOut: { x: 100, y: 100 },
+		animateIn: { x: 0, y: 20 },
+		animateOut: { x: 0, y: 20 },
 	},
 } as const;
 
@@ -174,7 +174,7 @@ const toastContainerVariants = cva(
 			},
 		},
 		defaultVariants: {
-			position: "bottom-center",
+			position: "bottom-right",
 			variant: "default",
 		},
 	},

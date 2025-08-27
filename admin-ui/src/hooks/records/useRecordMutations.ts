@@ -40,6 +40,8 @@ export const useCreateRecord = () => {
 				title: "Success",
 				description: "Record created successfully",
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -48,6 +50,8 @@ export const useCreateRecord = () => {
 				title: "Error",
 				description: message,
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -89,6 +93,8 @@ export const useUpdateRecord = () => {
 				title: "Success",
 				description: "Record updated successfully",
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -97,6 +103,8 @@ export const useUpdateRecord = () => {
 				title: "Error",
 				description: message,
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -139,6 +147,8 @@ export const useDeleteRecord = () => {
 				title: "Success",
 				description: "Record deleted successfully",
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -147,6 +157,8 @@ export const useDeleteRecord = () => {
 				title: "Error",
 				description: message,
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});
@@ -193,6 +205,8 @@ export const useBulkDeleteRecords = () => {
 				title: "Success",
 				description: `${recordIds.length} records deleted successfully`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 		onError: (error: Error) => {
@@ -201,6 +215,8 @@ export const useBulkDeleteRecords = () => {
 				title: "Error",
 				description: message,
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		},
 	});

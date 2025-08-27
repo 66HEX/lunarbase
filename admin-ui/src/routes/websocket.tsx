@@ -39,6 +39,8 @@ function WebSocketComponent() {
 				title: "Error",
 				description: "Please enter a message to broadcast",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 			return;
 		}
@@ -53,6 +55,8 @@ function WebSocketComponent() {
 				title: "Message Broadcast",
 				description: `Message sent to ${response.sent_to_connections} connections`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 			setBroadcastMessage("");
 			closeModal("broadcast");
@@ -62,6 +66,8 @@ function WebSocketComponent() {
 				title: "Broadcast Failed",
 				description: (error as Error).message || "Failed to broadcast message",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		} finally {
 			setIsBroadcasting(false);
@@ -75,6 +81,8 @@ function WebSocketComponent() {
 				title: "Connection Disconnected",
 				description: `Connection ${connectionId} has been disconnected`,
 				variant: "success",
+				position: "bottom-right",
+				duration: 3000,
 			});
 			refetchAll();
 		} catch (error: unknown) {
@@ -83,6 +91,8 @@ function WebSocketComponent() {
 				description:
 					(error as Error).message || "Failed to disconnect connection",
 				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
 			});
 		}
 	};
