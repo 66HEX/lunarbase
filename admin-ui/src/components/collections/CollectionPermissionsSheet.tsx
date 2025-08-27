@@ -324,7 +324,7 @@ export function CollectionPermissionsSheet({
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<Tabs defaultValue="roles" className="w-full">
-						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/50">
+						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950">
 							<TabsTrigger value="roles">Role-based Permissions</TabsTrigger>
 							<TabsTrigger value="users">User-specific Permissions</TabsTrigger>
 						</TabsList>
