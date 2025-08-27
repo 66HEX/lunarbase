@@ -5,7 +5,9 @@ import {
 	configurationApi,
 	healthApi,
 	metricsApi,
+	permissionsApi,
 	recordsApi,
+	rolesApi,
 	usersApi,
 	webSocketApi,
 } from "@/lib/api";
@@ -35,7 +37,7 @@ export const usePrefetch = () => {
 	);
 
 	/**
-	 * Prefetch users data with default parameters matching useUsersWithPagination
+	 * Prefetch users data
 	 */
 	const prefetchUsers = useCallback(async () => {
 		const queryKey = ["users", { page: 1, pageSize: 10, search: "" }];
@@ -367,6 +369,80 @@ export const usePrefetch = () => {
 	}, [queryClient, isDataFresh]);
 
 	/**
+	 * Prefetch permissions data for a specific collection
+	 */
+	const prefetchPermissions = useCallback(
+		async (collectionName: string) => {
+			const rolesQueryKey = ["permissions", "roles"];
+			const allPermissionsQueryKey = [
+				"permissions",
+				"collection-permissions",
+				"all",
+				collectionName,
+			];
+			const rolesStaleTime = 10 * 60 * 1000;
+			const permissionsStaleTime = 5 * 60 * 1000;
+
+			if (!isDataFresh(rolesQueryKey, rolesStaleTime)) {
+				await queryClient.prefetchQuery({
+					queryKey: rolesQueryKey,
+					queryFn: () => rolesApi.list(),
+					staleTime: rolesStaleTime,
+				});
+			}
+
+			const rolesData = queryClient.getQueryData(rolesQueryKey) as any[];
+			if (rolesData && rolesData.length > 0) {
+				if (!isDataFresh(allPermissionsQueryKey, permissionsStaleTime)) {
+					await queryClient.prefetchQuery({
+						queryKey: allPermissionsQueryKey,
+						queryFn: async () => {
+							const permissionsPromises = rolesData.map(
+								async (role: { id: number; name: string }) => {
+									try {
+										const permissions = await permissionsApi.getCollectionPermissions(
+											role.name,
+											collectionName,
+										);
+										return { roleName: role.name, permissions };
+									} catch {
+										return {
+											roleName: role.name,
+											permissions: {
+												id: 0,
+												role_id: role.id,
+												collection_name: collectionName,
+												can_create: false,
+												can_read: false,
+												can_update: false,
+												can_delete: false,
+												can_list: false,
+												created_at: new Date().toISOString(),
+												updated_at: new Date().toISOString(),
+											},
+										};
+									}
+								},
+							);
+
+							const results = await Promise.all(permissionsPromises);
+							const permissionsMap: Record<string, unknown> = {};
+
+							results.forEach(({ roleName, permissions }) => {
+								permissionsMap[roleName] = permissions;
+							});
+
+							return permissionsMap;
+						},
+						staleTime: permissionsStaleTime,
+					});
+				}
+			}
+		},
+		[queryClient, isDataFresh],
+	);
+
+	/**
 	 * Prefetch dashboard data (collections, websocket, health)
 	 */
 	const prefetchDashboard = useCallback(async () => {
@@ -413,5 +489,6 @@ export const usePrefetch = () => {
 		prefetchMetrics,
 		prefetchSettings,
 		prefetchDashboard,
+		prefetchPermissions,
 	};
 };
