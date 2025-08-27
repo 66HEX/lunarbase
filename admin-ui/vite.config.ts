@@ -7,8 +7,12 @@ import svgr from "vite-plugin-svgr";
 
 export default defineConfig({
 	base: "/admin/",
+	css: {
+		transformer: "lightningcss",
+	},
 	build: {
 		minify: "terser",
+		cssMinify: "lightningcss",
 		sourcemap: false,
 		target: "es2020",
 		outDir: "dist",
@@ -28,6 +32,23 @@ export default defineConfig({
 		},
 		assetsInlineLimit: 4096,
 		chunkSizeWarningLimit: 1000,
+		terserOptions: {
+			compress: {
+				ecma: 2020,
+				module: true,
+				toplevel: true,
+				passes: 2,
+				pure_getters: true,
+				drop_console: true,
+				drop_debugger: true,
+			},
+			mangle: {
+				toplevel: true,
+			},
+			format: {
+				comments: false,
+			},
+		},
 	},
 	server: {
 		proxy: {
