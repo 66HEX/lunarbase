@@ -49,6 +49,7 @@ export const useUpdateUser = () => {
 		onSuccess: (updatedUser: User) => {
 			queryClient.setQueryData(userKeys.detail(updatedUser.id), updatedUser);
 			queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: ["users"], exact: false });
 
 			toast({
 				title: "User updated",
@@ -116,6 +117,7 @@ export const useUnlockUser = () => {
 		onSuccess: (unlockedUser: User) => {
 			queryClient.setQueryData(userKeys.detail(unlockedUser.id), unlockedUser);
 			queryClient.invalidateQueries({ queryKey: userKeys.lists() });
+			queryClient.invalidateQueries({ queryKey: ["users"], exact: false });
 
 			toast({
 				title: "User unlocked",
