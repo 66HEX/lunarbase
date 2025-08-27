@@ -168,9 +168,9 @@ export default function UsersComponent() {
 			key: "user",
 			title: "User",
 			render: (_, user) => (
-				<div className="flex items-center gap-3 w-60">
+				<div className="flex items-center gap-3 w-54">
 					<Avatar
-						className="w-8 h-8"
+						className="w-8 h-8 aspect-square"
 						size="sm"
 						src={user?.avatar_url ? getProxyUrl(user.avatar_url) : undefined}
 						fallback={getInitials(user.email)}

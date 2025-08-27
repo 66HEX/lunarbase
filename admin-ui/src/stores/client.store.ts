@@ -10,14 +10,9 @@ interface ClientState {
 		};
 		theme: "light" | "dark" | "system";
 		modals: {
-			createCollection: boolean;
-			editCollection: boolean;
 			deleteCollection: boolean;
-			createRecord: boolean;
-			editRecord: boolean;
 			deleteRecord: boolean;
 			userProfile: boolean;
-			permissions: boolean;
 			broadcast: boolean;
 			deleteUser: boolean;
 		};
@@ -31,6 +26,9 @@ interface ClientState {
 			userDetails: boolean;
 			editUser: boolean;
 			createRecord: boolean;
+			createCollection: boolean;
+			editCollection: boolean;
+			permissions: boolean;
 		};
 		notifications: Array<{
 			id: string;
@@ -114,14 +112,9 @@ const initialState: ClientState = {
 		},
 		theme: "system",
 		modals: {
-			createCollection: false,
-			editCollection: false,
 			deleteCollection: false,
-			createRecord: false,
-			editRecord: false,
 			deleteRecord: false,
 			userProfile: false,
-			permissions: false,
 			broadcast: false,
 			deleteUser: false,
 		},
@@ -135,6 +128,9 @@ const initialState: ClientState = {
 			userDetails: false,
 			editUser: false,
 			createRecord: false,
+			createCollection: false,
+			editCollection: false,
+			permissions: false,
 		},
 		notifications: [],
 	},
