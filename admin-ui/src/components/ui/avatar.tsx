@@ -10,7 +10,7 @@ const avatarVariants = cva(
 		"relative inline-flex items-center justify-center",
 		"bg-nocta-200 dark:bg-nocta-800",
 		"text-nocta-700 dark:text-nocta-300",
-		"font-medium select-none",
+		"font-light select-none",
 		"transition-all duration-200 ease-in-out",
 		"not-prose",
 	],
@@ -36,7 +36,7 @@ const avatarVariants = cva(
 	},
 );
 
-const textVariants = cva("font-medium", {
+const textVariants = cva("font-light", {
 	variants: {
 		size: {
 			xs: "text-xs",

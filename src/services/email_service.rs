@@ -360,7 +360,7 @@ impl EmailService {
                                 Need help? Contact your system administrator.
                             </p>
                             <p style="font-size: 12px; color: #888888; margin: 0;">
-                                © 2025 LunarBase. All rights reserved.
+                                © 2025 LunarBase.
                             </p>
                         </td>
                     </tr>
@@ -399,7 +399,7 @@ The LunarBase Team
 This email was sent by LunarBase Admin System.
 Need help? Contact your system administrator.
 
-© 2025 LunarBase. All rights reserved."#,
+© 2025 LunarBase."#,
             username, verification_url
         )
     }
@@ -537,7 +537,7 @@ Need help? Contact your system administrator.
                                 Need help? Contact your system administrator.
                             </p>
                             <p style="font-size: 12px; color: #888888; margin: 0;">
-                                © 2025 LunarBase. All rights reserved.
+                                © 2025 LunarBase.
                             </p>
                         </td>
                     </tr>
@@ -578,7 +578,7 @@ The LunarBase Team
 This email was sent by LunarBase Admin System.
 Need help? Contact your system administrator.
 
-© 2025 LunarBase. All rights reserved."#,
+© 2025 LunarBase."#,
             username, reset_url
         )
     }

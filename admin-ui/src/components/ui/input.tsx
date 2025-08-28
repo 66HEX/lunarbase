@@ -4,12 +4,12 @@ import { cn } from "@/lib/utils";
 
 const inputVariants = cva(
 	[
-		"w-fit rounded-lg border transition-all duration-200 ease-in-out",
+		"w-fit flex rounded-lg border transition-all duration-200 ease-in-out",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-		"focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50",
+		"focus-visible:ring-offset-nocta-50/50 dark:focus-visible:ring-offset-nocta-900/50",
 		"disabled:opacity-50 disabled:cursor-not-allowed",
 		"placeholder:text-nocta-400 dark:placeholder:text-nocta-500",
-		"not-prose",
+		"not-prose shadow-sm",
 		"[&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none",
 		"[&[type=number]]:[-moz-appearance:textfield]",
 	],
@@ -17,26 +17,26 @@ const inputVariants = cva(
 		variants: {
 			variant: {
 				default: [
-					"border-nocta-300 dark:border-nocta-800/80",
-					"bg-white dark:bg-nocta-950",
+					"border-nocta-200 dark:border-nocta-800/50",
+					"bg-nocta-100 dark:bg-nocta-950/80",
 					"text-nocta-900 dark:text-nocta-100",
-					"hover:border-nocta-300/50 dark:hover:border-nocta-600/50",
+					"hover:border-nocta-300 dark:hover:border-nocta-700/50",
 					"focus-visible:border-nocta-900/50 dark:focus-visible:border-nocta-100/50",
 					"focus-visible:ring-nocta-900/50 dark:focus-visible:ring-nocta-100/50",
 				],
 				error: [
 					"border-red-300 dark:border-red-700/50",
-					"bg-white dark:bg-nocta-950",
+					"bg-nocta-100 dark:bg-nocta-900",
 					"text-nocta-900 dark:text-nocta-100",
-					"hover:border-red-400/50 dark:hover:border-red-600/50",
+					"hover:border-red-400 dark:hover:border-red-600",
 					"focus-visible:border-red-500/50 dark:focus-visible:border-red-500/50",
 					"focus-visible:ring-red-500/50 dark:focus-visible:ring-red-500/50",
 				],
 				success: [
 					"border-green-300 dark:border-green-700/50",
-					"bg-white dark:bg-nocta-950",
+					"bg-nocta-100 dark:bg-nocta-900",
 					"text-nocta-900 dark:text-nocta-100",
-					"hover:border-green-400/50 dark:hover:border-green-600/50",
+					"hover:border-green-400 dark:hover:border-green-600",
 					"focus-visible:border-green-500/50 dark:focus-visible:border-green-500/50",
 					"focus-visible:ring-green-500/50 dark:focus-visible:ring-green-500/50",
 				],
@@ -92,7 +92,7 @@ const iconVariants = cva(
 	},
 );
 
-const labelVariants = cva("block text-sm font-medium mb-1.5", {
+const labelVariants = cva("block text-sm font-light mb-1.5", {
 	variants: {
 		variant: {
 			default: "text-nocta-700 dark:text-nocta-300",

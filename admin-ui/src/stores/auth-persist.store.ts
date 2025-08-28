@@ -83,9 +83,10 @@ export const useAuthStore = create<AuthStore>()(
 					get().stopTokenRefresh();
 
 					try {
-						await authApi.logout();
-					} catch {
-					} finally {
+					await authApi.logout();
+				} catch {
+					// Silently ignore logout errors - cleanup happens in finally block
+				} finally {
 						set((state) => {
 							state.user = null;
 							state.isAuthenticated = false;
@@ -148,11 +149,13 @@ export const useAuthStore = create<AuthStore>()(
 
 				fetchUser: async () => {
 					try {
-						const user = await authApi.me();
-						set((state) => {
-							state.user = user;
-						});
-					} catch {}
+					const user = await authApi.me();
+					set((state) => {
+						state.user = user;
+					});
+				} catch {
+					// Silently ignore fetch user errors - user state remains unchanged
+				}
 				},
 
 				clearAuth: () => {

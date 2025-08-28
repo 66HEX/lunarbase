@@ -10,7 +10,7 @@ const hasBackgroundColor = (className: string = "") => {
 
 const badgeVariants = cva(
 	[
-		"inline-flex items-center justify-center rounded-full font-medium",
+		"inline-flex items-center justify-center rounded-full font-light",
 		"transition-all duration-200 ease-in-out",
 		"whitespace-nowrap",
 		"not-prose",

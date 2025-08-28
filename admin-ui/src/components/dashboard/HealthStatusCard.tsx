@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle, Server } from "lucide-react";
+import { Server } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -18,15 +18,10 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 		<Card className="dashboard-card">
 			<CardHeader className="pb-3 p-3">
 				<CardTitle className="flex items-center gap-2 text-base">
-					<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
+					<div className="p-1">
 						<Server className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 					</div>
 					System Health
-					{isHealthy ? (
-						<CheckCircle className="w-3.5 h-3.5 text-green-600" />
-					) : (
-						<AlertTriangle className="w-3.5 h-3.5 text-red-600" />
-					)}
 				</CardTitle>
 			</CardHeader>
 			<CardContent className="p-3 pt-0">
@@ -36,13 +31,13 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 							<div
 								className={`w-2 h-2 rounded-full ${isHealthy ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
 							></div>
-							<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
+							<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 								API Server
 							</span>
 						</div>
 						<Badge
 							variant={isHealthy ? "success" : "destructive"}
-							className="px-2 py-0.5 text-xs font-medium"
+							className="px-2 py-0.5 text-xs font-light"
 						>
 							{isHealthy ? "Healthy" : "Unhealthy"}
 						</Badge>
@@ -53,13 +48,13 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 							<div
 								className={`w-2 h-2 rounded-full ${dbHealthy ? "bg-green-500 animate-pulse" : "bg-red-500"}`}
 							></div>
-							<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
+							<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 								Database
 							</span>
 						</div>
 						<Badge
 							variant={dbHealthy ? "success" : "destructive"}
-							className="px-2 py-0.5 text-xs font-medium capitalize"
+							className="px-2 py-0.5 text-xs font-light capitalize"
 						>
 							{health.database?.status || "Unknown"}
 						</Badge>
@@ -68,10 +63,10 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 					<div className="space-y-2.5 pt-2.5 border-t border-nocta-200 dark:border-nocta-800/50">
 						<div className="space-y-1.5">
 							<div className="flex items-center justify-between">
-								<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
+								<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 									Memory Usage
 								</span>
-								<span className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+								<span className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 									{health.memory?.usage_percentage?.toFixed(1) || "0"}%
 								</span>
 							</div>
@@ -89,10 +84,10 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 
 						<div className="space-y-1.5">
 							<div className="flex items-center justify-between">
-								<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
+								<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 									CPU Usage
 								</span>
-								<span className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+								<span className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 									{health.system?.cpu_usage?.toFixed(1) || "0"}%
 								</span>
 							</div>
@@ -107,7 +102,7 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 								<div className="text-xs text-nocta-500 dark:text-nocta-500">
 									Uptime
 								</div>
-								<div className="text-sm font-medium text-nocta-900 dark:text-nocta-100">
+								<div className="text-sm font-light text-nocta-900 dark:text-nocta-100">
 									{health.uptime
 										? `${Math.floor(health.uptime / 3600)}h ${Math.floor((health.uptime % 3600) / 60)}m`
 										: "0h 0m"}
@@ -117,7 +112,7 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 								<div className="text-xs text-nocta-500 dark:text-nocta-500">
 									Version
 								</div>
-								<div className="text-sm font-medium text-nocta-900 dark:text-nocta-100">
+								<div className="text-sm font-light text-nocta-900 dark:text-nocta-100">
 									v{health.version || "Unknown"}
 								</div>
 							</div>

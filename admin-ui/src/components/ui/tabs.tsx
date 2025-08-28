@@ -51,7 +51,7 @@ const tabsListVariants = cva(
 
 const tabsTriggerVariants = cva(
 	`inline-flex items-center justify-center whitespace-nowrap
-   font-medium transition-all duration-200 ease-in-out
+   font-light transition-all duration-200 ease-in-out
    focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-2
    focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50
    focus-visible:ring-nocta-900/50 dark:focus-visible:ring-nocta-100/50

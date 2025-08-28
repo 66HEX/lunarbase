@@ -284,14 +284,14 @@ export function CreateRecordSheet({
 					Add Record
 				</Button>
 			</SheetTrigger>
-			<SheetContent side="right" size="md">
+			<SheetContent side="right" size="lg">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Create Record
 					</SheetTitle>
 					<SheetDescription>
 						Add a new record to{" "}
-						<span className="font-medium">{collection?.name}</span> collection
+						<span className="font-light">{collection?.name}</span> collection
 					</SheetDescription>
 				</SheetHeader>
 
@@ -303,7 +303,7 @@ export function CreateRecordSheet({
 								.length === 0 ? (
 								<div className="text-center py-8">
 									<Database className="w-12 h-12 mx-auto text-nocta-400 mb-4" />
-									<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+									<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 										No fields to fill
 									</h3>
 									<p className="text-nocta-600 dark:text-nocta-400 mb-4">

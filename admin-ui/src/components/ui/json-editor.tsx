@@ -10,26 +10,26 @@ const jsonEditorVariants = cva(
 	[
 		"w-full min-h-120 overflow-y-auto h-full rounded-lg border transition-all duration-200 ease-in-out",
 		"focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2",
-		"focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50",
+		"focus-visible:ring-offset-nocta-50/50 dark:focus-visible:ring-offset-nocta-900/50",
 		"disabled:opacity-50 disabled:cursor-not-allowed",
 		"placeholder:text-nocta-400 dark:placeholder:text-nocta-500",
-		"font-mono resize-none",
-		"not-prose",
+		"font-pp-neue-montreal-mono resize-none",
+		"not-prose shadow-sm",
 	],
 	{
 		variants: {
 			variant: {
 				default: [
-					"border-nocta-300 dark:border-nocta-800/80",
-					"bg-white dark:bg-nocta-950",
+					"border-nocta-200 dark:border-nocta-800/50",
+					"bg-nocta-100 dark:bg-nocta-950/80",
 					"text-nocta-900 dark:text-nocta-100",
-					"hover:border-nocta-300/50 dark:hover:border-nocta-600/50",
+					"hover:border-nocta-300 dark:hover:border-nocta-700/50",
 					"focus-visible:border-nocta-900/50 dark:focus-visible:border-nocta-100/50",
 					"focus-visible:ring-nocta-900/50 dark:focus-visible:ring-nocta-100/50",
 				],
 				error: [
 					"border-red-300 dark:border-red-700/50",
-					"bg-white dark:bg-nocta-950",
+					"bg-nocta-100 dark:bg-nocta-950/80",
 					"text-nocta-900 dark:text-nocta-100",
 					"hover:border-red-400/50 dark:hover:border-red-600/50",
 					"focus-visible:border-red-500/50 dark:focus-visible:border-red-500/50",
@@ -37,7 +37,7 @@ const jsonEditorVariants = cva(
 				],
 				success: [
 					"border-green-300 dark:border-green-700/50",
-					"bg-white dark:bg-nocta-950",
+					"bg-nocta-100 dark:bg-nocta-950/80",
 					"text-nocta-900 dark:text-nocta-100",
 					"hover:border-green-400/50 dark:hover:border-green-600/50",
 					"focus-visible:border-green-500/50 dark:focus-visible:border-green-500/50",
@@ -46,7 +46,7 @@ const jsonEditorVariants = cva(
 			},
 			size: {
 				sm: "px-3 py-2 text-sm",
-				md: "px-3 py-2.5 text-sm",
+				md: "p-0 text-sm",
 				lg: "px-4 py-3 text-base",
 			},
 		},
@@ -67,7 +67,7 @@ const messageVariants = cva("mt-1.5 text-sm", {
 	},
 });
 
-const labelVariants = cva("block text-sm font-medium mb-1.5", {
+const labelVariants = cva("block text-sm font-light mb-1.5", {
 	variants: {
 		variant: {
 			default: "text-nocta-700 dark:text-nocta-300",
@@ -145,7 +145,9 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 			onChange(formatted);
 			setIsFormatted(true);
 			setTimeout(() => setIsFormatted(false), 2000);
-		} catch {}
+		} catch {
+			// Silently ignore formatting errors - validation is handled elsewhere
+		}
 	}, [value, onChange]);
 
 	const copyToClipboard = useCallback(async () => {
@@ -195,7 +197,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 			{showToolbar && (
 				<div className="flex items-center justify-between mb-2">
 					<div className="flex items-center gap-2">
-						<span className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
+						<span className="text-xs font-light text-nocta-600 dark:text-nocta-400">
 							JSON Editor
 						</span>
 						{!isValid && (
@@ -286,7 +288,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 						fontFamily:
 							'ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace',
 						lineHeight: "1.5",
-						minHeight: `${(rows || 6) * 1.5}em`,
+						minHeight: `${(rows || 6) * 8}em`,
 						border: "none",
 						outline: "none",
 						padding: "0",

@@ -50,7 +50,7 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 		<Card className="dashboard-card">
 			<CardHeader className="pb-3 p-3">
 				<CardTitle className="flex items-center gap-2 text-base">
-					<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
+					<div className="p-1">
 						<Zap className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 					</div>
 					Quick Actions
@@ -68,11 +68,11 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 									onClick={() => handleActionClick(action)}
 								>
 									<div className="flex items-center p-2 rounded-lg transition-all duration-200 ease-in-out group-hover:bg-nocta-100 dark:group-hover:bg-nocta-800/50 group-hover:shadow-sm">
-										<div className="w-6 h-6 rounded-md bg-nocta-100 dark:bg-nocta-800/30 flex items-center justify-center mr-2.5 group-hover:bg-nocta-200 dark:group-hover:bg-nocta-700/50 transition-colors">
+										<div className="w-6 h-6 rounded-md flex items-center justify-center mr-2.5 group-hover:bg-nocta-200 dark:group-hover:bg-nocta-700/50 transition-colors">
 											<action.icon className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 										</div>
 										<div className="flex-1">
-											<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100 group-hover:text-nocta-700 dark:group-hover:text-nocta-200">
+											<span className="font-light text-sm text-nocta-900 dark:text-nocta-100 group-hover:text-nocta-700 dark:group-hover:text-nocta-200">
 												{action.name}
 											</span>
 										</div>
@@ -90,11 +90,11 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 								onMouseEnter={() => handleMouseEnter(action.href)}
 							>
 								<div className="flex items-center p-2 rounded-lg transition-all duration-200 ease-in-out group-hover:bg-nocta-100 dark:group-hover:bg-nocta-800/50 group-hover:shadow-sm">
-									<div className="w-6 h-6 rounded-md bg-nocta-100 dark:bg-nocta-800/30 flex items-center justify-center mr-2.5 group-hover:bg-nocta-200 dark:group-hover:bg-nocta-700/50 transition-colors">
+									<div className="w-6 h-6 rounded-md flex items-center justify-center mr-2.5 group-hover:bg-nocta-200 dark:group-hover:bg-nocta-700/50 transition-colors">
 										<action.icon className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 									</div>
 									<div className="flex-1">
-										<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100 group-hover:text-nocta-700 dark:group-hover:text-nocta-200">
+										<span className="font-light text-sm text-nocta-900 dark:text-nocta-100 group-hover:text-nocta-700 dark:group-hover:text-nocta-200">
 											{action.name}
 										</span>
 									</div>

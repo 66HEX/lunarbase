@@ -53,11 +53,11 @@ export default function ResetPasswordComponent() {
 				<div className="w-sm space-y-8">
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
-							<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center">
+							<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center shadom-lg">
 								<LunarLogo className="h-10 w-10 text-white" />
 							</div>
 						</div>
-						<h1 className="text-3xl font-medium text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							LunarBase
 						</h1>
 					</div>
@@ -148,11 +148,11 @@ export default function ResetPasswordComponent() {
 				<div className="w-sm space-y-8">
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
-							<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center">
+							<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center shadom-lg">
 								<LunarLogo className="h-10 w-10 text-white" />
 							</div>
 						</div>
-						<h1 className="text-3xl font-medium text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							LunarBase
 						</h1>
 					</div>
@@ -192,11 +192,11 @@ export default function ResetPasswordComponent() {
 			<div className="w-sm space-y-8">
 				<div className="text-center">
 					<div className="flex justify-center mb-4">
-						<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center">
+						<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center shadom-lg">
 							<LunarLogo className="h-10 w-10 text-white" />
 						</div>
 					</div>
-					<h1 className="text-3xl font-medium text-nocta-900 dark:text-nocta-100">
+					<h1 className="text-3xl font-light text-nocta-900 dark:text-nocta-100">
 						LunarBase
 					</h1>
 				</div>
@@ -273,7 +273,7 @@ export default function ResetPasswordComponent() {
 									Remembered your password?{" "}
 									<Link
 										to="/login"
-										className="font-medium text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300 transition-colors duration-300"
+										className="font-light text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300 transition-colors duration-300"
 									>
 										Back to Login
 									</Link>

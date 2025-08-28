@@ -264,7 +264,7 @@ export function CreateCollectionSheet({
 													<div className="flex items-center justify-between mb-3">
 														<div className="flex items-center gap-2">
 															<IconComponent className="w-4 h-4 text-nocta-600 dark:text-nocta-400" />
-															<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
+															<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 																{index === 0
 																	? "ID Field"
 																	: `Field ${index + 1}`}
@@ -291,7 +291,7 @@ export function CreateCollectionSheet({
 															>
 																<FormLabel
 																	required={index > 0}
-																	className="text-xs font-medium text-nocta-600 dark:text-nocta-400"
+																	className="text-xs font-light text-nocta-600 dark:text-nocta-400"
 																>
 																	Name
 																</FormLabel>
@@ -319,7 +319,7 @@ export function CreateCollectionSheet({
 
 														<div className="col-span-3">
 															<FormField name={`field_${index}_type`}>
-																<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
+																<FormLabel className="text-xs font-light text-nocta-600 dark:text-nocta-400">
 																	Type
 																</FormLabel>
 																<FormControl>
@@ -368,7 +368,7 @@ export function CreateCollectionSheet({
 
 														<div className="col-span-3">
 															<FormField name={`field_${index}_default`}>
-																<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
+																<FormLabel className="text-xs font-light text-nocta-600 dark:text-nocta-400">
 																	Default
 																</FormLabel>
 																<FormControl>

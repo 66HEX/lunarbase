@@ -206,7 +206,7 @@ export default function RecordComponent() {
 					>
 						<ArrowLeft className="w-4 h-4" />
 					</Button>
-					<h1 className="text-4xl font-medium text-nocta-900 dark:text-nocta-100">
+					<h1 className="text-4xl font-light text-nocta-900 dark:text-nocta-100">
 						Records - {collectionName}
 					</h1>
 				</div>
@@ -230,7 +230,7 @@ export default function RecordComponent() {
 					>
 						<ArrowLeft className="w-4 h-4" />
 					</Button>
-					<h1 className="text-4xl font-medium text-nocta-900 dark:text-nocta-100">
+					<h1 className="text-4xl font-light text-nocta-900 dark:text-nocta-100">
 						Records - {collectionName}
 					</h1>
 				</div>
@@ -267,7 +267,7 @@ export default function RecordComponent() {
 									title: "ID",
 									className: "w-16",
 									render: (_value: unknown, record: ApiRecord) => (
-										<div className="font-medium">{record.id}</div>
+										<div className="font-light">{record.id}</div>
 									),
 								},
 								{
@@ -289,7 +289,7 @@ export default function RecordComponent() {
 											<div className="flex gap-4">
 												{filteredEntries.slice(0, 2).map(([key, value]) => (
 													<div key={key} className="text-sm">
-														<span className="font-medium text-nocta-700 dark:text-nocta-300">
+														<span className="font-light text-nocta-700 dark:text-nocta-300">
 															{key}:
 														</span>{" "}
 														<span className="text-nocta-600 dark:text-nocta-400 truncate">

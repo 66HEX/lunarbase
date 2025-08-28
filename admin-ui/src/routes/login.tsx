@@ -144,20 +144,14 @@ export default function LoginComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-				<div className="text-center">
-					<div className="flex justify-center mb-4">
-						<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center">
-							<LunarLogo className="h-10 w-10 text-white" />
-						</div>
-					</div>
-					<h1 className="text-3xl font-medium text-nocta-900 dark:text-nocta-100">
-						LunarBase
-					</h1>
-				</div>
-
 				<Card>
 					<CardHeader>
-						<CardTitle className="flex items-center gap-2">Login</CardTitle>
+						<div className="flex justify-start mb-2">
+							<div className="w-10 h-10 bg-nocta-800 rounded-lg flex items-center justify-center shadom-lg">
+								<LunarLogo className="h-6 w-6 text-white" />
+							</div>
+						</div>
+						<CardTitle className="flex items-center gap-2 font-light">Login</CardTitle>
 						<CardDescription>
 							Sign in to access the LunarBase admin panel
 						</CardDescription>
@@ -268,7 +262,7 @@ export default function LoginComponent() {
 									Don't have an account?{" "}
 									<Link
 										to="/register"
-										className="font-medium text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300"
+										className="font-light text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300 transition-colors duration-300"
 									>
 										Sign up
 									</Link>
@@ -279,7 +273,7 @@ export default function LoginComponent() {
 				</Card>
 
 				<div className="text-center text-sm text-nocta-600 dark:text-nocta-400">
-					<p>© 2025 LunarBase. All rights reserved.</p>
+					<p>© 2025 LunarBase.</p>
 					<p className="mt-1">Need help? Contact your system administrator.</p>
 				</div>
 			</div>

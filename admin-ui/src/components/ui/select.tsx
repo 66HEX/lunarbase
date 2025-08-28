@@ -7,16 +7,15 @@ import { cn } from "@/lib/utils";
 
 const selectTriggerVariants = cva(
 	`flex w-fit items-center justify-between
-   rounded-lg border border-nocta-300 dark:border-nocta-800/50
-   bg-white dark:bg-nocta-950
-   text-nocta-100
-   hover:border-nocta-300/50 dark:hover:border-nocta-600/50
+   rounded-lg border border-nocta-200 dark:border-nocta-800/50
+   bg-nocta-100 dark:bg-nocta-950/80
+   hover:border-nocta-300 dark:hover:border-nocta-700/50
    placeholder:text-nocta-400 dark:placeholder:text-nocta-500
-   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50
+   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-nocta-50/50 dark:focus-visible:ring-offset-nocta-900/50
    focus-visible:ring-nocta-900/50 dark:focus-visible:ring-nocta-100/50
-   focus-visible:border-nocta-900 dark:focus-visible:border-nocta-100
+   focus-visible:border-nocta-900/50 dark:focus-visible:border-nocta-100/50
    disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer
-   transition-all duration-200 ease-out
+   transition-all duration-200 ease-out shadow-sm
    not-prose`,
 	{
 		variants: {
@@ -538,7 +537,7 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 				zIndex: 9999,
 			}}
 			className={cn(
-				"min-w-[8rem] overflow-hidden rounded-lg border border-nocta-300 dark:border-nocta-800/50 bg-white dark:bg-nocta-950 shadow-lg dark:shadow-xl",
+					"min-w-[8rem] overflow-hidden rounded-lg border border-nocta-200 dark:border-nocta-50/5 bg-nocta-100 dark:bg-[#121212] shadow-lg dark:shadow-xl",
 				animationStyles,
 				"not-prose",
 				className,
@@ -611,7 +610,7 @@ export const SelectItem: React.FC<SelectItemProps> = ({
 			)}
 			onClick={() => !disabled && onValueChange?.(value, children)}
 		>
-			<span className={`flex-1 ${isSelected ? "font-medium" : ""}`}>
+			<span className={`flex-1 ${isSelected ? "font-light" : ""}`}>
 				{children}
 			</span>
 			{isSelected && (
@@ -640,7 +639,7 @@ export const SelectValue: React.FC<SelectValueProps> = ({
 	const { value, displayValue } = React.useContext(SelectContext);
 
 	return (
-		<span className={`block text-left w-full ${className}`}>
+		<span className={`block text-left w-full text-nocta-900 dark:text-nocta-100 ${className}`}>
 			{value ? (
 				<span>{displayValue}</span>
 			) : (

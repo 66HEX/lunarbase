@@ -1,5 +1,4 @@
-import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import type { WebSocketActivityResponse } from "@/types/api";
 import { formatConnectionId, webSocketEmptyStates } from "./constants";
 
@@ -17,14 +16,6 @@ const actionColors = {
 export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					Recent Activity
-					<Badge size="sm" variant="secondary" className="ml-auto">
-						{activity?.activities?.length || 0}
-					</Badge>
-				</CardTitle>
-			</CardHeader>
 			<CardContent>
 				{activity?.activities && activity.activities.length > 0 ? (
 					<div className="space-y-3 max-h-96 overflow-y-auto">
@@ -42,7 +33,7 @@ export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 									<div className="flex-1 min-w-0">
 										<div className="flex items-center gap-2 mb-1">
 											<span
-												className={`text-sm font-medium ${actionColors[item.action as keyof typeof actionColors] || "text-nocta-600 dark:text-nocta-400"}`}
+												className={`text-sm font-light ${actionColors[item.action as keyof typeof actionColors] || "text-nocta-600 dark:text-nocta-400"}`}
 											>
 												{item.action}
 											</span>
@@ -50,7 +41,7 @@ export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 												{new Date(item.timestamp).toLocaleTimeString()}
 											</span>
 										</div>
-										<div className="text-xs text-nocta-600 dark:text-nocta-400 font-mono">
+										<div className="text-xs text-nocta-600 dark:text-nocta-400 font-pp-neue-montreal-mono">
 											{formatConnectionId(item.connection_id)}
 											{item.user_id && ` (User ${item.user_id})`}
 										</div>
@@ -66,10 +57,10 @@ export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 					</div>
 				) : (
 					<div className="text-center py-8">
-						<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
+						<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm">
 							<webSocketEmptyStates.activity.icon className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
 						</div>
-						<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+						<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 							{webSocketEmptyStates.activity.title}
 						</h3>
 						<p className="text-nocta-600 dark:text-nocta-400">

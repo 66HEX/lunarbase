@@ -313,7 +313,7 @@ export const SheetTrigger: React.FC<SheetTriggerProps> = ({
 	return (
 		<button
 			className={cn(
-				"inline-flex items-center justify-center rounded-lg font-medium transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50 focus-visible:ring-nocta-900/50 dark:focus-visible:ring-nocta-100/50 not-prose cursor-pointer",
+				"inline-flex items-center justify-center rounded-lg font-light transition-all duration-200 ease-in-out focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-2 focus-visible:ring-offset-white/50 dark:focus-visible:ring-offset-nocta-900/50 focus-visible:ring-nocta-900/50 dark:focus-visible:ring-nocta-100/50 not-prose cursor-pointer",
 				className,
 			)}
 			onClick={handleClick}
@@ -528,7 +528,7 @@ export const SheetTitle: React.FC<SheetTitleProps> = ({
 		Component,
 		{
 			className: cn(
-				"text-lg font-medium text-nocta-900 dark:text-nocta-100 tracking-tight leading-tight not-prose",
+				"text-lg font-light text-nocta-900 dark:text-nocta-100 tracking-tight leading-tight not-prose",
 				className,
 			),
 			...props,
@@ -602,7 +602,7 @@ export const SheetClose: React.FC<SheetCloseProps> = ({
 	return (
 		<button
 			className={cn(
-				"inline-flex items-center justify-center rounded-lg font-medium px-4 py-2 text-sm bg-transparent text-nocta-900 dark:text-nocta-100 hover:bg-nocta-200 dark:hover:bg-nocta-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-2 cursor-pointer",
+				"inline-flex items-center justify-center rounded-lg font-light px-4 py-2 text-sm bg-transparent text-nocta-900 dark:text-nocta-100 hover:bg-nocta-200 dark:hover:bg-nocta-800 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-offset-2 cursor-pointer",
 				className,
 			)}
 			onClick={handleClick}

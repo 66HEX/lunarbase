@@ -176,11 +176,11 @@ export function Sidebar() {
 				<div className="flex flex-col h-full bg-nocta-100 dark:bg-nocta-900 shadow-sm dark:shadow-lg">
 					<div className="flex items-center justify-between p-4">
 						<div className="flex items-center space-x-3">
-							<div className="w-9 h-9 bg-nocta-700 rounded-lg flex items-center justify-center shadow-md">
+							<div className="w-9 h-9 bg-nocta-800 rounded-lg flex items-center justify-center shadow-lg">
 								<LunarLogo className="h-6 w-6 text-white" />
 							</div>
 							<div>
-								<h1 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
+								<h1 className="text-lg font-light text-nocta-900 dark:text-nocta-100">
 									LunarBase
 								</h1>
 							</div>
@@ -274,7 +274,7 @@ export function Sidebar() {
 										key={item.name}
 										to={item.href}
 										onMouseEnter={handleMouseEnter}
-										className={`group relative flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm font-medium duration-300 ease-in-out transition-all z-10 ${
+										className={`group relative flex items-center space-x-3 px-3 py-2.5 rounded-md text-sm font-light duration-300 ease-in-out transition-all z-10 ${
 											isActive
 												? "text-white dark:text-white hover:contrast-125"
 												: "text-nocta-700 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40 hover:text-nocta-900 dark:hover:text-nocta-100"
@@ -308,7 +308,7 @@ export function Sidebar() {
 								status="online"
 							/>
 							<div className="flex-1 min-w-0">
-								<p className="text-sm font-medium text-nocta-900 dark:text-nocta-100 truncate">
+								<p className="text-sm font-light text-nocta-900 dark:text-nocta-100 truncate">
 									{user?.username || "Loading..."}
 								</p>
 								<p className="text-xs text-nocta-600 dark:text-nocta-400 truncate">

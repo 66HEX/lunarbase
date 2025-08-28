@@ -153,7 +153,7 @@ export default function CollectionsComponent() {
 					<div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 w-fit mx-auto mb-4">
 						<Database className="w-8 h-8 text-red-600 dark:text-red-400" />
 					</div>
-					<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+					<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 						Error loading collections
 					</h3>
 					<p className="text-nocta-600 dark:text-nocta-400 mb-4">
@@ -182,7 +182,7 @@ export default function CollectionsComponent() {
 								key={collection.name}
 								className="dashboard-card group hover:shadow-lg transition-all duration-200 h-full min-h-80"
 							>
-								<CardHeader className="pb-3 p-3">
+								<CardHeader className="pb-3 p-3 mb-2">
 									<div className="flex items-center justify-between">
 										<CardTitle className="flex items-center gap-2 text-base">
 											<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
@@ -246,7 +246,7 @@ export default function CollectionsComponent() {
 								<CardContent className="p-3 pt-0 flex flex-col h-64">
 									<div className="flex flex-col h-full">
 										<div className="space-y-2">
-											<h4 className="text-sm font-medium text-nocta-900 dark:text-nocta-100">
+											<h4 className="text-sm font-light text-nocta-900 dark:text-nocta-100">
 												Schema Fields
 											</h4>
 											<div className="space-y-1.5">
@@ -260,13 +260,13 @@ export default function CollectionsComponent() {
 															<div className="flex items-center justify-between">
 																<div className="flex items-center gap-2">
 																	<div className="w-1.5 h-1.5 rounded-full bg-nocta-400 dark:bg-nocta-500"></div>
-																	<span className="font-medium text-xs text-nocta-900 dark:text-nocta-100">
+																	<span className="font-light text-xs text-nocta-900 dark:text-nocta-100">
 																		{field.name}
 																	</span>
 																</div>
 																<Badge
 																	variant="secondary"
-																	className="px-1.5 py-0.5 text-xs font-medium"
+																	className="px-1.5 py-0.5 text-xs font-light"
 																>
 																	{field.field_type}
 																</Badge>
@@ -350,7 +350,7 @@ export default function CollectionsComponent() {
 							<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
 								<Database className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
 							</div>
-							<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+							<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 								{searchTerm ? "No collections found" : "No collections yet"}
 							</h3>
 							<p className="text-nocta-600 dark:text-nocta-400 mb-4 max-w-sm mx-auto">

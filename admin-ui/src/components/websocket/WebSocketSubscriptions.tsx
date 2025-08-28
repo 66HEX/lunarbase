@@ -30,7 +30,7 @@ export function WebSocketSubscriptions({ stats }: WebSocketSubscriptionsProps) {
 							>
 								<div className="flex items-center justify-between">
 									<div>
-										<h4 className="font-medium text-nocta-900 dark:text-nocta-100">
+										<h4 className="font-light text-nocta-900 dark:text-nocta-100">
 											{collection}
 										</h4>
 										<p className="text-sm text-nocta-600 dark:text-nocta-400">
@@ -38,7 +38,7 @@ export function WebSocketSubscriptions({ stats }: WebSocketSubscriptionsProps) {
 										</p>
 									</div>
 									<div className="text-right">
-										<div className="text-2xl font-medium text-nocta-900 dark:text-nocta-100">
+										<div className="text-2xl font-light text-nocta-900 dark:text-nocta-100">
 											{count}
 										</div>
 										<div className="text-xs text-nocta-500 dark:text-nocta-500">

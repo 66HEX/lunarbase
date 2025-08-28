@@ -79,11 +79,11 @@ export default function ForgotPasswordComponent() {
 				<div className="w-sm space-y-8">
 					<div className="text-center">
 						<div className="flex justify-center mb-4">
-							<div className="w-16 h-16 bg-nocta-700 rounded-2xl flex items-center justify-center">
+							<div className="w-16 h-16 bg-nocta-800 rounded-2xl flex items-center justify-center shadow-lg">
 								<LunarLogo className="h-10 w-10 text-white" />
 							</div>
 						</div>
-						<h1 className="text-3xl font-medium text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							LunarBase
 						</h1>
 					</div>
@@ -126,20 +126,15 @@ export default function ForgotPasswordComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-				<div className="text-center">
-					<div className="flex justify-center mb-4">
-						<div className="w-16 h-16 bg-gradient-to-br from-nocta-600 to-nocta-800 rounded-2xl flex items-center justify-center">
-							<LunarLogo className="h-10 w-10 text-white" />
-						</div>
-					</div>
-					<h1 className="text-3xl font-medium text-nocta-900 dark:text-nocta-100">
-						LunarBase
-					</h1>
-				</div>
 
 				<Card>
 					<CardHeader>
-						<CardTitle>Reset Password</CardTitle>
+						<div className="flex justify-start mb-2">
+							<div className="w-10 h-10 bg-nocta-800 rounded-lg flex items-center justify-center shadow-lg">
+								<LunarLogo className="h-6 w-6 text-white" />
+							</div>
+						</div>
+						<CardTitle className="font-light">Reset Password</CardTitle>
 						<CardDescription>
 							Enter your email address and we'll send you a link to reset your
 							password.
@@ -191,7 +186,7 @@ export default function ForgotPasswordComponent() {
 									Remembered your password?{" "}
 									<Link
 										to="/login"
-										className="font-medium text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300 transition-colors duration-300"
+										className="font-light text-nocta-600 hover:text-nocta-500 dark:text-nocta-400 dark:hover:text-nocta-300 transition-colors duration-300"
 									>
 										Back to Login
 									</Link>

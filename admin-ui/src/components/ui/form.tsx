@@ -124,7 +124,7 @@ export const FormLabel: React.FC<FormLabelProps> = ({
 		<label
 			htmlFor={id}
 			className={cn(
-				"block text-sm font-medium text-nocta-700 dark:text-nocta-300 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+				"block text-sm font-light text-nocta-700 dark:text-nocta-300 leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
 				className,
 			)}
 			{...props}

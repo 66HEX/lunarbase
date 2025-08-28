@@ -11,7 +11,7 @@ import {
 	usersApi,
 	webSocketApi,
 } from "@/lib/api";
-import type { QueryOptions, UsersListParams } from "@/types/api";
+import type { QueryOptions, UsersListParams, RecordWithCollection, RecordData } from "@/types/api";
 
 /**
  * Hook for managing data prefetching for different application sections
@@ -162,16 +162,15 @@ export const usePrefetch = () => {
 			staleTime,
 		});
 
-		// Extract owner IDs from records and prefetch user data
 		if (recordsData?.records) {
 			const ownerIds: number[] = [];
-			recordsData.records.forEach((record: any) => {
+			recordsData.records.forEach((record: RecordWithCollection) => {
 				if (record.data) {
-					const getUserId = (data: any) => {
-						return (
-							data.user_id || data.created_by || data.owner_id || data.author_id
-						);
-					};
+					const getUserId = (data: RecordData): number | undefined => {
+					return (
+						(data.user_id as number) || (data.created_by as number) || (data.owner_id as number) || (data.author_id as number)
+					);
+				};
 					const ownerId = getUserId(record.data);
 					if (ownerId) {
 						ownerIds.push(ownerId);
@@ -230,19 +229,18 @@ export const usePrefetch = () => {
 				staleTime,
 			});
 
-			// Extract owner IDs from records and prefetch user data
 			if (recordsData?.records) {
 				const ownerIds: number[] = [];
-				recordsData.records.forEach((record: any) => {
+				recordsData.records.forEach((record: RecordWithCollection) => {
 					if (record.data) {
-						const getUserId = (data: any) => {
-							return (
-								data.user_id ||
-								data.created_by ||
-								data.owner_id ||
-								data.author_id
-							);
-						};
+						const getUserId = (data: RecordData): number | undefined => {
+						return (
+							(data.user_id as number) ||
+							(data.created_by as number) ||
+							(data.owner_id as number) ||
+							(data.author_id as number)
+						);
+					};
 						const ownerId = getUserId(record.data);
 						if (ownerId) {
 							ownerIds.push(ownerId);
@@ -398,7 +396,7 @@ export const usePrefetch = () => {
 				});
 			}
 
-			const rolesData = queryClient.getQueryData(rolesQueryKey) as any[];
+			const rolesData = queryClient.getQueryData(rolesQueryKey) as Array<{ id: number; name: string }>;
 			if (rolesData && rolesData.length > 0) {
 				if (!isDataFresh(allPermissionsQueryKey, permissionsStaleTime)) {
 					await queryClient.prefetchQuery({

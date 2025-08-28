@@ -148,7 +148,7 @@ export function UserDetailsSheet({
 										fallback={getInitials(user.email)}
 									/>
 									<div className="flex-1">
-										<h4 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
+										<h4 className="text-lg font-light text-nocta-900 dark:text-nocta-100">
 											{user.username || user.email}
 										</h4>
 										<div className="flex items-center gap-2 mt-2">
@@ -170,7 +170,7 @@ export function UserDetailsSheet({
 								</div>
 								<div className="grid grid-cols-2 gap-4">
 									<div>
-										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+										<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 											Email
 										</label>
 										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -178,7 +178,7 @@ export function UserDetailsSheet({
 										</p>
 									</div>
 									<div>
-										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+										<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 											Role
 										</label>
 										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -188,7 +188,7 @@ export function UserDetailsSheet({
 								</div>
 								<div className="grid grid-cols-2 gap-4">
 									<div>
-										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+										<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 											Created
 										</label>
 										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -196,7 +196,7 @@ export function UserDetailsSheet({
 										</p>
 									</div>
 									<div>
-										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+										<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 											Last Login
 										</label>
 										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -209,7 +209,7 @@ export function UserDetailsSheet({
 								{user.updated_at && (
 									<div className="grid grid-cols-1 gap-4">
 										<div>
-											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 												Last Updated
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -221,7 +221,7 @@ export function UserDetailsSheet({
 								{user.locked_until && (
 									<div className="grid grid-cols-1 gap-4">
 										<div>
-											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 												Locked Until
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">

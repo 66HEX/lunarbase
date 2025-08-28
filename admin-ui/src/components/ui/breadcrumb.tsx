@@ -80,7 +80,7 @@ const breadcrumbLinkVariants = cva(
 );
 
 const breadcrumbPageVariants = cva(
-	"text-nocta-900 dark:text-nocta-100 font-medium",
+	"text-nocta-900 dark:text-nocta-100 font-light",
 	{
 		variants: {
 			size: {

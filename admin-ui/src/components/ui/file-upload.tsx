@@ -17,7 +17,7 @@ const fileUploadVariants = cva(
 		variants: {
 			variant: {
 				default: [
-					"border-2 border-dashed border-nocta-300 dark:border-nocta-700",
+					"border border-dashed border-nocta-300 dark:border-nocta-700",
 					"hover:border-nocta-400 dark:hover:border-nocta-600",
 					"bg-white dark:bg-nocta-900",
 				],
@@ -302,7 +302,7 @@ export const FileUploadItem: React.FC<FileUploadItemProps> = ({
 
 			<div className="flex-1 min-w-0">
 				<div className="flex items-center justify-between gap-2">
-					<p className="text-sm font-medium text-nocta-900 dark:text-nocta-100 truncate flex-1 min-w-0">
+					<p className="text-sm font-light text-nocta-900 dark:text-nocta-100 truncate flex-1 min-w-0">
 						{file.file.name}
 					</p>
 					{onRemove && (
@@ -566,7 +566,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 						<div className="text-sm">
 							<p
 								className={cn(
-									"font-medium",
+									"font-light",
 									isDragOver
 										? "text-nocta-700 dark:text-nocta-200"
 										: "text-nocta-600 dark:text-nocta-300",
@@ -601,7 +601,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 			{hasFiles && (
 				<div className="space-y-2">
 					<div className="flex items-center justify-between">
-						<h4 className="text-sm font-medium text-nocta-900 dark:text-nocta-100">
+						<h4 className="text-sm font-light text-nocta-900 dark:text-nocta-100">
 							File
 						</h4>
 						{(pendingFiles.length > 0 || isUploading) && onUpload && (
@@ -609,12 +609,12 @@ export const FileUpload: React.FC<FileUploadProps> = ({
 								onClick={handleUpload}
 								disabled={disabled || isUploading}
 								className={cn(
-									"px-3 py-1 text-xs font-medium rounded-md transition-colors flex items-center gap-2",
+									"px-3 py-1 text-xs font-light rounded-md transition-colors flex items-center gap-2",
 									"bg-nocta-900 text-white hover:bg-nocta-800 dark:bg-nocta-100 dark:text-nocta-900 dark:hover:bg-nocta-200",
 									"disabled:opacity-50 disabled:cursor-not-allowed",
 								)}
 							>
-								{isUploading && <Spinner size="sm" variant="secondary" />}
+								{isUploading && <Spinner size="sm" />}
 								{isUploading
 									? `Uploading ${uploadingFiles.length} file${uploadingFiles.length > 1 ? "s" : ""}...`
 									: `Upload ${pendingFiles.length} file${pendingFiles.length > 1 ? "s" : ""}`}

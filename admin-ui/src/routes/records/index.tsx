@@ -190,7 +190,7 @@ export default function RecordsComponent() {
 			title: "ID",
 			className: "w-16",
 			render: (_, record) => (
-				<div className="text-sm font-mono text-nocta-600 dark:text-nocta-400">
+				<div className="text-sm font-pp-neue-montreal-mono text-nocta-600 dark:text-nocta-400">
 					{record.id}
 				</div>
 			),
@@ -230,7 +230,7 @@ export default function RecordsComponent() {
 					<div className="flex gap-4">
 						{filteredEntries.slice(0, 1).map(([key, value]) => (
 							<div key={key} className="text-sm">
-								<span className="font-medium text-nocta-700 dark:text-nocta-300">
+								<span className="font-light text-nocta-700 dark:text-nocta-300">
 									{key}:
 								</span>{" "}
 								<span className="text-nocta-600 dark:text-nocta-400 truncate">

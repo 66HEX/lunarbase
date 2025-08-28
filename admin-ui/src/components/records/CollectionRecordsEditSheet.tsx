@@ -334,7 +334,7 @@ export function CollectionRecordsEditSheet({
 					</SheetTitle>
 					<SheetDescription>
 						Update record #{record?.id} in{" "}
-						<span className="font-medium">{collection?.name}</span> collection
+						<span className="font-light">{collection?.name}</span> collection
 					</SheetDescription>
 				</SheetHeader>
 
@@ -346,7 +346,7 @@ export function CollectionRecordsEditSheet({
 								.length === 0 ? (
 								<div className="text-center py-8">
 									<Database className="w-12 h-12 mx-auto text-nocta-400 mb-4" />
-									<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+									<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 										No fields to edit
 									</h3>
 									<p className="text-nocta-600 dark:text-nocta-400 mb-4">

@@ -30,7 +30,7 @@ const alertVariants = cva(
 );
 
 const alertTitleVariants = cva(
-	"mb-1 font-medium leading-none tracking-tight not-prose",
+	"mb-1 font-light leading-none tracking-tight not-prose",
 	{
 		variants: {
 			size: {

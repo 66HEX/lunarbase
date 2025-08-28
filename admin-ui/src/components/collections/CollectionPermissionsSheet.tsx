@@ -43,8 +43,7 @@ export function CollectionPermissionsSheet({
 	onOpenChange,
 	collection,
 }: CollectionPermissionsSheetProps) {
-	if (!collection) return null;
-
+	// All hooks must be called before any early returns
 	const saveCollectionPermissionsMutation = useSaveCollectionPermissions();
 	const { data: usersData } = useUsers();
 	const users = usersData?.users || [];
@@ -61,6 +60,60 @@ export function CollectionPermissionsSheet({
 	const [userPermissions, setUserPermissions] = useState<
 		CollectionPermissions["user_permissions"]
 	>({});
+
+	useEffect(() => {
+		const roles = rolesData || [];
+		if (roles.length > 0) {
+			const initialRolePermissions: CollectionPermissions["role_permissions"] =
+				{};
+			roles.forEach((role: { name: string }) => {
+				initialRolePermissions[role.name] = {
+					can_create: false,
+					can_read: false,
+					can_update: false,
+					can_delete: false,
+					can_list: false,
+				};
+			});
+			setRolePermissions(initialRolePermissions);
+		}
+	}, [rolesData]);
+
+	useEffect(() => {
+		const collectionPermissions = collectionPermissionsData || {};
+		if (
+			collection &&
+			collectionPermissions &&
+			Object.keys(collectionPermissions).length > 0
+		) {
+			const formattedRolePermissions: CollectionPermissions["role_permissions"] =
+				{};
+
+			Object.entries(collectionPermissions).forEach(
+				([roleName, permission]) => {
+					const typedPermission = permission as {
+						can_create: boolean;
+						can_read: boolean;
+						can_update: boolean;
+						can_delete: boolean;
+						can_list: boolean;
+					};
+					formattedRolePermissions[roleName] = {
+						can_create: typedPermission.can_create,
+						can_read: typedPermission.can_read,
+						can_update: typedPermission.can_update,
+						can_delete: typedPermission.can_delete,
+						can_list: typedPermission.can_list,
+					};
+				},
+			);
+
+			setRolePermissions(formattedRolePermissions);
+			setUserPermissions(collection.permissions?.user_permissions || {});
+		}
+	}, [collection, collectionPermissionsData]);
+
+	if (!collection) return null;
 
 	const updateRolePermission = (
 		role: string,
@@ -144,58 +197,6 @@ export function CollectionPermissionsSheet({
 			setPermissionsSubmitting(false);
 		}
 	};
-
-	useEffect(() => {
-		const roles = rolesData || [];
-		if (roles.length > 0) {
-			const initialRolePermissions: CollectionPermissions["role_permissions"] =
-				{};
-			roles.forEach((role: { name: string }) => {
-				initialRolePermissions[role.name] = {
-					can_create: false,
-					can_read: false,
-					can_update: false,
-					can_delete: false,
-					can_list: false,
-				};
-			});
-			setRolePermissions(initialRolePermissions);
-		}
-	}, [rolesData]);
-
-	useEffect(() => {
-		const collectionPermissions = collectionPermissionsData || {};
-		if (
-			collection &&
-			collectionPermissions &&
-			Object.keys(collectionPermissions).length > 0
-		) {
-			const formattedRolePermissions: CollectionPermissions["role_permissions"] =
-				{};
-
-			Object.entries(collectionPermissions).forEach(
-				([roleName, permission]) => {
-					const typedPermission = permission as {
-						can_create: boolean;
-						can_read: boolean;
-						can_update: boolean;
-						can_delete: boolean;
-						can_list: boolean;
-					};
-					formattedRolePermissions[roleName] = {
-						can_create: typedPermission.can_create,
-						can_read: typedPermission.can_read,
-						can_update: typedPermission.can_update,
-						can_delete: typedPermission.can_delete,
-						can_list: typedPermission.can_list,
-					};
-				},
-			);
-
-			setRolePermissions(formattedRolePermissions);
-			setUserPermissions(collection.permissions?.user_permissions || {});
-		}
-	}, [collection, collectionPermissionsData]);
 
 	const permissionTypes: PermissionType[] = [
 		"can_create",
@@ -324,7 +325,7 @@ export function CollectionPermissionsSheet({
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<Tabs defaultValue="roles" className="w-full">
-						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950">
+						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/80">
 							<TabsTrigger value="roles">Role-based Permissions</TabsTrigger>
 							<TabsTrigger value="users">User-specific Permissions</TabsTrigger>
 						</TabsList>

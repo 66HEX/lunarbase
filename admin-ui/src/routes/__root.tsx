@@ -89,7 +89,7 @@ function RootComponent() {
 								>
 									<Menu className="w-6 h-6" />
 								</Button>
-								<h1 className="text-lg font-medium text-nocta-900 dark:text-nocta-100">
+								<h1 className="text-lg font-light text-nocta-900 dark:text-nocta-100">
 									LunarBase
 								</h1>
 								<div className="w-10" />{" "}

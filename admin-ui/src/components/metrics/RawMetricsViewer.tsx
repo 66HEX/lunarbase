@@ -129,7 +129,7 @@ export function RawMetricsViewer() {
 			</CardHeader>
 			<CardContent>
 				<div className="relative">
-					<pre className="bg-nocta-50 dark:bg-nocta-900/50 p-4 rounded-lg text-sm font-mono overflow-auto max-h-96 whitespace-pre-wrap break-words">
+					<pre className="bg-nocta-50 dark:bg-nocta-900/50 rounded-lg text-sm font-pp-neue-montreal-mono overflow-auto max-h-96 whitespace-pre-wrap break-words">
 						<code className="text-nocta-800 dark:text-nocta-200">
 							{filteredMetrics || "No metrics data available"}
 						</code>

@@ -533,7 +533,7 @@ const ToastItem: React.FC<ToastItemProps> = React.memo(
 										action.onClick();
 										handleClose();
 									}}
-									className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium bg-gradient-to-b from-nocta-900 to-nocta-700 dark:from-nocta-50 dark:to-nocta-300 text-nocta-50 dark:text-nocta-900 hover:bg-nocta-900 dark:hover:bg-nocta-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nocta-500/50 transition-colors duration-200 cursor-pointer"
+									className="inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-light bg-gradient-to-b from-nocta-900 to-nocta-700 dark:from-nocta-50 dark:to-nocta-300 text-nocta-50 dark:text-nocta-900 hover:bg-nocta-900 dark:hover:bg-nocta-200 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-nocta-500/50 transition-colors duration-200 cursor-pointer"
 								>
 									{action.label}
 								</button>

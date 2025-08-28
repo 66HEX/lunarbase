@@ -20,12 +20,12 @@ export function WebSocketHeader({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100">
 							WebSocket Management
 						</h1>
 						<Badge
 							variant={activeConnections ? "success" : "secondary"}
-							className="px-2 py-0.5 text-xs font-medium w-fit"
+							className="px-2 py-0.5 text-xs font-light w-fit"
 						>
 							{activeConnections || 0} active
 						</Badge>

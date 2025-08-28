@@ -1,6 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent} from "@/components/ui/card";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
 import type {
@@ -32,7 +32,7 @@ export function WebSocketConnections({
 			key: "connection_id",
 			title: "Connection ID",
 			render: (_, connection) => (
-				<div className="font-mono text-sm text-nocta-600 dark:text-nocta-400">
+				<div className="font-pp-neue-montreal-mono text-sm text-nocta-600 dark:text-nocta-400">
 					{formatConnectionId(connection.connection_id)}
 				</div>
 			),
@@ -52,7 +52,7 @@ export function WebSocketConnections({
 				return (
 					<div className="flex items-center gap-2">
 						<IconComponent className={`w-4 h-4 ${colorClass}`} />
-						<span className="text-sm font-medium">
+						<span className="text-sm font-light">
 							{isAuthenticated ? `User ${connection.user_id}` : "Anonymous"}
 						</span>
 					</div>
@@ -121,14 +121,6 @@ export function WebSocketConnections({
 
 	return (
 		<Card>
-			<CardHeader>
-				<CardTitle className="flex items-center gap-2">
-					Active Connections
-					<Badge size="sm" variant="secondary" className="ml-auto">
-						{connections?.connections?.length || 0}
-					</Badge>
-				</CardTitle>
-			</CardHeader>
 			<CardContent>
 				{connections?.connections && connections.connections.length > 0 ? (
 					<Table
@@ -144,10 +136,10 @@ export function WebSocketConnections({
 					/>
 				) : (
 					<div className="text-center py-8">
-						<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
+						<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm">
 							<webSocketEmptyStates.connections.icon className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
 						</div>
-						<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+						<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 							{webSocketEmptyStates.connections.title}
 						</h3>
 						<p className="text-nocta-600 dark:text-nocta-400">

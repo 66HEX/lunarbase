@@ -182,7 +182,7 @@ export function EditCollectionSheet({
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<Tabs defaultValue="overview" className="w-full">
-						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950">
+						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/80">
 							<TabsTrigger value="overview">Overview</TabsTrigger>
 							<TabsTrigger value="schema">Schema Fields</TabsTrigger>
 						</TabsList>
@@ -260,7 +260,7 @@ export function EditCollectionSheet({
 													<div className="flex items-center justify-between mb-3">
 														<div className="flex items-center gap-2">
 															<IconComponent className="w-4 h-4 text-nocta-600 dark:text-nocta-400" />
-															<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100">
+															<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 																{index === 0
 																	? "ID Field"
 																	: `Field ${index + 1}`}
@@ -289,7 +289,7 @@ export function EditCollectionSheet({
 															>
 																<FormLabel
 																	required={index > 0}
-																	className="text-xs font-medium text-nocta-600 dark:text-nocta-400"
+																	className="text-xs font-light text-nocta-600 dark:text-nocta-400"
 																>
 																	Name
 																</FormLabel>
@@ -319,7 +319,7 @@ export function EditCollectionSheet({
 
 														<div className="col-span-3">
 															<FormField name={`edit_field_${index}_type`}>
-																<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
+																<FormLabel className="text-xs font-light text-nocta-600 dark:text-nocta-400">
 																	Type
 																</FormLabel>
 																<FormControl>
@@ -368,7 +368,7 @@ export function EditCollectionSheet({
 
 														<div className="col-span-3">
 															<FormField name={`edit_field_${index}_default`}>
-																<FormLabel className="text-xs font-medium text-nocta-600 dark:text-nocta-400">
+																<FormLabel className="text-xs font-light text-nocta-600 dark:text-nocta-400">
 																	Default
 																</FormLabel>
 																<FormControl>

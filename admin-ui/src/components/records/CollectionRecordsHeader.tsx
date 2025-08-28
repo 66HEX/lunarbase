@@ -39,7 +39,7 @@ export function CollectionRecordsHeader({
 					>
 						<ArrowLeft className="w-4 h-4" />
 					</Button>
-					<h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-nocta-900 dark:text-nocta-100 truncate">
+					<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100 truncate">
 						{collection?.display_name || collectionName}
 					</h1>
 					<Badge size="sm" variant="secondary" className="">
@@ -60,7 +60,7 @@ export function CollectionRecordsHeader({
 						}
 						value={searchTerm}
 						onChange={(e) => onSearchChange(e.target.value)}
-						className="pl-10 w-full md:w-auto"
+						className="pl-10 w-full md:w-auto !bg-nocta-900"
 					/>
 				</div>
 				<div className="w-full sm:w-auto">

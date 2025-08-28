@@ -18,7 +18,7 @@ export function RecordsHeader({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100">
 							All Records
 						</h1>
 						<Badge size="sm" variant="secondary" className="">
@@ -38,7 +38,7 @@ export function RecordsHeader({
 							}
 							value={searchTerm}
 							onChange={(e) => onSearchChange(e.target.value)}
-							className="pl-10 w-full md:w-auto"
+							className="pl-10 w-full md:w-auto !bg-nocta-900"
 						/>
 					</div>
 				</div>

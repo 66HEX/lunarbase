@@ -287,7 +287,7 @@ export function EditUserSheet({
 								<div className="p-4 border border-red-200 dark:border-red-800 rounded-lg bg-red-50 dark:bg-red-900/20">
 									<div className="flex items-center justify-between">
 										<div className="space-y-1">
-											<h4 className="text-sm font-medium text-red-900 dark:text-red-100">
+											<h4 className="text-sm font-light text-red-900 dark:text-red-100">
 												User Account Locked
 											</h4>
 											<p className="text-sm text-red-700 dark:text-red-300">

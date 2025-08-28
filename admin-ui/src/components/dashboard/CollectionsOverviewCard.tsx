@@ -21,7 +21,7 @@ export function CollectionsOverviewCard({
 			<CardHeader className="pb-3 p-3">
 				<div className="flex items-center justify-between">
 					<CardTitle className="flex items-center gap-2 text-base">
-						<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
+						<div className="p-1">
 							<Database className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
 						</div>
 						Collections Overview
@@ -41,14 +41,14 @@ export function CollectionsOverviewCard({
 									<div className="flex items-center justify-between">
 										<div className="flex items-center gap-2.5">
 											<div className="w-2 h-2 rounded-full bg-nocta-400 dark:bg-nocta-500"></div>
-											<span className="font-medium text-sm text-nocta-900 dark:text-nocta-100 group-hover:text-nocta-700 dark:group-hover:text-nocta-200">
+											<span className="font-light text-sm text-nocta-900 dark:text-nocta-100 group-hover:text-nocta-700 dark:group-hover:text-nocta-200">
 												{name}
 											</span>
 										</div>
 										<div className="flex items-center gap-2.5">
 											<Badge
 												variant="secondary"
-												className="px-2 py-0.5 text-xs font-medium"
+												className="px-2 py-0.5 text-xs font-light"
 											>
 												{count} {count === 1 ? "record" : "records"}
 											</Badge>
@@ -61,7 +61,7 @@ export function CollectionsOverviewCard({
 								<div className="pt-2.5 border-t border-nocta-200 dark:border-nocta-800/50">
 									<Link
 										to="/collections"
-										className="text-sm text-nocta-600 dark:text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 font-medium flex items-center gap-1 transition-colors duration-200 w-fit"
+										className="text-sm text-nocta-600 dark:text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 font-light flex items-center gap-1 transition-colors duration-200 w-fit"
 									>
 										View{" "}
 										{Object.keys(collections.records_per_collection).length - 3}{" "}
@@ -76,7 +76,7 @@ export function CollectionsOverviewCard({
 						<div className="p-1.5 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-2.5">
 							<Database className="w-5 h-5 text-nocta-400 dark:text-nocta-500" />
 						</div>
-						<h3 className="text-sm font-medium text-nocta-900 dark:text-nocta-100 mb-1.5">
+						<h3 className="text-sm font-light text-nocta-900 dark:text-nocta-100 mb-1.5">
 							No collections yet
 						</h3>
 						<p className="text-xs text-nocta-600 dark:text-nocta-400 mb-2.5 max-w-sm mx-auto">

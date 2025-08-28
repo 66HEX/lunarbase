@@ -16,8 +16,17 @@
 	font-display: swap;
 }
 
+@font-face {
+	font-family: "PPNeueMontrealMono";
+	src: url("/fonts/PPNeueMontrealMono-Regular.woff2") format("woff2");
+	font-style: normal;
+	font-weight: 500;
+	font-display: swap;
+}
+
 @theme {
 	--font-pp-neue-montreal: "PPNeueMontreal";
+	--font-pp-neue-montreal-mono: "PPNeueMontrealMono";
 	--color-nocta-50: oklch(0.985 0 0);
 	--color-nocta-100: oklch(0.97 0 0);
 	--color-nocta-200: oklch(0.922 0 0);

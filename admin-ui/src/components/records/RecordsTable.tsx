@@ -58,7 +58,7 @@ export function RecordsTable({
 						<TableBody>
 							{records.map((record) => (
 								<TableRow key={`${record.collection_name}-${record.id}`}>
-									<TableCell className="font-medium">{record.id}</TableCell>
+									<TableCell className="font-light">{record.id}</TableCell>
 									<TableCell>
 										<Link to={`/collections`}>
 											<Badge
@@ -76,7 +76,7 @@ export function RecordsTable({
 												.slice(1, 3)
 												.map(([key, value]) => (
 													<div key={key} className="text-sm">
-														<span className="font-medium text-nocta-700 dark:text-nocta-300">
+														<span className="font-light text-nocta-700 dark:text-nocta-300">
 															{key}:
 														</span>{" "}
 														<span className="text-nocta-600 dark:text-nocta-400 truncate">

@@ -120,12 +120,12 @@ export function TransferOwnership({
 					</DialogTitle>
 					<DialogDescription>
 						Select a new owner for this record in{" "}
-						<span className="font-medium">{collectionName}</span>.
+						<span className="font-light">{collectionName}</span>.
 					</DialogDescription>
 				</DialogHeader>
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<div className="flex flex-col space-y-2">
-						<label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+						<label className="text-sm font-light text-gray-700 dark:text-gray-300">
 							New Owner
 						</label>
 						{isLoadingUsers ? (
@@ -178,7 +178,7 @@ export function TransferOwnership({
 														}
 													/>
 													<div className="flex flex-col">
-														<span className="text-sm font-medium">
+														<span className="text-sm font-light">
 															{user.username || user.email}
 														</span>
 														{user.username && (

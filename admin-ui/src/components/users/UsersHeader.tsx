@@ -21,13 +21,13 @@ export function UsersHeader({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-medium text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100">
 							Users
 						</h1>
 						<Badge
 							size="sm"
 							variant="secondary"
-							className="px-2 py-0.5 text-xs font-medium"
+							className="px-2 py-0.5 text-xs font-light"
 						>
 							{usersCount} total
 						</Badge>
@@ -45,7 +45,7 @@ export function UsersHeader({
 							}
 							value={searchTerm}
 							onChange={(e) => onSearchChange(e.target.value)}
-							className="pl-10 w-full md:w-auto"
+							className="pl-10 w-full md:w-auto !bg-nocta-900"
 						/>
 					</div>
 					<Button onClick={onCreateUser} className="w-full sm:w-auto">

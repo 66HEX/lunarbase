@@ -40,7 +40,7 @@ export function CollectionDetailsSheet({
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<Tabs defaultValue="overview" className="w-full">
-						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950">
+						<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/80">
 							<TabsTrigger value="overview">Overview</TabsTrigger>
 							<TabsTrigger value="schema">Schema Fields</TabsTrigger>
 						</TabsList>
@@ -49,7 +49,7 @@ export function CollectionDetailsSheet({
 							<div className="space-y-4">
 								<div className="p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-lg space-y-4">
 									<div>
-										<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+										<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 											Name
 										</label>
 										<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -58,7 +58,7 @@ export function CollectionDetailsSheet({
 									</div>
 									{collection.description && (
 										<div>
-											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 												Description
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -68,7 +68,7 @@ export function CollectionDetailsSheet({
 									)}
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 												Created
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -76,7 +76,7 @@ export function CollectionDetailsSheet({
 											</p>
 										</div>
 										<div>
-											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 												Updated
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -86,7 +86,7 @@ export function CollectionDetailsSheet({
 									</div>
 									<div className="grid grid-cols-2 gap-4">
 										<div>
-											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 												Total Fields
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -94,7 +94,7 @@ export function CollectionDetailsSheet({
 											</p>
 										</div>
 										<div>
-											<label className="text-sm font-medium text-nocta-600 dark:text-nocta-400">
+											<label className="text-sm font-light text-nocta-600 dark:text-nocta-400">
 												Required Fields
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
@@ -121,7 +121,7 @@ export function CollectionDetailsSheet({
 													<div className="flex items-center gap-3">
 														<IconComponent className="size-4 text-nocta-500" />
 														<div className="flex items-center gap-2">
-															<span className="font-medium text-nocta-900 dark:text-nocta-100">
+															<span className="font-light text-nocta-900 dark:text-nocta-100">
 																{field.name}
 															</span>
 															{field.required && (
@@ -145,7 +145,7 @@ export function CollectionDetailsSheet({
 												{field.default_value !== undefined &&
 													field.default_value !== null && (
 														<div className="mt-2 text-sm text-nocta-600 dark:text-nocta-400">
-															<span className="font-medium">
+															<span className="font-light">
 																Default value:
 															</span>{" "}
 															<code className="text-xs">

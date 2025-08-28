@@ -117,7 +117,7 @@ function WebSocketComponent() {
 					<div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 w-fit mx-auto mb-4">
 						<Activity className="w-8 h-8 text-red-600 dark:text-red-400" />
 					</div>
-					<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+					<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 						Error loading WebSocket data
 					</h3>
 					<p className="text-nocta-600 dark:text-nocta-400 mb-4">
@@ -161,11 +161,13 @@ function WebSocketComponent() {
 					Object.keys(stats.subscriptions_by_collection).length === 0 ? (
 						<Card className="flex items-center justify-center py-12">
 							<div className="text-center">
-								<Activity className="w-12 h-12 mx-auto mb-4 text-nocta-400 dark:text-nocta-600" />
-								<h3 className="text-lg font-medium text-nocta-900 dark:text-nocta-100 mb-2">
+								<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm">
+									<Activity className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
+								</div>
+								<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 									No Active Subscriptions
 								</h3>
-								<p className="text-nocta-600 dark:text-nocta-400">
+								<p className="text-nocta-600 dark:text-nocta-400 text-sm">
 									There are currently no active WebSocket subscriptions.
 								</p>
 							</div>

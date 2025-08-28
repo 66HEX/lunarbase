@@ -56,7 +56,7 @@ export const Progress: React.FC<ProgressProps> = ({
 		<div className="w-full">
 			{showLabel && (
 				<div className="flex justify-between items-center mb-2">
-					<span className="text-sm font-medium text-nocta-700 dark:text-nocta-300">
+					<span className="text-sm font-light text-nocta-700 dark:text-nocta-300">
 						{ariaLabel || "Progress"}
 					</span>
 					<span className="text-sm text-nocta-500 dark:text-nocta-400 ml-2">
