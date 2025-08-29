@@ -55,6 +55,7 @@ export function CreateRecordSheet({
 	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>(
 		{},
 	);
+	const [allowClose, setAllowClose] = useState(true);
 	const { data: collectionsData } = useCollections();
 
 	const availableCollections = collectionsData?.collections || [];
@@ -216,10 +217,25 @@ export function CreateRecordSheet({
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
-							value={typeof value === "string" ? value : ""}
-							onValueChange={(selectedValue) =>
-								updateFormData(field.name, selectedValue)
+							portalProps={
+								{
+									"data-sheet-portal": "true",
+								} as React.HTMLAttributes<HTMLDivElement>
 							}
+							value={typeof value === "string" ? value : ""}
+							onValueChange={(selectedValue) => {
+								if (selectedValue) {
+									setAllowClose(false);
+									updateFormData(field.name, selectedValue);
+
+									setTimeout(() => setAllowClose(true), 300);
+								}
+							}}
+							onOpenChange={(isOpen) => {
+								if (isOpen) {
+									setAllowClose(false);
+								}
+							}}
 						>
 							<SelectTrigger
 								className={`w-full ${hasError ? "border-red-500" : ""}`}
@@ -277,7 +293,19 @@ export function CreateRecordSheet({
 	};
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
+		<Sheet
+			open={open}
+			onOpenChange={(newOpen) => {
+				if (!newOpen && (!allowClose || submitting)) {
+					return;
+				}
+
+				onOpenChange(newOpen);
+				if (newOpen) {
+					setAllowClose(true);
+				}
+			}}
+		>
 			<SheetTrigger asChild>
 				<Button className="w-full whitespace-nowrap">
 					<Plus className="w-4 h-4 mr-2" />
