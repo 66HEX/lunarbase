@@ -1,4 +1,4 @@
-import { Shield, UserCheck, User as UserIcon, UserX } from "lucide-react";
+import { ShieldIcon, UserCheckIcon, UserIcon, UserMinusIcon } from "@phosphor-icons/react";
 
 export const userRoleOptions = [
 	{ value: "user", label: "User" },
@@ -7,13 +7,13 @@ export const userRoleOptions = [
 
 export const userRoleIcons = {
 	user: UserIcon,
-	admin: Shield,
+	admin: ShieldIcon,
 };
 
 export const userStatusIcons = {
-	active: UserCheck,
-	inactive: UserX,
-	locked: UserX,
+	active: UserCheckIcon,
+	inactive: UserMinusIcon,
+	locked: UserMinusIcon,
 };
 
 export const getUserRoleVariant = (role: string) => {

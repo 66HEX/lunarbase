@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { FloppyDiskIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -167,7 +167,7 @@ export function AuthSettingsPanel() {
 								{updateSettingMutation.isPending ? (
 									<Spinner className="w-4 h-4" />
 								) : (
-									<Save className="w-4 h-4" />
+									<FloppyDiskIcon size={16} />
 								)}
 								Save Changes
 							</Button>

@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { CaretLeftIcon, CaretRightIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 
 interface RecordsPaginationProps {
@@ -34,7 +34,9 @@ export function RecordsPagination({
 					onClick={() => onPageChange(currentPage - 1)}
 					disabled={currentPage === 1}
 				>
-					<ChevronLeft className="w-4 h-4" />
+					<span className="w-4 h-4">
+						<CaretLeftIcon size={16} />
+					</span>
 				</Button>
 				<span className="text-sm text-nocta-600 dark:text-nocta-400">
 					Page {currentPage} of {totalPages}
@@ -45,7 +47,9 @@ export function RecordsPagination({
 					onClick={() => onPageChange(currentPage + 1)}
 					disabled={currentPage === totalPages}
 				>
-					<ChevronRight className="w-4 h-4" />
+					<span className="w-4 h-4">
+						<CaretRightIcon size={16} />
+					</span>
 				</Button>
 			</div>
 		</div>

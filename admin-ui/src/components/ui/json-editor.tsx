@@ -1,6 +1,6 @@
 import CodeEditor from "@uiw/react-textarea-code-editor";
 import { cva, type VariantProps } from "class-variance-authority";
-import { Check, Copy, RotateCcw } from "lucide-react";
+import { CheckIcon, CopyIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -224,10 +224,12 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 							)}
 						>
 							{isFormatted ? (
-								<Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-							) : (
-								"{ }"
-							)}
+						<span className="text-green-600 dark:text-green-400">
+							<CheckIcon size={16} />
+						</span>
+					) : (
+						"{ }"
+					)}
 						</Button>
 						<Button
 							type="button"
@@ -241,10 +243,12 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 							)}
 						>
 							{copied ? (
-								<Check className="w-4 h-4 text-green-600 dark:text-green-400" />
-							) : (
-								<Copy className="w-4 h-4" />
-							)}
+					<span className="text-green-600 dark:text-green-400">
+						<CheckIcon size={16} />
+					</span>
+				) : (
+					<CopyIcon size={16} />
+				)}
 						</Button>
 						<Button
 							type="button"
@@ -257,7 +261,7 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 								!value.trim() && "opacity-30 pointer-events-none",
 							)}
 						>
-							<RotateCcw className="w-4 h-4" />
+							<ArrowCounterClockwiseIcon size={16} />
 						</Button>
 					</div>
 				</div>

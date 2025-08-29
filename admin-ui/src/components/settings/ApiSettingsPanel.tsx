@@ -1,4 +1,4 @@
-import { AlertTriangle, Plus, Save, X } from "lucide-react";
+import { WarningIcon, PlusIcon, FloppyDiskIcon, XIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -184,7 +184,7 @@ export function ApiSettingsPanel() {
 										variant="destructive"
 										className="flex items-center gap-1 text-xs"
 									>
-										<AlertTriangle className="w-3 h-3" />
+										<WarningIcon size={12} />
 										Restart Required
 									</Badge>
 								)}
@@ -210,7 +210,7 @@ export function ApiSettingsPanel() {
 											onClick={() => removeCorsOrigin(index)}
 											className="px-2"
 										>
-											<X className="w-4 h-4" />
+											<XIcon size={16} />
 										</Button>
 									</div>
 								))}
@@ -221,7 +221,7 @@ export function ApiSettingsPanel() {
 									onClick={addCorsOrigin}
 									className="flex items-center gap-2"
 								>
-									<Plus className="w-4 h-4" />
+									<PlusIcon size={16} />
 									Add Origin
 								</Button>
 							</div>
@@ -236,8 +236,8 @@ export function ApiSettingsPanel() {
 								{updateSettingMutation.isPending ? (
 									<Spinner className="w-4 h-4" />
 								) : (
-									<Save className="w-4 h-4" />
-								)}
+										<FloppyDiskIcon size={16} />
+									)}
 								Save Changes
 							</Button>
 						</div>

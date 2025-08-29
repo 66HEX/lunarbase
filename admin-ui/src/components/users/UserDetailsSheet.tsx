@@ -1,4 +1,4 @@
-import { XCircle } from "lucide-react";
+import { XCircleIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -130,7 +130,9 @@ export function UserDetailsSheet({
 					) : error ? (
 						<div className="flex items-center justify-center py-8">
 							<div className="text-center">
-								<XCircle className="w-8 h-8 mx-auto mb-4 text-nocta-500" />
+								<span className="mx-auto mb-4 text-nocta-500 block w-8 h-8">
+							<XCircleIcon size={32} />
+						</span>
 								<p className="text-nocta-600 dark:text-nocta-400">{error}</p>
 							</div>
 						</div>

@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { Edit3, Trash2 } from "lucide-react";
+import { PencilIcon, TrashIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -97,23 +97,23 @@ export function RecordsTable({
 									<TableCell>
 										<div className="flex items-center gap-1">
 											<Button
-												variant="ghost"
-												size="sm"
-												className="w-8 h-8 p-0"
-												onClick={() => onEditRecord(record)}
-											>
-												<Edit3 className="w-4 h-4" />
-											</Button>
+											variant="ghost"
+											size="sm"
+											className="w-8 h-8 p-0"
+											onClick={() => onEditRecord(record)}
+										>
+											<PencilIcon size={16} />
+										</Button>
 											<Button
-												variant="ghost"
-												size="sm"
-												className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-												onClick={() =>
-													onDeleteRecord(record.collection_name, record.id)
-												}
-											>
-												<Trash2 className="w-4 h-4" />
-											</Button>
+											variant="ghost"
+											size="sm"
+											className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
+											onClick={() =>
+												onDeleteRecord(record.collection_name, record.id)
+											}
+										>
+											<TrashIcon size={16} />
+										</Button>
 										</div>
 									</TableCell>
 								</TableRow>

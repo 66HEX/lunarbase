@@ -1,4 +1,4 @@
-import { Plus, Search } from "lucide-react";
+import { PlusIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ export function CollectionsHeader({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							Collections
 						</h1>
 						<Badge
@@ -32,16 +32,13 @@ export function CollectionsHeader({
 							{collectionsCount} total
 						</Badge>
 					</div>
-					<p className="text-sm sm:text-base lg:text-lg text-nocta-600 dark:text-nocta-400">
-						Manage your data collections and schemas
-					</p>
 				</div>
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 					<div className="relative w-full sm:max-w-md">
 						<Input
 							placeholder="Search collections..."
 							leftIcon={
-								<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
+								<MagnifyingGlassIcon size={16} />
 							}
 							value={searchTerm}
 							onChange={(e) => onSearchChange(e.target.value)}
@@ -49,8 +46,8 @@ export function CollectionsHeader({
 						/>
 					</div>
 					<Button onClick={onCreateCollection} className="w-full sm:w-auto">
-						<Plus className="w-4 h-4 mr-2" />
-						<span className="whitespace-nowrap">Create Collection</span>
+						<PlusIcon size={16} />
+						<span className="whitespace-nowrap ml-2">Create Collection</span>
 					</Button>
 				</div>
 			</div>

@@ -1,4 +1,4 @@
-import { Database, Save } from "lucide-react";
+import { DatabaseIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -345,7 +345,9 @@ export function CollectionRecordsEditSheet({
 							collection.schema?.fields?.filter((field) => field.name !== "id")
 								.length === 0 ? (
 								<div className="text-center py-8">
-									<Database className="w-12 h-12 mx-auto text-nocta-400 mb-4" />
+							<span className="text-nocta-400 flex w-fit mx-auto justify-center mb-4 p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 shadow-sm">
+								<DatabaseIcon size={48} />
+							</span>
 									<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 										No fields to edit
 									</h3>
@@ -372,11 +374,13 @@ export function CollectionRecordsEditSheet({
 								Updating...
 							</>
 						) : (
-							<>
-								<Save className="w-4 h-4 mr-2" />
-								Update Record
-							</>
-						)}
+						<>
+							<span className="mr-2">
+								<FloppyDiskIcon size={16} />
+							</span>
+							Update Record
+						</>
+					)}
 					</Button>
 				</SheetFooter>
 			</SheetContent>

@@ -1,12 +1,12 @@
 import { createFileRoute } from "@tanstack/react-router";
 import {
-	Activity,
-	AlertTriangle,
-	Database,
-	FileText,
-	Globe,
-	Users,
-} from "lucide-react";
+	ActivityIcon,
+	WarningIcon,
+	DatabaseIcon,
+	FileTextIcon,
+	GlobeIcon,
+	UsersIcon,
+} from "@phosphor-icons/react";
 import { useRef } from "react";
 import {
 	CollectionsOverviewCard,
@@ -34,26 +34,22 @@ function DashboardComponent() {
 		{
 			name: "Create Collection",
 			action: "create-collection",
-			icon: Database,
-			color: "bg-blue-500",
+			icon: DatabaseIcon,
 		},
 		{
 			name: "Create User",
 			action: "create-user",
-			icon: Users,
-			color: "bg-green-500",
+			icon: UsersIcon,
 		},
 		{
 			name: "View Records",
 			href: "/records",
-			icon: FileText,
-			color: "bg-purple-500",
+			icon: FileTextIcon,
 		},
 		{
 			name: "WebSocket Monitor",
 			href: "/websocket",
-			icon: Activity,
-			color: "bg-orange-500",
+			icon: ActivityIcon,
 		},
 	];
 
@@ -64,7 +60,7 @@ function DashboardComponent() {
 				stats.collections?.total_collections ||
 				stats.health?.database?.total_collections ||
 				0,
-			icon: Database,
+			icon: DatabaseIcon,
 			description: "Total number of data collections in the system",
 		},
 		{
@@ -73,19 +69,19 @@ function DashboardComponent() {
 				stats.collections?.total_records ||
 				stats.health?.database?.total_records ||
 				0,
-			icon: FileText,
+			icon: FileTextIcon,
 			description: "Total number of records stored across all collections",
 		},
 		{
 			title: "Active Connections",
 			value: stats.websocket?.total_connections || 0,
-			icon: Globe,
+			icon: GlobeIcon,
 			description: "Current number of active WebSocket connections",
 		},
 		{
 			title: "System Health",
 			value: stats.health?.status === "healthy" ? "Healthy" : "Issues",
-			icon: Activity,
+			icon: ActivityIcon,
 			description: "Current overall system health status",
 		},
 	];
@@ -115,7 +111,7 @@ function DashboardComponent() {
 
 			{stats.health && stats.health.status !== "healthy" && (
 				<Alert variant="destructive">
-					<AlertTriangle className="h-4 w-4" />
+					<WarningIcon size={16} />
 					<AlertDescription>
 						System health issues detected. Database status:{" "}
 						{stats.health.database?.status || "Unknown"}

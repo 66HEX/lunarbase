@@ -1,13 +1,13 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {
-	Calendar,
-	Database,
-	Edit3,
-	FileText,
-	Plus,
-	Settings,
-	Trash2,
-} from "lucide-react";
+	CalendarIcon,
+	DatabaseIcon,
+	PencilIcon,
+	FileTextIcon,
+	PlusIcon,
+	GearIcon,
+	TrashIcon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import {
 	CollectionDetailsSheet,
@@ -151,7 +151,7 @@ export default function CollectionsComponent() {
 			<div className="flex items-center justify-center h-svh">
 				<div className="text-center">
 					<div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 w-fit mx-auto mb-4">
-						<Database className="w-8 h-8 text-red-600 dark:text-red-400" />
+						<DatabaseIcon size={32} />
 					</div>
 					<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 						Error loading collections
@@ -186,7 +186,7 @@ export default function CollectionsComponent() {
 									<div className="flex items-center justify-between">
 										<CardTitle className="flex items-center gap-2 text-base">
 											<div className="p-1 rounded-md bg-nocta-100 dark:bg-nocta-800/30">
-												<Database className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
+												<DatabaseIcon size={14} />
 											</div>
 											<span className="truncate max-w-40">
 												{collection.name}
@@ -204,7 +204,7 @@ export default function CollectionsComponent() {
 														: "Edit collection"
 												}
 											>
-												<Edit3 className="w-3.5 h-3.5" />
+												<PencilIcon size={14} />
 											</Button>
 											<Button
 												variant="ghost"
@@ -215,7 +215,7 @@ export default function CollectionsComponent() {
 													prefetchPermissions(collection.name)
 												}
 											>
-												<Settings className="w-3.5 h-3.5" />
+												<GearIcon size={14} />
 											</Button>
 											<Button
 												variant="ghost"
@@ -223,7 +223,7 @@ export default function CollectionsComponent() {
 												className="w-7 h-7 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
 												onClick={() => handleDeleteCollection(collection.name)}
 											>
-												<Trash2 className="w-3.5 h-3.5" />
+												<TrashIcon size={14} />
 											</Button>
 										</div>
 									</div>
@@ -288,7 +288,7 @@ export default function CollectionsComponent() {
 											<div className="pt-2.5 border-t border-nocta-200 dark:border-nocta-800/50">
 												<div className="flex items-center justify-center text-xs text-nocta-500 dark:text-nocta-500">
 													<div className="flex items-center gap-1">
-														<Calendar className="w-3 h-3" />
+														<CalendarIcon size={12} />
 														<span>
 															Created{" "}
 															{new Date(
@@ -306,7 +306,9 @@ export default function CollectionsComponent() {
 													className="flex-1 px-2 py-1"
 													onClick={() => handleOpenDetails(collection.name)}
 												>
-													<FileText className="w-3.5 h-3.5 mr-1.5" />
+													<span className="mr-1.5">
+												<FileTextIcon size={14} />
+											</span>
 													Details
 												</Button>
 												<Link
@@ -323,7 +325,9 @@ export default function CollectionsComponent() {
 														size="sm"
 														className="w-full px-2 py-1"
 													>
-														<Database className="w-3.5 h-3.5 mr-1.5" />
+														<span className="mr-1.5">
+														<DatabaseIcon size={14} />
+													</span>
 														Records
 													</Button>
 												</Link>
@@ -348,7 +352,7 @@ export default function CollectionsComponent() {
 					<CardContent className="py-12">
 						<div className="text-center">
 							<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
-								<Database className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
+								<DatabaseIcon size={32} />
 							</div>
 							<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 								{searchTerm ? "No collections found" : "No collections yet"}
@@ -360,7 +364,9 @@ export default function CollectionsComponent() {
 							</p>
 							{!searchTerm && (
 								<Button onClick={() => openSheet("createCollection")}>
-									<Plus className="w-4 h-4 mr-2" />
+									<span className="mr-2">
+							<PlusIcon size={16} />
+						</span>
 									Create Collection
 								</Button>
 							)}

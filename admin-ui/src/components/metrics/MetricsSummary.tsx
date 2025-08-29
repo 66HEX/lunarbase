@@ -1,4 +1,4 @@
-import { Activity, Database, Globe, RefreshCw } from "lucide-react";
+import { ActivityIcon, DatabaseIcon, GlobeIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
@@ -32,9 +32,11 @@ export function MetricsSummary() {
 							Error loading metrics: {error.message}
 						</p>
 						<Button onClick={() => refetch()} variant="primary">
-							<RefreshCw className="w-4 h-4 mr-2" />
-							Retry
-						</Button>
+						<span className="w-4 h-4 mr-2">
+							<ArrowClockwiseIcon size={16} />
+						</span>
+						Retry
+					</Button>
 					</div>
 				</CardContent>
 			</Card>
@@ -59,7 +61,7 @@ export function MetricsSummary() {
 				<MetricCard
 					title="HTTP Requests"
 					value={metrics.http_requests_total.toLocaleString()}
-					icon={Globe}
+					icon={GlobeIcon}
 					unit="total"
 					description="Total number of HTTP requests processed since server start"
 				/>
@@ -67,7 +69,7 @@ export function MetricsSummary() {
 				<MetricCard
 					title="Active WebSocket Connections"
 					value={metrics.active_websocket_connections}
-					icon={Activity}
+					icon={ActivityIcon}
 					unit="connections"
 					description="Number of currently active WebSocket connections"
 				/>
@@ -75,7 +77,7 @@ export function MetricsSummary() {
 				<MetricCard
 					title="Database Connections"
 					value={metrics.database_connections_active}
-					icon={Database}
+					icon={DatabaseIcon}
 					unit="active"
 					description="Number of active database connections in the pool"
 				/>

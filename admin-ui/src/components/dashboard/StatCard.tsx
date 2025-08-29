@@ -21,7 +21,7 @@ export function StatCard({
 				</CardTitle>
 				<div className="flex items-center space-x-2">
 					<div className="p-2">
-						<Icon className="w-4 h-4 text-nocta-700 dark:text-nocta-300" />
+						<Icon size={16} color="oklch(0.708 0 0)" />
 					</div>
 				</div>
 			</CardHeader>

@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Edit3, Eye, Trash2, User as UserIcon, UserPlus } from "lucide-react";
+import { PencilIcon, EyeIcon, TrashIcon, UserIcon, UserPlusIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -276,7 +276,7 @@ export default function UsersComponent() {
 						onClick={() => handleViewUser(user.id)}
 						title="View User Details"
 					>
-						<Eye className="w-4 h-4" />
+						<EyeIcon size={16} />
 					</Button>
 					<Button
 						variant="ghost"
@@ -285,7 +285,7 @@ export default function UsersComponent() {
 						onClick={() => handleEditUser(user.id)}
 						title="Edit User"
 					>
-						<Edit3 className="w-4 h-4" />
+						<PencilIcon size={16} />
 					</Button>
 					<Button
 						variant="ghost"
@@ -293,7 +293,7 @@ export default function UsersComponent() {
 						className="w-8 h-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
 						onClick={() => handleDeleteUser(user.id)}
 					>
-						<Trash2 className="w-4 h-4" />
+						<TrashIcon size={16} />
 					</Button>
 				</div>
 			),
@@ -316,7 +316,7 @@ export default function UsersComponent() {
 			<div className="flex items-center justify-center h-svh">
 				<div className="text-center">
 					<div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 w-fit mx-auto mb-4">
-						<UserIcon className="w-8 h-8 text-red-600 dark:text-red-400" />
+						<span className="text-red-600 dark:text-red-400"><UserIcon size={32} /></span>
 					</div>
 					<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 						Error loading users
@@ -370,7 +370,7 @@ export default function UsersComponent() {
 					<CardContent className="py-12">
 						<div className="text-center">
 							<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
-								<UserIcon className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
+								<span className="text-nocta-400 dark:text-nocta-500"><UserIcon size={32} /></span>
 							</div>
 							<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 								{searchTerm ? "No users found" : "No users yet"}
@@ -382,7 +382,7 @@ export default function UsersComponent() {
 							</p>
 							{!searchTerm && (
 								<Button onClick={() => openSheet("createUser")}>
-									<UserPlus className="w-4 h-4 mr-2" />
+									<span className="mr-2"><UserPlusIcon size={16} /></span>
 									Create New User
 								</Button>
 							)}

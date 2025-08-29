@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Edit3, Trash2, UserPen } from "lucide-react";
+import { PencilIcon, TrashIcon, UserIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import { OwnershipBadge, TransferOwnership } from "@/components/ownership";
 import {
@@ -325,7 +325,7 @@ export default function RecordsComponent() {
 									className="w-8 h-8 p-0"
 									title="Transfer ownership"
 								>
-									<UserPen className="w-4 h-4" />
+									<UserIcon size={16} />
 								</Button>
 							}
 						/>
@@ -336,7 +336,7 @@ export default function RecordsComponent() {
 							onClick={() => handleEditRecord(record)}
 							title="Edit record"
 						>
-							<Edit3 className="w-4 h-4" />
+							<PencilIcon size={16} />
 						</Button>
 						<Button
 							variant="ghost"
@@ -347,7 +347,7 @@ export default function RecordsComponent() {
 							}
 							title="Delete record"
 						>
-							<Trash2 className="w-4 h-4" />
+							<TrashIcon size={16} />
 						</Button>
 					</div>
 				);

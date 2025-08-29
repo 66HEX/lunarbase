@@ -1,4 +1,4 @@
-import { Database, FileText } from "lucide-react";
+import { DatabaseIcon, FileTextIcon } from "@phosphor-icons/react";
 import { CreateCollectionSheet } from "@/components/collections";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,7 +23,9 @@ export function EmptyRecordsState({ searchTerm }: EmptyRecordsStateProps) {
 				<CardContent className="py-12">
 					<div className="text-center">
 						<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm">
-							<Database className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
+							<span className="text-nocta-400 dark:text-nocta-500">
+								<DatabaseIcon size={32} />
+							</span>
 						</div>
 						<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 							{searchTerm ? "No records found" : "No records yet"}
@@ -35,9 +37,11 @@ export function EmptyRecordsState({ searchTerm }: EmptyRecordsStateProps) {
 						</p>
 						{!searchTerm && (
 							<Button onClick={handleCreateCollection}>
-								<FileText className="w-4 h-4 mr-2" />
-								Create Collection
-							</Button>
+						<span className="mr-2">
+							<FileTextIcon size={16} />
+						</span>
+						Create Collection
+					</Button>
 						)}
 					</div>
 				</CardContent>

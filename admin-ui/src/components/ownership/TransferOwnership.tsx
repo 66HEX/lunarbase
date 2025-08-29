@@ -1,4 +1,4 @@
-import { UserPen } from "lucide-react";
+import { UserGearIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -83,7 +83,9 @@ export function TransferOwnership({
 
 	const defaultTrigger = (
 		<Button variant="primary" size="sm">
-			<UserPen className="w-4 h-4 mr-2" />
+			<span className="mr-2">
+				<UserGearIcon size={16} />
+			</span>
 			Transfer
 		</Button>
 	);

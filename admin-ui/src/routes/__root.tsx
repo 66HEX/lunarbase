@@ -4,7 +4,7 @@ import {
 	redirect,
 	useLocation,
 } from "@tanstack/react-router";
-import { Menu } from "lucide-react";
+import { ListIcon } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";
@@ -87,7 +87,7 @@ function RootComponent() {
 									onClick={() => setSidebarOpen(!sidebar.isOpen)}
 									className="p-2 text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/50"
 								>
-									<Menu className="w-6 h-6" />
+									<ListIcon size={24} />
 								</Button>
 								<h1 className="text-lg font-light text-nocta-900 dark:text-nocta-100">
 									LunarBase
@@ -108,7 +108,7 @@ function RootComponent() {
 							className={
 								isLoginPage
 									? "bg-nocta-950"
-									: "bg-nocta-950 rounded-2xl p-4 md:p-6 h-[90svh] md:h-[96svh] overflow-y-auto shadow-[inset_0_0px_16px_rgba(0,0,0,0.25)]"
+									: "bg-nocta-950 rounded-2xl p-4 md:p-6 h-[90svh] md:h-[96svh] overflow-y-auto "
 							}
 						>
 							<Outlet />

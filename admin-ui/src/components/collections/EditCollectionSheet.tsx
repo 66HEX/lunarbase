@@ -1,4 +1,4 @@
-import { Plus, Save, Trash2 } from "lucide-react";
+import { PlusIcon, FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -259,7 +259,7 @@ export function EditCollectionSheet({
 												>
 													<div className="flex items-center justify-between mb-3">
 														<div className="flex items-center gap-2">
-															<IconComponent className="w-4 h-4 text-nocta-600 dark:text-nocta-400" />
+															<IconComponent color="oklch(0.708 0 0)"  />
 															<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 																{index === 0
 																	? "ID Field"
@@ -274,7 +274,7 @@ export function EditCollectionSheet({
 																onClick={() => removeEditField(index)}
 																className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1"
 															>
-																<Trash2 className="w-4 h-4" />
+																<TrashIcon size={16} />
 															</Button>
 														)}
 													</div>
@@ -422,8 +422,8 @@ export function EditCollectionSheet({
 										onClick={addEditField}
 										className="w-full"
 									>
-										<Plus className="w-4 h-4 mr-2" />
-										Add Field
+										<PlusIcon size={16} />
+													<span className="ml-2">Add Field</span>
 									</Button>
 								</div>
 							</Form>
@@ -447,8 +447,8 @@ export function EditCollectionSheet({
 							</>
 						) : (
 							<>
-								<Save className="w-4 h-4 mr-2" />
-								Update Collection
+								<FloppyDiskIcon size={16} />
+								<span className="ml-2">Update Collection</span>
 							</>
 						)}
 					</Button>

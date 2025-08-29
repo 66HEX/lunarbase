@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Activity } from "lucide-react";
+import { ActivityIcon } from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -115,7 +115,7 @@ function WebSocketComponent() {
 			<div className="flex items-center justify-center h-svh">
 				<div className="text-center">
 					<div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 w-fit mx-auto mb-4">
-						<Activity className="w-8 h-8 text-red-600 dark:text-red-400" />
+						<ActivityIcon size={32} />
 					</div>
 					<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 						Error loading WebSocket data
@@ -161,8 +161,8 @@ function WebSocketComponent() {
 					Object.keys(stats.subscriptions_by_collection).length === 0 ? (
 						<Card className="flex items-center justify-center py-12">
 							<div className="text-center">
-								<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm">
-									<Activity className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
+								<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm text-nocta-400 dark:text-nocta-500">
+									<ActivityIcon size={32} />
 								</div>
 								<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 									No Active Subscriptions

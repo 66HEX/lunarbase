@@ -1,4 +1,4 @@
-import { Database, Plus, Save } from "lucide-react";
+import { DatabaseIcon, PlusIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -308,7 +308,9 @@ export function CreateRecordSheet({
 		>
 			<SheetTrigger asChild>
 				<Button className="w-full whitespace-nowrap">
-					<Plus className="w-4 h-4 mr-2" />
+					<span className="mr-2">
+						<PlusIcon size={16} />
+					</span>
 					Add Record
 				</Button>
 			</SheetTrigger>
@@ -330,7 +332,9 @@ export function CreateRecordSheet({
 							collection.schema?.fields?.filter((field) => field.name !== "id")
 								.length === 0 ? (
 								<div className="text-center py-8">
-									<Database className="w-12 h-12 mx-auto text-nocta-400 mb-4" />
+							<span className="block mx-auto text-nocta-400 mb-4">
+								<DatabaseIcon size={48} />
+							</span>
 									<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 										No fields to fill
 									</h3>
@@ -361,11 +365,13 @@ export function CreateRecordSheet({
 								Creating...
 							</>
 						) : (
-							<>
-								<Save className="w-4 h-4 mr-2" />
-								Create Record
-							</>
-						)}
+						<>
+							<span className="mr-2">
+								<FloppyDiskIcon size={16} />
+							</span>
+							Create Record
+						</>
+					)}
 					</Button>
 				</SheetFooter>
 			</SheetContent>

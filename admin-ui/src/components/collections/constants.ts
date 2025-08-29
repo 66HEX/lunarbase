@@ -1,25 +1,25 @@
 import {
-	Braces,
-	Calendar,
-	Database,
-	FileText,
-	Hash,
-	Link as LinkIcon,
-	Mail,
-	ToggleLeft,
-	Type,
-} from "lucide-react";
+	BracketsSquareIcon,
+	CalendarIcon,
+	DatabaseIcon,
+	FileTextIcon,
+	HashIcon,
+	LinkIcon,
+	EnvelopeIcon,
+	ToggleLeftIcon,
+	TextAaIcon,
+} from "@phosphor-icons/react";
 
 export const fieldTypeIcons = {
-	text: Type,
-	number: Hash,
-	boolean: ToggleLeft,
-	date: Calendar,
-	email: Mail,
+	text: TextAaIcon,
+	number: HashIcon,
+	boolean: ToggleLeftIcon,
+	date: CalendarIcon,
+	email: EnvelopeIcon,
 	url: LinkIcon,
-	json: Braces,
-	file: FileText,
-	relation: Database,
+	json: BracketsSquareIcon,
+	file: FileTextIcon,
+	relation: DatabaseIcon,
 };
 
 export const fieldTypeOptions = [

@@ -1,4 +1,4 @@
-import { ArrowLeft, Search } from "lucide-react";
+import { ArrowLeftIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,30 +33,28 @@ export function CollectionRecordsHeader({
 			<div className="space-y-1">
 				<div className="flex items-center gap-3">
 					<Button
-						variant="ghost"
-						onClick={onNavigateBack}
-						className="p-2 shrink-0"
-					>
-						<ArrowLeft className="w-4 h-4" />
-					</Button>
-					<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100 truncate">
+					variant="ghost"
+					onClick={onNavigateBack}
+					className="p-2 shrink-0"
+				>
+					<ArrowLeftIcon size={16} />
+				</Button>
+					<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100 truncate">
 						{collection?.display_name || collectionName}
 					</h1>
 					<Badge size="sm" variant="secondary" className="">
 						{totalCount} records
 					</Badge>
 				</div>
-				<p className="text-sm sm:text-base lg:text-lg text-nocta-600 dark:text-nocta-400">
-					{collection?.description ||
-						`Manage records in the ${collectionName} collection`}
-				</p>
 			</div>
 			<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 				<div className="relative w-full sm:max-w-md">
 					<Input
 						placeholder="Search records..."
 						leftIcon={
-							<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
+							<span className="text-nocta-400 dark:text-nocta-500">
+								<MagnifyingGlassIcon size={16} />
+							</span>
 						}
 						value={searchTerm}
 						onChange={(e) => onSearchChange(e.target.value)}

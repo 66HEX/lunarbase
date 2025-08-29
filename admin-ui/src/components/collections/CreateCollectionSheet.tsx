@@ -1,4 +1,4 @@
-import { Plus, Save, Trash2 } from "lucide-react";
+import { FloppyDiskIcon, TrashIcon, PlusIcon } from "@phosphor-icons/react"
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -278,7 +278,7 @@ export function CreateCollectionSheet({
 																onClick={() => removeField(index)}
 																className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 p-1"
 															>
-																<Trash2 className="w-4 h-4" />
+																<TrashIcon size={16} />
 															</Button>
 														)}
 													</div>
@@ -422,8 +422,8 @@ export function CreateCollectionSheet({
 										onClick={addField}
 										className="w-full"
 									>
-										<Plus className="w-4 h-4 mr-2" />
-										Add Field
+										<PlusIcon />
+										<span className="ml-2">Add Field</span>
 									</Button>
 								</div>
 							</Form>
@@ -447,8 +447,10 @@ export function CreateCollectionSheet({
 							</>
 						) : (
 							<>
-								<Save className="w-4 h-4 mr-2" />
-								Create Collection
+								<FloppyDiskIcon />
+								<span className="ml-2">
+									Create Collection
+								</span>
 							</>
 						)}
 					</Button>

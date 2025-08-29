@@ -1,4 +1,4 @@
-import { Server } from "lucide-react";
+import { ComputerTowerIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
@@ -19,7 +19,7 @@ export function HealthStatusCard({ health }: HealthStatusCardProps) {
 			<CardHeader className="pb-3 p-3">
 				<CardTitle className="flex items-center gap-2 text-base">
 					<div className="p-1">
-						<Server className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
+						<ComputerTowerIcon size={14} />
 					</div>
 					System Health
 				</CardTitle>

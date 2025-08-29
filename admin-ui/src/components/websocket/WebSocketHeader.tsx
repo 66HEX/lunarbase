@@ -1,4 +1,4 @@
-import { Radio, RefreshCw } from "lucide-react";
+import { RadioButtonIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -20,7 +20,7 @@ export function WebSocketHeader({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between mb-6">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							WebSocket Management
 						</h1>
 						<Badge
@@ -30,9 +30,6 @@ export function WebSocketHeader({
 							{activeConnections || 0} active
 						</Badge>
 					</div>
-					<p className="text-sm sm:text-base lg:text-lg text-nocta-600 dark:text-nocta-400">
-						Monitor real-time connections and manage WebSocket activity
-					</p>
 				</div>
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 					<Button
@@ -42,9 +39,9 @@ export function WebSocketHeader({
 						disabled={isLoading}
 						className="w-full sm:w-auto"
 					>
-						<RefreshCw
-							className={`w-4 h-4 mr-2 ${isLoading ? "animate-spin" : ""}`}
-						/>
+						<span className={`mr-2 ${isLoading ? "animate-spin" : ""}`}>
+						<ArrowClockwiseIcon size={16} />
+					</span>
 						<span>Refresh</span>
 					</Button>
 					<Button
@@ -52,7 +49,9 @@ export function WebSocketHeader({
 						onClick={onBroadcast}
 						disabled={!activeConnections}
 					>
-						<Radio className="w-4 h-4 mr-2" />
+						<span className="mr-2">
+					<RadioButtonIcon size={16} />
+				</span>
 						<span className="sm:inline">Broadcast Message</span>
 					</Button>
 				</div>

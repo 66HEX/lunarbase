@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { AlertTriangle, Database, Save } from "lucide-react";
+import { WarningIcon, DatabaseIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -201,7 +201,9 @@ export function DatabaseSettingsPanel() {
 										variant="destructive"
 										className="flex items-center gap-1 text-xs"
 									>
-										<AlertTriangle className="w-3 h-3" />
+										<span className="w-3 h-3">
+												<WarningIcon size={12} />
+											</span>
 										Restart Required
 									</Badge>
 								)}
@@ -344,8 +346,10 @@ export function DatabaseSettingsPanel() {
 							{manualBackupMutation.isPending ? (
 								<Spinner className="w-4 h-4" />
 							) : (
-								<Database className="w-4 h-4" />
-							)}
+						<span className="w-4 h-4">
+							<DatabaseIcon size={16} />
+						</span>
+					)}
 							Create Manual Backup
 						</Button>
 
@@ -357,8 +361,10 @@ export function DatabaseSettingsPanel() {
 							{updateSettingMutation.isPending ? (
 								<Spinner className="w-4 h-4" />
 							) : (
-								<Save className="w-4 h-4" />
-							)}
+					<span className="w-4 h-4">
+						<FloppyDiskIcon size={16} />
+					</span>
+				)}
 							Save Changes
 						</Button>
 					</div>

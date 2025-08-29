@@ -58,7 +58,9 @@ export function WebSocketActivity({ activity }: WebSocketActivityProps) {
 				) : (
 					<div className="text-center py-8">
 						<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm">
-							<webSocketEmptyStates.activity.icon className="w-8 h-8 text-nocta-400 dark:text-nocta-500" />
+							<div className="w-8 h-8 text-nocta-400 dark:text-nocta-500">
+								<webSocketEmptyStates.activity.icon size={32} />
+							</div>
 						</div>
 						<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 							{webSocketEmptyStates.activity.title}

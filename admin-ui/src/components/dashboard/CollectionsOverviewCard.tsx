@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRight, Database, Plus } from "lucide-react";
+import { ArrowUpRightIcon, DatabaseIcon, PlusIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -22,7 +22,7 @@ export function CollectionsOverviewCard({
 				<div className="flex items-center justify-between">
 					<CardTitle className="flex items-center gap-2 text-base">
 						<div className="p-1">
-							<Database className="w-3.5 h-3.5 text-nocta-700 dark:text-nocta-300" />
+							<DatabaseIcon size={14} />
 						</div>
 						Collections Overview
 					</CardTitle>
@@ -64,9 +64,9 @@ export function CollectionsOverviewCard({
 										className="text-sm text-nocta-600 dark:text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 font-light flex items-center gap-1 transition-colors duration-200 w-fit"
 									>
 										View{" "}
-										{Object.keys(collections.records_per_collection).length - 3}{" "}
-										more collections
-										<ArrowUpRight className="w-3 h-3" />
+											{Object.keys(collections.records_per_collection).length - 3}{" "}
+											more collections
+											<ArrowUpRightIcon size={12} />
 									</Link>
 								</div>
 							)}
@@ -74,8 +74,8 @@ export function CollectionsOverviewCard({
 				) : (
 					<div className="text-center py-2">
 						<div className="p-1.5 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-2.5">
-							<Database className="w-5 h-5 text-nocta-400 dark:text-nocta-500" />
-						</div>
+						<DatabaseIcon size={20} />
+					</div>
 						<h3 className="text-sm font-light text-nocta-900 dark:text-nocta-100 mb-1.5">
 							No collections yet
 						</h3>
@@ -85,9 +85,9 @@ export function CollectionsOverviewCard({
 						</p>
 						<Link to="/collections">
 							<Button size="sm" className="px-2.5 py-1">
-								<Plus className="w-3.5 h-3.5 mr-1.5" />
-								Create Collection
-							</Button>
+							<PlusIcon size={14} />
+							<span className="ml-1.5">Create Collection</span>
+						</Button>
 						</Link>
 					</div>
 				)}

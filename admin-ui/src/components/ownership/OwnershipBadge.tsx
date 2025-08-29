@@ -1,4 +1,4 @@
-import { Users } from "lucide-react";
+import { UsersIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { useUser } from "@/hooks/users/useUsers";
 import type { OwnershipInfo } from "@/types/api";
@@ -23,7 +23,7 @@ export function OwnershipBadge({
 	if (!ownership) {
 		return (
 			<Badge variant="outline" className="text-gray-500">
-				{showIcon && <Users className="w-3 h-3 mr-1" />}
+				{showIcon && <span className="mr-1"><UsersIcon size={12} /></span>}
 				No Owner
 			</Badge>
 		);

@@ -1,26 +1,26 @@
 import {
-	Braces,
-	Calendar,
-	Database,
-	FileText,
-	Hash,
-	Link as LinkIcon,
-	Mail,
-	ToggleLeft,
-	Type,
-} from "lucide-react";
+	BracketsCurlyIcon,
+	CalendarIcon,
+	DatabaseIcon,
+	FileTextIcon,
+	HashIcon,
+	LinkIcon,
+	EnvelopeIcon,
+	ToggleLeftIcon,
+	TextAaIcon,
+} from "@phosphor-icons/react";
 import type { FileUploadFile } from "@/components/ui/file-upload";
 
 export const fieldTypeIcons = {
-	text: Type,
-	number: Hash,
-	boolean: ToggleLeft,
-	date: Calendar,
-	email: Mail,
+	text: TextAaIcon,
+	number: HashIcon,
+	boolean: ToggleLeftIcon,
+	date: CalendarIcon,
+	email: EnvelopeIcon,
 	url: LinkIcon,
-	json: Braces,
-	file: FileText,
-	relation: Database,
+	json: BracketsCurlyIcon,
+	file: FileTextIcon,
+	relation: DatabaseIcon,
 };
 
 export const fieldValidationPatterns = {

@@ -1,4 +1,4 @@
-import { Save } from "lucide-react";
+import { FloppyDiskIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -337,10 +337,10 @@ export function EditUserSheet({
 								Updating...
 							</>
 						) : (
-							<>
-								<Save className="w-4 h-4 mr-2" />
-								Update User
-							</>
+						<>
+							<FloppyDiskIcon size={16} />
+							<span className="ml-2">Update User</span>
+						</>
 						)}
 					</Button>
 				</SheetFooter>

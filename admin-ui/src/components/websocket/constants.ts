@@ -1,25 +1,25 @@
 import {
-	Activity,
-	Globe,
-	UserCheck,
-	Users,
-	UserX,
-	Wifi,
-	WifiOff,
-} from "lucide-react";
+	ActivityIcon,
+	GlobeIcon,
+	UserCheckIcon,
+	UsersIcon,
+	UserMinusIcon,
+	WifiHighIcon,
+	WifiSlashIcon,
+} from "@phosphor-icons/react";
 
 export const webSocketStatusIcons = {
-	active: Wifi,
-	idle: WifiOff,
-	connected: Globe,
-	authenticated: Users,
-	subscriptions: Activity,
+	active: WifiHighIcon,
+	idle: WifiSlashIcon,
+	connected: GlobeIcon,
+	authenticated: UsersIcon,
+	subscriptions: ActivityIcon,
 };
 
 export const connectionStatusIcons = {
-	authenticated: UserCheck,
-	anonymous: UserX,
-	disconnect: WifiOff,
+	authenticated: UserCheckIcon,
+	anonymous: UserMinusIcon,
+	disconnect: WifiSlashIcon,
 };
 
 export const getWebSocketStatusVariant = (status: string) => {
@@ -51,28 +51,28 @@ export const webSocketStatsConfig = [
 	{
 		key: "total_connections",
 		title: "Total Connections",
-		icon: Globe,
+		icon: GlobeIcon,
 		unit: "connections",
 		description: "Number of active WebSocket connections",
 	},
 	{
 		key: "authenticated_connections",
 		title: "Authenticated",
-		icon: Users,
+		icon: UsersIcon,
 		unit: "users",
 		description: "Number of authenticated user connections",
 	},
 	{
 		key: "total_subscriptions",
 		title: "Subscriptions",
-		icon: Activity,
+		icon: ActivityIcon,
 		unit: "active",
 		description: "Total number of active subscriptions",
 	},
 	{
 		key: "server_status",
 		title: "Server Status",
-		icon: Wifi,
+		icon: WifiHighIcon,
 		description: "Current WebSocket server status",
 		valueTransform: (stats: { total_connections?: number }) =>
 			stats?.total_connections ? "Active" : "Idle",
@@ -83,17 +83,17 @@ export const webSocketEmptyStates = {
 	connections: {
 		title: "No active connections",
 		description: "WebSocket connections will appear here when clients connect",
-		icon: Globe,
+		icon: GlobeIcon,
 	},
 	activity: {
 		title: "No recent activity",
 		description: "WebSocket activity will appear here when events occur",
-		icon: Activity,
+		icon: ActivityIcon,
 	},
 	subscriptions: {
 		title: "No active subscriptions",
 		description: "Client subscriptions will appear here when established",
-		icon: Activity,
+		icon: ActivityIcon,
 	},
 };
 

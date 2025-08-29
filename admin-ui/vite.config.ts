@@ -25,7 +25,7 @@ export default defineConfig({
 				manualChunks: {
 					vendor: ["react", "react-dom"],
 					router: ["@tanstack/react-router", "@tanstack/react-query"],
-					ui: ["@radix-ui/react-icons", "lucide-react", "react-icons"],
+					ui: ["@radix-ui/react-icons", "@phosphor-icons/react", "react-icons"],
 					utils: ["clsx", "tailwind-merge", "class-variance-authority"],
 				},
 			},

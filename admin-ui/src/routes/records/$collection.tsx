@@ -4,7 +4,7 @@ import {
 	useNavigate,
 	useParams,
 } from "@tanstack/react-router";
-import { ArrowLeft, Edit3, Trash2, UserPen } from "lucide-react";
+import { ArrowLeftIcon, PencilIcon, TrashIcon, UserIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { OwnershipBadge, TransferOwnership } from "@/components/ownership";
 import {
@@ -204,7 +204,7 @@ export default function RecordComponent() {
 						onClick={() => navigate({ to: "/records" })}
 						className="p-2"
 					>
-						<ArrowLeft className="w-4 h-4" />
+						<ArrowLeftIcon size={16} />
 					</Button>
 					<h1 className="text-4xl font-light text-nocta-900 dark:text-nocta-100">
 						Records - {collectionName}
@@ -228,7 +228,7 @@ export default function RecordComponent() {
 						onClick={() => navigate({ to: "/records" })}
 						className="p-2"
 					>
-						<ArrowLeft className="w-4 h-4" />
+						<ArrowLeftIcon size={16} />
 					</Button>
 					<h1 className="text-4xl font-light text-nocta-900 dark:text-nocta-100">
 						Records - {collectionName}
@@ -369,7 +369,7 @@ export default function RecordComponent() {
 															className="w-8 h-8 p-0"
 															title="Transfer ownership"
 														>
-															<UserPen className="w-4 h-4" />
+															<UserIcon size={16} />
 														</Button>
 													}
 												/>
@@ -380,7 +380,7 @@ export default function RecordComponent() {
 													onClick={() => handleEditRecord(record)}
 													title="Edit record"
 												>
-													<Edit3 className="w-4 h-4" />
+													<PencilIcon size={16} />
 												</Button>
 												<Button
 													variant="ghost"
@@ -389,7 +389,7 @@ export default function RecordComponent() {
 													onClick={() => handleDeleteRecord(record.id)}
 													title="Delete record"
 												>
-													<Trash2 className="w-4 h-4" />
+													<TrashIcon size={16} />
 												</Button>
 											</div>
 										);

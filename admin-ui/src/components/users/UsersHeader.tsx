@@ -1,4 +1,4 @@
-import { Search, UserPlus } from "lucide-react";
+import { MagnifyingGlassIcon, UserPlusIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ export function UsersHeader({
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
-						<h1 className="text-2xl sm:text-3xl lg:text-4xl font-light text-nocta-900 dark:text-nocta-100">
+						<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							Users
 						</h1>
 						<Badge
@@ -32,25 +32,24 @@ export function UsersHeader({
 							{usersCount} total
 						</Badge>
 					</div>
-					<p className="text-sm sm:text-base lg:text-lg text-nocta-600 dark:text-nocta-400">
-						Manage user accounts and permissions
-					</p>
 				</div>
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 					<div className="relative w-full sm:max-w-md">
 						<Input
 							placeholder="Search users..."
 							leftIcon={
-								<Search className="w-4 h-4 text-nocta-400 dark:text-nocta-500" />
-							}
+					<span className="w-4 h-4 text-nocta-400 dark:text-nocta-500">
+						<MagnifyingGlassIcon size={16} />
+					</span>
+				}
 							value={searchTerm}
 							onChange={(e) => onSearchChange(e.target.value)}
 							className="pl-10 w-full md:w-auto !bg-nocta-900"
 						/>
 					</div>
 					<Button onClick={onCreateUser} className="w-full sm:w-auto">
-						<UserPlus className="w-4 h-4 mr-2" />
-						<span className="whitespace-nowrap">Create User</span>
+						<UserPlusIcon size={16} />
+			<span className="ml-2 whitespace-nowrap">Create User</span>
 					</Button>
 				</div>
 			</div>

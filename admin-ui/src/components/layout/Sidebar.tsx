@@ -1,15 +1,15 @@
 import { Link, useLocation } from "@tanstack/react-router";
 import {
-	Activity,
-	BarChart3,
-	Database,
-	FileText,
-	LayoutDashboard,
-	LogOut,
-	Settings,
-	Users,
-	X,
-} from "lucide-react";
+	ActivityIcon,
+	ChartBarIcon,
+	DatabaseIcon,
+	FileTextIcon,
+	SquaresFourIcon,
+	SignOutIcon,
+	GearIcon,
+	UsersIcon,
+	XIcon,
+} from "@phosphor-icons/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Avatar } from "@/components/ui/avatar";
@@ -22,20 +22,20 @@ const navigation = [
 	{
 		name: "Dashboard",
 		href: "/dashboard",
-		icon: LayoutDashboard,
+		icon: SquaresFourIcon,
 		adminOnly: true,
 	},
 	{
 		name: "Collections",
 		href: "/collections",
-		icon: Database,
+		icon: DatabaseIcon,
 		adminOnly: false,
 	},
-	{ name: "Records", href: "/records", icon: FileText, adminOnly: false },
-	{ name: "Users", href: "/users", icon: Users, adminOnly: true },
-	{ name: "WebSocket", href: "/websocket", icon: Activity, adminOnly: true },
-	{ name: "Metrics", href: "/metrics", icon: BarChart3, adminOnly: true },
-	{ name: "Settings", href: "/settings", icon: Settings, adminOnly: true },
+	{ name: "Records", href: "/records", icon: FileTextIcon, adminOnly: false },
+	{ name: "Users", href: "/users", icon: UsersIcon, adminOnly: true },
+	{ name: "WebSocket", href: "/websocket", icon: ActivityIcon, adminOnly: true },
+	{ name: "Metrics", href: "/metrics", icon: ChartBarIcon, adminOnly: true },
+	{ name: "Settings", href: "/settings", icon: GearIcon, adminOnly: true },
 ];
 
 const getProxyUrl = (originalUrl: string): string => {
@@ -191,7 +191,7 @@ export function Sidebar() {
 							onClick={() => setSidebarOpen(false)}
 							className="lg:hidden p-2 text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40"
 						>
-							<X className="w-5 h-5" />
+							<XIcon size={20} />
 						</Button>
 					</div>
 
@@ -280,13 +280,15 @@ export function Sidebar() {
 												: "text-nocta-700 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40 hover:text-nocta-900 dark:hover:text-nocta-100"
 										}`}
 									>
-										<Icon
-											className={`w-5 h-5 transition-all ${
-												isActive
-													? "text-nocta-900 dark:text-nocta-100"
-													: "text-nocta-400 dark:text-nocta-500 group-hover:text-nocta-600 dark:group-hover:text-nocta-300"
-											}`}
-										/>
+										<span
+										className={`transition-all ${
+											isActive
+												? "text-nocta-900 dark:text-nocta-100"
+												: "text-nocta-400 dark:text-nocta-500 group-hover:text-nocta-600 dark:group-hover:text-nocta-300"
+										}`}
+									>
+										<Icon size={20} />
+									</span>
 										<span>{item.name}</span>
 									</Link>
 								);
@@ -322,7 +324,9 @@ export function Sidebar() {
 							onClick={handleLogout}
 							className="w-full justify-start text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40 hover:text-nocta-900 dark:hover:text-nocta-100"
 						>
-							<LogOut className="w-4 h-4 mr-2" />
+							<span className="mr-2">
+				<SignOutIcon size={16} />
+			</span>
 							Logout
 						</Button>
 					</div>

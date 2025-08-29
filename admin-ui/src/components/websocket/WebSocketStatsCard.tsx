@@ -1,4 +1,4 @@
-import { Minus, TrendingDown, TrendingUp } from "lucide-react";
+import { MinusIcon, TrendDownIcon, TrendUpIcon } from "@phosphor-icons/react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 interface WebSocketStatsCardProps {
@@ -23,9 +23,9 @@ export function WebSocketStatsCard({
 }: WebSocketStatsCardProps) {
 	const getTrendIcon = () => {
 		if (!trend) return null;
-		if (trend.value > 0) return <TrendingUp className="w-4 h-4" />;
-		if (trend.value < 0) return <TrendingDown className="w-4 h-4" />;
-		return <Minus className="w-4 h-4" />;
+		if (trend.value > 0) return <TrendUpIcon size={16} />;
+		if (trend.value < 0) return <TrendDownIcon size={16} />;
+		return <MinusIcon size={16} />;
 	};
 
 	const getTrendColor = () => {
