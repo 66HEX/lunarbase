@@ -376,7 +376,7 @@ export const Table = <T extends Record<string, unknown>>({
 
 				{pagination && (
 					<div className="px-6 py-4 bg-nocta-200/50 dark:bg-nocta-800/20 border-t border-nocta-200 dark:border-nocta-800/50 flex items-center justify-between">
-						<div className="text-sm text-nocta-600 dark:text-nocta-400">
+						<div className="hidden md:block text-sm text-nocta-600 dark:text-nocta-400">
 							Showing{" "}
 							{Math.min(
 								(pagination.current - 1) * pagination.pageSize + 1,
@@ -389,7 +389,7 @@ export const Table = <T extends Record<string, unknown>>({
 							)}{" "}
 							of {pagination.total} entries
 						</div>
-						<div className="flex items-center gap-2">
+						<div className="flex items-center gap-2 ml-auto ">
 							<button
 								onClick={() =>
 									pagination.onChange(

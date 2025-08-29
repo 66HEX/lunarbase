@@ -176,7 +176,7 @@ export function Sidebar() {
 				<div className="flex flex-col h-full bg-nocta-100 dark:bg-nocta-900 shadow-sm dark:shadow-lg">
 					<div className="flex items-center justify-between p-4">
 						<div className="flex items-center space-x-3">
-							<div className="w-9 h-9 bg-nocta-800 rounded-lg flex items-center justify-center shadow-lg">
+							<div className="w-9 h-9 bg-nocta-800 rounded-lg flex items-center justify-center shadow-lg border border-nocta-50/5">
 								<LunarLogo className="h-6 w-6 text-white" />
 							</div>
 							<div>

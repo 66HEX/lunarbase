@@ -147,7 +147,7 @@ export default function LoginComponent() {
 				<Card>
 					<CardHeader>
 						<div className="flex justify-start mb-2">
-							<div className="w-10 h-10 bg-nocta-800 rounded-lg flex items-center justify-center shadom-lg">
+							<div className="w-10 h-10 bg-nocta-800 rounded-lg flex items-center justify-center shadom-lg border border-nocta-50/5">
 								<LunarLogo className="h-6 w-6 text-white" />
 							</div>
 						</div>

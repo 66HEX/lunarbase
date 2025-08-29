@@ -17,7 +17,7 @@ export function CollectionsOverviewCard({
 		Object.keys(collections.records_per_collection).length > 0;
 
 	return (
-		<Card className="dashboard-card min-h-64">
+		<Card className="dashboard-card md:min-h-64">
 			<CardHeader className="pb-3 p-3">
 				<div className="flex items-center justify-between">
 					<CardTitle className="flex items-center gap-2 text-base">

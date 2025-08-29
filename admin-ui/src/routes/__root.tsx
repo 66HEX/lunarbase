@@ -108,7 +108,7 @@ function RootComponent() {
 							className={
 								isLoginPage
 									? "bg-nocta-950"
-									: "bg-nocta-950 rounded-2xl p-4 h-[96svh] overflow-y-auto"
+									: "bg-nocta-950 rounded-2xl p-4 md:p-6 h-[90svh] md:h-[96svh] overflow-y-auto shadow-[inset_0_0px_16px_rgba(0,0,0,0.25)]"
 							}
 						>
 							<Outlet />

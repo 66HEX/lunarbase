@@ -1,5 +1,10 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Protection against accidental sheet closure during select interactions in CreateRecordSheet
+
 ## [0.4.0][0.4.0] - 2025-08-28
 
 ### Added
