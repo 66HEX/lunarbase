@@ -119,9 +119,12 @@ export function CreateRecordSheet({
 		});
 
 		setFieldErrors(newErrors);
-
 		if (Object.keys(newErrors).length > 0) {
-			toast(recordToastMessages.validationError);
+			toast({
+				...recordToastMessages.validationError,
+				position: "bottom-right",
+				duration: 3000,
+			});
 		}
 
 		return Object.keys(newErrors).length === 0;

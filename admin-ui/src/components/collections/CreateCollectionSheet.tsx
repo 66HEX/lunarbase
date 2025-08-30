@@ -1,5 +1,6 @@
 import { FloppyDiskIcon, TrashIcon, PlusIcon } from "@phosphor-icons/react"
 import { useEffect, useState } from "react";
+import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -33,6 +34,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useCreateCollection } from "@/hooks";
 import type { CreateCollectionRequest, FieldDefinition } from "@/types/api";
 import { fieldTypeIcons, fieldTypeOptions } from "./constants";
+import { createCollectionSchema, type CreateCollectionFormData } from "./validation";
 
 interface CreateCollectionSheetProps {
 	isOpen: boolean;
@@ -83,35 +85,49 @@ export function CreateCollectionSheet({
 	};
 
 	const validateForm = (): boolean => {
-		const newErrors: { [key: string]: string } = {};
+		const formData: CreateCollectionFormData = {
+			name: collectionName,
+			description: collectionDescription || undefined,
+			schema: { fields },
+		};
 
-		if (!collectionName.trim()) {
-			newErrors.collectionName = "Collection name is required";
-		} else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(collectionName)) {
-			newErrors.collectionName =
-				"Collection name must start with a letter and contain only letters, numbers, and underscores";
+		const result = createCollectionSchema.safeParse(formData);
+
+		if (!result.success) {
+			const newErrors: { [key: string]: string } = {};
+			
+			result.error.issues.forEach((error) => {
+				const path = error.path.join('.');
+				
+				if (path === 'name') {
+					newErrors.collectionName = error.message;
+				} else if (path === 'schema.fields') {
+					newErrors.fields = error.message;
+				} else if (path.startsWith('schema.fields.')) {
+					const fieldIndex = path.split('.')[2];
+					const fieldProperty = path.split('.')[3];
+					
+					if (fieldProperty === 'name') {
+						newErrors[`field_${fieldIndex}_name`] = error.message;
+					}
+				}
+			});
+
+			setFieldErrors(newErrors);
+
+			toast({
+				title: "Validation Error",
+				description: "Please fix the validation errors in the form",
+				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
+			});
+
+			return false;
 		}
 
-		const fieldNames = fields.map((f) => f.name.toLowerCase());
-		const duplicateNames = fieldNames.filter(
-			(name, index) => fieldNames.indexOf(name) !== index,
-		);
-		if (duplicateNames.length > 0) {
-			newErrors.fields = "Field names must be unique";
-		}
-
-		fields.forEach((field, index) => {
-			if (!field.name.trim()) {
-				newErrors[`field_${index}_name`] = "Field name is required";
-			} else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field.name)) {
-				newErrors[`field_${index}_name`] =
-					"Field name must start with a letter and contain only letters, numbers, and underscores";
-			}
-		});
-
-		setFieldErrors(newErrors);
-
-		return Object.keys(newErrors).length === 0;
+		setFieldErrors({});
+		return true;
 	};
 
 	const handleCreateCollection = async () => {

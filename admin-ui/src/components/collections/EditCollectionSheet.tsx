@@ -1,5 +1,6 @@
 import { PlusIcon, FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
+import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -37,6 +38,7 @@ import type {
 	UpdateCollectionRequest,
 } from "@/types/api";
 import { fieldTypeIcons, fieldTypeOptions } from "./constants";
+import { editCollectionSchema, type EditCollectionFormData } from "./validation";
 
 interface EditCollectionSheetProps {
 	isOpen: boolean;
@@ -88,35 +90,49 @@ export function EditCollectionSheet({
 	};
 
 	const validateEditForm = (): boolean => {
-		const newErrors: { [key: string]: string } = {};
+		const formData: EditCollectionFormData = {
+			name: editCollectionName,
+			description: editCollectionDescription || undefined,
+			schema: { fields: editFields },
+		};
 
-		if (!editCollectionName.trim()) {
-			newErrors.editCollectionName = "Collection name is required";
-		} else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(editCollectionName)) {
-			newErrors.editCollectionName =
-				"Collection name must start with a letter and contain only letters, numbers, and underscores";
+		const result = editCollectionSchema.safeParse(formData);
+
+		if (!result.success) {
+			const newErrors: { [key: string]: string } = {};
+			
+			result.error.issues.forEach((error) => {
+				const path = error.path.join('.');
+				
+				if (path === 'name') {
+					newErrors.editCollectionName = error.message;
+				} else if (path === 'schema.fields') {
+					newErrors.editFields = error.message;
+				} else if (path.startsWith('schema.fields.')) {
+					const fieldIndex = path.split('.')[2];
+					const fieldProperty = path.split('.')[3];
+					
+					if (fieldProperty === 'name') {
+						newErrors[`edit_field_${fieldIndex}_name`] = error.message;
+					}
+				}
+			});
+
+			setEditFieldErrors(newErrors);
+
+			toast({
+				title: "Validation Error",
+				description: "Please fix the validation errors in the form",
+				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
+			});
+
+			return false;
 		}
 
-		const fieldNames = editFields.map((f) => f.name.toLowerCase());
-		const duplicateNames = fieldNames.filter(
-			(name, index) => fieldNames.indexOf(name) !== index,
-		);
-		if (duplicateNames.length > 0) {
-			newErrors.editFields = "Field names must be unique";
-		}
-
-		editFields.forEach((field, index) => {
-			if (!field.name.trim()) {
-				newErrors[`edit_field_${index}_name`] = "Field name is required";
-			} else if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(field.name)) {
-				newErrors[`edit_field_${index}_name`] =
-					"Field name must start with a letter and contain only letters, numbers, and underscores";
-			}
-		});
-
-		setEditFieldErrors(newErrors);
-
-		return Object.keys(newErrors).length === 0;
+		setEditFieldErrors({});
+		return true;
 	};
 
 	const handleUpdateCollection = async () => {
