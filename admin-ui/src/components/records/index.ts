@@ -8,3 +8,4 @@ export { EmptyRecordsState } from "./EmptyRecordsState";
 export { RecordsHeader } from "./RecordsHeader";
 export { RecordsPagination } from "./RecordsPagination";
 export { RecordsTable } from "./RecordsTable";
+export { RichTextEditor } from "./RichTextEditor";

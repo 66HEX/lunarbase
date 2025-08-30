@@ -20,6 +20,7 @@ export const fieldTypeIcons = {
 	json: BracketsSquareIcon,
 	file: FileTextIcon,
 	relation: DatabaseIcon,
+	richtext: BracketsSquareIcon,
 };
 
 export const fieldTypeOptions = [
@@ -32,6 +33,7 @@ export const fieldTypeOptions = [
 	{ value: "json", label: "JSON" },
 	{ value: "file", label: "File" },
 	{ value: "relation", label: "Relation" },
+	{ value: "richtext", label: "Rich Text" },
 ];
 
 export const getFieldTypeVariant = (type: string) => {

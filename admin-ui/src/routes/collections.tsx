@@ -351,7 +351,7 @@ export default function CollectionsComponent() {
 				<Card>
 					<CardContent className="py-12">
 						<div className="text-center">
-							<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
+							<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 text-nocta-400 dark:text-nocta-500 w-fit mx-auto mb-4">
 								<DatabaseIcon size={32} />
 							</div>
 							<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">

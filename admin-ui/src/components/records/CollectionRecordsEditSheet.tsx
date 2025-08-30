@@ -46,6 +46,8 @@ import {
 	recordToastMessages,
 } from "./constants";
 import { validateRecordData } from "./validation";
+import { RichTextEditor } from "./RichTextEditor";
+import type { JSONContent } from "@tiptap/react";
 
 interface CollectionRecordsEditSheetProps {
 	open: boolean;
@@ -132,7 +134,7 @@ export function CollectionRecordsEditSheet({
 
 	const updateFormData = (
 		fieldName: string,
-		value: string | number | boolean | null,
+		value: unknown,
 	) => {
 		setFormData((prev) => ({
 			...prev,
@@ -267,6 +269,11 @@ export function CollectionRecordsEditSheet({
 							variant={hasError ? "error" : "default"}
 							rows={4}
 						/>
+					) : field.field_type === "richtext" ? (
+						<RichTextEditor
+							value={typeof value === "string" && value.trim() !== "" ? JSON.parse(value) : (value as JSONContent || { type: 'doc', content: [] })}
+							onChange={(newValue) => updateFormData(field.name, newValue)}
+						/>
 					) : field.field_type === "relation" ? (
 						<Select
 							value={typeof value === "string" ? value : ""}
@@ -340,7 +347,7 @@ export function CollectionRecordsEditSheet({
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent side="right" size="md">
+			<SheetContent side="right" size="xl">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Edit Record

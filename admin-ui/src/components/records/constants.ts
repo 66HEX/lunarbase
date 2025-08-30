@@ -21,6 +21,7 @@ export const fieldTypeIcons = {
 	json: BracketsCurlyIcon,
 	file: FileTextIcon,
 	relation: DatabaseIcon,
+    richtext: BracketsCurlyIcon,
 };
 
 export const fieldValidationPatterns = {
@@ -51,6 +52,8 @@ export const getDefaultFieldValue = (
 			return "";
 		case "file":
 			return [];
+		case "richtext":
+			return { type: 'doc', content: [] };
 		default:
 			return "";
 	}
@@ -72,7 +75,8 @@ export const processFieldValue = (
 		case "boolean":
 			return Boolean(value);
 		case "json":
-			if (value && typeof value === "string") {
+        case "richtext":
+            if (value && typeof value === "string") {
 				try {
 					return JSON.parse(value);
 				} catch {
@@ -143,7 +147,8 @@ export const validateFieldValue = (
 			}
 			break;
 		case "json":
-			if (value && typeof value === "string") {
+        case "richtext":
+            if (value && typeof value === "string") {
 				try {
 					JSON.parse(value);
 				} catch {

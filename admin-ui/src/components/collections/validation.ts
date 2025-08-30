@@ -47,7 +47,7 @@ const fieldDefinitionSchema = z.object({
 			(name) => !RESERVED_FIELD_NAMES.includes(name.toLowerCase()),
 			"Field name is reserved and cannot be used"
 		),
-	field_type: z.enum(["text", "number", "boolean", "date", "email", "url", "json", "file", "relation"]),
+	field_type: z.enum(["text", "number", "boolean", "date", "email", "url", "json", "file", "relation", "richtext"]),
 	required: z.boolean(),
 	default_value: z.unknown().optional(),
 });

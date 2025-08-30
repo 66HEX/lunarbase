@@ -105,7 +105,8 @@ export interface FieldDefinition {
 		| "url"
 		| "json"
 		| "file"
-		| "relation";
+		| "relation"
+		| "richtext";
 	required: boolean;
 	default_value?: unknown;
 	validation?: {

@@ -132,6 +132,7 @@ pub enum FieldType {
     Json,
     File,
     Relation,
+    RichText,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, ToSchema)]

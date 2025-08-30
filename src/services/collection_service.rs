@@ -83,7 +83,7 @@ impl CollectionService {
             FieldType::Date => "TIMESTAMP",
             FieldType::Email => "TEXT",
             FieldType::Url => "TEXT",
-            FieldType::Json => "TEXT",
+            FieldType::Json | FieldType::RichText => "TEXT",
             FieldType::File => "TEXT",
             FieldType::Relation => "TEXT",
         }
@@ -305,7 +305,7 @@ impl CollectionService {
                         | FieldType::Relation => " DEFAULT ''".to_string(),
                         FieldType::Number => " DEFAULT 0".to_string(),
                         FieldType::Boolean => " DEFAULT 0".to_string(),
-                        FieldType::Json => " DEFAULT '{}'".to_string(),
+                        FieldType::Json | FieldType::RichText => " DEFAULT '{}'".to_string(),
                         FieldType::Date => " DEFAULT CURRENT_TIMESTAMP".to_string(),
                     }
                 } else {
@@ -604,7 +604,7 @@ impl CollectionService {
                     "NULL".to_string()
                 }
             }
-            FieldType::Json => match serde_json::to_string(value) {
+            FieldType::Json | FieldType::RichText => match serde_json::to_string(value) {
                 Ok(json_str) => format!("'{}'", json_str.replace("'", "''")),
                 Err(_) => "NULL".to_string(),
             },
@@ -702,7 +702,7 @@ impl CollectionService {
                         Value::Null
                     }
                 }
-                FieldType::Json => {
+                FieldType::Json | FieldType::RichText => {
                     #[derive(Debug, diesel::QueryableByName)]
                     struct JsonField {
                         #[diesel(sql_type = Nullable<Text>)]
@@ -1987,7 +1987,7 @@ impl CollectionService {
                     )]))
                 }
             }
-            FieldType::Json => Ok(value.clone()),
+            FieldType::Json | FieldType::RichText => Ok(value.clone()),
             FieldType::Date => {
                 if let Some(s) = value.as_str() {
                     match chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d") {

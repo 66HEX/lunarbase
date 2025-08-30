@@ -73,7 +73,7 @@ export function CollectionsOverviewCard({
 					</div>
 				) : (
 					<div className="text-center py-2">
-						<div className="p-1.5 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-2.5">
+						<div className="p-1.5 rounded-lg bg-nocta-100 dark:bg-nocta-800 text-nocta-400 dark:text-nocta-500 w-fit mx-auto mb-2.5">
 						<DatabaseIcon size={20} />
 					</div>
 						<h3 className="text-sm font-light text-nocta-900 dark:text-nocta-100 mb-1.5">

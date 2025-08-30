@@ -88,6 +88,7 @@ const createFieldValidationSchema = (field: FieldDefinition) => {
 			break;
 
 		case "json":
+		case "richtext":
 			schema = z.union([
 				z.string().refine(
 					(val) => {

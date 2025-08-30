@@ -58,7 +58,7 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 ## Core Features
 
 ### Dynamic Collection Management
-- **Flexible schema system** supporting Text, Number, Boolean, Date, Email, URL, JSON, File, and Relation fields
+- **Flexible schema system** supporting Text, Number, Boolean, Date, Email, URL, JSON, RichText, File, and Relation fields
 - **Real-time schema evolution** with automatic table creation and validation
 - **Advanced field validation** with min/max constraints, regex patterns, and enum values
 - **System field protection** for created_at, updated_at, and other reserved fields

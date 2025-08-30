@@ -8,15 +8,20 @@
 - Reusable validation functions in backend configuration handlers for consistent validation logic
 - Extended admin health endpoint with total users count information
 - Users count card in dashboard replacing system health overview
+- Support for 'richtext' field type in backend (enum in models/collection.rs, handling in collection_service.rs) and frontend (api.ts, constants.ts, validation.ts)
+- TipTap-based RichTextEditor component for editing rich text fields in records
+- Integration of RichTextEditor in CollectionRecordsEditSheet.tsx with JSON content handling and error fixes
 
 ### Changed
 - Migrated from Lucide React to Phosphor Icons throughout the entire admin UI for consistent iconography
+- Updated updateFormData in CreateRecordSheet.tsx and EditRecordSheet.tsx to handle unknown values for richtext
 
 ### Improved
 - Backend settings validation refactored to use centralized validation functions (`validate_category`, `validate_data_type`, `validate_setting_key`) across all configuration endpoints
 - Frontend settings panels (Database, Auth, API) now validate input values before submission using Zod schemas that mirror backend validation logic
 - Enhanced error handling in settings forms with descriptive validation messages and proper user feedback
 - Optimized chunking in Vite configuration by splitting manualChunks into more granular groups for better bundle size and loading performance
+- Added mention of RichText field and RichTextEditor in README.md
 
 ## [0.4.0][0.4.0] - 2025-08-28
 

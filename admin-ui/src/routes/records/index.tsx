@@ -190,7 +190,7 @@ export default function RecordsComponent() {
 			title: "ID",
 			className: "w-16",
 			render: (_, record) => (
-				<div className="text-sm font-pp-neue-montreal-mono text-nocta-600 dark:text-nocta-400">
+				<div className="text-sm text-nocta-600 dark:text-nocta-400">
 					{record.id}
 				</div>
 			),

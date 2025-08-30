@@ -30,6 +30,7 @@ export default defineConfig({
 					state: ['zustand', 'immer'],
 					validation: ['zod'],
 					editor: ['@uiw/react-textarea-code-editor'],
+					tiptap: ['@tiptap/react', '@tiptap/core', '@tiptap/starter-kit', '@tiptap/extension-text-style'],
 				},
 			},
 		},

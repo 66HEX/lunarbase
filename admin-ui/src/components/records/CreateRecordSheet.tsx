@@ -34,7 +34,9 @@ import {
 	processFieldValue,
 	recordToastMessages,
 } from "./constants";
-import { validateRecordData } from "./validation";
+import { validateRecordData } from "@/components/records/validation";
+import { RichTextEditor } from "@/components/records/RichTextEditor";
+import { type JSONContent } from "@tiptap/react";
 
 interface CreateRecordSheetProps {
 	open: boolean;
@@ -85,7 +87,7 @@ export function CreateRecordSheet({
 
 	const updateFormData = (
 		fieldName: string,
-		value: string | number | boolean | null,
+		value: unknown,
 	) => {
 		setFormData((prev) => ({
 			...prev,
@@ -222,6 +224,11 @@ export function CreateRecordSheet({
 							variant={hasError ? "error" : "default"}
 							rows={4}
 						/>
+					) : field.field_type === "richtext" ? (
+						<RichTextEditor
+							value={typeof value === "string" ? JSON.parse(value) : (value as JSONContent)}
+							onChange={(newContent) => updateFormData(field.name, newContent)}
+						/>
 					) : field.field_type === "relation" ? (
 						<Select
 							portalProps={
@@ -321,7 +328,7 @@ export function CreateRecordSheet({
 					Add Record
 				</Button>
 			</SheetTrigger>
-			<SheetContent side="right" size="lg">
+			<SheetContent side="right" size="xl">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Create Record

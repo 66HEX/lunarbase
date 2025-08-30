@@ -65,3 +65,12 @@
 		);
 	}
 }
+
+.ProseMirror:focus {
+    outline: none;
+}
+.ProseMirror {        
+  min-height: 560px;
+  max-height: 560px;
+  overflow: scroll;
+}
