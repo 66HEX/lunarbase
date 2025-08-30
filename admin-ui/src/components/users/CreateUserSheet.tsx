@@ -54,7 +54,6 @@ export function CreateUserSheet({
 		useState<CreateUserRequest>(defaultUserFormData);
 
 	const validateForm = (): boolean => {
-		// Prepare data for validation
 		const dataToValidate: CreateUserRequest = {
 			email: formData.email.trim(),
 			password: formData.password,
@@ -104,7 +103,6 @@ export function CreateUserSheet({
 		const newFormData = { ...formData, [field]: value };
 		setFormData(newFormData);
 
-		// Clear error when field changes
 		if (fieldErrors[field]) {
 			setFieldErrors((prev) => ({ ...prev, [field]: "" }));
 		}

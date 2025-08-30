@@ -25,6 +25,7 @@ import { toast } from "@/components/ui/toast";
 import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import { createManualBackup } from "@/lib/api";
 import type { SystemSetting } from "@/types/api";
+import { createUpdateSettingSchema } from "./validation";
 
 const BACKUP_SCHEDULE_OPTIONS = [
 	{ value: "0 0 2 * * *", label: "Daily at 2:00 AM" },
@@ -102,6 +103,24 @@ export function DatabaseSettingsPanel() {
 		for (const setting of settings) {
 			const newValue = formValues[setting.setting_key];
 			if (newValue !== setting.setting_value) {
+				const schema = createUpdateSettingSchema(setting.data_type);
+				const validationResult = schema.safeParse({
+					setting_value: newValue,
+				});
+
+				if (!validationResult.success) {
+					const errorMessage = validationResult.error.issues
+						.map(issue => issue.message)
+						.join(', ');
+					toast({
+						title: "Validation Error",
+						description: `Invalid value for ${setting.setting_key}: ${errorMessage}`,
+						variant: "destructive",
+						position: "bottom-right",
+					});
+					return;
+				}
+
 				await updateSettingMutation.mutateAsync({
 					category: "database",
 					settingKey: setting.setting_key,

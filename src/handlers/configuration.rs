@@ -17,6 +17,46 @@ use crate::{
     utils::{AuthError, Claims, ErrorResponse},
 };
 
+fn validate_category(category: &str) -> Result<(), AuthError> {
+    match category {
+        "database" | "auth" | "api" => Ok(()),
+        _ => Err(AuthError::ValidationError(vec![
+            format!("Invalid category '{}'. Valid categories are: database, auth, api", category),
+        ])),
+    }
+}
+
+fn validate_data_type(data_type: &str) -> Result<(), AuthError> {
+    match data_type.to_lowercase().as_str() {
+        "string" | "integer" | "boolean" | "json" | "float" => Ok(()),
+        _ => Err(AuthError::ValidationError(vec![
+            format!("Invalid data type '{}'. Valid types are: string, integer, boolean, json, float", data_type),
+        ])),
+    }
+}
+
+fn validate_setting_key(key: &str) -> Result<(), AuthError> {
+    if key.is_empty() {
+        return Err(AuthError::ValidationError(vec![
+            "Setting key cannot be empty".to_string(),
+        ]));
+    }
+    
+    if key.len() > 100 {
+        return Err(AuthError::ValidationError(vec![
+            "Setting key cannot exceed 100 characters".to_string(),
+        ]));
+    }
+    
+    if !key.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+        return Err(AuthError::ValidationError(vec![
+            "Setting key can only contain alphanumeric characters, underscores, and hyphens".to_string(),
+        ]));
+    }
+    
+    Ok(())
+}
+
 #[derive(Debug, Deserialize, ToSchema)]
 pub struct ListSettingsQuery {
     #[schema(example = "database")]
@@ -76,14 +116,7 @@ pub async fn get_all_settings(
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
 
     let settings = if let Some(category_str) = query.category {
-        match category_str.as_str() {
-            "database" | "auth" | "api" => {}
-            _ => {
-                return Err(AuthError::ValidationError(vec![
-                    "Invalid category".to_string(),
-                ]));
-            }
-        };
+        validate_category(&category_str)?;
         config_service
             .get_settings_by_category(&category_str)
             .await?
@@ -124,14 +157,7 @@ pub async fn get_settings_by_category(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    match category_str.as_str() {
-        "database" | "auth" | "api" => {}
-        _ => {
-            return Err(AuthError::ValidationError(vec![
-                "Invalid category".to_string(),
-            ]));
-        }
-    };
+    validate_category(&category_str)?;
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
     let settings = config_service
@@ -172,14 +198,8 @@ pub async fn get_setting(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    match category_str.as_str() {
-        "database" | "auth" | "api" => {}
-        _ => {
-            return Err(AuthError::ValidationError(vec![
-                "Invalid category".to_string(),
-            ]));
-        }
-    };
+    validate_category(&category_str)?;
+    validate_setting_key(&setting_key)?;
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
     let setting = config_service
@@ -224,14 +244,8 @@ pub async fn update_setting(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    match category_str.as_str() {
-        "database" | "auth" | "api" => {}
-        _ => {
-            return Err(AuthError::ValidationError(vec![
-                "Invalid category".to_string(),
-            ]));
-        }
-    };
+    validate_category(&category_str)?;
+    validate_setting_key(&setting_key)?;
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
     let updated_setting = config_service
@@ -271,28 +285,24 @@ pub async fn create_setting(
         return Err(AuthError::InsufficientPermissions);
     }
 
+    validate_category(&payload.category)?;
+    validate_data_type(&payload.data_type)?;
+    validate_setting_key(&payload.setting_key)?;
+
     let category = match payload.category.as_str() {
         "database" => SettingCategory::Database,
         "auth" => SettingCategory::Auth,
         "api" => SettingCategory::Api,
-        _ => {
-            return Err(AuthError::ValidationError(vec![
-                "Invalid category".to_string(),
-            ]));
-        }
+        _ => unreachable!(),
     };
 
-    let data_type = match payload.data_type.as_str() {
+    let data_type = match payload.data_type.to_lowercase().as_str() {
         "string" => SettingDataType::String,
         "integer" => SettingDataType::Integer,
         "boolean" => SettingDataType::Boolean,
         "json" => SettingDataType::Json,
         "float" => SettingDataType::Float,
-        _ => {
-            return Err(AuthError::ValidationError(vec![
-                "Invalid data type".to_string(),
-            ]));
-        }
+        _ => unreachable!(),
     };
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
@@ -339,14 +349,8 @@ pub async fn delete_setting(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    match category_str.as_str() {
-        "database" | "auth" | "api" => {}
-        _ => {
-            return Err(AuthError::ValidationError(vec![
-                "Invalid category".to_string(),
-            ]));
-        }
-    };
+    validate_category(&category_str)?;
+    validate_setting_key(&setting_key)?;
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
     config_service
@@ -383,14 +387,8 @@ pub async fn reset_setting(
         return Err(AuthError::InsufficientPermissions);
     }
 
-    match category_str.as_str() {
-        "database" | "auth" | "api" => {}
-        _ => {
-            return Err(AuthError::ValidationError(vec![
-                "Invalid category".to_string(),
-            ]));
-        }
-    };
+    validate_category(&category_str)?;
+    validate_setting_key(&setting_key)?;
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
     let reset_setting = config_service

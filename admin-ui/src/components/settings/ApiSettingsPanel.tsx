@@ -12,8 +12,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
 import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import type { SystemSetting } from "@/types/api";
+import { createUpdateSettingSchema } from "./validation";
 
 export function ApiSettingsPanel() {
 	const { data: settings, isLoading } = useSettingsByCategory("api");
@@ -106,6 +108,24 @@ export function ApiSettingsPanel() {
 
 		const corsUpdated = corsValue !== localSettings.cors_allowed_origins;
 		if (corsUpdated) {
+			const corsSchema = createUpdateSettingSchema("json");
+			const corsValidationResult = corsSchema.safeParse({
+				setting_value: corsValue,
+			});
+
+			if (!corsValidationResult.success) {
+				const errorMessage = corsValidationResult.error.issues
+					.map(issue => issue.message)
+					.join(', ');
+				toast({
+					title: "Validation Error",
+					description: `Invalid CORS origins: ${errorMessage}`,
+					variant: "destructive",
+					position: "bottom-right",
+				});
+				return;
+			}
+
 			await updateSettingMutation.mutateAsync({
 				category: "api",
 				settingKey: "cors_allowed_origins",
@@ -117,6 +137,24 @@ export function ApiSettingsPanel() {
 			if (setting.setting_key !== "cors_allowed_origins") {
 				const newValue = localSettings[setting.setting_key];
 				if (newValue !== setting.setting_value) {
+					const schema = createUpdateSettingSchema(setting.data_type);
+					const validationResult = schema.safeParse({
+						setting_value: newValue,
+					});
+
+					if (!validationResult.success) {
+						const errorMessage = validationResult.error.issues
+							.map(issue => issue.message)
+							.join(', ');
+						toast({
+							title: "Validation Error",
+							description: `Invalid value for ${setting.setting_key}: ${errorMessage}`,
+							variant: "destructive",
+							position: "bottom-right",
+						});
+						return;
+					}
+
 					await updateSettingMutation.mutateAsync({
 						category: "api",
 						settingKey: setting.setting_key,

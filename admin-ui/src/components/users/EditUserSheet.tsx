@@ -60,7 +60,6 @@ export function EditUserSheet({
 	});
 
 	const validateForm = (): boolean => {
-		// Prepare data for validation
 		const dataToValidate: UpdateUserRequest = {
 			email: formData.email?.trim(),
 			username: formData.username?.trim() || undefined,

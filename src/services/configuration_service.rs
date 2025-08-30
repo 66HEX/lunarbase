@@ -103,12 +103,14 @@ impl ConfigurationService {
                 AuthError::DatabaseError
             })?;
 
-        if existing_setting.is_none() {
-            return Err(AuthError::NotFound(format!(
+        let existing_setting = existing_setting.ok_or_else(|| {
+            AuthError::NotFound(format!(
                 "Setting {}:{} not found",
                 category, setting_key
-            )));
-        }
+            ))
+        })?;
+
+        self.validate_setting_value(new_value, &existing_setting.data_type)?;
 
         let update_data = UpdateSystemSetting {
             setting_value: Some(new_value.to_string()),
@@ -191,6 +193,12 @@ impl ConfigurationService {
                 category.to_string(),
                 setting_key
             )));
+        }
+
+        self.validate_setting_value(&setting_value, &data_type.to_string())?;
+        
+        if !default_value.is_empty() {
+            self.validate_setting_value(&default_value, &data_type.to_string())?;
         }
 
         let new_setting = NewSystemSetting::new(
@@ -348,5 +356,52 @@ impl ConfigurationService {
 
         self.update_setting(category, setting_key, &default_value, updated_by)
             .await
+    }
+
+    fn validate_setting_value(&self, value: &str, data_type: &str) -> Result<(), AuthError> {
+        let mut errors = Vec::new();
+
+        match data_type {
+            "string" => {
+                if value.len() > 10000 {
+                    errors.push("Setting value is too long (maximum 10000 characters)".to_string());
+                }
+            }
+            "integer" => {
+                if let Err(_) = value.parse::<i64>() {
+                    errors.push(format!("Invalid integer value: '{}'", value));
+                }
+            }
+            "float" => {
+                if let Err(_) = value.parse::<f64>() {
+                    errors.push(format!("Invalid float value: '{}'", value));
+                }
+            }
+            "boolean" => {
+                match value.to_lowercase().as_str() {
+                    "true" | "false" | "1" | "0" | "yes" | "no" | "on" | "off" => {}
+                    _ => {
+                        errors.push(format!(
+                            "Invalid boolean value: '{}'. Expected: true, false, 1, 0, yes, no, on, off",
+                            value
+                        ));
+                    }
+                }
+            }
+            "json" => {
+                if let Err(e) = serde_json::from_str::<serde_json::Value>(value) {
+                    errors.push(format!("Invalid JSON value: {}", e));
+                }
+            }
+            _ => {
+                errors.push(format!("Unknown data type: {}", data_type));
+            }
+        }
+
+        if !errors.is_empty() {
+            return Err(AuthError::ValidationError(errors));
+        }
+
+        Ok(())
     }
 }

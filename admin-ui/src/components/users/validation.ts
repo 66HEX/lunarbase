@@ -110,7 +110,6 @@ export function validateCreateUserData(data: CreateUserRequest) {
       for (const issue of error.issues) {
         const fieldName = issue.path[0] as string;
         if (fieldName) {
-          // For password field, collect all error messages
           if (fieldName === 'password') {
             if (!fieldErrors[fieldName]) {
               fieldErrors[fieldName] = issue.message;
@@ -118,7 +117,6 @@ export function validateCreateUserData(data: CreateUserRequest) {
               fieldErrors[fieldName] += '; ' + issue.message;
             }
           } else {
-            // For other fields, use only the first error
             if (!fieldErrors[fieldName]) {
               fieldErrors[fieldName] = issue.message;
             }
@@ -152,7 +150,6 @@ export function validateUpdateUserData(data: UpdateUserRequest) {
       for (const issue of error.issues) {
         const fieldName = issue.path[0] as string;
         if (fieldName) {
-          // For password field, collect all error messages
           if (fieldName === 'password') {
             if (!fieldErrors[fieldName]) {
               fieldErrors[fieldName] = issue.message;
@@ -160,7 +157,6 @@ export function validateUpdateUserData(data: UpdateUserRequest) {
               fieldErrors[fieldName] += '; ' + issue.message;
             }
           } else {
-            // For other fields, use only the first error
             if (!fieldErrors[fieldName]) {
               fieldErrors[fieldName] = issue.message;
             }

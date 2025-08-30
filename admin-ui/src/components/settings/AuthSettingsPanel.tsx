@@ -11,8 +11,10 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { toast } from "@/components/ui/toast";
 import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import type { SystemSetting } from "@/types/api";
+import { createUpdateSettingSchema } from "./validation";
 
 export function AuthSettingsPanel() {
 	const { data: settings, isLoading } = useSettingsByCategory("auth");
@@ -57,6 +59,24 @@ export function AuthSettingsPanel() {
 		for (const setting of settings) {
 			const newValue = localSettings[setting.setting_key];
 			if (newValue !== setting.setting_value) {
+				const schema = createUpdateSettingSchema(setting.data_type);
+				const validationResult = schema.safeParse({
+					setting_value: newValue,
+				});
+
+				if (!validationResult.success) {
+					const errorMessage = validationResult.error.issues
+						.map(issue => issue.message)
+						.join(', ');
+					toast({
+						title: "Validation Error",
+						description: `Invalid value for ${setting.setting_key}: ${errorMessage}`,
+						variant: "destructive",
+						position: "bottom-right",
+					});
+					return;
+				}
+
 				await updateSettingMutation.mutateAsync({
 					category: "auth",
 					settingKey: setting.setting_key,
