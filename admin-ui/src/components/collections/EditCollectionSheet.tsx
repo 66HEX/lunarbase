@@ -1,6 +1,5 @@
-import { PlusIcon, FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react";
-import { useEffect, useState, useRef } from "react";
-import { toast } from "@/components/ui/toast";
+import { FloppyDiskIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -31,6 +30,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 import { useUpdateCollection } from "@/hooks";
 import type {
 	Collection,
@@ -38,7 +38,10 @@ import type {
 	UpdateCollectionRequest,
 } from "@/types/api";
 import { fieldTypeIcons, fieldTypeOptions } from "./constants";
-import { editCollectionSchema, type EditCollectionFormData } from "./validation";
+import {
+	type EditCollectionFormData,
+	editCollectionSchema,
+} from "./validation";
 
 interface EditCollectionSheetProps {
 	isOpen: boolean;
@@ -106,19 +109,19 @@ export function EditCollectionSheet({
 
 		if (!result.success) {
 			const newErrors: { [key: string]: string } = {};
-			
+
 			result.error.issues.forEach((error) => {
-				const path = error.path.join('.');
-				
-				if (path === 'name') {
+				const path = error.path.join(".");
+
+				if (path === "name") {
 					newErrors.editCollectionName = error.message;
-				} else if (path === 'schema.fields') {
+				} else if (path === "schema.fields") {
 					newErrors.editFields = error.message;
-				} else if (path.startsWith('schema.fields.')) {
-					const fieldIndex = path.split('.')[2];
-					const fieldProperty = path.split('.')[3];
-					
-					if (fieldProperty === 'name') {
+				} else if (path.startsWith("schema.fields.")) {
+					const fieldIndex = path.split(".")[2];
+					const fieldProperty = path.split(".")[3];
+
+					if (fieldProperty === "name") {
 						newErrors[`edit_field_${fieldIndex}_name`] = error.message;
 					}
 				}
@@ -231,12 +234,15 @@ export function EditCollectionSheet({
 												placeholder="e.g., users, products, orders"
 												className="w-full"
 												value={editCollectionName}
-											onChange={(e) => {
-												setEditCollectionName(e.target.value);
-												if (editFieldErrors.editCollectionName) {
-													setEditFieldErrors((prev) => ({ ...prev, editCollectionName: "" }));
-												}
-											}}
+												onChange={(e) => {
+													setEditCollectionName(e.target.value);
+													if (editFieldErrors.editCollectionName) {
+														setEditFieldErrors((prev) => ({
+															...prev,
+															editCollectionName: "",
+														}));
+													}
+												}}
 												variant={
 													editFieldErrors.editCollectionName
 														? "error"
@@ -290,7 +296,7 @@ export function EditCollectionSheet({
 												>
 													<div className="flex items-center justify-between mb-3">
 														<div className="flex items-center gap-2">
-															<IconComponent color="oklch(0.708 0 0)"  />
+															<IconComponent color="oklch(0.708 0 0)" />
 															<span className="font-light text-sm text-nocta-900 dark:text-nocta-100">
 																{index === 0
 																	? "ID Field"
@@ -355,21 +361,21 @@ export function EditCollectionSheet({
 																</FormLabel>
 																<FormControl>
 																	<Select
-													portalProps={
-														{
-															"data-sheet-portal": "true",
-														} as React.HTMLAttributes<HTMLDivElement>
-													}
-													value={field.field_type}
-													onValueChange={(value) => {
-														updateEditField(index, {
-															field_type:
-																value as FieldDefinition["field_type"],
-														});
-													}}
-													allowCloseRef={allowCloseRef}
-													disabled={index === 0}
-												>
+																		portalProps={
+																			{
+																				"data-sheet-portal": "true",
+																			} as React.HTMLAttributes<HTMLDivElement>
+																		}
+																		value={field.field_type}
+																		onValueChange={(value) => {
+																			updateEditField(index, {
+																				field_type:
+																					value as FieldDefinition["field_type"],
+																			});
+																		}}
+																		allowCloseRef={allowCloseRef}
+																		disabled={index === 0}
+																	>
 																		<SelectTrigger className="w-full">
 																			<SelectValue />
 																		</SelectTrigger>
@@ -445,7 +451,7 @@ export function EditCollectionSheet({
 										className="w-full"
 									>
 										<PlusIcon size={16} />
-													<span className="ml-2">Add Field</span>
+										<span className="ml-2">Add Field</span>
 									</Button>
 								</div>
 							</Form>

@@ -1,12 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
 import {
 	ActivityIcon,
-	WarningIcon,
 	DatabaseIcon,
 	FileTextIcon,
 	GlobeIcon,
 	UsersIcon,
+	WarningIcon,
 } from "@phosphor-icons/react";
+import { createFileRoute } from "@tanstack/react-router";
 import { useRef } from "react";
 import {
 	CollectionsOverviewCard,
@@ -83,7 +83,7 @@ function DashboardComponent() {
 			value: stats.websocket?.total_connections || 0,
 			icon: GlobeIcon,
 			description: "Current number of active WebSocket connections",
-		}
+		},
 	];
 
 	if (isLoading) {

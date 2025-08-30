@@ -1,4 +1,9 @@
-import { CopyIcon, DownloadIcon, ArrowClockwiseIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import {
+	ArrowClockwiseIcon,
+	CopyIcon,
+	DownloadIcon,
+	MagnifyingGlassIcon,
+} from "@phosphor-icons/react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -81,11 +86,11 @@ export function RawMetricsViewer() {
 							Error loading metrics: {error.message}
 						</p>
 						<Button onClick={() => refetch()} variant="primary">
-						<span className="w-4 h-4 mr-2">
-							<ArrowClockwiseIcon size={16} />
-						</span>
-						Retry
-					</Button>
+							<span className="w-4 h-4 mr-2">
+								<ArrowClockwiseIcon size={16} />
+							</span>
+							Retry
+						</Button>
 					</div>
 				</CardContent>
 			</Card>
@@ -105,10 +110,10 @@ export function RawMetricsViewer() {
 								onChange={(e) => setSearchTerm(e.target.value)}
 								className="pl-10"
 								leftIcon={
-								<span className="w-4 h-4 text-nocta-400 dark:text-nocta-500">
-									<MagnifyingGlassIcon size={16} />
-								</span>
-							}
+									<span className="w-4 h-4 text-nocta-400 dark:text-nocta-500">
+										<MagnifyingGlassIcon size={16} />
+									</span>
+								}
 							/>
 						</div>
 						<Button
@@ -118,22 +123,22 @@ export function RawMetricsViewer() {
 							disabled={isLoading}
 						>
 							<span className="w-4 h-4 mr-2">
-							<ArrowClockwiseIcon size={16} />
-						</span>
-						Refresh
+								<ArrowClockwiseIcon size={16} />
+							</span>
+							Refresh
 						</Button>
 						<Button variant="secondary" size="sm" onClick={handleCopy}>
-						<span className="w-4 h-4 mr-2">
-							<CopyIcon size={16} />
-						</span>
-						Copy
-					</Button>
+							<span className="w-4 h-4 mr-2">
+								<CopyIcon size={16} />
+							</span>
+							Copy
+						</Button>
 						<Button variant="primary" size="sm" onClick={handleDownload}>
-						<span className="w-4 h-4 mr-2">
-							<DownloadIcon size={16} />
-						</span>
-						Download
-					</Button>
+							<span className="w-4 h-4 mr-2">
+								<DownloadIcon size={16} />
+							</span>
+							Download
+						</Button>
 					</div>
 				</div>
 			</CardHeader>

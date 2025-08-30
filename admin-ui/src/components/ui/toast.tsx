@@ -174,22 +174,19 @@ const toastContainerVariants = cva(
 		},
 	},
 );
-const toastContentVariants = cva(
-	"relative rounded-lg overflow-hidden",
-	{
-		variants: {
-			variant: {
-				default: "",
-				success: "",
-				warning: "",
-				destructive: "",
-			},
-		},
-		defaultVariants: {
-			variant: "default",
+const toastContentVariants = cva("relative rounded-lg overflow-hidden", {
+	variants: {
+		variant: {
+			default: "",
+			success: "",
+			warning: "",
+			destructive: "",
 		},
 	},
-);
+	defaultVariants: {
+		variant: "default",
+	},
+});
 
 export type ToastPosition =
 	| "top-left"

@@ -1,6 +1,5 @@
-import { FloppyDiskIcon, TrashIcon, PlusIcon } from "@phosphor-icons/react"
-import { useEffect, useState, useRef } from "react";
-import { toast } from "@/components/ui/toast";
+import { FloppyDiskIcon, PlusIcon, TrashIcon } from "@phosphor-icons/react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -31,10 +30,14 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
+import { toast } from "@/components/ui/toast";
 import { useCreateCollection } from "@/hooks";
 import type { CreateCollectionRequest, FieldDefinition } from "@/types/api";
 import { fieldTypeIcons, fieldTypeOptions } from "./constants";
-import { createCollectionSchema, type CreateCollectionFormData } from "./validation";
+import {
+	type CreateCollectionFormData,
+	createCollectionSchema,
+} from "./validation";
 
 interface CreateCollectionSheetProps {
 	isOpen: boolean;
@@ -102,19 +105,19 @@ export function CreateCollectionSheet({
 
 		if (!result.success) {
 			const newErrors: { [key: string]: string } = {};
-			
+
 			result.error.issues.forEach((error) => {
-				const path = error.path.join('.');
-				
-				if (path === 'name') {
+				const path = error.path.join(".");
+
+				if (path === "name") {
 					newErrors.collectionName = error.message;
-				} else if (path === 'schema.fields') {
+				} else if (path === "schema.fields") {
 					newErrors.fields = error.message;
-				} else if (path.startsWith('schema.fields.')) {
-					const fieldIndex = path.split('.')[2];
-					const fieldProperty = path.split('.')[3];
-					
-					if (fieldProperty === 'name') {
+				} else if (path.startsWith("schema.fields.")) {
+					const fieldIndex = path.split(".")[2];
+					const fieldProperty = path.split(".")[3];
+
+					if (fieldProperty === "name") {
 						newErrors[`field_${fieldIndex}_name`] = error.message;
 					}
 				}
@@ -238,12 +241,15 @@ export function CreateCollectionSheet({
 												placeholder="e.g., users, products, orders"
 												className="w-full"
 												value={collectionName}
-											onChange={(e) => {
-												setCollectionName(e.target.value);
-												if (fieldErrors.collectionName) {
-													setFieldErrors((prev) => ({ ...prev, collectionName: "" }));
-												}
-											}}
+												onChange={(e) => {
+													setCollectionName(e.target.value);
+													if (fieldErrors.collectionName) {
+														setFieldErrors((prev) => ({
+															...prev,
+															collectionName: "",
+														}));
+													}
+												}}
 												variant={
 													fieldErrors.collectionName ? "error" : "default"
 												}
@@ -356,21 +362,21 @@ export function CreateCollectionSheet({
 																</FormLabel>
 																<FormControl>
 																	<Select
-													portalProps={
-														{
-															"data-sheet-portal": "true",
-														} as React.HTMLAttributes<HTMLDivElement>
-													}
-													value={field.field_type}
-													onValueChange={(value) => {
-														updateField(index, {
-															field_type:
-																value as FieldDefinition["field_type"],
-														});
-													}}
-													allowCloseRef={allowCloseRef}
-													disabled={index === 0}
-												>
+																		portalProps={
+																			{
+																				"data-sheet-portal": "true",
+																			} as React.HTMLAttributes<HTMLDivElement>
+																		}
+																		value={field.field_type}
+																		onValueChange={(value) => {
+																			updateField(index, {
+																				field_type:
+																					value as FieldDefinition["field_type"],
+																			});
+																		}}
+																		allowCloseRef={allowCloseRef}
+																		disabled={index === 0}
+																	>
 																		<SelectTrigger className="w-full">
 																			<SelectValue />
 																		</SelectTrigger>
@@ -471,9 +477,7 @@ export function CreateCollectionSheet({
 						) : (
 							<>
 								<FloppyDiskIcon />
-								<span className="ml-2">
-									Create Collection
-								</span>
+								<span className="ml-2">Create Collection</span>
 							</>
 						)}
 					</Button>

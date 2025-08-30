@@ -38,10 +38,10 @@ export function UsersHeader({
 						<Input
 							placeholder="Search users..."
 							leftIcon={
-					<span className="w-4 h-4 text-nocta-400 dark:text-nocta-500">
-						<MagnifyingGlassIcon size={16} />
-					</span>
-				}
+								<span className="w-4 h-4 text-nocta-400 dark:text-nocta-500">
+									<MagnifyingGlassIcon size={16} />
+								</span>
+							}
 							value={searchTerm}
 							onChange={(e) => onSearchChange(e.target.value)}
 							className="pl-10 w-full md:w-auto !bg-nocta-900"
@@ -49,7 +49,7 @@ export function UsersHeader({
 					</div>
 					<Button onClick={onCreateUser} className="w-full sm:w-auto">
 						<UserPlusIcon size={16} />
-			<span className="ml-2 whitespace-nowrap">Create User</span>
+						<span className="ml-2 whitespace-nowrap">Create User</span>
 					</Button>
 				</div>
 			</div>

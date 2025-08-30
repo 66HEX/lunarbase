@@ -1,13 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
 import {
 	CalendarIcon,
 	DatabaseIcon,
-	PencilIcon,
 	FileTextIcon,
-	PlusIcon,
 	GearIcon,
+	PencilIcon,
+	PlusIcon,
 	TrashIcon,
 } from "@phosphor-icons/react";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import {
 	CollectionDetailsSheet,
@@ -307,8 +307,8 @@ export default function CollectionsComponent() {
 													onClick={() => handleOpenDetails(collection.name)}
 												>
 													<span className="mr-1.5">
-												<FileTextIcon size={14} />
-											</span>
+														<FileTextIcon size={14} />
+													</span>
 													Details
 												</Button>
 												<Link
@@ -326,8 +326,8 @@ export default function CollectionsComponent() {
 														className="w-full px-2 py-1"
 													>
 														<span className="mr-1.5">
-														<DatabaseIcon size={14} />
-													</span>
+															<DatabaseIcon size={14} />
+														</span>
 														Records
 													</Button>
 												</Link>
@@ -365,8 +365,8 @@ export default function CollectionsComponent() {
 							{!searchTerm && (
 								<Button onClick={() => openSheet("createCollection")}>
 									<span className="mr-2">
-							<PlusIcon size={16} />
-						</span>
+										<PlusIcon size={16} />
+									</span>
 									Create Collection
 								</Button>
 							)}

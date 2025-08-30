@@ -208,13 +208,12 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
                         Err(_) => 0,
                     };
 
-                let users_count =
-                    match diesel::sql_query("SELECT COUNT(*) as count FROM users")
-                        .load::<CountResult>(&mut conn)
-                    {
-                        Ok(results) => results.first().map(|r| r.count).unwrap_or(0),
-                        Err(_) => 0,
-                    };
+                let users_count = match diesel::sql_query("SELECT COUNT(*) as count FROM users")
+                    .load::<CountResult>(&mut conn)
+                {
+                    Ok(results) => results.first().map(|r| r.count).unwrap_or(0),
+                    Err(_) => 0,
+                };
 
                 let total_records = estimate_total_records(&mut conn);
 

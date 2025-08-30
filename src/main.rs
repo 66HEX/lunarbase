@@ -155,6 +155,7 @@ use lunarbase::handlers::{
     embedded_admin::{serve_embedded_admin_html, serve_embedded_assets},
     forgot_password,
     health::{health_check, public_health_check, simple_health_check},
+    image_upload::{delete_image, upload_image},
     login, logout, me,
     metrics::{get_metrics, get_metrics_summary},
     oauth_authorize, oauth_callback,
@@ -474,6 +475,8 @@ async fn create_router(app_state: AppState) -> Router {
         )
         .route("/admin/backup", post(create_manual_backup))
         .route("/admin/backup/health", get(get_backup_health))
+        .route("/upload-image", post(upload_image))
+        .route("/delete-image", delete(delete_image))
         .layer(middleware::from_fn_with_state(
             app_state.auth_state.clone(),
             auth_middleware,

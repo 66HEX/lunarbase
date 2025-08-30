@@ -2,12 +2,12 @@ import {
 	BracketsSquareIcon,
 	CalendarIcon,
 	DatabaseIcon,
+	EnvelopeIcon,
 	FileTextIcon,
 	HashIcon,
 	LinkIcon,
-	EnvelopeIcon,
-	ToggleLeftIcon,
 	TextAaIcon,
+	ToggleLeftIcon,
 } from "@phosphor-icons/react";
 
 export const fieldTypeIcons = {

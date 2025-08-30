@@ -117,7 +117,7 @@ pub async fn get_collection(
 
 #[utoipa::path(
     put,
-    path = "/api/collections/{name}",
+    path = "/collections/{name}",
     params(
         ("name" = String, Path, description = "Collection name")
     ),
@@ -151,7 +151,7 @@ pub async fn update_collection(
 
 #[utoipa::path(
     delete,
-    path = "/api/collections/{name}",
+    path = "/collections/{name}",
     params(
         ("name" = String, Path, description = "Collection name")
     ),

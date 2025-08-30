@@ -1,5 +1,5 @@
 import { FloppyDiskIcon } from "@phosphor-icons/react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -257,10 +257,10 @@ export function CreateUserSheet({
 								Creating...
 							</>
 						) : (
-					<>
-						<FloppyDiskIcon size={16} />
-						<span className="ml-2">Create User</span>
-					</>
+							<>
+								<FloppyDiskIcon size={16} />
+								<span className="ml-2">Create User</span>
+							</>
 						)}
 					</Button>
 				</SheetFooter>

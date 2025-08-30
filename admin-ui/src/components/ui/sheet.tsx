@@ -73,7 +73,7 @@ const sheetContentVariants = cva(
 			{
 				side: "right",
 				size: "xxl",
-				class: "w-[95vw] sm:w-[54rem]",
+				class: "w-[95vw] sm:w-[56rem]",
 			},
 			{
 				side: "right",
@@ -466,16 +466,13 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 		[allowShrink, side],
 	);
 
-	const endResize = useCallback(
-		() => {
-			isResizingRef.current = false;
-			document.removeEventListener("mousemove", onMouseMove);
-			document.removeEventListener("mouseup", endResize);
-			document.body.style.cursor = "";
-			document.body.style.userSelect = "";
-		},
-		[onMouseMove],
-	);
+	const endResize = useCallback(() => {
+		isResizingRef.current = false;
+		document.removeEventListener("mousemove", onMouseMove);
+		document.removeEventListener("mouseup", endResize);
+		document.body.style.cursor = "";
+		document.body.style.userSelect = "";
+	}, [onMouseMove]);
 
 	const beginResize = (e: React.MouseEvent) => {
 		if (!resizable || size === "full") return;
@@ -555,45 +552,49 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 				{...props}
 			>
 				{/* Resize handles */}
-				{resizable && size !== "full" && (side === "left" || side === "right") && (
-					<div
-						role="separator"
-						aria-orientation="vertical"
-						onMouseDown={beginResize}
-						onTouchStart={beginResize as unknown as React.TouchEventHandler}
-						className={cn(
-							"absolute top-0 bottom-0 w-0.5 cursor-col-resize z-20",
-							side === "right" ? "left-0" : "right-0",
-						)}
-					>
+				{resizable &&
+					size !== "full" &&
+					(side === "left" || side === "right") && (
 						<div
+							role="separator"
+							aria-orientation="vertical"
+							onMouseDown={beginResize}
+							onTouchStart={beginResize as unknown as React.TouchEventHandler}
 							className={cn(
-								"absolute inset-y-0 w-1 bg-transparent",
+								"absolute top-0 bottom-0 w-0.5 cursor-col-resize z-20",
 								side === "right" ? "left-0" : "right-0",
 							)}
-						/>
-					</div>
-				)}
+						>
+							<div
+								className={cn(
+									"absolute inset-y-0 w-1 bg-transparent",
+									side === "right" ? "left-0" : "right-0",
+								)}
+							/>
+						</div>
+					)}
 
-				{resizable && size !== "full" && (side === "top" || side === "bottom") && (
-					<div
-						role="separator"
-						aria-orientation="horizontal"
-						onMouseDown={beginResize}
-						onTouchStart={beginResize as unknown as React.TouchEventHandler}
-						className={cn(
-							"absolute left-0 right-0 h-0.5 cursor-row-resize z-20",
-							side === "bottom" ? "top-0" : "bottom-0",
-						)}
-					>
+				{resizable &&
+					size !== "full" &&
+					(side === "top" || side === "bottom") && (
 						<div
+							role="separator"
+							aria-orientation="horizontal"
+							onMouseDown={beginResize}
+							onTouchStart={beginResize as unknown as React.TouchEventHandler}
 							className={cn(
-								"absolute inset-x-0 h-1 bg-transparent",
+								"absolute left-0 right-0 h-0.5 cursor-row-resize z-20",
 								side === "bottom" ? "top-0" : "bottom-0",
 							)}
-						/>
-					</div>
-				)}
+						>
+							<div
+								className={cn(
+									"absolute inset-x-0 h-1 bg-transparent",
+									side === "bottom" ? "top-0" : "bottom-0",
+								)}
+							/>
+						</div>
+					)}
 
 				{showClose && (
 					<button

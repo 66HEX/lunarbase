@@ -1,5 +1,5 @@
-import { Link } from "@tanstack/react-router";
 import { ArrowUpRightIcon, LightningIcon } from "@phosphor-icons/react";
+import { Link } from "@tanstack/react-router";
 import { CreateCollectionSheet } from "@/components/collections";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateUserSheet } from "@/components/users";
@@ -49,11 +49,11 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 		<Card className="dashboard-card">
 			<CardHeader className="pb-3 p-3">
 				<CardTitle className="flex items-center gap-2 text-base">
-						<div className="p-1">
-							<LightningIcon size={14} />
-						</div>
-						Quick Actions
-					</CardTitle>
+					<div className="p-1">
+						<LightningIcon size={14} />
+					</div>
+					Quick Actions
+				</CardTitle>
 			</CardHeader>
 			<CardContent className="p-3 pt-0">
 				<div className="grid grid-cols-1 gap-1.5">
@@ -75,10 +75,10 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 												{action.name}
 											</span>
 										</div>
-											<span className="w-3.5 h-3.5 text-nocta-400 dark:text-nocta-500 transition-all group-hover:text-nocta-700 dark:group-hover:text-nocta-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
-												<ArrowUpRightIcon size={14} />
-											</span>						
-										</div>
+										<span className="w-3.5 h-3.5 text-nocta-400 dark:text-nocta-500 transition-all group-hover:text-nocta-700 dark:group-hover:text-nocta-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5">
+											<ArrowUpRightIcon size={14} />
+										</span>
+									</div>
 								</button>
 							);
 						}

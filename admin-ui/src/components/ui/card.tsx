@@ -41,15 +41,15 @@ export interface CardActionsProps extends React.HTMLAttributes<HTMLDivElement> {
 export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 	({ children, className = "", ...props }, ref) => {
 		return (
-				<div
-					ref={ref}
-					className={cn(
-						"relative bg-nocta-100 dark:bg-nocta-900 border border-nocta-200 dark:border-nocta-50/5 rounded-xl shadow-lg overflow-hidden not-prose",
-						className,
-					)}
-					{...props}
-				>
-					<span
+			<div
+				ref={ref}
+				className={cn(
+					"relative bg-nocta-100 dark:bg-nocta-900 border border-nocta-200 dark:border-nocta-50/5 rounded-xl shadow-lg overflow-hidden not-prose",
+					className,
+				)}
+				{...props}
+			>
+				<span
 					aria-hidden
 					className="pointer-events-none absolute -inset-px rounded-xl bg-gradient-to-b to-transparent opacity-60"
 					style={{
@@ -59,8 +59,8 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
 							"radial-gradient(120% 100% at 50% 0%, black 30%, transparent 70%)",
 					}}
 				/>
-					{children}
-				</div>
+				{children}
+			</div>
 		);
 	},
 );

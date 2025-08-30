@@ -1,5 +1,9 @@
+import {
+	DatabaseIcon,
+	FloppyDiskIcon,
+	WarningIcon,
+} from "@phosphor-icons/react";
 import { useMutation } from "@tanstack/react-query";
-import { WarningIcon, DatabaseIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,8 +114,8 @@ export function DatabaseSettingsPanel() {
 
 				if (!validationResult.success) {
 					const errorMessage = validationResult.error.issues
-						.map(issue => issue.message)
-						.join(', ');
+						.map((issue) => issue.message)
+						.join(", ");
 					toast({
 						title: "Validation Error",
 						description: `Invalid value for ${setting.setting_key}: ${errorMessage}`,
@@ -221,8 +225,8 @@ export function DatabaseSettingsPanel() {
 										className="flex items-center gap-1 text-xs"
 									>
 										<span className="w-3 h-3">
-												<WarningIcon size={12} />
-											</span>
+											<WarningIcon size={12} />
+										</span>
 										Restart Required
 									</Badge>
 								)}
@@ -365,10 +369,10 @@ export function DatabaseSettingsPanel() {
 							{manualBackupMutation.isPending ? (
 								<Spinner className="w-4 h-4" />
 							) : (
-						<span className="w-4 h-4">
-							<DatabaseIcon size={16} />
-						</span>
-					)}
+								<span className="w-4 h-4">
+									<DatabaseIcon size={16} />
+								</span>
+							)}
 							Create Manual Backup
 						</Button>
 
@@ -380,10 +384,10 @@ export function DatabaseSettingsPanel() {
 							{updateSettingMutation.isPending ? (
 								<Spinner className="w-4 h-4" />
 							) : (
-					<span className="w-4 h-4">
-						<FloppyDiskIcon size={16} />
-					</span>
-				)}
+								<span className="w-4 h-4">
+									<FloppyDiskIcon size={16} />
+								</span>
+							)}
 							Save Changes
 						</Button>
 					</div>

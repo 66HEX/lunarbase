@@ -1,10 +1,10 @@
+import { ListIcon } from "@phosphor-icons/react";
 import {
 	createRootRoute,
 	Outlet,
 	redirect,
 	useLocation,
 } from "@tanstack/react-router";
-import { ListIcon } from "@phosphor-icons/react";
 import { useEffect } from "react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { Button } from "@/components/ui/button";

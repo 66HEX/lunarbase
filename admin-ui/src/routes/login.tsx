@@ -151,7 +151,9 @@ export default function LoginComponent() {
 								<LunarLogo className="h-6 w-6 text-white" />
 							</div>
 						</div>
-						<CardTitle className="flex items-center gap-2 font-light">Login</CardTitle>
+						<CardTitle className="flex items-center gap-2 font-light">
+							Login
+						</CardTitle>
 						<CardDescription>
 							Sign in to access the LunarBase admin panel
 						</CardDescription>

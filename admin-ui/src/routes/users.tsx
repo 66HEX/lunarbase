@@ -1,5 +1,11 @@
+import {
+	EyeIcon,
+	PencilIcon,
+	TrashIcon,
+	UserIcon,
+	UserPlusIcon,
+} from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
-import { PencilIcon, EyeIcon, TrashIcon, UserIcon, UserPlusIcon } from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -316,7 +322,9 @@ export default function UsersComponent() {
 			<div className="flex items-center justify-center h-svh">
 				<div className="text-center">
 					<div className="p-3 rounded-full bg-red-100 dark:bg-red-900/20 w-fit mx-auto mb-4">
-						<span className="text-red-600 dark:text-red-400"><UserIcon size={32} /></span>
+						<span className="text-red-600 dark:text-red-400">
+							<UserIcon size={32} />
+						</span>
 					</div>
 					<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 						Error loading users
@@ -370,7 +378,9 @@ export default function UsersComponent() {
 					<CardContent className="py-12">
 						<div className="text-center">
 							<div className="p-3 rounded-full bg-nocta-100 dark:bg-nocta-800/30 w-fit mx-auto mb-4">
-								<span className="text-nocta-400 dark:text-nocta-500"><UserIcon size={32} /></span>
+								<span className="text-nocta-400 dark:text-nocta-500">
+									<UserIcon size={32} />
+								</span>
 							</div>
 							<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 								{searchTerm ? "No users found" : "No users yet"}
@@ -382,7 +392,9 @@ export default function UsersComponent() {
 							</p>
 							{!searchTerm && (
 								<Button onClick={() => openSheet("createUser")}>
-									<span className="mr-2"><UserPlusIcon size={16} /></span>
+									<span className="mr-2">
+										<UserPlusIcon size={16} />
+									</span>
 									Create New User
 								</Button>
 							)}

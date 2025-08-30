@@ -117,7 +117,7 @@ export const Select: React.FC<SelectProps> = ({
 
 	const setOpen = (newOpen: boolean) => {
 		setOpenState(newOpen);
-		
+
 		if (allowCloseRef?.current) {
 			if (newOpen) {
 				allowCloseRef.current(false);
@@ -206,14 +206,14 @@ export const Select: React.FC<SelectProps> = ({
 			setUncontrolledValue(newValue);
 		}
 		setDisplayValue(newDisplayValue);
-		
+
 		if (allowCloseRef?.current && newValue) {
 			allowCloseRef.current(false);
 			setTimeout(() => {
 				allowCloseRef.current?.(true);
 			}, allowCloseDelay);
 		}
-		
+
 		onValueChange?.(newValue);
 		setOpen(false);
 		setFocusedIndex(-1);
@@ -559,7 +559,7 @@ export const SelectContent: React.FC<SelectContentProps> = ({
 				zIndex: 9999,
 			}}
 			className={cn(
-					"min-w-[8rem] overflow-hidden rounded-lg border border-nocta-200 dark:border-nocta-50/5 bg-nocta-100 dark:bg-[#121212] shadow-lg dark:shadow-xl",
+				"min-w-[8rem] overflow-hidden rounded-lg border border-nocta-200 dark:border-nocta-50/5 bg-nocta-100 dark:bg-[#121212] shadow-lg dark:shadow-xl",
 				animationStyles,
 				"not-prose",
 				className,
@@ -661,7 +661,9 @@ export const SelectValue: React.FC<SelectValueProps> = ({
 	const { value, displayValue } = React.useContext(SelectContext);
 
 	return (
-		<span className={`block text-left w-full text-nocta-900 dark:text-nocta-100 ${className}`}>
+		<span
+			className={`block text-left w-full text-nocta-900 dark:text-nocta-100 ${className}`}
+		>
 			{value ? (
 				<span>{displayValue}</span>
 			) : (

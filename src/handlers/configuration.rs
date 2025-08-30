@@ -20,18 +20,20 @@ use crate::{
 fn validate_category(category: &str) -> Result<(), AuthError> {
     match category {
         "database" | "auth" | "api" => Ok(()),
-        _ => Err(AuthError::ValidationError(vec![
-            format!("Invalid category '{}'. Valid categories are: database, auth, api", category),
-        ])),
+        _ => Err(AuthError::ValidationError(vec![format!(
+            "Invalid category '{}'. Valid categories are: database, auth, api",
+            category
+        )])),
     }
 }
 
 fn validate_data_type(data_type: &str) -> Result<(), AuthError> {
     match data_type.to_lowercase().as_str() {
         "string" | "integer" | "boolean" | "json" | "float" => Ok(()),
-        _ => Err(AuthError::ValidationError(vec![
-            format!("Invalid data type '{}'. Valid types are: string, integer, boolean, json, float", data_type),
-        ])),
+        _ => Err(AuthError::ValidationError(vec![format!(
+            "Invalid data type '{}'. Valid types are: string, integer, boolean, json, float",
+            data_type
+        )])),
     }
 }
 
@@ -41,19 +43,23 @@ fn validate_setting_key(key: &str) -> Result<(), AuthError> {
             "Setting key cannot be empty".to_string(),
         ]));
     }
-    
+
     if key.len() > 100 {
         return Err(AuthError::ValidationError(vec![
             "Setting key cannot exceed 100 characters".to_string(),
         ]));
     }
-    
-    if !key.chars().all(|c| c.is_alphanumeric() || c == '_' || c == '-') {
+
+    if !key
+        .chars()
+        .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
+    {
         return Err(AuthError::ValidationError(vec![
-            "Setting key can only contain alphanumeric characters, underscores, and hyphens".to_string(),
+            "Setting key can only contain alphanumeric characters, underscores, and hyphens"
+                .to_string(),
         ]));
     }
-    
+
     Ok(())
 }
 

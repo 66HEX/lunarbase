@@ -1,5 +1,9 @@
+import {
+	ArrowUpRightIcon,
+	DatabaseIcon,
+	PlusIcon,
+} from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
-import { ArrowUpRightIcon, DatabaseIcon, PlusIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -64,9 +68,9 @@ export function CollectionsOverviewCard({
 										className="text-sm text-nocta-600 dark:text-nocta-400 hover:text-nocta-900 dark:hover:text-nocta-100 font-light flex items-center gap-1 transition-colors duration-200 w-fit"
 									>
 										View{" "}
-											{Object.keys(collections.records_per_collection).length - 3}{" "}
-											more collections
-											<ArrowUpRightIcon size={12} />
+										{Object.keys(collections.records_per_collection).length - 3}{" "}
+										more collections
+										<ArrowUpRightIcon size={12} />
 									</Link>
 								</div>
 							)}
@@ -74,8 +78,8 @@ export function CollectionsOverviewCard({
 				) : (
 					<div className="text-center py-2">
 						<div className="p-1.5 rounded-lg bg-nocta-100 dark:bg-nocta-800 text-nocta-400 dark:text-nocta-500 w-fit mx-auto mb-2.5">
-						<DatabaseIcon size={20} />
-					</div>
+							<DatabaseIcon size={20} />
+						</div>
 						<h3 className="text-sm font-light text-nocta-900 dark:text-nocta-100 mb-1.5">
 							No collections yet
 						</h3>
@@ -85,9 +89,9 @@ export function CollectionsOverviewCard({
 						</p>
 						<Link to="/collections">
 							<Button size="sm" className="px-2.5 py-1">
-							<PlusIcon size={14} />
-							<span className="ml-1.5">Create Collection</span>
-						</Button>
+								<PlusIcon size={14} />
+								<span className="ml-1.5">Create Collection</span>
+							</Button>
 						</Link>
 					</div>
 				)}

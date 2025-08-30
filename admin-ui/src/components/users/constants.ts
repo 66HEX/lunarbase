@@ -1,4 +1,9 @@
-import { ShieldIcon, UserCheckIcon, UserIcon, UserMinusIcon } from "@phosphor-icons/react";
+import {
+	ShieldIcon,
+	UserCheckIcon,
+	UserIcon,
+	UserMinusIcon,
+} from "@phosphor-icons/react";
 
 export const userRoleOptions = [
 	{ value: "user", label: "User" },

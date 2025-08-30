@@ -110,6 +110,9 @@ pub mod utils;
 
         handlers::backup::create_manual_backup,
         handlers::backup::get_backup_health,
+
+        handlers::image_upload::upload_image,
+        handlers::image_upload::delete_image,
     ),
     components(
         schemas(
@@ -196,6 +199,11 @@ pub mod utils;
             handlers::backup::BackupResponse,
             utils::ApiResponse<handlers::backup::BackupResponse>,
             utils::ApiResponse<bool>,
+
+            handlers::image_upload::ImageUploadResponse,
+            handlers::image_upload::DeleteImageRequest,
+            utils::ApiResponse<handlers::image_upload::ImageUploadResponse>,
+            utils::ApiResponse<String>,
         )
     ),
     modifiers(&SecurityAddon),
@@ -212,7 +220,8 @@ pub mod utils;
         (name = "Health", description = "System health checks"),
         (name = "Monitoring", description = "System monitoring and metrics"),
         (name = "Configuration", description = "System configuration management"),
-        (name = "Backup", description = "Database backup management")
+        (name = "Backup", description = "Database backup management"),
+        (name = "Images", description = "Image upload and management")
     )
 )]
 pub struct ApiDoc;
@@ -239,8 +248,8 @@ pub use config::Config;
 pub use database::DatabasePool;
 use services::{
     AdminService, BackupService, CollectionService, ConfigurationManager, EmailService,
-    OwnershipService, PermissionService, WebSocketService, create_backup_service_from_config,
-    create_s3_service_from_config,
+    OwnershipService, PermissionService, S3Service, WebSocketService,
+    create_backup_service_from_config, create_s3_service_from_config,
 };
 use std::sync::Arc;
 
@@ -257,6 +266,7 @@ pub struct AppState {
     pub oauth_service: utils::OAuthService,
     pub backup_service: Option<BackupService>,
     pub configuration_manager: ConfigurationManager,
+    pub s3_service: Option<Arc<S3Service>>,
     pub password_pepper: String,
 }
 
@@ -291,7 +301,7 @@ impl AppState {
 
         let backup_service = create_backup_service_from_config(
             db_pool.clone(),
-            s3_service_option.map(Arc::new),
+            s3_service_option.as_ref().map(|s| Arc::new(s.clone())),
             Arc::new(configuration_manager.clone()),
             Some(Arc::new(metrics_state.clone())),
         )
@@ -317,6 +327,7 @@ impl AppState {
             oauth_service,
             backup_service,
             configuration_manager,
+            s3_service: s3_service_option.map(Arc::new),
             password_pepper,
         })
     }
@@ -337,6 +348,7 @@ impl Clone for AppState {
             oauth_service: self.oauth_service.clone(),
             backup_service: self.backup_service.clone(),
             configuration_manager: self.configuration_manager.clone(),
+            s3_service: self.s3_service.clone(),
             password_pepper: self.password_pepper.clone(),
         }
     }

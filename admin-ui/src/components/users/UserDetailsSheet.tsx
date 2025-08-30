@@ -131,8 +131,8 @@ export function UserDetailsSheet({
 						<div className="flex items-center justify-center py-8">
 							<div className="text-center">
 								<span className="mx-auto mb-4 text-nocta-500 block w-8 h-8">
-							<XCircleIcon size={32} />
-						</span>
+									<XCircleIcon size={32} />
+								</span>
 								<p className="text-nocta-600 dark:text-nocta-400">{error}</p>
 							</div>
 						</div>

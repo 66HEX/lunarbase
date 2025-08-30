@@ -2,8 +2,8 @@ import {
 	ActivityIcon,
 	GlobeIcon,
 	UserCheckIcon,
-	UsersIcon,
 	UserMinusIcon,
+	UsersIcon,
 	WifiHighIcon,
 	WifiSlashIcon,
 } from "@phosphor-icons/react";

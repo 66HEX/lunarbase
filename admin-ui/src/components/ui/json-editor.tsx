@@ -1,6 +1,10 @@
+import {
+	ArrowCounterClockwiseIcon,
+	CheckIcon,
+	CopyIcon,
+} from "@phosphor-icons/react";
 import CodeEditor from "@uiw/react-textarea-code-editor";
 import { cva, type VariantProps } from "class-variance-authority";
-import { CheckIcon, CopyIcon, ArrowCounterClockwiseIcon } from "@phosphor-icons/react";
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
@@ -224,12 +228,12 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 							)}
 						>
 							{isFormatted ? (
-						<span className="text-green-600 dark:text-green-400">
-							<CheckIcon size={16} />
-						</span>
-					) : (
-						"{ }"
-					)}
+								<span className="text-green-600 dark:text-green-400">
+									<CheckIcon size={16} />
+								</span>
+							) : (
+								"{ }"
+							)}
 						</Button>
 						<Button
 							type="button"
@@ -243,12 +247,12 @@ export const JsonEditor: React.FC<JsonEditorProps> = ({
 							)}
 						>
 							{copied ? (
-					<span className="text-green-600 dark:text-green-400">
-						<CheckIcon size={16} />
-					</span>
-				) : (
-					<CopyIcon size={16} />
-				)}
+								<span className="text-green-600 dark:text-green-400">
+									<CheckIcon size={16} />
+								</span>
+							) : (
+								<CopyIcon size={16} />
+							)}
 						</Button>
 						<Button
 							type="button"

@@ -37,11 +37,11 @@ export function EmptyRecordsState({ searchTerm }: EmptyRecordsStateProps) {
 						</p>
 						{!searchTerm && (
 							<Button onClick={handleCreateCollection}>
-						<span className="mr-2">
-							<FileTextIcon size={16} />
-						</span>
-						Create Collection
-					</Button>
+								<span className="mr-2">
+									<FileTextIcon size={16} />
+								</span>
+								Create Collection
+							</Button>
 						)}
 					</div>
 				</CardContent>

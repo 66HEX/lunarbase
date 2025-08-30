@@ -1,4 +1,9 @@
-import { WarningIcon, PlusIcon, FloppyDiskIcon, XIcon } from "@phosphor-icons/react";
+import {
+	FloppyDiskIcon,
+	PlusIcon,
+	WarningIcon,
+	XIcon,
+} from "@phosphor-icons/react";
 import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -115,8 +120,8 @@ export function ApiSettingsPanel() {
 
 			if (!corsValidationResult.success) {
 				const errorMessage = corsValidationResult.error.issues
-					.map(issue => issue.message)
-					.join(', ');
+					.map((issue) => issue.message)
+					.join(", ");
 				toast({
 					title: "Validation Error",
 					description: `Invalid CORS origins: ${errorMessage}`,
@@ -144,8 +149,8 @@ export function ApiSettingsPanel() {
 
 					if (!validationResult.success) {
 						const errorMessage = validationResult.error.issues
-							.map(issue => issue.message)
-							.join(', ');
+							.map((issue) => issue.message)
+							.join(", ");
 						toast({
 							title: "Validation Error",
 							description: `Invalid value for ${setting.setting_key}: ${errorMessage}`,
@@ -274,8 +279,8 @@ export function ApiSettingsPanel() {
 								{updateSettingMutation.isPending ? (
 									<Spinner className="w-4 h-4" />
 								) : (
-										<FloppyDiskIcon size={16} />
-									)}
+									<FloppyDiskIcon size={16} />
+								)}
 								Save Changes
 							</Button>
 						</div>

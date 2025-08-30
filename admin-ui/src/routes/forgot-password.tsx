@@ -126,7 +126,6 @@ export default function ForgotPasswordComponent() {
 	return (
 		<div className="min-h-screen bg-custom-radial flex items-center justify-center px-4">
 			<div className="w-sm space-y-8">
-
 				<Card>
 					<CardHeader>
 						<div className="flex justify-start mb-2">

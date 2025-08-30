@@ -1,4 +1,4 @@
-import { RadioButtonIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
+import { ArrowClockwiseIcon, RadioButtonIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
@@ -40,8 +40,8 @@ export function WebSocketHeader({
 						className="w-full sm:w-auto"
 					>
 						<span className={`mr-2 ${isLoading ? "animate-spin" : ""}`}>
-						<ArrowClockwiseIcon size={16} />
-					</span>
+							<ArrowClockwiseIcon size={16} />
+						</span>
 						<span>Refresh</span>
 					</Button>
 					<Button
@@ -50,8 +50,8 @@ export function WebSocketHeader({
 						disabled={!activeConnections}
 					>
 						<span className="mr-2">
-					<RadioButtonIcon size={16} />
-				</span>
+							<RadioButtonIcon size={16} />
+						</span>
 						<span className="sm:inline">Broadcast Message</span>
 					</Button>
 				</div>

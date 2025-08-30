@@ -1,15 +1,15 @@
-import { Link, useLocation } from "@tanstack/react-router";
 import {
 	ActivityIcon,
 	ChartBarIcon,
 	DatabaseIcon,
 	FileTextIcon,
-	SquaresFourIcon,
-	SignOutIcon,
 	GearIcon,
+	SignOutIcon,
+	SquaresFourIcon,
 	UsersIcon,
 	XIcon,
 } from "@phosphor-icons/react";
+import { Link, useLocation } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import LunarLogo from "@/assets/lunar.svg";
 import { Avatar } from "@/components/ui/avatar";
@@ -33,7 +33,12 @@ const navigation = [
 	},
 	{ name: "Records", href: "/records", icon: FileTextIcon, adminOnly: false },
 	{ name: "Users", href: "/users", icon: UsersIcon, adminOnly: true },
-	{ name: "WebSocket", href: "/websocket", icon: ActivityIcon, adminOnly: true },
+	{
+		name: "WebSocket",
+		href: "/websocket",
+		icon: ActivityIcon,
+		adminOnly: true,
+	},
 	{ name: "Metrics", href: "/metrics", icon: ChartBarIcon, adminOnly: true },
 	{ name: "Settings", href: "/settings", icon: GearIcon, adminOnly: true },
 ];
@@ -281,14 +286,14 @@ export function Sidebar() {
 										}`}
 									>
 										<span
-										className={`transition-all ${
-											isActive
-												? "text-nocta-900 dark:text-nocta-100"
-												: "text-nocta-400 dark:text-nocta-500 group-hover:text-nocta-600 dark:group-hover:text-nocta-300"
-										}`}
-									>
-										<Icon size={20} />
-									</span>
+											className={`transition-all ${
+												isActive
+													? "text-nocta-900 dark:text-nocta-100"
+													: "text-nocta-400 dark:text-nocta-500 group-hover:text-nocta-600 dark:group-hover:text-nocta-300"
+											}`}
+										>
+											<Icon size={20} />
+										</span>
 										<span>{item.name}</span>
 									</Link>
 								);
@@ -325,8 +330,8 @@ export function Sidebar() {
 							className="w-full justify-start text-nocta-600 dark:text-nocta-400 hover:bg-nocta-100 dark:hover:bg-nocta-800/40 hover:text-nocta-900 dark:hover:text-nocta-100"
 						>
 							<span className="mr-2">
-				<SignOutIcon size={16} />
-			</span>
+								<SignOutIcon size={16} />
+							</span>
 							Logout
 						</Button>
 					</div>

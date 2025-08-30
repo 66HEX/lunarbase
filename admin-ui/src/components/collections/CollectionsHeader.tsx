@@ -1,4 +1,4 @@
-import { PlusIcon, MagnifyingGlassIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, PlusIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,11 +24,7 @@ export function CollectionsHeader({
 						<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							Collections
 						</h1>
-						<Badge
-							size="sm"
-							variant="secondary"
-							className="text-xs font-light"
-						>
+						<Badge size="sm" variant="secondary" className="text-xs font-light">
 							{collectionsCount} total
 						</Badge>
 					</div>
@@ -37,9 +33,7 @@ export function CollectionsHeader({
 					<div className="relative w-full sm:max-w-md">
 						<Input
 							placeholder="Search collections..."
-							leftIcon={
-								<MagnifyingGlassIcon size={16} />
-							}
+							leftIcon={<MagnifyingGlassIcon size={16} />}
 							value={searchTerm}
 							onChange={(e) => onSearchChange(e.target.value)}
 							className="pl-10 w-full md:w-auto !bg-nocta-900"

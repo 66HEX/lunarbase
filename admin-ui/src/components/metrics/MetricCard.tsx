@@ -23,9 +23,23 @@ export function MetricCard({
 }: MetricCardProps) {
 	const getTrendIcon = () => {
 		if (!trend) return null;
-		if (trend.value > 0) return <span className="w-4 h-4"><TrendUpIcon size={16} /></span>;
-		if (trend.value < 0) return <span className="w-4 h-4"><TrendDownIcon size={16} /></span>;
-		return <span className="w-4 h-4"><MinusIcon size={16} /></span>;
+		if (trend.value > 0)
+			return (
+				<span className="w-4 h-4">
+					<TrendUpIcon size={16} />
+				</span>
+			);
+		if (trend.value < 0)
+			return (
+				<span className="w-4 h-4">
+					<TrendDownIcon size={16} />
+				</span>
+			);
+		return (
+			<span className="w-4 h-4">
+				<MinusIcon size={16} />
+			</span>
+		);
 	};
 
 	const getTrendColor = () => {

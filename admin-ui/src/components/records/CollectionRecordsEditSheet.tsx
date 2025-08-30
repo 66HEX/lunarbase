@@ -1,4 +1,5 @@
 import { DatabaseIcon, FloppyDiskIcon } from "@phosphor-icons/react";
+import type { JSONContent } from "@tiptap/react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
@@ -45,9 +46,8 @@ import {
 	processFieldValue,
 	recordToastMessages,
 } from "./constants";
-import { validateRecordData } from "./validation";
 import { RichTextEditor } from "./RichTextEditor";
-import type { JSONContent } from "@tiptap/react";
+import { validateRecordData } from "./validation";
 
 interface CollectionRecordsEditSheetProps {
 	open: boolean;
@@ -79,7 +79,11 @@ export function CollectionRecordsEditSheet({
 	}, [setAllowClose]);
 
 	const hasRichTextField = (collection: Collection | null): boolean => {
-		return collection?.schema?.fields?.some(field => field.field_type === 'richtext') ?? false;
+		return (
+			collection?.schema?.fields?.some(
+				(field) => field.field_type === "richtext",
+			) ?? false
+		);
 	};
 
 	const availableCollections = collectionsData?.collections || [];
@@ -142,10 +146,7 @@ export function CollectionRecordsEditSheet({
 		}
 	}, [open, record, collection, initializeFormData]);
 
-	const updateFormData = (
-		fieldName: string,
-		value: unknown,
-	) => {
+	const updateFormData = (fieldName: string, value: unknown) => {
 		setFormData((prev) => ({
 			...prev,
 			[fieldName]: value,
@@ -163,23 +164,23 @@ export function CollectionRecordsEditSheet({
 		if (!collection) return false;
 
 		const dataToValidate = { ...formData };
-		Object.keys(fileData).forEach(fieldName => {
+		Object.keys(fileData).forEach((fieldName) => {
 			dataToValidate[fieldName] = fileData[fieldName];
 		});
 
 		const result = validateRecordData(collection.schema.fields, dataToValidate);
-		
+
 		if (!result.success) {
 			const newErrors: { [key: string]: string } = {};
-			result.errors.forEach(error => {
+			result.errors.forEach((error) => {
 				const fieldMatch = error.match(/Field '([^']+)'/);
 				if (fieldMatch) {
 					newErrors[fieldMatch[1]] = error;
 				} else {
-					newErrors['_general'] = error;
+					newErrors["_general"] = error;
 				}
 			});
-			
+
 			setFieldErrors(newErrors);
 			toast({
 				...recordToastMessages.validationError,
@@ -281,22 +282,27 @@ export function CollectionRecordsEditSheet({
 						/>
 					) : field.field_type === "richtext" ? (
 						<RichTextEditor
-							value={typeof value === "string" && value.trim() !== "" ? JSON.parse(value) : (value as JSONContent || { type: 'doc', content: [] })}
+							value={
+								typeof value === "string" && value.trim() !== ""
+									? JSON.parse(value)
+									: (value as JSONContent) || { type: "doc", content: [] }
+							}
 							onChange={(newValue) => updateFormData(field.name, newValue)}
 							onSelectOpenChange={(isOpen) => {
 								if (isOpen) {
 									setAllowClose(false);
 								} else {
-									// Przywróć możliwość zamknięcia gdy select się zamknie bez wyboru
 									setTimeout(() => setAllowClose(true), 100);
 								}
 							}}
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
-							portalProps={{
-								"data-sheet-portal": "true",
-							} as React.HTMLAttributes<HTMLDivElement>}
+							portalProps={
+								{
+									"data-sheet-portal": "true",
+								} as React.HTMLAttributes<HTMLDivElement>
+							}
 							value={typeof value === "string" ? value : ""}
 							onValueChange={(selectedValue) => {
 								if (selectedValue) {
@@ -383,7 +389,10 @@ export function CollectionRecordsEditSheet({
 				}
 			}}
 		>
-			<SheetContent side="right" size={hasRichTextField(collection) ? "xxl" : "lg"}>
+			<SheetContent
+				side="right"
+				size={hasRichTextField(collection) ? "xxl" : "lg"}
+			>
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Edit Record
@@ -401,9 +410,9 @@ export function CollectionRecordsEditSheet({
 							collection.schema?.fields?.filter((field) => field.name !== "id")
 								.length === 0 ? (
 								<div className="text-center py-8">
-							<span className="text-nocta-400 flex w-fit mx-auto justify-center mb-4 p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 shadow-sm">
-								<DatabaseIcon size={48} />
-							</span>
+									<span className="text-nocta-400 flex w-fit mx-auto justify-center mb-4 p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 shadow-sm">
+										<DatabaseIcon size={48} />
+									</span>
 									<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 										No fields to edit
 									</h3>
@@ -430,13 +439,13 @@ export function CollectionRecordsEditSheet({
 								Updating...
 							</>
 						) : (
-						<>
-							<span className="mr-2">
-								<FloppyDiskIcon size={16} />
-							</span>
-							Update Record
-						</>
-					)}
+							<>
+								<span className="mr-2">
+									<FloppyDiskIcon size={16} />
+								</span>
+								Update Record
+							</>
+						)}
 					</Button>
 				</SheetFooter>
 			</SheetContent>

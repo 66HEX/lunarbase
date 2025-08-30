@@ -1,6 +1,9 @@
 import { FloppyDiskIcon } from "@phosphor-icons/react";
+import type { JSONContent } from "@tiptap/react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { RichTextEditor } from "@/components/records/RichTextEditor";
+import { validateRecordData } from "@/components/records/validation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
@@ -43,9 +46,6 @@ import {
 	processFieldValue,
 	recordToastMessages,
 } from "./constants";
-import { validateRecordData } from "@/components/records/validation";
-import { RichTextEditor } from "@/components/records/RichTextEditor";
-import { type JSONContent } from "@tiptap/react";
 
 interface RecordWithCollection extends Record {
 	collection_name: string;
@@ -81,7 +81,11 @@ export function EditRecordSheet({
 	}, [setAllowClose]);
 
 	const hasRichTextField = (collection: Collection | null): boolean => {
-		return collection?.schema?.fields?.some(field => field.field_type === 'richtext') ?? false;
+		return (
+			collection?.schema?.fields?.some(
+				(field) => field.field_type === "richtext",
+			) ?? false
+		);
 	};
 
 	const availableCollections = collectionsData?.collections || [];
@@ -144,10 +148,7 @@ export function EditRecordSheet({
 		}
 	}, [open, record, collection, initializeFormData]);
 
-	const updateFormData = (
-		fieldName: string,
-		value: unknown,
-	) => {
+	const updateFormData = (fieldName: string, value: unknown) => {
 		setFormData((prev) => ({
 			...prev,
 			[fieldName]: value,
@@ -165,23 +166,23 @@ export function EditRecordSheet({
 		if (!collection) return false;
 
 		const dataToValidate = { ...formData };
-		Object.keys(fileData).forEach(fieldName => {
+		Object.keys(fileData).forEach((fieldName) => {
 			dataToValidate[fieldName] = fileData[fieldName];
 		});
 
 		const result = validateRecordData(collection.schema.fields, dataToValidate);
-		
+
 		if (!result.success) {
 			const newErrors: { [key: string]: string } = {};
-			result.errors.forEach(error => {
+			result.errors.forEach((error) => {
 				const fieldMatch = error.match(/Field '([^']+)'/);
 				if (fieldMatch) {
 					newErrors[fieldMatch[1]] = error;
 				} else {
-					newErrors['_general'] = error;
+					newErrors["_general"] = error;
 				}
 			});
-			
+
 			setFieldErrors(newErrors);
 			toast({
 				...recordToastMessages.validationError,
@@ -283,22 +284,27 @@ export function EditRecordSheet({
 						/>
 					) : field.field_type === "richtext" ? (
 						<RichTextEditor
-							value={typeof value === 'object' ? (value as JSONContent) : { type: 'doc', content: [] }}
+							value={
+								typeof value === "object"
+									? (value as JSONContent)
+									: { type: "doc", content: [] }
+							}
 							onChange={(newContent) => updateFormData(field.name, newContent)}
 							onSelectOpenChange={(isOpen) => {
 								if (isOpen) {
 									setAllowClose(false);
 								} else {
-									// Przywróć możliwość zamknięcia gdy select się zamknie bez wyboru
 									setTimeout(() => setAllowClose(true), 100);
 								}
 							}}
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
-							portalProps={{
-								"data-sheet-portal": "true",
-							} as React.HTMLAttributes<HTMLDivElement>}
+							portalProps={
+								{
+									"data-sheet-portal": "true",
+								} as React.HTMLAttributes<HTMLDivElement>
+							}
 							value={
 								typeof value === "string" || typeof value === "number"
 									? String(value)
@@ -420,11 +426,11 @@ export function EditRecordSheet({
 									Updating...
 								</>
 							) : (
-							<>
-								<FloppyDiskIcon size={16} />
-								Update Record
-							</>
-						)}
+								<>
+									<FloppyDiskIcon size={16} />
+									Update Record
+								</>
+							)}
 						</Button>
 					</SheetFooter>
 				</Form>

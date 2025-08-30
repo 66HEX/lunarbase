@@ -1,4 +1,9 @@
-import { ActivityIcon, DatabaseIcon, GlobeIcon, ArrowClockwiseIcon } from "@phosphor-icons/react";
+import {
+	ActivityIcon,
+	ArrowClockwiseIcon,
+	DatabaseIcon,
+	GlobeIcon,
+} from "@phosphor-icons/react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
@@ -32,11 +37,11 @@ export function MetricsSummary() {
 							Error loading metrics: {error.message}
 						</p>
 						<Button onClick={() => refetch()} variant="primary">
-						<span className="w-4 h-4 mr-2">
-							<ArrowClockwiseIcon size={16} />
-						</span>
-						Retry
-					</Button>
+							<span className="w-4 h-4 mr-2">
+								<ArrowClockwiseIcon size={16} />
+							</span>
+							Retry
+						</Button>
 					</div>
 				</CardContent>
 			</Card>

@@ -1,10 +1,15 @@
+import {
+	ArrowLeftIcon,
+	PencilIcon,
+	TrashIcon,
+	UserIcon,
+} from "@phosphor-icons/react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
 	createFileRoute,
 	useNavigate,
 	useParams,
 } from "@tanstack/react-router";
-import { ArrowLeftIcon, PencilIcon, TrashIcon, UserIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { OwnershipBadge, TransferOwnership } from "@/components/ownership";
 import {

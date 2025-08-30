@@ -1,5 +1,5 @@
 import { FloppyDiskIcon } from "@phosphor-icons/react";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -31,10 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { useUnlockUser, useUpdateUser } from "@/hooks";
 import type { UpdateUserRequest, User } from "@/types/api";
-import {
-	userFieldDescriptions,
-	userRoleOptions,
-} from "./constants";
+import { userFieldDescriptions, userRoleOptions } from "./constants";
 import { validateUpdateUserData } from "./validation";
 
 interface EditUserSheetProps {
@@ -324,10 +321,10 @@ export function EditUserSheet({
 								Updating...
 							</>
 						) : (
-						<>
-							<FloppyDiskIcon size={16} />
-							<span className="ml-2">Update User</span>
-						</>
+							<>
+								<FloppyDiskIcon size={16} />
+								<span className="ml-2">Update User</span>
+							</>
 						)}
 					</Button>
 				</SheetFooter>

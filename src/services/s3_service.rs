@@ -8,6 +8,7 @@ use uuid::Uuid;
 pub struct S3Service {
     client: Client,
     bucket_name: String,
+    endpoint_url: Option<String>,
 }
 
 #[derive(Debug)]
@@ -98,6 +99,7 @@ impl S3Service {
         Ok(Self {
             client,
             bucket_name,
+            endpoint_url,
         })
     }
 
@@ -134,7 +136,11 @@ impl S3Service {
             .await
             .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
 
-        let file_url = format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key);
+        let file_url = if let Some(ref endpoint) = self.endpoint_url {
+            format!("{}/{}/{}", endpoint, self.bucket_name, s3_key)
+        } else {
+            format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key)
+        };
 
         debug!(
             "Successfully uploaded file '{}' to S3 with key '{}'",
@@ -172,7 +178,11 @@ impl S3Service {
             .await
             .map_err(|e| S3ServiceError::SdkError(e.to_string()))?;
 
-        let file_url = format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key);
+        let file_url = if let Some(endpoint_url) = &self.endpoint_url {
+            format!("{}/{}/{}", endpoint_url, self.bucket_name, s3_key)
+        } else {
+            format!("https://{}.s3.amazonaws.com/{}", self.bucket_name, s3_key)
+        };
 
         debug!(
             "Successfully uploaded file '{}' to S3 with key '{}'",
@@ -249,6 +259,11 @@ impl S3Service {
             let parts: Vec<&str> = file_url
                 .split(&format!("s3.amazonaws.com/{}/", self.bucket_name))
                 .collect();
+            if parts.len() == 2 {
+                return Ok(parts[1].to_string());
+            }
+        } else if file_url.contains("localhost:4566") || file_url.contains("127.0.0.1:4566") {
+            let parts: Vec<&str> = file_url.split(&format!("/{}/", self.bucket_name)).collect();
             if parts.len() == 2 {
                 return Ok(parts[1].to_string());
             }

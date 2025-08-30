@@ -1,4 +1,4 @@
-import { FloppyDiskIcon } from "@phosphor-icons/react"
+import { FloppyDiskIcon } from "@phosphor-icons/react";
 import { useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -382,9 +382,7 @@ export function CollectionPermissionsSheet({
 						) : (
 							<>
 								<FloppyDiskIcon />
-								<span className="ml-2">
-									Save Permissions
-								</span>
+								<span className="ml-2">Save Permissions</span>
 							</>
 						)}
 					</Button>

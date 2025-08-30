@@ -145,9 +145,7 @@ export function CollectionDetailsSheet({
 												{field.default_value !== undefined &&
 													field.default_value !== null && (
 														<div className="mt-2 text-sm text-nocta-600 dark:text-nocta-400">
-															<span className="font-light">
-																Default value:
-															</span>{" "}
+															<span className="font-light">Default value:</span>{" "}
 															<code className="text-xs">
 																{String(field.default_value)}
 															</code>

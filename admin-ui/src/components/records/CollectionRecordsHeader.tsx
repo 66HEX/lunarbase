@@ -33,12 +33,12 @@ export function CollectionRecordsHeader({
 			<div className="space-y-1">
 				<div className="flex items-center gap-3">
 					<Button
-					variant="ghost"
-					onClick={onNavigateBack}
-					className="p-2 shrink-0"
-				>
-					<ArrowLeftIcon size={16} />
-				</Button>
+						variant="ghost"
+						onClick={onNavigateBack}
+						className="p-2 shrink-0"
+					>
+						<ArrowLeftIcon size={16} />
+					</Button>
 					<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100 truncate">
 						{collection?.display_name || collectionName}
 					</h1>

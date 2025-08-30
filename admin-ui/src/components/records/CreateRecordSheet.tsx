@@ -1,6 +1,9 @@
-import { DatabaseIcon, PlusIcon, FloppyDiskIcon } from "@phosphor-icons/react";
+import { DatabaseIcon, FloppyDiskIcon, PlusIcon } from "@phosphor-icons/react";
+import type { JSONContent } from "@tiptap/react";
 import type React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { RichTextEditor } from "@/components/records/RichTextEditor";
+import { validateRecordData } from "@/components/records/validation";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
@@ -34,9 +37,6 @@ import {
 	processFieldValue,
 	recordToastMessages,
 } from "./constants";
-import { validateRecordData } from "@/components/records/validation";
-import { RichTextEditor } from "@/components/records/RichTextEditor";
-import { type JSONContent } from "@tiptap/react";
 
 interface CreateRecordSheetProps {
 	open: boolean;
@@ -66,7 +66,11 @@ export function CreateRecordSheet({
 	}, [setAllowClose]);
 
 	const hasRichTextField = (collection: Collection | null): boolean => {
-		return collection?.schema?.fields?.some(field => field.field_type === 'richtext') ?? false;
+		return (
+			collection?.schema?.fields?.some(
+				(field) => field.field_type === "richtext",
+			) ?? false
+		);
 	};
 
 	const availableCollections = collectionsData?.collections || [];
@@ -94,10 +98,7 @@ export function CreateRecordSheet({
 		}
 	}, [open, collection, initializeFormData]);
 
-	const updateFormData = (
-		fieldName: string,
-		value: unknown,
-	) => {
+	const updateFormData = (fieldName: string, value: unknown) => {
 		setFormData((prev) => ({
 			...prev,
 			[fieldName]: value,
@@ -115,23 +116,23 @@ export function CreateRecordSheet({
 		if (!collection) return false;
 
 		const dataToValidate = { ...formData };
-		Object.keys(fileData).forEach(fieldName => {
+		Object.keys(fileData).forEach((fieldName) => {
 			dataToValidate[fieldName] = fileData[fieldName];
 		});
 
 		const result = validateRecordData(collection.schema.fields, dataToValidate);
-		
+
 		if (!result.success) {
 			const newErrors: { [key: string]: string } = {};
-			result.errors.forEach(error => {
+			result.errors.forEach((error) => {
 				const fieldMatch = error.match(/Field '([^']+)'/);
 				if (fieldMatch) {
 					newErrors[fieldMatch[1]] = error;
 				} else {
-					newErrors['_general'] = error;
+					newErrors["_general"] = error;
 				}
 			});
-			
+
 			setFieldErrors(newErrors);
 			toast({
 				...recordToastMessages.validationError,
@@ -235,13 +236,16 @@ export function CreateRecordSheet({
 						/>
 					) : field.field_type === "richtext" ? (
 						<RichTextEditor
-							value={typeof value === "string" ? JSON.parse(value) : (value as JSONContent)}
+							value={
+								typeof value === "string"
+									? JSON.parse(value)
+									: (value as JSONContent)
+							}
 							onChange={(newContent) => updateFormData(field.name, newContent)}
 							onSelectOpenChange={(isOpen) => {
 								if (isOpen) {
 									setAllowClose(false);
 								} else {
-									// Przywróć możliwość zamknięcia gdy select się zamknie bez wyboru
 									setTimeout(() => setAllowClose(true), 100);
 								}
 							}}
@@ -338,7 +342,10 @@ export function CreateRecordSheet({
 					Add Record
 				</Button>
 			</SheetTrigger>
-			<SheetContent side="right" size={hasRichTextField(collection) ? "xxl" : "lg"}>
+			<SheetContent
+				side="right"
+				size={hasRichTextField(collection) ? "xxl" : "lg"}
+			>
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Create Record
@@ -356,9 +363,9 @@ export function CreateRecordSheet({
 							collection.schema?.fields?.filter((field) => field.name !== "id")
 								.length === 0 ? (
 								<div className="text-center py-8">
-							<span className="block mx-auto text-nocta-400 mb-4">
-								<DatabaseIcon size={48} />
-							</span>
+									<span className="block mx-auto text-nocta-400 mb-4">
+										<DatabaseIcon size={48} />
+									</span>
 									<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 										No fields to fill
 									</h3>
@@ -389,13 +396,13 @@ export function CreateRecordSheet({
 								Creating...
 							</>
 						) : (
-						<>
-							<span className="mr-2">
-								<FloppyDiskIcon size={16} />
-							</span>
-							Create Record
-						</>
-					)}
+							<>
+								<span className="mr-2">
+									<FloppyDiskIcon size={16} />
+								</span>
+								Create Record
+							</>
+						)}
 					</Button>
 				</SheetFooter>
 			</SheetContent>

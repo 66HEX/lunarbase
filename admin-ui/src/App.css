@@ -37,7 +37,7 @@
 	--color-nocta-700: oklch(0.371 0 0);
 	--color-nocta-800: oklch(0.269 0 0);
 	--color-nocta-900: oklch(0.205 0 0);
-	--color-nocta-950: oklch(0.180 0 0);
+	--color-nocta-950: oklch(0.18 0 0);
 }
 
 @layer base {
@@ -67,10 +67,10 @@
 }
 
 .ProseMirror:focus {
-    outline: none;
+	outline: none;
 }
-.ProseMirror {        
-  min-height: 560px;
-  max-height: 560px;
-  overflow: scroll;
+.ProseMirror {
+	min-height: 560px;
+	max-height: 560px;
+	overflow: scroll;
 }

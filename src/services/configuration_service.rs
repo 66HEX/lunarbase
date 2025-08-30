@@ -104,10 +104,7 @@ impl ConfigurationService {
             })?;
 
         let existing_setting = existing_setting.ok_or_else(|| {
-            AuthError::NotFound(format!(
-                "Setting {}:{} not found",
-                category, setting_key
-            ))
+            AuthError::NotFound(format!("Setting {}:{} not found", category, setting_key))
         })?;
 
         self.validate_setting_value(new_value, &existing_setting.data_type)?;
@@ -196,7 +193,7 @@ impl ConfigurationService {
         }
 
         self.validate_setting_value(&setting_value, &data_type.to_string())?;
-        
+
         if !default_value.is_empty() {
             self.validate_setting_value(&default_value, &data_type.to_string())?;
         }
@@ -377,17 +374,15 @@ impl ConfigurationService {
                     errors.push(format!("Invalid float value: '{}'", value));
                 }
             }
-            "boolean" => {
-                match value.to_lowercase().as_str() {
-                    "true" | "false" | "1" | "0" | "yes" | "no" | "on" | "off" => {}
-                    _ => {
-                        errors.push(format!(
+            "boolean" => match value.to_lowercase().as_str() {
+                "true" | "false" | "1" | "0" | "yes" | "no" | "on" | "off" => {}
+                _ => {
+                    errors.push(format!(
                             "Invalid boolean value: '{}'. Expected: true, false, 1, 0, yes, no, on, off",
                             value
                         ));
-                    }
                 }
-            }
+            },
             "json" => {
                 if let Err(e) = serde_json::from_str::<serde_json::Value>(value) {
                     errors.push(format!("Invalid JSON value: {}", e));

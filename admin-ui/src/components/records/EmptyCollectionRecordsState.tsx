@@ -18,10 +18,10 @@ export function EmptyCollectionRecordsState({
 			<CardContent className="py-12">
 				<div className="text-center">
 					<div className="p-3 rounded-xl bg-nocta-100 dark:bg-nocta-800 w-fit mx-auto mb-4 shadow-sm">
-					<span className="text-nocta-400 dark:text-nocta-500">
-						<FileTextIcon size={32} />
-					</span>
-				</div>
+						<span className="text-nocta-400 dark:text-nocta-500">
+							<FileTextIcon size={32} />
+						</span>
+					</div>
 					<h3 className="text-lg font-light text-nocta-900 dark:text-nocta-100 mb-2">
 						{searchTerm ? "No records found" : "No records yet"}
 					</h3>
@@ -32,11 +32,11 @@ export function EmptyCollectionRecordsState({
 					</p>
 					{!searchTerm && (
 						<Button onClick={onAddRecord}>
-					<span className="mr-2">
-						<PlusIcon size={16} />
-					</span>
-					Add Record
-				</Button>
+							<span className="mr-2">
+								<PlusIcon size={16} />
+							</span>
+							Add Record
+						</Button>
 					)}
 				</div>
 			</CardContent>

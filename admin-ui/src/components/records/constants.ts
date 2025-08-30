@@ -2,12 +2,12 @@ import {
 	BracketsCurlyIcon,
 	CalendarIcon,
 	DatabaseIcon,
+	EnvelopeIcon,
 	FileTextIcon,
 	HashIcon,
 	LinkIcon,
-	EnvelopeIcon,
-	ToggleLeftIcon,
 	TextAaIcon,
+	ToggleLeftIcon,
 } from "@phosphor-icons/react";
 import type { FileUploadFile } from "@/components/ui/file-upload";
 
@@ -21,7 +21,7 @@ export const fieldTypeIcons = {
 	json: BracketsCurlyIcon,
 	file: FileTextIcon,
 	relation: DatabaseIcon,
-    richtext: BracketsCurlyIcon,
+	richtext: BracketsCurlyIcon,
 };
 
 export const fieldValidationPatterns = {
@@ -53,7 +53,7 @@ export const getDefaultFieldValue = (
 		case "file":
 			return [];
 		case "richtext":
-			return { type: 'doc', content: [] };
+			return { type: "doc", content: [] };
 		default:
 			return "";
 	}
@@ -75,8 +75,8 @@ export const processFieldValue = (
 		case "boolean":
 			return Boolean(value);
 		case "json":
-        case "richtext":
-            if (value && typeof value === "string") {
+		case "richtext":
+			if (value && typeof value === "string") {
 				try {
 					return JSON.parse(value);
 				} catch {
@@ -147,8 +147,8 @@ export const validateFieldValue = (
 			}
 			break;
 		case "json":
-        case "richtext":
-            if (value && typeof value === "string") {
+		case "richtext":
+			if (value && typeof value === "string") {
 				try {
 					JSON.parse(value);
 				} catch {

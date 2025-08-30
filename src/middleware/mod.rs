@@ -1,6 +1,6 @@
 use crate::AppState;
 use crate::services::configuration_manager::ConfigurationAccess;
-use axum::{Router, middleware};
+use axum::{Router, extract::DefaultBodyLimit, middleware};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::TraceLayer;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
@@ -60,7 +60,10 @@ pub async fn setup_cors(app_state: &AppState) -> CorsLayer {
 
 pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     let cors_layer = setup_cors(&app_state).await;
-    let mut router = app.layer(cors_layer).layer(TraceLayer::new_for_http());
+    let mut router = app
+        .layer(cors_layer)
+        .layer(TraceLayer::new_for_http())
+        .layer(DefaultBodyLimit::max(50 * 1024 * 1024));
 
     if !cfg!(test) {
         router = router

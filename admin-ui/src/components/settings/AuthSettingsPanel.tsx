@@ -66,8 +66,8 @@ export function AuthSettingsPanel() {
 
 				if (!validationResult.success) {
 					const errorMessage = validationResult.error.issues
-						.map(issue => issue.message)
-						.join(', ');
+						.map((issue) => issue.message)
+						.join(", ");
 					toast({
 						title: "Validation Error",
 						description: `Invalid value for ${setting.setting_key}: ${errorMessage}`,

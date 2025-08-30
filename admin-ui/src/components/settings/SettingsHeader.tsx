@@ -13,11 +13,7 @@ export function SettingsHeader({ totalSettings }: SettingsHeaderProps) {
 						<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100">
 							Settings
 						</h1>
-						<Badge
-							size="sm"
-							variant="secondary"
-							className="text-xs font-light"
-						>
+						<Badge size="sm" variant="secondary" className="text-xs font-light">
 							{totalSettings} settings
 						</Badge>
 					</div>
