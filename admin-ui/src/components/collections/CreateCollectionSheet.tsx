@@ -1,5 +1,5 @@
 import { FloppyDiskIcon, TrashIcon, PlusIcon } from "@phosphor-icons/react"
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -52,6 +52,7 @@ export function CreateCollectionSheet({
 	const [collectionName, setCollectionName] = useState("");
 	const [collectionDescription, setCollectionDescription] = useState("");
 	const [allowClose, setAllowClose] = useState(true);
+	const allowCloseRef = useRef(setAllowClose);
 	const [fields, setFields] = useState<FieldDefinition[]>([
 		{
 			name: "id",
@@ -82,6 +83,12 @@ export function CreateCollectionSheet({
 		setFields((prev) =>
 			prev.map((field, i) => (i === index ? { ...field, ...updates } : field)),
 		);
+
+		// Clear field errors when updating field values
+		const fieldErrorKey = `field_${index}_name`;
+		if (fieldErrors[fieldErrorKey]) {
+			setFieldErrors((prev) => ({ ...prev, [fieldErrorKey]: "" }));
+		}
 	};
 
 	const validateForm = (): boolean => {
@@ -164,6 +171,10 @@ export function CreateCollectionSheet({
 	};
 
 	useEffect(() => {
+		allowCloseRef.current = setAllowClose;
+	}, [setAllowClose]);
+
+	useEffect(() => {
 		if (isOpen) {
 			setCollectionName("");
 			setCollectionDescription("");
@@ -227,7 +238,12 @@ export function CreateCollectionSheet({
 												placeholder="e.g., users, products, orders"
 												className="w-full"
 												value={collectionName}
-												onChange={(e) => setCollectionName(e.target.value)}
+											onChange={(e) => {
+												setCollectionName(e.target.value);
+												if (fieldErrors.collectionName) {
+													setFieldErrors((prev) => ({ ...prev, collectionName: "" }));
+												}
+											}}
 												variant={
 													fieldErrors.collectionName ? "error" : "default"
 												}
@@ -340,30 +356,21 @@ export function CreateCollectionSheet({
 																</FormLabel>
 																<FormControl>
 																	<Select
-																		portalProps={
-																			{
-																				"data-sheet-portal": "true",
-																			} as React.HTMLAttributes<HTMLDivElement>
-																		}
-																		value={field.field_type}
-																		onValueChange={(value) => {
-																			setAllowClose(false);
-																			updateField(index, {
-																				field_type:
-																					value as FieldDefinition["field_type"],
-																			});
-																			setTimeout(
-																				() => setAllowClose(true),
-																				300,
-																			);
-																		}}
-																		onOpenChange={(isOpen) => {
-																			if (isOpen) {
-																				setAllowClose(false);
-																			}
-																		}}
-																		disabled={index === 0}
-																	>
+													portalProps={
+														{
+															"data-sheet-portal": "true",
+														} as React.HTMLAttributes<HTMLDivElement>
+													}
+													value={field.field_type}
+													onValueChange={(value) => {
+														updateField(index, {
+															field_type:
+																value as FieldDefinition["field_type"],
+														});
+													}}
+													allowCloseRef={allowCloseRef}
+													disabled={index === 0}
+												>
 																		<SelectTrigger className="w-full">
 																			<SelectValue />
 																		</SelectTrigger>

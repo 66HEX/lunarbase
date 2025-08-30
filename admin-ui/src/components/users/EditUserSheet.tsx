@@ -1,5 +1,5 @@
 import { FloppyDiskIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -52,6 +52,7 @@ export function EditUserSheet({
 	const unlockUserMutation = useUnlockUser();
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [allowClose, setAllowClose] = useState(true);
+	const allowCloseRef = useRef(setAllowClose);
 	const [formData, setFormData] = useState<UpdateUserRequest>({
 		email: "",
 		username: "",
@@ -131,6 +132,10 @@ export function EditUserSheet({
 	const isUserLocked = user?.locked_until
 		? new Date(user.locked_until) > new Date()
 		: false;
+
+	useEffect(() => {
+		allowCloseRef.current = setAllowClose;
+	}, [setAllowClose]);
 
 	useEffect(() => {
 		if (isOpen && user) {
@@ -222,20 +227,13 @@ export function EditUserSheet({
 										value={formData.role}
 										onValueChange={(value) => {
 											if (value) {
-												setAllowClose(false);
 												updateFormData(
 													"role",
 													value as "admin" | "user" | "guest",
 												);
-
-												setTimeout(() => setAllowClose(true), 300);
 											}
 										}}
-										onOpenChange={(isOpen) => {
-											if (isOpen) {
-												setAllowClose(false);
-											}
-										}}
+										allowCloseRef={allowCloseRef}
 									>
 										<SelectTrigger className="w-full">
 											<SelectValue placeholder="Select a role" />

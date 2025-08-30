@@ -467,7 +467,7 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 	);
 
 	const endResize = useCallback(
-		(_e: MouseEvent) => {
+		() => {
 			isResizingRef.current = false;
 			document.removeEventListener("mousemove", onMouseMove);
 			document.removeEventListener("mouseup", endResize);

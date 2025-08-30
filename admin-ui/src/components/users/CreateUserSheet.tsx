@@ -1,5 +1,5 @@
 import { FloppyDiskIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import {
 	Form,
@@ -50,6 +50,7 @@ export function CreateUserSheet({
 
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [allowClose, setAllowClose] = useState(true);
+	const allowCloseRef = useRef(setAllowClose);
 	const [formData, setFormData] =
 		useState<CreateUserRequest>(defaultUserFormData);
 
@@ -107,6 +108,10 @@ export function CreateUserSheet({
 			setFieldErrors((prev) => ({ ...prev, [field]: "" }));
 		}
 	};
+
+	useEffect(() => {
+		allowCloseRef.current = setAllowClose;
+	}, [setAllowClose]);
 
 	useEffect(() => {
 		if (isOpen) {
@@ -210,20 +215,13 @@ export function CreateUserSheet({
 										value={formData.role}
 										onValueChange={(value) => {
 											if (value) {
-												setAllowClose(false);
 												updateFormData(
 													"role",
 													value as CreateUserRequest["role"],
 												);
-
-												setTimeout(() => setAllowClose(true), 300);
 											}
 										}}
-										onOpenChange={(isOpen) => {
-											if (isOpen) {
-												setAllowClose(false);
-											}
-										}}
+										allowCloseRef={allowCloseRef}
 									>
 										<SelectTrigger className="w-full">
 											<SelectValue placeholder="Select a role" />

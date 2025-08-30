@@ -1,6 +1,6 @@
 import { DatabaseIcon, PlusIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
@@ -58,7 +58,16 @@ export function CreateRecordSheet({
 		{},
 	);
 	const [allowClose, setAllowClose] = useState(true);
+	const allowCloseRef = useRef(setAllowClose);
 	const { data: collectionsData } = useCollections();
+
+	useEffect(() => {
+		allowCloseRef.current = setAllowClose;
+	}, [setAllowClose]);
+
+	const hasRichTextField = (collection: Collection | null): boolean => {
+		return collection?.schema?.fields?.some(field => field.field_type === 'richtext') ?? false;
+	};
 
 	const availableCollections = collectionsData?.collections || [];
 
@@ -228,6 +237,14 @@ export function CreateRecordSheet({
 						<RichTextEditor
 							value={typeof value === "string" ? JSON.parse(value) : (value as JSONContent)}
 							onChange={(newContent) => updateFormData(field.name, newContent)}
+							onSelectOpenChange={(isOpen) => {
+								if (isOpen) {
+									setAllowClose(false);
+								} else {
+									// Przywróć możliwość zamknięcia gdy select się zamknie bez wyboru
+									setTimeout(() => setAllowClose(true), 100);
+								}
+							}}
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
@@ -239,17 +256,10 @@ export function CreateRecordSheet({
 							value={typeof value === "string" ? value : ""}
 							onValueChange={(selectedValue) => {
 								if (selectedValue) {
-									setAllowClose(false);
 									updateFormData(field.name, selectedValue);
-
-									setTimeout(() => setAllowClose(true), 300);
 								}
 							}}
-							onOpenChange={(isOpen) => {
-								if (isOpen) {
-									setAllowClose(false);
-								}
-							}}
+							allowCloseRef={allowCloseRef}
 						>
 							<SelectTrigger
 								className={`w-full ${hasError ? "border-red-500" : ""}`}
@@ -328,7 +338,7 @@ export function CreateRecordSheet({
 					Add Record
 				</Button>
 			</SheetTrigger>
-			<SheetContent side="right" size="lg">
+			<SheetContent side="right" size={hasRichTextField(collection) ? "xxl" : "lg"}>
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Create Record

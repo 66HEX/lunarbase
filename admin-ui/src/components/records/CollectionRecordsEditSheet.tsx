@@ -1,6 +1,6 @@
 import { DatabaseIcon, FloppyDiskIcon } from "@phosphor-icons/react";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
@@ -71,6 +71,16 @@ export function CollectionRecordsEditSheet({
 	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>(
 		{},
 	);
+	const [allowClose, setAllowClose] = useState(true);
+	const allowCloseRef = useRef(setAllowClose);
+
+	useEffect(() => {
+		allowCloseRef.current = setAllowClose;
+	}, [setAllowClose]);
+
+	const hasRichTextField = (collection: Collection | null): boolean => {
+		return collection?.schema?.fields?.some(field => field.field_type === 'richtext') ?? false;
+	};
 
 	const availableCollections = collectionsData?.collections || [];
 
@@ -273,13 +283,27 @@ export function CollectionRecordsEditSheet({
 						<RichTextEditor
 							value={typeof value === "string" && value.trim() !== "" ? JSON.parse(value) : (value as JSONContent || { type: 'doc', content: [] })}
 							onChange={(newValue) => updateFormData(field.name, newValue)}
+							onSelectOpenChange={(isOpen) => {
+								if (isOpen) {
+									setAllowClose(false);
+								} else {
+									// Przywróć możliwość zamknięcia gdy select się zamknie bez wyboru
+									setTimeout(() => setAllowClose(true), 100);
+								}
+							}}
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
+							portalProps={{
+								"data-sheet-portal": "true",
+							} as React.HTMLAttributes<HTMLDivElement>}
 							value={typeof value === "string" ? value : ""}
-							onValueChange={(selectedValue) =>
-								updateFormData(field.name, selectedValue)
-							}
+							onValueChange={(selectedValue) => {
+								if (selectedValue) {
+									updateFormData(field.name, selectedValue);
+								}
+							}}
+							allowCloseRef={allowCloseRef}
 						>
 							<SelectTrigger
 								className={`w-full ${hasError ? "border-red-500" : ""}`}
@@ -346,8 +370,20 @@ export function CollectionRecordsEditSheet({
 	};
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent side="right" size="lg">
+		<Sheet
+			open={open}
+			onOpenChange={(newOpen) => {
+				if (!newOpen && (!allowClose || submitting)) {
+					return;
+				}
+
+				onOpenChange(newOpen);
+				if (newOpen) {
+					setAllowClose(true);
+				}
+			}}
+		>
+			<SheetContent side="right" size={hasRichTextField(collection) ? "xxl" : "lg"}>
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Edit Record

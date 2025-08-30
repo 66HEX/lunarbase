@@ -1,5 +1,5 @@
 import { PlusIcon, FloppyDiskIcon, TrashIcon } from "@phosphor-icons/react";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { toast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
@@ -62,6 +62,7 @@ export function EditCollectionSheet({
 		useState("");
 	const [editFields, setEditFields] = useState<FieldDefinition[]>([]);
 	const [allowClose, setAllowClose] = useState(true);
+	const allowCloseRef = useRef(setAllowClose);
 
 	const addEditField = () => {
 		setEditFields((prev) => [
@@ -87,6 +88,11 @@ export function EditCollectionSheet({
 		setEditFields((prev) =>
 			prev.map((field, i) => (i === index ? { ...field, ...updates } : field)),
 		);
+
+		const fieldErrorKey = `edit_field_${index}_name`;
+		if (editFieldErrors[fieldErrorKey]) {
+			setEditFieldErrors((prev) => ({ ...prev, [fieldErrorKey]: "" }));
+		}
 	};
 
 	const validateEditForm = (): boolean => {
@@ -165,6 +171,10 @@ export function EditCollectionSheet({
 	};
 
 	useEffect(() => {
+		allowCloseRef.current = setAllowClose;
+	}, [setAllowClose]);
+
+	useEffect(() => {
 		if (collection && isOpen) {
 			setEditCollectionName(collection.name);
 			setEditCollectionDescription(collection.description || "");
@@ -221,7 +231,12 @@ export function EditCollectionSheet({
 												placeholder="e.g., users, products, orders"
 												className="w-full"
 												value={editCollectionName}
-												onChange={(e) => setEditCollectionName(e.target.value)}
+											onChange={(e) => {
+												setEditCollectionName(e.target.value);
+												if (editFieldErrors.editCollectionName) {
+													setEditFieldErrors((prev) => ({ ...prev, editCollectionName: "" }));
+												}
+											}}
 												variant={
 													editFieldErrors.editCollectionName
 														? "error"
@@ -340,30 +355,21 @@ export function EditCollectionSheet({
 																</FormLabel>
 																<FormControl>
 																	<Select
-																		portalProps={
-																			{
-																				"data-sheet-portal": "true",
-																			} as React.HTMLAttributes<HTMLDivElement>
-																		}
-																		value={field.field_type}
-																		onValueChange={(value) => {
-																			setAllowClose(false);
-																			updateEditField(index, {
-																				field_type:
-																					value as FieldDefinition["field_type"],
-																			});
-																			setTimeout(
-																				() => setAllowClose(true),
-																				300,
-																			);
-																		}}
-																		onOpenChange={(isOpen) => {
-																			if (isOpen) {
-																				setAllowClose(false);
-																			}
-																		}}
-																		disabled={index === 0}
-																	>
+													portalProps={
+														{
+															"data-sheet-portal": "true",
+														} as React.HTMLAttributes<HTMLDivElement>
+													}
+													value={field.field_type}
+													onValueChange={(value) => {
+														updateEditField(index, {
+															field_type:
+																value as FieldDefinition["field_type"],
+														});
+													}}
+													allowCloseRef={allowCloseRef}
+													disabled={index === 0}
+												>
 																		<SelectTrigger className="w-full">
 																			<SelectValue />
 																		</SelectTrigger>

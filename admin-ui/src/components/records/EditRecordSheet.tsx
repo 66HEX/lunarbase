@@ -1,6 +1,6 @@
 import { FloppyDiskIcon } from "@phosphor-icons/react";
 import type React from "react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { FileUpload, type FileUploadFile } from "@/components/ui/file-upload";
@@ -73,6 +73,16 @@ export function EditRecordSheet({
 	const [fileData, setFileData] = useState<{ [key: string]: FileUploadFile[] }>(
 		{},
 	);
+	const [allowClose, setAllowClose] = useState(true);
+	const allowCloseRef = useRef(setAllowClose);
+
+	useEffect(() => {
+		allowCloseRef.current = setAllowClose;
+	}, [setAllowClose]);
+
+	const hasRichTextField = (collection: Collection | null): boolean => {
+		return collection?.schema?.fields?.some(field => field.field_type === 'richtext') ?? false;
+	};
 
 	const availableCollections = collectionsData?.collections || [];
 
@@ -275,17 +285,31 @@ export function EditRecordSheet({
 						<RichTextEditor
 							value={typeof value === 'object' ? (value as JSONContent) : { type: 'doc', content: [] }}
 							onChange={(newContent) => updateFormData(field.name, newContent)}
+							onSelectOpenChange={(isOpen) => {
+								if (isOpen) {
+									setAllowClose(false);
+								} else {
+									// Przywróć możliwość zamknięcia gdy select się zamknie bez wyboru
+									setTimeout(() => setAllowClose(true), 100);
+								}
+							}}
 						/>
 					) : field.field_type === "relation" ? (
 						<Select
+							portalProps={{
+								"data-sheet-portal": "true",
+							} as React.HTMLAttributes<HTMLDivElement>}
 							value={
 								typeof value === "string" || typeof value === "number"
 									? String(value)
 									: ""
 							}
-							onValueChange={(selectedValue) =>
-								updateFormData(field.name, selectedValue)
-							}
+							onValueChange={(selectedValue) => {
+								if (selectedValue) {
+									updateFormData(field.name, selectedValue);
+								}
+							}}
+							allowCloseRef={allowCloseRef}
 						>
 							<SelectTrigger
 								className={`w-full ${hasError ? "border-red-500" : ""}`}
@@ -344,8 +368,20 @@ export function EditRecordSheet({
 	};
 
 	return (
-		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent size="lg">
+		<Sheet
+			open={open}
+			onOpenChange={(newOpen) => {
+				if (!newOpen && (!allowClose || submitting)) {
+					return;
+				}
+
+				onOpenChange(newOpen);
+				if (newOpen) {
+					setAllowClose(true);
+				}
+			}}
+		>
+			<SheetContent size={hasRichTextField(collection) ? "xxl" : "lg"}>
 				<SheetHeader>
 					<SheetTitle>Edit Record</SheetTitle>
 					<SheetDescription>

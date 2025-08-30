@@ -1,5 +1,24 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Language syntax highlighting selector in RichTextEditor CodeBlock component for improved code editing experience
+- Language indicator badge in RichTextEditor CodeBlock showing the selected programming language in the top-right corner
+
+### Fixed
+- Sheet close button functionality when Select components are opened and closed without making a selection in CreateUserSheet and EditUserSheet
+- Sheet close button functionality when Select components are opened and closed without making a selection in CreateCollectionSheet and EditCollectionSheet
+- Consistent allowClose state management across all sheet components to prevent UI blocking
+
+### Improved
+- Custom formatting for all toolbar buttons in RichTextEditor with gradient effects and consistent styling
+- Enhanced visual appearance of RichTextEditor toolbar with improved active state indicators
+- Added gradient spans with conditional rendering for all formatting buttons (bold, italic, strike, code, headings, lists, etc.)
+- Automatic sheet size adjustment to 'xxl' for collections containing richtext fields in CreateRecordSheet, EditRecordSheet, and CollectionRecordsEditSheet
+- Added hasRichTextField helper function to detect collections with richtext fields and dynamically adjust sheet dimensions
+- Tab key handling in RichTextEditor CodeBlock now inserts indentation (two spaces) instead of changing focus to other elements
+
 ## [0.5.0][0.5.0] - 2025-08-30
 
 ### Added

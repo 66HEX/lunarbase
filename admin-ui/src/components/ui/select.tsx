@@ -40,6 +40,8 @@ export interface SelectProps {
 	children: React.ReactNode;
 	size?: "sm" | "md" | "lg";
 	portalProps?: React.HTMLAttributes<HTMLDivElement>;
+	allowCloseRef?: React.RefObject<(value: boolean) => void>;
+	allowCloseDelay?: number;
 }
 
 export interface SelectTriggerProps
@@ -106,6 +108,8 @@ export const Select: React.FC<SelectProps> = ({
 	children,
 	size = "md",
 	portalProps,
+	allowCloseRef,
+	allowCloseDelay = 300,
 }) => {
 	const [uncontrolledValue, setUncontrolledValue] = useState(defaultValue);
 	const [displayValue, setDisplayValue] = useState<React.ReactNode>(null);
@@ -113,6 +117,16 @@ export const Select: React.FC<SelectProps> = ({
 
 	const setOpen = (newOpen: boolean) => {
 		setOpenState(newOpen);
+		
+		if (allowCloseRef?.current) {
+			if (newOpen) {
+				allowCloseRef.current(false);
+			} else {
+				setTimeout(() => {
+					allowCloseRef.current?.(true);
+				}, 100);
+			}
+		}
 	};
 	const [focusedIndex, setFocusedIndex] = useState(-1);
 	const [options, setOptions] = useState<
@@ -192,6 +206,14 @@ export const Select: React.FC<SelectProps> = ({
 			setUncontrolledValue(newValue);
 		}
 		setDisplayValue(newDisplayValue);
+		
+		if (allowCloseRef?.current && newValue) {
+			allowCloseRef.current(false);
+			setTimeout(() => {
+				allowCloseRef.current?.(true);
+			}, allowCloseDelay);
+		}
+		
 		onValueChange?.(newValue);
 		setOpen(false);
 		setFocusedIndex(-1);
