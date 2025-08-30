@@ -665,7 +665,7 @@ export const usersApi = {
 
 export const healthApi = {
 	getHealth: (): Promise<HealthResponse> =>
-		apiRequest<HealthResponse>("/health/admin"),
+		apiRequest<HealthResponse>("/admin/health"),
 	getSimpleHealth: (): Promise<{ status: string; timestamp: string }> =>
 		apiRequest<{ status: string; timestamp: string }>("/health/simple"),
 };

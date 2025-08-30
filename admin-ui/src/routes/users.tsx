@@ -159,7 +159,7 @@ export default function UsersComponent() {
 			key: "id",
 			title: "ID",
 			render: (_, user) => (
-				<div className="text-sm font-pp-neue-montreal-mono text-nocta-600 dark:text-nocta-400">
+				<div className="text-sm text-nocta-600 dark:text-nocta-400">
 					{user.id}
 				</div>
 			),

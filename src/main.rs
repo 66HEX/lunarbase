@@ -364,7 +364,7 @@ async fn create_router(app_state: AppState) -> Router {
     let protected_routes = Router::new()
         .route("/auth/me", get(me))
         .route("/auth/logout", post(logout))
-        .route("/health/admin", get(health_check))
+        .route("/admin/health", get(health_check))
         .route("/collections", post(create_collection))
         .route("/collections/{name}", put(update_collection))
         .route("/collections/{name}", delete(delete_collection))

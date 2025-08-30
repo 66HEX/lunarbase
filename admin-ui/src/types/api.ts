@@ -415,6 +415,7 @@ export interface DatabaseHealth {
 	active_connections: number;
 	total_collections: number;
 	total_records: number;
+	total_users: number;
 }
 
 export interface MemoryInfo {

@@ -28,6 +28,7 @@ pub struct DatabaseHealth {
     pub active_connections: u32,
     pub total_collections: i64,
     pub total_records: i64,
+    pub total_users: i64,
 }
 
 #[derive(serde::Serialize, ToSchema)]
@@ -46,7 +47,7 @@ pub struct SystemInfo {
 
 #[utoipa::path(
     get,
-    path = "/health/admin",
+    path = "/admin/health",
     tag = "Health",
     responses(
         (status = 200, description = "Service is healthy with detailed system information", body = HealthResponse,
@@ -61,7 +62,8 @@ pub struct SystemInfo {
                     "connection_pool_size": 10,
                     "active_connections": 2,
                     "total_collections": 5,
-                    "total_records": 1250
+                    "total_records": 1250,
+                    "total_users": 42
                 },
                 "memory": {
                     "used_mb": 256.5,
@@ -206,6 +208,14 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
                         Err(_) => 0,
                     };
 
+                let users_count =
+                    match diesel::sql_query("SELECT COUNT(*) as count FROM users")
+                        .load::<CountResult>(&mut conn)
+                    {
+                        Ok(results) => results.first().map(|r| r.count).unwrap_or(0),
+                        Err(_) => 0,
+                    };
+
                 let total_records = estimate_total_records(&mut conn);
 
                 let pool_state = state.db_pool.state();
@@ -216,6 +226,7 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
                     active_connections: pool_state.connections,
                     total_collections: collections_count,
                     total_records,
+                    total_users: users_count,
                 }
             }
             Err(_) => {
@@ -226,6 +237,7 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
                     active_connections: pool_state.connections,
                     total_collections: 0,
                     total_records: 0,
+                    total_users: 0,
                 }
             }
         },
@@ -237,6 +249,7 @@ async fn check_database_health(state: &AppState) -> DatabaseHealth {
                 active_connections: pool_state.connections,
                 total_collections: 0,
                 total_records: 0,
+                total_users: 0,
             }
         }
     }
