@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.5.0][0.5.0] - 2025-08-30
 
 ### Added
 - Protection against accidental sheet closure during select interactions in CreateRecordSheet
@@ -11,6 +11,8 @@
 - Support for 'richtext' field type in backend (enum in models/collection.rs, handling in collection_service.rs) and frontend (api.ts, constants.ts, validation.ts)
 - TipTap-based RichTextEditor component for editing rich text fields in records
 - Integration of RichTextEditor in CollectionRecordsEditSheet.tsx with JSON content handling and error fixes
+- Resizable Sheet component: respects size variant widths/heights and allows one-time expansion via draggable edges
+- Touch support for sheet resizing on mobile and tablet
 
 ### Changed
 - Migrated from Lucide React to Phosphor Icons throughout the entire admin UI for consistent iconography
@@ -122,6 +124,7 @@
 - Comprehensive audit logging and activity monitoring
 
 
+[0.5.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.5.0
 [0.4.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.4.0
 [0.3.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.3.0
 [0.2.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.2.0
