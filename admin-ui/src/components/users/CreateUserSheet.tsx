@@ -34,9 +34,8 @@ import {
 	defaultUserFormData,
 	userFieldDescriptions,
 	userRoleOptions,
-	userValidationMessages,
-	userValidationPatterns,
 } from "./constants";
+import { validateCreateUserData } from "./validation";
 
 interface CreateUserSheetProps {
 	isOpen: boolean;
@@ -55,35 +54,21 @@ export function CreateUserSheet({
 		useState<CreateUserRequest>(defaultUserFormData);
 
 	const validateForm = (): boolean => {
-		const newErrors: { [key: string]: string } = {};
+		// Prepare data for validation
+		const dataToValidate: CreateUserRequest = {
+			email: formData.email.trim(),
+			password: formData.password,
+			username: formData.username?.trim() || undefined,
+			role: formData.role,
+		};
 
-		if (!formData.email.trim()) {
-			newErrors.email = userValidationMessages.email.required;
-		} else if (!userValidationPatterns.email.test(formData.email)) {
-			newErrors.email = userValidationMessages.email.invalid;
-		}
+		const result = validateCreateUserData(dataToValidate);
 
-		if (!formData.password.trim()) {
-			newErrors.password = userValidationMessages.password.required;
-		} else if (formData.password.length < 8) {
-			newErrors.password = userValidationMessages.password.minLength;
-		}
-
-		if (
-			formData.username &&
-			formData.username.trim() &&
-			!userValidationPatterns.username.test(formData.username)
-		) {
-			newErrors.username = userValidationMessages.username.invalid;
-		}
-
-		if (!formData.role) {
-			newErrors.role = userValidationMessages.role.required;
-		}
-
-		setFieldErrors(newErrors);
-
-		if (Object.keys(newErrors).length > 0) {
+		if (result.success) {
+			setFieldErrors({});
+			return true;
+		} else {
+			setFieldErrors(result.fieldErrors);
 			toast({
 				title: "Validation Error",
 				description: "Please fix the validation errors in the form",
@@ -91,9 +76,8 @@ export function CreateUserSheet({
 				position: "bottom-right",
 				duration: 3000,
 			});
+			return false;
 		}
-
-		return Object.keys(newErrors).length === 0;
 	};
 
 	const handleCreateUser = async () => {
@@ -117,8 +101,10 @@ export function CreateUserSheet({
 	};
 
 	const updateFormData = (field: keyof CreateUserRequest, value: string) => {
-		setFormData((prev) => ({ ...prev, [field]: value }));
+		const newFormData = { ...formData, [field]: value };
+		setFormData(newFormData);
 
+		// Clear error when field changes
 		if (fieldErrors[field]) {
 			setFieldErrors((prev) => ({ ...prev, [field]: "" }));
 		}

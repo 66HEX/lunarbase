@@ -34,9 +34,8 @@ import type { UpdateUserRequest, User } from "@/types/api";
 import {
 	userFieldDescriptions,
 	userRoleOptions,
-	userValidationMessages,
-	userValidationPatterns,
 } from "./constants";
+import { validateUpdateUserData } from "./validation";
 
 interface EditUserSheetProps {
 	isOpen: boolean;
@@ -61,29 +60,21 @@ export function EditUserSheet({
 	});
 
 	const validateForm = (): boolean => {
-		const newErrors: { [key: string]: string } = {};
+		// Prepare data for validation
+		const dataToValidate: UpdateUserRequest = {
+			email: formData.email?.trim(),
+			username: formData.username?.trim() || undefined,
+			role: formData.role,
+			is_active: formData.is_active,
+		};
 
-		if (!formData.email?.trim()) {
-			newErrors.email = userValidationMessages.email.required;
-		} else if (!userValidationPatterns.email.test(formData.email)) {
-			newErrors.email = userValidationMessages.email.invalid;
-		}
+		const result = validateUpdateUserData(dataToValidate);
 
-		if (
-			formData.username &&
-			formData.username.trim() &&
-			!userValidationPatterns.username.test(formData.username)
-		) {
-			newErrors.username = userValidationMessages.username.invalid;
-		}
-
-		if (!formData.role) {
-			newErrors.role = userValidationMessages.role.required;
-		}
-
-		setFieldErrors(newErrors);
-
-		if (Object.keys(newErrors).length > 0) {
+		if (result.success) {
+			setFieldErrors({});
+			return true;
+		} else {
+			setFieldErrors(result.fieldErrors);
 			toast({
 				title: "Validation Error",
 				description: "Please fix the validation errors in the form",
@@ -91,9 +82,8 @@ export function EditUserSheet({
 				position: "bottom-right",
 				duration: 3000,
 			});
+			return false;
 		}
-
-		return Object.keys(newErrors).length === 0;
 	};
 
 	const handleUpdateUser = async () => {
