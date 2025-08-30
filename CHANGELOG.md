@@ -6,6 +6,8 @@
 - Protection against accidental sheet closure during select interactions in CreateRecordSheet
 - Zod validation schemas for all frontend settings forms with comprehensive validation rules
 - Reusable validation functions in backend configuration handlers for consistent validation logic
+- Extended admin health endpoint with total users count information
+- Users count card in dashboard replacing system health overview
 
 ### Changed
 - Migrated from Lucide React to Phosphor Icons throughout the entire admin UI for consistent iconography
@@ -14,6 +16,7 @@
 - Backend settings validation refactored to use centralized validation functions (`validate_category`, `validate_data_type`, `validate_setting_key`) across all configuration endpoints
 - Frontend settings panels (Database, Auth, API) now validate input values before submission using Zod schemas that mirror backend validation logic
 - Enhanced error handling in settings forms with descriptive validation messages and proper user feedback
+- Optimized chunking in Vite configuration by splitting manualChunks into more granular groups for better bundle size and loading performance
 
 ## [0.4.0][0.4.0] - 2025-08-28
 
