@@ -111,6 +111,8 @@ export interface FieldDefinition {
 	validation?: {
 		min_length?: number;
 		max_length?: number;
+		min_value?: number;
+		max_value?: number;
 		pattern?: string;
 		enum_values?: string[];
 	};

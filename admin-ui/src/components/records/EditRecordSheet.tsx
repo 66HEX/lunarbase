@@ -29,6 +29,7 @@ import {
 	SheetHeader,
 	SheetTitle,
 } from "@/components/ui/sheet";
+import { toast } from "@/components/ui/toast";
 import { useCollections } from "@/hooks";
 import type {
 	Collection,
@@ -40,8 +41,9 @@ import {
 	fieldTypeIcons,
 	getDefaultFieldValue,
 	processFieldValue,
-	validateFieldValue,
+	recordToastMessages,
 } from "./constants";
+import { validateRecordData } from "./validation";
 
 interface RecordWithCollection extends Record {
 	collection_name: string;
@@ -150,24 +152,35 @@ export function EditRecordSheet({
 	const validateForm = (): boolean => {
 		if (!collection) return false;
 
-		const newErrors: { [key: string]: string } = {};
-
-		collection.schema?.fields?.forEach((field) => {
-			if (field.name === "id") return;
-
-			const value =
-				field.field_type === "file"
-					? fileData[field.name]
-					: formData[field.name];
-			const error = validateFieldValue(field, value);
-			if (error) {
-				newErrors[field.name] = error;
-			}
+		const dataToValidate = { ...formData };
+		Object.keys(fileData).forEach(fieldName => {
+			dataToValidate[fieldName] = fileData[fieldName];
 		});
 
-		setFieldErrors(newErrors);
+		const result = validateRecordData(collection.schema.fields, dataToValidate);
+		
+		if (!result.success) {
+			const newErrors: { [key: string]: string } = {};
+			result.errors.forEach(error => {
+				const fieldMatch = error.match(/Field '([^']+)'/);
+				if (fieldMatch) {
+					newErrors[fieldMatch[1]] = error;
+				} else {
+					newErrors['_general'] = error;
+				}
+			});
+			
+			setFieldErrors(newErrors);
+			toast({
+				...recordToastMessages.validationError,
+				variant: "destructive",
+				position: "bottom-right",
+				duration: 3000,
+			});
+			return false;
+		}
 
-		return Object.keys(newErrors).length === 0;
+		return true;
 	};
 
 	const handleSubmit = async (e: React.FormEvent) => {
