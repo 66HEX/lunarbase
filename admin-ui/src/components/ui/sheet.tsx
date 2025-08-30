@@ -218,6 +218,8 @@ export interface SheetContentProps
 	children: React.ReactNode;
 	className?: string;
 	showClose?: boolean;
+	resizable?: boolean;
+	allowShrink?: boolean;
 }
 
 export interface SheetHeaderProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -330,6 +332,9 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 	side = "right",
 	size = "md",
 	showClose = true,
+	resizable = true,
+	allowShrink = false,
+	style: userStyle,
 	...props
 }) => {
 	const { open, onOpenChange } = useSheet();
@@ -337,6 +342,11 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 	const [isVisible, setIsVisible] = useState(false);
 	const [shouldRender, setShouldRender] = useState(false);
 	const previousActiveElementRef = useRef<HTMLElement | null>(null);
+	const [customSize, setCustomSize] = useState<number | null>(null);
+	const baseSizeRef = useRef<number>(0);
+	const isResizingRef = useRef(false);
+	const startPosRef = useRef<number>(0);
+	const startSizeRef = useRef<number>(0);
 
 	const getFocusableElements = () => {
 		if (!contentRef.current) return [];
@@ -405,6 +415,12 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 				} else {
 					contentRef.current?.focus();
 				}
+				if (contentRef.current) {
+					const rect = contentRef.current.getBoundingClientRect();
+					baseSizeRef.current =
+						side === "left" || side === "right" ? rect.width : rect.height;
+					setCustomSize(null);
+				}
 			}, 10);
 
 			return () => clearTimeout(timer);
@@ -415,11 +431,66 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 				if (previousActiveElementRef.current) {
 					previousActiveElementRef.current.focus();
 				}
+				setCustomSize(null);
+				baseSizeRef.current = 0;
 			}, 300);
 
 			return () => clearTimeout(timer);
 		}
-	}, [open]);
+	}, [open, side]);
+
+	const onMouseMove = useCallback(
+		(e: MouseEvent) => {
+			if (!isResizingRef.current) return;
+			let delta = 0;
+			if (side === "left") {
+				delta = e.clientX - startPosRef.current;
+			} else if (side === "right") {
+				delta = startPosRef.current - e.clientX;
+			} else if (side === "top") {
+				delta = e.clientY - startPosRef.current;
+			} else {
+				delta = startPosRef.current - e.clientY;
+			}
+
+			const base = baseSizeRef.current || 0;
+			const next = startSizeRef.current + delta;
+			const min = allowShrink ? 100 : base;
+			const max =
+				side === "left" || side === "right"
+					? Math.round(window.innerWidth * 0.95)
+					: Math.round(window.innerHeight * 0.95);
+			const clamped = Math.max(min, Math.min(next, max));
+			setCustomSize(clamped);
+		},
+		[allowShrink, side],
+	);
+
+	const endResize = useCallback(
+		(_e: MouseEvent) => {
+			isResizingRef.current = false;
+			document.removeEventListener("mousemove", onMouseMove);
+			document.removeEventListener("mouseup", endResize);
+			document.body.style.cursor = "";
+			document.body.style.userSelect = "";
+		},
+		[onMouseMove],
+	);
+
+	const beginResize = (e: React.MouseEvent) => {
+		if (!resizable || size === "full") return;
+		isResizingRef.current = true;
+		startPosRef.current =
+			side === "left" || side === "right" ? e.clientX : e.clientY;
+		startSizeRef.current = customSize ?? baseSizeRef.current ?? 0;
+		document.addEventListener("mousemove", onMouseMove);
+		document.addEventListener("mouseup", endResize);
+		document.body.style.cursor =
+			side === "left" || side === "right" ? "col-resize" : "row-resize";
+		document.body.style.userSelect = "none";
+		e.preventDefault();
+		e.stopPropagation();
+	};
 
 	useEffect(() => {
 		if (!open) return;
@@ -441,13 +512,24 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 		return () => {
 			document.removeEventListener("keydown", handleKeyDown);
 			document.removeEventListener("mousedown", handleClickOutside);
+			document.removeEventListener("mousemove", onMouseMove);
+			document.removeEventListener("mouseup", endResize);
+			document.body.style.cursor = "";
+			document.body.style.userSelect = "";
 			document.body.style.overflow = "";
 		};
-	}, [open, handleKeyDown, onOpenChange]);
+	}, [open, handleKeyDown, onOpenChange, onMouseMove, endResize]);
 
 	if (typeof window === "undefined" || !shouldRender) {
 		return null;
 	}
+
+	const sizeStyle: React.CSSProperties | undefined =
+		customSize == null
+			? undefined
+			: side === "left" || side === "right"
+				? { width: `${customSize}px` }
+				: { height: `${customSize}px` };
 
 	return createPortal(
 		<div className="fixed inset-0 z-40">
@@ -469,8 +551,50 @@ export const SheetContent: React.FC<SheetContentProps> = ({
 				role="dialog"
 				aria-modal="true"
 				tabIndex={-1}
+				style={{ ...(userStyle || {}), ...(sizeStyle || {}) }}
 				{...props}
 			>
+				{/* Resize handles */}
+				{resizable && size !== "full" && (side === "left" || side === "right") && (
+					<div
+						role="separator"
+						aria-orientation="vertical"
+						onMouseDown={beginResize}
+						onTouchStart={beginResize as unknown as React.TouchEventHandler}
+						className={cn(
+							"absolute top-0 bottom-0 w-0.5 cursor-col-resize z-20",
+							side === "right" ? "left-0" : "right-0",
+						)}
+					>
+						<div
+							className={cn(
+								"absolute inset-y-0 w-1 bg-transparent",
+								side === "right" ? "left-0" : "right-0",
+							)}
+						/>
+					</div>
+				)}
+
+				{resizable && size !== "full" && (side === "top" || side === "bottom") && (
+					<div
+						role="separator"
+						aria-orientation="horizontal"
+						onMouseDown={beginResize}
+						onTouchStart={beginResize as unknown as React.TouchEventHandler}
+						className={cn(
+							"absolute left-0 right-0 h-0.5 cursor-row-resize z-20",
+							side === "bottom" ? "top-0" : "bottom-0",
+						)}
+					>
+						<div
+							className={cn(
+								"absolute inset-x-0 h-1 bg-transparent",
+								side === "bottom" ? "top-0" : "bottom-0",
+							)}
+						/>
+					</div>
+				)}
+
 				{showClose && (
 					<button
 						onClick={() => onOpenChange(false)}

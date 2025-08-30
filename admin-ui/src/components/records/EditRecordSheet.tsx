@@ -345,7 +345,7 @@ export function EditRecordSheet({
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent size="xl">
+			<SheetContent size="lg">
 				<SheetHeader>
 					<SheetTitle>Edit Record</SheetTitle>
 					<SheetDescription>

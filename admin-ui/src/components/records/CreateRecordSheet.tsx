@@ -328,7 +328,7 @@ export function CreateRecordSheet({
 					Add Record
 				</Button>
 			</SheetTrigger>
-			<SheetContent side="right" size="xl">
+			<SheetContent side="right" size="lg">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Create Record

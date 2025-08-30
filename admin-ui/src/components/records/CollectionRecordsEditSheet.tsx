@@ -347,7 +347,7 @@ export function CollectionRecordsEditSheet({
 
 	return (
 		<Sheet open={open} onOpenChange={onOpenChange}>
-			<SheetContent side="right" size="xl">
+			<SheetContent side="right" size="lg">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">
 						Edit Record
