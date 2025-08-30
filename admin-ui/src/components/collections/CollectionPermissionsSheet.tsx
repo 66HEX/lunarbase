@@ -43,7 +43,6 @@ export function CollectionPermissionsSheet({
 	onOpenChange,
 	collection,
 }: CollectionPermissionsSheetProps) {
-	// All hooks must be called before any early returns
 	const saveCollectionPermissionsMutation = useSaveCollectionPermissions();
 	const { data: usersData } = useUsers();
 	const users = usersData?.users || [];
