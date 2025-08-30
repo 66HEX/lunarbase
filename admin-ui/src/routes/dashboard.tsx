@@ -73,17 +73,17 @@ function DashboardComponent() {
 			description: "Total number of records stored across all collections",
 		},
 		{
+			title: "Users Count",
+			value: stats.health?.database?.total_users || 0,
+			icon: UsersIcon,
+			description: "Total number of registered users in the system",
+		},
+		{
 			title: "Active Connections",
 			value: stats.websocket?.total_connections || 0,
 			icon: GlobeIcon,
 			description: "Current number of active WebSocket connections",
-		},
-		{
-			title: "System Health",
-			value: stats.health?.status === "healthy" ? "Healthy" : "Issues",
-			icon: ActivityIcon,
-			description: "Current overall system health status",
-		},
+		}
 	];
 
 	if (isLoading) {

@@ -296,7 +296,7 @@ pub async fn get_collection_permissions(
 
 #[utoipa::path(
     post,
-    path = "/api/permissions/users/{user_id}/collections/{collection_name}",
+    path = "/permissions/users/{user_id}/collections/{collection_name}",
     tag = "Permissions",
     params(
         ("user_id" = i32, Path, description = "User ID"),
@@ -339,7 +339,7 @@ pub async fn set_user_collection_permission(
 
 #[utoipa::path(
     get,
-    path = "/api/permissions/users/{user_id}/collections/{collection_name}",
+    path = "/permissions/users/{user_id}/collections/{collection_name}",
     tag = "Permissions",
     params(
         ("user_id" = i32, Path, description = "User ID"),

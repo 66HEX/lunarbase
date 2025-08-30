@@ -15,11 +15,11 @@ pub mod utils;
 #[openapi(
     info(
         title = "LunarBase API",
-        version = "0.1.0",
+        version = "0.4.0",
         description = "A powerful backend-as-a-service API built with Rust, Axum, and Diesel ORM",
         contact(
             name = "LunarBase Team",
-            email = "contact@lunarbase.dev"
+            email = "hexthecoder@gmail.com"
         ),
         license(
             name = "MIT",
@@ -28,7 +28,6 @@ pub mod utils;
     ),
     servers(
         (url = "http://localhost:3000/api", description = "Local development server"),
-        (url = "https://api.lunarbase.dev", description = "Production server")
     ),
     paths(
         handlers::auth::register,
