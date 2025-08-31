@@ -83,8 +83,7 @@ impl Config {
             admin_username: std::env::var("LUNARBASE_ADMIN_USERNAME").ok(),
             resend_api_key: std::env::var("RESEND_API_KEY").ok(),
             email_from: std::env::var("EMAIL_FROM").ok(),
-            frontend_url: std::env::var("FRONTEND_URL")
-                .unwrap_or_else(|_| format!("http://{}:{}", server_host, server_port)),
+            frontend_url: Self::build_frontend_url(&server_host, server_port, enable_tls.unwrap_or(false)),
             s3_bucket_name: std::env::var("S3_BUCKET_NAME").ok(),
             s3_region: std::env::var("S3_REGION").ok(),
             s3_access_key_id: std::env::var("S3_ACCESS_KEY_ID").ok(),
@@ -100,6 +99,11 @@ impl Config {
 
     pub fn server_address(&self) -> String {
         format!("{}:{}", self.server_host, self.server_port)
+    }
+
+    fn build_frontend_url(host: &str, port: u16, tls_enabled: bool) -> String {
+        let scheme = if tls_enabled { "https" } else { "http" };
+        format!("{}://{}:{}", scheme, host, port)
     }
 
     pub fn has_admin_config(&self) -> bool {

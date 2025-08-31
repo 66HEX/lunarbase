@@ -245,7 +245,7 @@ impl OAuthService {
 }
 
 impl OAuthConfig {
-    pub fn from_env() -> Self {
+    pub fn from_env_with_frontend_url(frontend_url: &str) -> Self {
         let google = if let (Ok(client_id), Ok(client_secret)) = (
             std::env::var("GOOGLE_CLIENT_ID"),
             std::env::var("GOOGLE_CLIENT_SECRET"),
@@ -279,8 +279,7 @@ impl OAuthConfig {
             None
         };
 
-        let redirect_base_url =
-            std::env::var("FRONTEND_URL").unwrap_or_else(|_| "https://localhost:3000".to_string());
+        let redirect_base_url = frontend_url.to_string();
 
         Self {
             google,
