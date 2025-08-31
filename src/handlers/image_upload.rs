@@ -1,6 +1,6 @@
 use crate::{
     AppState,
-    utils::{ApiResponse, AuthError, Claims},
+    utils::{ApiResponse, LunarbaseError, Claims},
 };
 use axum::{
     Extension,
@@ -47,9 +47,9 @@ pub async fn upload_image(
     State(state): State<AppState>,
     Extension(_claims): Extension<Claims>,
     mut multipart: Multipart,
-) -> Result<(StatusCode, Json<ApiResponse<ImageUploadResponse>>), AuthError> {
+) -> Result<(StatusCode, Json<ApiResponse<ImageUploadResponse>>), LunarbaseError> {
     let s3_service = state.s3_service.as_ref().ok_or_else(|| {
-        AuthError::BadRequest(
+        LunarbaseError::BadRequest(
             "File upload is not configured. S3 service is not available.".to_string(),
         )
     })?;
@@ -61,19 +61,18 @@ pub async fn upload_image(
     while let Some(field) = multipart
         .next_field()
         .await
-        .map_err(|_| AuthError::BadRequest("Invalid multipart data".to_string()))?
+        .map_err(|_| LunarbaseError::BadRequest("Invalid multipart data".to_string()))?
     {
         let field_name = field.name().unwrap_or("").to_string();
 
         if field_name == "file" || field_name == "image" {
-            // Get filename and content type
             filename = field.file_name().map(|s| s.to_string());
             content_type = field.content_type().map(|s| s.to_string());
 
             let bytes = field
                 .bytes()
                 .await
-                .map_err(|_| AuthError::BadRequest("Failed to read file data".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Failed to read file data".to_string()))?;
 
             file_data = Some(bytes.to_vec());
             break;
@@ -81,7 +80,7 @@ pub async fn upload_image(
     }
 
     let file_bytes = file_data.ok_or_else(|| {
-        AuthError::BadRequest("No file found in request. Please include a file field.".to_string())
+        LunarbaseError::BadRequest("No file found in request. Please include a file field.".to_string())
     })?;
 
     let file_name = filename.unwrap_or_else(|| "image".to_string());
@@ -89,13 +88,13 @@ pub async fn upload_image(
 
     const MAX_FILE_SIZE: usize = 10 * 1024 * 1024; // 10MB
     if file_bytes.len() > MAX_FILE_SIZE {
-        return Err(AuthError::BadRequest(
+        return Err(LunarbaseError::BadRequest(
             "File too large. Maximum size is 10MB.".to_string(),
         ));
     }
 
     if !file_content_type.starts_with("image/") {
-        return Err(AuthError::BadRequest(
+        return Err(LunarbaseError::BadRequest(
             "Only image files are allowed.".to_string(),
         ));
     }
@@ -109,7 +108,7 @@ pub async fn upload_image(
         .await
         .map_err(|e| {
             tracing::error!("Failed to upload image to S3: {}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
     let response = ImageUploadResponse {
@@ -148,20 +147,20 @@ pub async fn delete_image(
     State(state): State<AppState>,
     Extension(_claims): Extension<Claims>,
     ExtractJson(payload): ExtractJson<DeleteImageRequest>,
-) -> Result<(StatusCode, Json<ApiResponse<String>>), AuthError> {
+) -> Result<(StatusCode, Json<ApiResponse<String>>), LunarbaseError> {
     let s3_service = state.s3_service.as_ref().ok_or_else(|| {
-        AuthError::BadRequest(
+        LunarbaseError::BadRequest(
             "File deletion is not configured. S3 service is not available.".to_string(),
         )
     })?;
 
     if payload.url.trim().is_empty() {
-        return Err(AuthError::BadRequest("URL is required".to_string()));
+        return Err(LunarbaseError::BadRequest("URL is required".to_string()));
     }
 
     s3_service.delete_file(&payload.url).await.map_err(|e| {
         tracing::error!("Failed to delete image from S3: {}", e);
-        AuthError::InternalError
+        LunarbaseError::InternalError
     })?;
 
     Ok((

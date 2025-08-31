@@ -9,7 +9,7 @@ use crate::models::{
 use crate::schema::{
     collection_permissions, collections, record_permissions, roles, user_collection_permissions,
 };
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -26,17 +26,17 @@ impl PermissionService {
     pub async fn create_role(
         &self,
         role_request: &crate::models::CreateRoleRequest,
-    ) -> Result<Role, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<Role, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let existing_role = roles::table
             .filter(roles::name.eq(&role_request.name))
             .first::<Role>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if existing_role.is_some() {
-            return Err(AuthError::ValidationError(vec![format!(
+            return Err(LunarbaseError::ValidationError(vec![format!(
                 "Role '{}' already exists",
                 role_request.name
             )]));
@@ -51,35 +51,35 @@ impl PermissionService {
         diesel::insert_into(roles::table)
             .values(&new_role)
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         roles::table
             .order(roles::id.desc())
             .first(&mut conn)
-            .map_err(|_| AuthError::InternalError)
+            .map_err(|_| LunarbaseError::InternalError)
     }
 
-    pub async fn get_role_by_name(&self, name: &str) -> Result<Role, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn get_role_by_name(&self, name: &str) -> Result<Role, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         roles::table
             .filter(roles::name.eq(name))
             .first(&mut conn)
-            .map_err(|_| AuthError::NotFound("Role not found".to_string()))
+            .map_err(|_| LunarbaseError::NotFound("Role not found".to_string()))
     }
 
     pub async fn get_role_collection_permission(
         &self,
         role_name: &str,
         collection_id: i32,
-    ) -> Result<Option<CollectionPermission>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<Option<CollectionPermission>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let role = roles::table
             .filter(roles::name.eq(role_name))
             .first::<Role>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if let Some(role) = role {
             let permission = collection_permissions::table
@@ -87,21 +87,21 @@ impl PermissionService {
                 .filter(collection_permissions::role_id.eq(role.id))
                 .first::<CollectionPermission>(&mut conn)
                 .optional()
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             Ok(permission)
         } else {
-            Err(AuthError::NotFound("Role not found".to_string()))
+            Err(LunarbaseError::NotFound("Role not found".to_string()))
         }
     }
 
-    pub async fn list_roles(&self) -> Result<Vec<Role>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn list_roles(&self) -> Result<Vec<Role>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         roles::table
             .order(roles::priority.desc())
             .load(&mut conn)
-            .map_err(|_| AuthError::InternalError)
+            .map_err(|_| LunarbaseError::InternalError)
     }
 
     pub async fn set_collection_permission(
@@ -109,15 +109,15 @@ impl PermissionService {
         collection_id: i32,
         role_id: i32,
         permissions: &crate::models::SetCollectionPermissionRequest,
-    ) -> Result<CollectionPermission, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<CollectionPermission, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let existing = collection_permissions::table
             .filter(collection_permissions::collection_id.eq(collection_id))
             .filter(collection_permissions::role_id.eq(role_id))
             .first::<CollectionPermission>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if let Some(existing_permission) = existing {
             diesel::update(collection_permissions::table.find(existing_permission.id))
@@ -129,12 +129,12 @@ impl PermissionService {
                     collection_permissions::can_list.eq(permissions.can_list),
                 ))
                 .execute(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             collection_permissions::table
                 .find(existing_permission.id)
                 .first(&mut conn)
-                .map_err(|_| AuthError::InternalError)
+                .map_err(|_| LunarbaseError::InternalError)
         } else {
             let new_permission = NewCollectionPermission {
                 collection_id,
@@ -149,12 +149,12 @@ impl PermissionService {
             diesel::insert_into(collection_permissions::table)
                 .values(&new_permission)
                 .execute(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             collection_permissions::table
                 .order(collection_permissions::id.desc())
                 .first(&mut conn)
-                .map_err(|_| AuthError::InternalError)
+                .map_err(|_| LunarbaseError::InternalError)
         }
     }
 
@@ -163,15 +163,15 @@ impl PermissionService {
         user_id: i32,
         collection_id: i32,
         permissions: &crate::models::SetUserCollectionPermissionRequest,
-    ) -> Result<UserCollectionPermission, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<UserCollectionPermission, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let existing = user_collection_permissions::table
             .filter(user_collection_permissions::user_id.eq(user_id))
             .filter(user_collection_permissions::collection_id.eq(collection_id))
             .first::<UserCollectionPermission>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if let Some(existing_permission) = existing {
             diesel::update(user_collection_permissions::table.find(existing_permission.id))
@@ -183,12 +183,12 @@ impl PermissionService {
                     user_collection_permissions::can_list.eq(permissions.can_list),
                 ))
                 .execute(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             user_collection_permissions::table
                 .find(existing_permission.id)
                 .first(&mut conn)
-                .map_err(|_| AuthError::InternalError)
+                .map_err(|_| LunarbaseError::InternalError)
         } else {
             let new_permission = NewUserCollectionPermission {
                 user_id,
@@ -203,12 +203,12 @@ impl PermissionService {
             diesel::insert_into(user_collection_permissions::table)
                 .values(&new_permission)
                 .execute(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             user_collection_permissions::table
                 .order(user_collection_permissions::id.desc())
                 .first(&mut conn)
-                .map_err(|_| AuthError::InternalError)
+                .map_err(|_| LunarbaseError::InternalError)
         }
     }
 
@@ -217,7 +217,7 @@ impl PermissionService {
         user: &User,
         collection_id: i32,
         permission: Permission,
-    ) -> Result<bool, AuthError> {
+    ) -> Result<bool, LunarbaseError> {
         if user.role == "admin" {
             return Ok(true);
         }
@@ -232,8 +232,8 @@ impl PermissionService {
         &self,
         user: &User,
         collection_id: i32,
-    ) -> Result<PermissionResult, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<PermissionResult, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         if user.role == "admin" {
             return Ok(PermissionResult::admin());
@@ -243,7 +243,7 @@ impl PermissionService {
             .filter(roles::name.eq(&user.role))
             .first::<Role>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let mut final_permissions = PermissionResult::none();
 
@@ -253,7 +253,7 @@ impl PermissionService {
                 .filter(collection_permissions::role_id.eq(role.id))
                 .first::<CollectionPermission>(&mut conn)
                 .optional()
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             if let Some(perm) = role_permissions {
                 final_permissions = PermissionResult::new(
@@ -271,7 +271,7 @@ impl PermissionService {
             .filter(user_collection_permissions::collection_id.eq(collection_id))
             .first::<UserCollectionPermission>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if let Some(user_perm) = user_permissions {
             if let Some(can_create) = user_perm.can_create {
@@ -300,8 +300,8 @@ impl PermissionService {
         collection_id: i32,
         record_id: i32,
         permission: Permission,
-    ) -> Result<bool, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<bool, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         if user.role == "admin" {
             return Ok(true);
@@ -313,7 +313,7 @@ impl PermissionService {
             .filter(record_permissions::user_id.eq(user.id))
             .first::<RecordPermission>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if let Some(rec_perm) = record_permission {
             return Ok(match permission {
@@ -331,14 +331,14 @@ impl PermissionService {
     pub async fn get_user_accessible_collections(
         &self,
         user: &User,
-    ) -> Result<Vec<i32>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<Vec<i32>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         if user.role == "admin" {
             let all_collections: Vec<i32> = collections::table
                 .select(collections::id)
                 .load(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
             return Ok(all_collections);
         }
 
@@ -346,7 +346,7 @@ impl PermissionService {
             .filter(roles::name.eq(&user.role))
             .first::<Role>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let mut accessible_collections = Vec::new();
 
@@ -363,7 +363,7 @@ impl PermissionService {
                 )
                 .select(collection_permissions::collection_id)
                 .load(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             accessible_collections.extend(role_collections);
         }
@@ -380,7 +380,7 @@ impl PermissionService {
             )
             .select(user_collection_permissions::collection_id)
             .load(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         accessible_collections.extend(user_collections);
 
@@ -390,28 +390,28 @@ impl PermissionService {
         Ok(accessible_collections)
     }
 
-    pub async fn delete_collection_permissions(&self, collection_id: i32) -> Result<(), AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn delete_collection_permissions(&self, collection_id: i32) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         diesel::delete(
             collection_permissions::table
                 .filter(collection_permissions::collection_id.eq(collection_id)),
         )
         .execute(&mut conn)
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
         diesel::delete(
             user_collection_permissions::table
                 .filter(user_collection_permissions::collection_id.eq(collection_id)),
         )
         .execute(&mut conn)
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
         diesel::delete(
             record_permissions::table.filter(record_permissions::collection_id.eq(collection_id)),
         )
         .execute(&mut conn)
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
         Ok(())
     }
@@ -420,8 +420,8 @@ impl PermissionService {
         &self,
         collection_id: i32,
         permission_request: &crate::models::SetRecordPermissionRequest,
-    ) -> Result<RecordPermission, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<RecordPermission, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let existing = record_permissions::table
             .filter(record_permissions::record_id.eq(permission_request.record_id))
@@ -429,7 +429,7 @@ impl PermissionService {
             .filter(record_permissions::user_id.eq(permission_request.user_id))
             .first::<RecordPermission>(&mut conn)
             .optional()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if let Some(existing_permission) = existing {
             diesel::update(record_permissions::table.find(existing_permission.id))
@@ -439,12 +439,12 @@ impl PermissionService {
                     record_permissions::can_delete.eq(permission_request.can_delete),
                 ))
                 .execute(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             record_permissions::table
                 .find(existing_permission.id)
                 .first(&mut conn)
-                .map_err(|_| AuthError::InternalError)
+                .map_err(|_| LunarbaseError::InternalError)
         } else {
             let new_permission = NewRecordPermission {
                 record_id: permission_request.record_id,
@@ -458,12 +458,12 @@ impl PermissionService {
             diesel::insert_into(record_permissions::table)
                 .values(&new_permission)
                 .execute(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             record_permissions::table
                 .order(record_permissions::id.desc())
                 .first(&mut conn)
-                .map_err(|_| AuthError::InternalError)
+                .map_err(|_| LunarbaseError::InternalError)
         }
     }
 
@@ -472,8 +472,8 @@ impl PermissionService {
         collection_id: i32,
         record_id: i32,
         user_id: i32,
-    ) -> Result<(), AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         diesel::delete(
             record_permissions::table
@@ -482,7 +482,7 @@ impl PermissionService {
                 .filter(record_permissions::user_id.eq(user_id)),
         )
         .execute(&mut conn)
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
         Ok(())
     }
@@ -491,21 +491,21 @@ impl PermissionService {
         &self,
         collection_id: i32,
         record_id: i32,
-    ) -> Result<Vec<RecordPermission>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<Vec<RecordPermission>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         record_permissions::table
             .filter(record_permissions::record_id.eq(record_id))
             .filter(record_permissions::collection_id.eq(collection_id))
             .load(&mut conn)
-            .map_err(|_| AuthError::InternalError)
+            .map_err(|_| LunarbaseError::InternalError)
     }
 
     pub async fn check_record_ownership(
         &self,
         user: &User,
         record: &crate::models::RecordResponse,
-    ) -> Result<bool, AuthError> {
+    ) -> Result<bool, LunarbaseError> {
         if let Some(owner_id_value) = record.data.get("owner_id") {
             if let Some(record_owner_id) = owner_id_value.as_i64() {
                 return Ok(record_owner_id == user.id as i64);
@@ -549,7 +549,7 @@ impl PermissionService {
         record_id: i32,
         permission: Permission,
         record: &crate::models::RecordResponse,
-    ) -> Result<bool, AuthError> {
+    ) -> Result<bool, LunarbaseError> {
         if user.role == "admin" {
             return Ok(true);
         }

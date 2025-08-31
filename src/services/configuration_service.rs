@@ -7,7 +7,7 @@ use crate::models::system_setting::{
     UpdateSystemSetting,
 };
 use crate::schema::system_settings;
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -21,15 +21,15 @@ impl ConfigurationService {
         Self { pool }
     }
 
-    pub async fn get_all_settings(&self) -> Result<Vec<SystemSettingResponse>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn get_all_settings(&self) -> Result<Vec<SystemSettingResponse>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let settings = system_settings::table
             .select(SystemSetting::as_select())
             .load(&mut conn)
             .map_err(|e| {
                 error!("Failed to load system settings: {}", e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         Ok(settings.into_iter().map(|s| s.into()).collect())
@@ -38,8 +38,8 @@ impl ConfigurationService {
     pub async fn get_settings_by_category(
         &self,
         category: &str,
-    ) -> Result<Vec<SystemSettingResponse>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<Vec<SystemSettingResponse>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let settings = system_settings::table
             .filter(system_settings::category.eq(category))
@@ -47,7 +47,7 @@ impl ConfigurationService {
             .load(&mut conn)
             .map_err(|e| {
                 error!("Failed to load settings for category {}: {}", category, e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         Ok(settings.into_iter().map(|s| s.into()).collect())
@@ -57,8 +57,8 @@ impl ConfigurationService {
         &self,
         category: &str,
         setting_key: &str,
-    ) -> Result<Option<SystemSettingResponse>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<Option<SystemSettingResponse>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let setting = system_settings::table
             .filter(
@@ -71,7 +71,7 @@ impl ConfigurationService {
             .optional()
             .map_err(|e| {
                 error!("Failed to load setting {}:{}: {}", category, setting_key, e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         Ok(setting.map(|s| s.into()))
@@ -83,8 +83,8 @@ impl ConfigurationService {
         setting_key: &str,
         new_value: &str,
         updated_by: Option<String>,
-    ) -> Result<SystemSettingResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<SystemSettingResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let existing_setting = system_settings::table
             .filter(
@@ -100,11 +100,11 @@ impl ConfigurationService {
                     "Failed to check existing setting {}:{}: {}",
                     category, setting_key, e
                 );
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         let existing_setting = existing_setting.ok_or_else(|| {
-            AuthError::NotFound(format!("Setting {}:{} not found", category, setting_key))
+            LunarbaseError::NotFound(format!("Setting {}:{} not found", category, setting_key))
         })?;
 
         self.validate_setting_value(new_value, &existing_setting.data_type)?;
@@ -131,7 +131,7 @@ impl ConfigurationService {
                 "Failed to update setting {}:{}: {}",
                 category, setting_key, e
             );
-            AuthError::DatabaseError
+            LunarbaseError::DatabaseError
         })?;
 
         let updated_setting = system_settings::table
@@ -147,7 +147,7 @@ impl ConfigurationService {
                     "Failed to load updated setting {}:{}: {}",
                     category, setting_key, e
                 );
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         debug!(
@@ -167,8 +167,8 @@ impl ConfigurationService {
         default_value: String,
         is_sensitive: bool,
         requires_restart: bool,
-    ) -> Result<SystemSettingResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<SystemSettingResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let existing = system_settings::table
             .filter(
@@ -181,11 +181,11 @@ impl ConfigurationService {
             .optional()
             .map_err(|e| {
                 error!("Failed to check existing setting: {}", e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         if existing.is_some() {
-            return Err(AuthError::Conflict(format!(
+            return Err(LunarbaseError::Conflict(format!(
                 "Setting {}:{} already exists",
                 category.to_string(),
                 setting_key
@@ -215,7 +215,7 @@ impl ConfigurationService {
             .execute(&mut conn)
             .map_err(|e| {
                 error!("Failed to create setting: {}", e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         let created_setting = system_settings::table
@@ -228,7 +228,7 @@ impl ConfigurationService {
             .first(&mut conn)
             .map_err(|e| {
                 error!("Failed to load created setting: {}", e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         debug!(
@@ -238,8 +238,8 @@ impl ConfigurationService {
         Ok(created_setting.into())
     }
 
-    pub async fn delete_setting(&self, category: &str, setting_key: &str) -> Result<(), AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn delete_setting(&self, category: &str, setting_key: &str) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let deleted_count = diesel::delete(
             system_settings::table.filter(
@@ -254,11 +254,11 @@ impl ConfigurationService {
                 "Failed to delete setting {}:{}: {}",
                 category, setting_key, e
             );
-            AuthError::DatabaseError
+            LunarbaseError::DatabaseError
         })?;
 
         if deleted_count == 0 {
-            return Err(AuthError::NotFound(format!(
+            return Err(LunarbaseError::NotFound(format!(
                 "Setting {}:{} not found",
                 category, setting_key
             )));
@@ -272,7 +272,7 @@ impl ConfigurationService {
         &self,
         category: &str,
         setting_key: &str,
-    ) -> Result<Option<String>, AuthError> {
+    ) -> Result<Option<String>, LunarbaseError> {
         let setting = self.get_setting(category, setting_key).await?;
         Ok(setting.map(|s| s.setting_value))
     }
@@ -281,11 +281,11 @@ impl ConfigurationService {
         &self,
         category: &str,
         setting_key: &str,
-    ) -> Result<Option<i32>, AuthError> {
+    ) -> Result<Option<i32>, LunarbaseError> {
         let value = self.get_setting_value(category, setting_key).await?;
         match value {
             Some(v) => v.parse::<i32>().map(Some).map_err(|_| {
-                AuthError::ValidationError(vec![format!("Invalid integer value: {}", v)])
+                LunarbaseError::ValidationError(vec![format!("Invalid integer value: {}", v)])
             }),
             None => Ok(None),
         }
@@ -295,13 +295,13 @@ impl ConfigurationService {
         &self,
         category: &str,
         setting_key: &str,
-    ) -> Result<Option<bool>, AuthError> {
+    ) -> Result<Option<bool>, LunarbaseError> {
         let value = self.get_setting_value(category, setting_key).await?;
         match value {
             Some(v) => match v.to_lowercase().as_str() {
                 "true" | "1" | "yes" | "on" => Ok(Some(true)),
                 "false" | "0" | "no" | "off" => Ok(Some(false)),
-                _ => Err(AuthError::ValidationError(vec![format!(
+                _ => Err(LunarbaseError::ValidationError(vec![format!(
                     "Invalid boolean value: {}",
                     v
                 )])),
@@ -314,11 +314,11 @@ impl ConfigurationService {
         &self,
         category: &str,
         setting_key: &str,
-    ) -> Result<Option<f64>, AuthError> {
+    ) -> Result<Option<f64>, LunarbaseError> {
         let value = self.get_setting_value(category, setting_key).await?;
         match value {
             Some(v) => v.parse::<f64>().map(Some).map_err(|_| {
-                AuthError::ValidationError(vec![format!("Invalid float value: {}", v)])
+                LunarbaseError::ValidationError(vec![format!("Invalid float value: {}", v)])
             }),
             None => Ok(None),
         }
@@ -329,8 +329,8 @@ impl ConfigurationService {
         category: &str,
         setting_key: &str,
         updated_by: Option<String>,
-    ) -> Result<SystemSettingResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<SystemSettingResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let setting = system_settings::table
             .filter(
@@ -343,11 +343,11 @@ impl ConfigurationService {
             .optional()
             .map_err(|e| {
                 error!("Failed to load setting {}:{}: {}", category, setting_key, e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         let setting = setting.ok_or_else(|| {
-            AuthError::NotFound(format!("Setting {}:{} not found", category, setting_key))
+            LunarbaseError::NotFound(format!("Setting {}:{} not found", category, setting_key))
         })?;
         let default_value = setting.default_value.unwrap_or_default();
 
@@ -355,7 +355,7 @@ impl ConfigurationService {
             .await
     }
 
-    fn validate_setting_value(&self, value: &str, data_type: &str) -> Result<(), AuthError> {
+    fn validate_setting_value(&self, value: &str, data_type: &str) -> Result<(), LunarbaseError> {
         let mut errors = Vec::new();
 
         match data_type {
@@ -394,7 +394,7 @@ impl ConfigurationService {
         }
 
         if !errors.is_empty() {
-            return Err(AuthError::ValidationError(errors));
+            return Err(LunarbaseError::ValidationError(errors));
         }
 
         Ok(())

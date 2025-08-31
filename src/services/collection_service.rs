@@ -7,7 +7,7 @@ use crate::query_engine::QueryEngine;
 use crate::schema::{collections, roles};
 use crate::services::PermissionService;
 use crate::services::S3Service;
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 use base64::Engine;
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
@@ -160,7 +160,7 @@ impl CollectionService {
         conn: &mut SqliteConnection,
         collection_name: &str,
         schema: &CollectionSchema,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         tracing::debug!(
             "Generating CREATE TABLE SQL for collection: {}",
             collection_name
@@ -171,7 +171,7 @@ impl CollectionService {
         tracing::debug!("Executing CREATE TABLE statement");
         diesel::sql_query(&create_sql).execute(conn).map_err(|e| {
             tracing::error!("Failed to create records table: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
         tracing::debug!("Records table created successfully");
 
@@ -183,7 +183,7 @@ impl CollectionService {
         tracing::debug!("Creating index with SQL: {}", index_sql);
         diesel::sql_query(&index_sql).execute(conn).map_err(|e| {
             tracing::error!("Failed to create index: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
         tracing::debug!("Index created successfully");
 
@@ -198,7 +198,7 @@ impl CollectionService {
         tracing::debug!("Creating trigger with SQL: {}", trigger_sql);
         diesel::sql_query(&trigger_sql).execute(conn).map_err(|e| {
             tracing::error!("Failed to create trigger: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
         tracing::debug!("Trigger created successfully");
 
@@ -209,23 +209,23 @@ impl CollectionService {
         &self,
         conn: &mut SqliteConnection,
         collection_name: &str,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         let table_name = self.get_records_table_name(collection_name);
 
         let drop_trigger_sql = format!("DROP TRIGGER IF EXISTS update_{}_updated_at", table_name);
         diesel::sql_query(&drop_trigger_sql)
             .execute(conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let drop_index_sql = format!("DROP INDEX IF EXISTS idx_{}_created_at", table_name);
         diesel::sql_query(&drop_index_sql)
             .execute(conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let drop_table_sql = format!("DROP TABLE IF EXISTS {}", table_name);
         diesel::sql_query(&drop_table_sql)
             .execute(conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         Ok(())
     }
@@ -236,7 +236,7 @@ impl CollectionService {
         collection_name: &str,
         old_schema: &CollectionSchema,
         new_schema: &CollectionSchema,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         let table_name = self.get_records_table_name(collection_name);
 
         let old_fields: std::collections::HashMap<String, &FieldDefinition> = old_schema
@@ -322,7 +322,7 @@ impl CollectionService {
                     .execute(conn)
                     .map_err(|e| {
                         tracing::error!("Failed to add column {}: {:?}", field.name, e);
-                        AuthError::InternalError
+                        LunarbaseError::InternalError
                     })?;
             }
         }
@@ -336,7 +336,7 @@ impl CollectionService {
         conn: &mut SqliteConnection,
         collection_name: &str,
         new_schema: &CollectionSchema,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         let table_name = self.get_records_table_name(collection_name);
         let temp_table_name = format!("{}_temp_{}", table_name, chrono::Utc::now().timestamp());
 
@@ -349,7 +349,7 @@ impl CollectionService {
             .execute(conn)
             .map_err(|e| {
                 tracing::error!("Failed to create temporary table: {:?}", e);
-                AuthError::InternalError
+                LunarbaseError::InternalError
             })?;
 
         let common_columns = self.get_common_columns(collection_name, new_schema, conn)?;
@@ -367,7 +367,7 @@ impl CollectionService {
                 tracing::error!("Failed to copy data to temporary table: {:?}", e);
                 let _ = diesel::sql_query(&format!("DROP TABLE IF EXISTS {}", temp_table_name))
                     .execute(conn);
-                AuthError::InternalError
+                LunarbaseError::InternalError
             })?;
 
         self.drop_records_table(conn, collection_name)?;
@@ -376,7 +376,7 @@ impl CollectionService {
         tracing::debug!("Renaming table with SQL: {}", rename_sql);
         diesel::sql_query(&rename_sql).execute(conn).map_err(|e| {
             tracing::error!("Failed to rename temporary table: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         self.create_table_indexes_and_triggers(conn, collection_name)?;
@@ -455,7 +455,7 @@ impl CollectionService {
         collection_name: &str,
         new_schema: &CollectionSchema,
         conn: &mut SqliteConnection,
-    ) -> Result<Vec<String>, AuthError> {
+    ) -> Result<Vec<String>, LunarbaseError> {
         let table_name = self.get_records_table_name(collection_name);
 
         let pragma_sql = format!("PRAGMA table_info({})", table_name);
@@ -469,7 +469,7 @@ impl CollectionService {
         let existing_columns: Vec<ColumnInfo> =
             diesel::sql_query(&pragma_sql).load(conn).map_err(|e| {
                 tracing::error!("Failed to get table info: {:?}", e);
-                AuthError::InternalError
+                LunarbaseError::InternalError
             })?;
 
         let existing_column_names: std::collections::HashSet<String> =
@@ -502,7 +502,7 @@ impl CollectionService {
         &self,
         conn: &mut SqliteConnection,
         collection_name: &str,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         let table_name = self.get_records_table_name(collection_name);
 
         let index_sql = format!(
@@ -512,7 +512,7 @@ impl CollectionService {
         tracing::debug!("Creating index with SQL: {}", index_sql);
         diesel::sql_query(&index_sql).execute(conn).map_err(|e| {
             tracing::error!("Failed to create index: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         let trigger_sql = format!(
@@ -526,19 +526,19 @@ impl CollectionService {
         tracing::debug!("Creating trigger with SQL: {}", trigger_sql);
         diesel::sql_query(&trigger_sql).execute(conn).map_err(|e| {
             tracing::error!("Failed to create trigger: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         Ok(())
     }
 
-    async fn create_default_permissions(&self, collection_id: i32) -> Result<(), AuthError> {
+    async fn create_default_permissions(&self, collection_id: i32) -> Result<(), LunarbaseError> {
         if let Some(permission_service) = &self.permission_service {
-            let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+            let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
             let roles = roles::table
                 .load::<Role>(&mut conn)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             for role in roles {
                 let permissions = match role.name.as_str() {
@@ -637,17 +637,17 @@ impl CollectionService {
         conn: &mut SqliteConnection,
         sql: &str,
         collection_name: &str,
-    ) -> Result<RecordResponse, AuthError> {
+    ) -> Result<RecordResponse, LunarbaseError> {
         use diesel::sql_types::*;
 
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let schema = collection
             .get_schema()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         #[derive(Debug, diesel::QueryableByName)]
         struct DynamicRow {
@@ -661,10 +661,10 @@ impl CollectionService {
 
         let base_result: Vec<DynamicRow> = diesel::sql_query(sql)
             .load(conn)
-            .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Record not found".to_string()))?;
 
         if base_result.is_empty() {
-            return Err(AuthError::NotFound("Record not found".to_string()));
+            return Err(LunarbaseError::NotFound("Record not found".to_string()));
         }
 
         let base_row = &base_result[0];
@@ -691,7 +691,7 @@ impl CollectionService {
                     );
                     let result: Vec<StringField> = diesel::sql_query(&query_with_alias)
                         .load(conn)
-                        .map_err(|_| AuthError::InternalError)?;
+                        .map_err(|_| LunarbaseError::InternalError)?;
 
                     if let Some(row) = result.first() {
                         row.value
@@ -715,7 +715,7 @@ impl CollectionService {
                     );
                     let result: Vec<JsonField> = diesel::sql_query(&query_with_alias)
                         .load(conn)
-                        .map_err(|_| AuthError::InternalError)?;
+                        .map_err(|_| LunarbaseError::InternalError)?;
 
                     if let Some(row) = result.first() {
                         if let Some(json_str) = &row.value {
@@ -743,7 +743,7 @@ impl CollectionService {
                     );
                     let result: Vec<NumberField> = diesel::sql_query(&query_with_alias)
                         .load(conn)
-                        .map_err(|_| AuthError::InternalError)?;
+                        .map_err(|_| LunarbaseError::InternalError)?;
 
                     if let Some(row) = result.first() {
                         if let Some(n) = row.value {
@@ -775,7 +775,7 @@ impl CollectionService {
                     );
                     let result: Vec<BoolField> = diesel::sql_query(&query_with_alias)
                         .load(conn)
-                        .map_err(|_| AuthError::InternalError)?;
+                        .map_err(|_| LunarbaseError::InternalError)?;
 
                     if let Some(row) = result.first() {
                         row.value.map(|b| Value::Bool(b)).unwrap_or(Value::Null)
@@ -796,7 +796,7 @@ impl CollectionService {
                     );
                     let result: Vec<DateField> = diesel::sql_query(&query_with_alias)
                         .load(conn)
-                        .map_err(|_| AuthError::InternalError)?;
+                        .map_err(|_| LunarbaseError::InternalError)?;
 
                     if let Some(row) = result.first() {
                         row.value
@@ -849,12 +849,12 @@ impl CollectionService {
     pub async fn create_collection(
         &self,
         request: CreateCollectionRequest,
-    ) -> Result<CollectionResponse, AuthError> {
+    ) -> Result<CollectionResponse, LunarbaseError> {
         tracing::debug!("Starting create_collection for: {}", request.name);
 
         let mut conn = self.pool.get().map_err(|e| {
             tracing::error!("Failed to get database connection: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         tracing::debug!("Got database connection successfully");
@@ -870,12 +870,12 @@ impl CollectionService {
             .optional()
             .map_err(|e| {
                 tracing::error!("Failed to check existing collection: {:?}", e);
-                AuthError::InternalError
+                LunarbaseError::InternalError
             })?;
 
         if existing.is_some() {
             tracing::debug!("Collection already exists");
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Collection with this name already exists".to_string(),
             ]));
         }
@@ -888,7 +888,7 @@ impl CollectionService {
         tracing::debug!("Serializing schema to JSON");
         let schema_json = serde_json::to_string(&request.schema).map_err(|e| {
             tracing::error!("Failed to serialize schema: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
         tracing::debug!("Schema serialized successfully");
 
@@ -906,7 +906,7 @@ impl CollectionService {
             .execute(&mut conn)
             .map_err(|e| {
                 tracing::error!("Failed to insert collection metadata: {:?}", e);
-                AuthError::InternalError
+                LunarbaseError::InternalError
             })?;
         tracing::debug!("Collection metadata inserted successfully");
 
@@ -920,7 +920,7 @@ impl CollectionService {
             .first::<Collection>(&mut conn)
             .map_err(|e| {
                 tracing::error!("Failed to fetch created collection: {:?}", e);
-                AuthError::InternalError
+                LunarbaseError::InternalError
             })?;
         tracing::debug!("Collection fetched successfully");
 
@@ -938,47 +938,47 @@ impl CollectionService {
         tracing::debug!("Converting collection to response");
         let response = CollectionResponse::from_collection(collection).map_err(|e| {
             tracing::error!("Failed to convert collection to response: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
         tracing::debug!("Collection creation completed successfully");
         Ok(response)
     }
 
-    pub async fn get_collection(&self, name: &str) -> Result<CollectionResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn get_collection(&self, name: &str) -> Result<CollectionResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
             .filter(collections::name.eq(name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
-        CollectionResponse::from_collection(collection).map_err(|_| AuthError::InternalError)
+        CollectionResponse::from_collection(collection).map_err(|_| LunarbaseError::InternalError)
     }
 
-    pub async fn get_collection_by_id(&self, id: i32) -> Result<CollectionResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn get_collection_by_id(&self, id: i32) -> Result<CollectionResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
             .filter(collections::id.eq(id))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
-        CollectionResponse::from_collection(collection).map_err(|_| AuthError::InternalError)
+        CollectionResponse::from_collection(collection).map_err(|_| LunarbaseError::InternalError)
     }
 
-    pub async fn list_collections(&self) -> Result<Vec<CollectionResponse>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn list_collections(&self) -> Result<Vec<CollectionResponse>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collections_list = collections::table
             .filter(collections::is_system.eq(false))
             .order(collections::created_at.desc())
             .load::<Collection>(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let mut responses = Vec::new();
         for collection in collections_list {
             let response = CollectionResponse::from_collection(collection)
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
             responses.push(response);
         }
 
@@ -989,16 +989,16 @@ impl CollectionService {
         &self,
         name: &str,
         request: UpdateCollectionRequest,
-    ) -> Result<CollectionResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<CollectionResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
             .filter(collections::name.eq(name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
         if collection.is_system {
-            return Err(AuthError::Forbidden(
+            return Err(LunarbaseError::Forbidden(
                 "Cannot modify system collections".to_string(),
             ));
         }
@@ -1007,7 +1007,7 @@ impl CollectionService {
             if new_name != &collection.name {
                 if !new_name.chars().all(|c| c.is_alphanumeric() || c == '_') || new_name.is_empty()
                 {
-                    return Err(AuthError::BadRequest(
+                    return Err(LunarbaseError::BadRequest(
                         "Collection name must contain only alphanumeric characters and underscores"
                             .to_string(),
                     ));
@@ -1017,10 +1017,10 @@ impl CollectionService {
                     .filter(collections::name.eq(new_name))
                     .first::<Collection>(&mut conn)
                     .optional()
-                    .map_err(|_| AuthError::InternalError)?;
+                    .map_err(|_| LunarbaseError::InternalError)?;
 
                 if existing.is_some() {
-                    return Err(AuthError::BadRequest(
+                    return Err(LunarbaseError::BadRequest(
                         "Collection with this name already exists".to_string(),
                     ));
                 }
@@ -1034,7 +1034,7 @@ impl CollectionService {
                 );
                 diesel::sql_query(&rename_sql)
                     .execute(&mut conn)
-                    .map_err(|_| AuthError::InternalError)?;
+                    .map_err(|_| LunarbaseError::InternalError)?;
             }
         }
 
@@ -1050,7 +1050,7 @@ impl CollectionService {
 
             let current_schema = collection
                 .get_schema()
-                .map_err(|_| AuthError::InternalError)?;
+                .map_err(|_| LunarbaseError::InternalError)?;
 
             self.update_records_table_schema(
                 &mut conn,
@@ -1060,34 +1060,34 @@ impl CollectionService {
             )?;
 
             update.schema_json =
-                Some(serde_json::to_string(&schema).map_err(|_| AuthError::InternalError)?);
+                Some(serde_json::to_string(&schema).map_err(|_| LunarbaseError::InternalError)?);
         }
 
         diesel::update(collections::table)
             .filter(collections::id.eq(collection.id))
             .set(&update)
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let updated_collection = collections::table
             .filter(collections::id.eq(collection.id))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         CollectionResponse::from_collection(updated_collection)
-            .map_err(|_| AuthError::InternalError)
+            .map_err(|_| LunarbaseError::InternalError)
     }
 
-    pub async fn delete_collection(&self, name: &str) -> Result<(), AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn delete_collection(&self, name: &str) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
             .filter(collections::name.eq(name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
         if collection.is_system {
-            return Err(AuthError::Forbidden(
+            return Err(LunarbaseError::Forbidden(
                 "Cannot delete system collections".to_string(),
             ));
         }
@@ -1109,7 +1109,7 @@ impl CollectionService {
 
         let schema = collection
             .get_schema()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
         let file_deletion_errors = self.delete_collection_files(name, &schema).await;
         if !file_deletion_errors.is_empty() {
             tracing::warn!(
@@ -1123,7 +1123,7 @@ impl CollectionService {
 
         diesel::delete(collections::table.filter(collections::id.eq(collection.id)))
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         Ok(())
     }
@@ -1132,7 +1132,7 @@ impl CollectionService {
         &self,
         collection_name: &str,
         request: CreateRecordRequest,
-    ) -> Result<RecordResponse, AuthError> {
+    ) -> Result<RecordResponse, LunarbaseError> {
         self.create_record_with_events(collection_name, request, None)
             .await
     }
@@ -1142,17 +1142,17 @@ impl CollectionService {
         collection_name: &str,
         request: CreateRecordRequest,
         user_id: Option<i32>,
-    ) -> Result<RecordResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<RecordResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
         let schema = collection
             .get_schema()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let mut data = request.data.clone();
         if let Some(files) = &request.files {
@@ -1199,7 +1199,7 @@ impl CollectionService {
 
         diesel::sql_query(&insert_sql)
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let select_sql = format!("SELECT * FROM {} ORDER BY id DESC LIMIT 1", table_name);
         let record_response = self.query_record_by_sql(&mut conn, &select_sql, collection_name)?;
@@ -1218,13 +1218,13 @@ impl CollectionService {
         &self,
         collection_name: &str,
         record_id: i32,
-    ) -> Result<RecordResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<RecordResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
         let table_name = self.get_records_table_name(collection_name);
         let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
@@ -1240,7 +1240,7 @@ impl CollectionService {
         search: Option<String>,
         limit: Option<i64>,
         offset: Option<i64>,
-    ) -> Result<Vec<RecordResponse>, AuthError> {
+    ) -> Result<Vec<RecordResponse>, LunarbaseError> {
         tracing::debug!(
             "list_records called with collection_name={}, sort={:?}, filter={:?}, limit={:?}, offset={:?}",
             collection_name,
@@ -1252,7 +1252,7 @@ impl CollectionService {
 
         let mut conn = self.pool.get().map_err(|e| {
             tracing::error!("Failed to get database connection: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         let collection = collections::table
@@ -1260,12 +1260,12 @@ impl CollectionService {
             .first::<Collection>(&mut conn)
             .map_err(|e| {
                 tracing::error!("Failed to find collection '{}': {:?}", collection_name, e);
-                AuthError::NotFound("Collection not found".to_string())
+                LunarbaseError::NotFound("Collection not found".to_string())
             })?;
 
         let schema = collection.get_schema().map_err(|e| {
             tracing::error!("Failed to parse collection schema: {:?}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         let query_engine = QueryEngine::new(sort, filter, search, limit, offset).map_err(|e| {
@@ -1300,7 +1300,7 @@ impl CollectionService {
 
         let rows: Vec<RecordRow> = diesel::sql_query(&final_sql).load(&mut conn).map_err(|e| {
             tracing::error!("Failed to execute SQL query '{}': {:?}", final_sql, e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         let mut responses = Vec::new();
@@ -1318,7 +1318,7 @@ impl CollectionService {
         collection_name: &str,
         record_id: i32,
         request: UpdateRecordRequest,
-    ) -> Result<RecordResponse, AuthError> {
+    ) -> Result<RecordResponse, LunarbaseError> {
         self.update_record_with_events(collection_name, record_id, request, None)
             .await
     }
@@ -1329,17 +1329,17 @@ impl CollectionService {
         record_id: i32,
         request: UpdateRecordRequest,
         user_id: Option<i32>,
-    ) -> Result<RecordResponse, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<RecordResponse, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
         let schema = collection
             .get_schema()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let table_name = self.get_records_table_name(collection_name);
         let select_sql = format!("SELECT * FROM {} WHERE id = {}", table_name, record_id);
@@ -1414,7 +1414,7 @@ impl CollectionService {
         }
 
         if set_clauses.is_empty() {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "No fields to update".to_string(),
             ]));
         }
@@ -1428,10 +1428,10 @@ impl CollectionService {
 
         let affected_rows = diesel::sql_query(&update_sql)
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if affected_rows == 0 {
-            return Err(AuthError::NotFound("Record not found".to_string()));
+            return Err(LunarbaseError::NotFound("Record not found".to_string()));
         }
 
         let record_response = self.query_record_by_sql(&mut conn, &select_sql, collection_name)?;
@@ -1451,7 +1451,7 @@ impl CollectionService {
         &self,
         collection_name: &str,
         record_id: i32,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         self.delete_record_with_events(collection_name, record_id, None)
             .await
     }
@@ -1550,17 +1550,17 @@ impl CollectionService {
         collection_name: &str,
         record_id: i32,
         user_id: Option<i32>,
-    ) -> Result<(), AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
         let schema = collection
             .get_schema()
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let table_name = self.get_records_table_name(collection_name);
 
@@ -1572,10 +1572,10 @@ impl CollectionService {
         let delete_sql = format!("DELETE FROM {} WHERE id = {}", table_name, record_id);
         let deleted_rows = diesel::sql_query(&delete_sql)
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         if deleted_rows == 0 {
-            return Err(AuthError::NotFound("Record not found".to_string()));
+            return Err(LunarbaseError::NotFound("Record not found".to_string()));
         }
 
         if let Some(ref record) = old_record {
@@ -1611,9 +1611,9 @@ impl CollectionService {
             Option<String>,
             Option<String>,
         ),
-        AuthError,
+        LunarbaseError,
     > {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collections = self.list_collections().await?;
         let total_collections = collections.len() as i64;
@@ -1683,28 +1683,28 @@ impl CollectionService {
         ))
     }
 
-    fn validate_collection_name(&self, name: &str) -> Result<(), AuthError> {
+    fn validate_collection_name(&self, name: &str) -> Result<(), LunarbaseError> {
         if name.is_empty() {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Collection name cannot be empty".to_string(),
             ]));
         }
 
         if name.len() > 50 {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Collection name too long (max 50 characters)".to_string(),
             ]));
         }
 
         if !name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Collection name can only contain letters, numbers, and underscores".to_string(),
             ]));
         }
 
         let reserved_names = ["users", "auth", "admin", "api", "system"];
         if reserved_names.contains(&name) {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Collection name is reserved".to_string(),
             ]));
         }
@@ -1712,9 +1712,9 @@ impl CollectionService {
         Ok(())
     }
 
-    fn validate_schema(&self, schema: &CollectionSchema) -> Result<(), AuthError> {
+    fn validate_schema(&self, schema: &CollectionSchema) -> Result<(), LunarbaseError> {
         if schema.fields.is_empty() {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Schema must have at least one field".to_string(),
             ]));
         }
@@ -1724,27 +1724,27 @@ impl CollectionService {
 
         for field in &schema.fields {
             if !field_names.insert(&field.name) {
-                return Err(AuthError::ValidationError(vec![format!(
+                return Err(LunarbaseError::ValidationError(vec![format!(
                     "Duplicate field name: {}",
                     field.name
                 )]));
             }
 
             if reserved_field_names.contains(&field.name.as_str()) {
-                return Err(AuthError::ValidationError(vec![format!(
+                return Err(LunarbaseError::ValidationError(vec![format!(
                     "Field name '{}' is reserved and cannot be used",
                     field.name
                 )]));
             }
 
             if field.name.is_empty() || field.name.len() > 50 {
-                return Err(AuthError::ValidationError(vec![
+                return Err(LunarbaseError::ValidationError(vec![
                     "Field name must be 1-50 characters".to_string(),
                 ]));
             }
 
             if !field.name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                return Err(AuthError::ValidationError(vec![
+                return Err(LunarbaseError::ValidationError(vec![
                     "Field name can only contain letters, numbers, and underscores".to_string(),
                 ]));
             }
@@ -1757,14 +1757,14 @@ impl CollectionService {
         &self,
         schema: &CollectionSchema,
         files: &std::collections::HashMap<String, FileUpload>,
-    ) -> Result<std::collections::HashMap<String, String>, AuthError> {
+    ) -> Result<std::collections::HashMap<String, String>, LunarbaseError> {
         let mut file_urls = std::collections::HashMap::new();
         let mut uploaded_files = Vec::new();
 
         let s3_service = match &self.s3_service {
             Some(service) => service,
             None => {
-                return Err(AuthError::ValidationError(vec![
+                return Err(LunarbaseError::ValidationError(vec![
                     "File upload is not configured. S3 service is not available.".to_string(),
                 ]));
             }
@@ -1775,13 +1775,13 @@ impl CollectionService {
             match field_def {
                 Some(field) if matches!(field.field_type, FieldType::File) => {}
                 Some(_) => {
-                    return Err(AuthError::ValidationError(vec![format!(
+                    return Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' is not of type 'file'",
                         field_name
                     )]));
                 }
                 None => {
-                    return Err(AuthError::ValidationError(vec![format!(
+                    return Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' does not exist in collection schema",
                         field_name
                     )]));
@@ -1795,7 +1795,7 @@ impl CollectionService {
                     Ok(data) => data,
                     Err(_) => {
                         s3_service.cleanup_files(uploaded_files).await;
-                        return Err(AuthError::ValidationError(vec![format!(
+                        return Err(LunarbaseError::ValidationError(vec![format!(
                             "Invalid base64 data for file field '{}'",
                             field_name
                         )]));
@@ -1817,7 +1817,7 @@ impl CollectionService {
                 Err(e) => {
                     s3_service.cleanup_files(uploaded_files).await;
                     tracing::error!("Failed to upload file for field '{}': {}", field_name, e);
-                    return Err(AuthError::ValidationError(vec![format!(
+                    return Err(LunarbaseError::ValidationError(vec![format!(
                         "Failed to upload file for field '{}'",
                         field_name
                     )]));
@@ -1832,7 +1832,7 @@ impl CollectionService {
         &self,
         schema: &CollectionSchema,
         data: &Value,
-    ) -> Result<Value, AuthError> {
+    ) -> Result<Value, LunarbaseError> {
         let mut validated = Map::new();
 
         if let Some(data_obj) = data.as_object() {
@@ -1844,7 +1844,7 @@ impl CollectionService {
                 let field_value = data_obj.get(&field.name);
 
                 if field.required && (field_value.is_none() || field_value == Some(&Value::Null)) {
-                    return Err(AuthError::ValidationError(vec![format!(
+                    return Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' is required",
                         field.name
                     )]));
@@ -1864,7 +1864,7 @@ impl CollectionService {
                 validated.insert(field.name.clone(), validated_value);
             }
         } else {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Record data must be a JSON object".to_string(),
             ]));
         }
@@ -1876,14 +1876,14 @@ impl CollectionService {
         &self,
         field: &FieldDefinition,
         value: &Value,
-    ) -> Result<Value, AuthError> {
+    ) -> Result<Value, LunarbaseError> {
         match field.field_type {
             FieldType::Text => {
                 if let Some(s) = value.as_str() {
                     if let Some(validation) = &field.validation {
                         if let Some(min_len) = validation.min_length {
                             if s.len() < min_len {
-                                return Err(AuthError::ValidationError(vec![format!(
+                                return Err(LunarbaseError::ValidationError(vec![format!(
                                     "Field '{}' is too short (minimum {} characters)",
                                     field.name, min_len
                                 )]));
@@ -1891,7 +1891,7 @@ impl CollectionService {
                         }
                         if let Some(max_len) = validation.max_length {
                             if s.len() > max_len {
-                                return Err(AuthError::ValidationError(vec![format!(
+                                return Err(LunarbaseError::ValidationError(vec![format!(
                                     "Field '{}' is too long (maximum {} characters)",
                                     field.name, max_len
                                 )]));
@@ -1901,14 +1901,14 @@ impl CollectionService {
                             match regex::Regex::new(pattern) {
                                 Ok(regex) => {
                                     if !regex.is_match(s) {
-                                        return Err(AuthError::ValidationError(vec![format!(
+                                        return Err(LunarbaseError::ValidationError(vec![format!(
                                             "Field '{}' does not match required pattern: {}",
                                             field.name, pattern
                                         )]));
                                     }
                                 }
                                 Err(_) => {
-                                    return Err(AuthError::ValidationError(vec![format!(
+                                    return Err(LunarbaseError::ValidationError(vec![format!(
                                         "Invalid regex pattern for field '{}': {}",
                                         field.name, pattern
                                     )]));
@@ -1917,7 +1917,7 @@ impl CollectionService {
                         }
                         if let Some(enum_values) = &validation.enum_values {
                             if !enum_values.contains(&s.to_string()) {
-                                return Err(AuthError::ValidationError(vec![format!(
+                                return Err(LunarbaseError::ValidationError(vec![format!(
                                     "Field '{}' must be one of: {:?}",
                                     field.name, enum_values
                                 )]));
@@ -1926,7 +1926,7 @@ impl CollectionService {
                     }
                     Ok(value.clone())
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be text",
                         field.name
                     )]))
@@ -1937,7 +1937,7 @@ impl CollectionService {
                     if let Some(validation) = &field.validation {
                         if let Some(min_val) = validation.min_value {
                             if n < min_val {
-                                return Err(AuthError::ValidationError(vec![format!(
+                                return Err(LunarbaseError::ValidationError(vec![format!(
                                     "Field '{}' is too small (minimum {})",
                                     field.name, min_val
                                 )]));
@@ -1945,7 +1945,7 @@ impl CollectionService {
                         }
                         if let Some(max_val) = validation.max_value {
                             if n > max_val {
-                                return Err(AuthError::ValidationError(vec![format!(
+                                return Err(LunarbaseError::ValidationError(vec![format!(
                                     "Field '{}' is too large (maximum {})",
                                     field.name, max_val
                                 )]));
@@ -1954,7 +1954,7 @@ impl CollectionService {
                     }
                     Ok(value.clone())
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be a number",
                         field.name
                     )]))
@@ -1964,7 +1964,7 @@ impl CollectionService {
                 if value.is_boolean() {
                     Ok(value.clone())
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be a boolean",
                         field.name
                     )]))
@@ -1975,13 +1975,13 @@ impl CollectionService {
                     if s.contains('@') && s.contains('.') {
                         Ok(value.clone())
                     } else {
-                        Err(AuthError::ValidationError(vec![format!(
+                        Err(LunarbaseError::ValidationError(vec![format!(
                             "Field '{}' must be a valid email address",
                             field.name
                         )]))
                     }
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be text",
                         field.name
                     )]))
@@ -1992,13 +1992,13 @@ impl CollectionService {
                 if let Some(s) = value.as_str() {
                     match chrono::NaiveDate::parse_from_str(s, "%Y-%m-%d") {
                         Ok(_) => Ok(value.clone()),
-                        Err(_) => Err(AuthError::ValidationError(vec![format!(
+                        Err(_) => Err(LunarbaseError::ValidationError(vec![format!(
                             "Field '{}' must be a valid date in YYYY-MM-DD format",
                             field.name
                         )])),
                     }
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be a date string",
                         field.name
                     )]))
@@ -2010,19 +2010,19 @@ impl CollectionService {
                         if s.contains('.') && s.len() > 10 {
                             Ok(value.clone())
                         } else {
-                            Err(AuthError::ValidationError(vec![format!(
+                            Err(LunarbaseError::ValidationError(vec![format!(
                                 "Field '{}' must be a valid URL",
                                 field.name
                             )]))
                         }
                     } else {
-                        Err(AuthError::ValidationError(vec![format!(
+                        Err(LunarbaseError::ValidationError(vec![format!(
                             "Field '{}' must be a valid URL starting with http:// or https://",
                             field.name
                         )]))
                     }
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be a URL string",
                         field.name
                     )]))
@@ -2034,13 +2034,13 @@ impl CollectionService {
                     if !s.is_empty() && s.len() <= 500 {
                         Ok(value.clone())
                     } else {
-                        Err(AuthError::ValidationError(vec![format!(
+                        Err(LunarbaseError::ValidationError(vec![format!(
                             "Field '{}' must be a valid file path (max 500 characters)",
                             field.name
                         )]))
                     }
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be a file path string",
                         field.name
                     )]))
@@ -2051,7 +2051,7 @@ impl CollectionService {
                     if !s.is_empty() && s.len() <= 50 {
                         Ok(value.clone())
                     } else {
-                        Err(AuthError::ValidationError(vec![format!(
+                        Err(LunarbaseError::ValidationError(vec![format!(
                             "Field '{}' must be a valid relation ID (max 50 characters)",
                             field.name
                         )]))
@@ -2059,7 +2059,7 @@ impl CollectionService {
                 } else if let Some(_n) = value.as_i64() {
                     Ok(value.clone())
                 } else {
-                    Err(AuthError::ValidationError(vec![format!(
+                    Err(LunarbaseError::ValidationError(vec![format!(
                         "Field '{}' must be a relation ID (string or number)",
                         field.name
                     )]))

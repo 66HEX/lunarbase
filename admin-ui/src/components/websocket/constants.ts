@@ -42,7 +42,7 @@ export const getWebSocketStatusVariant = (status: string) => {
 
 export const connectionStatusColors = {
 	authenticated: "text-green-500",
-	anonymous: "text-gray-400",
+	anonymous: "text-neutral-400",
 	disconnect:
 		"text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20",
 };

@@ -68,13 +68,12 @@ pub async fn setup_cors(app_state: &AppState) -> CorsLayer {
 pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     let cors_layer = setup_cors(&app_state).await;
     
-    // Konfiguracja TraceLayer z większą precyzją
     let trace_layer = TraceLayer::new_for_http()
         .make_span_with(DefaultMakeSpan::new().level(Level::DEBUG))
         .on_response(
             DefaultOnResponse::new()
                 .level(Level::DEBUG)
-                .latency_unit(tower_http::LatencyUnit::Micros), // Mikrosekundy!
+                .latency_unit(tower_http::LatencyUnit::Micros),
         );
     
     let mut router = app

@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::Config;
 use crate::models::{NewVerificationToken, TokenType, VerificationToken};
 use crate::schema::verification_tokens;
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -51,7 +51,7 @@ impl EmailService {
         &self,
         user_id: i32,
         email: String,
-    ) -> Result<String, AuthError> {
+    ) -> Result<String, LunarbaseError> {
         self.generate_token(
             user_id,
             email,
@@ -65,7 +65,7 @@ impl EmailService {
         &self,
         user_id: i32,
         email: String,
-    ) -> Result<String, AuthError> {
+    ) -> Result<String, LunarbaseError> {
         self.generate_token(user_id, email, TokenType::PasswordReset, Duration::hours(1))
             .await
     }
@@ -76,7 +76,7 @@ impl EmailService {
         email: String,
         token_type: TokenType,
         duration: Duration,
-    ) -> Result<String, AuthError> {
+    ) -> Result<String, LunarbaseError> {
         let token = Uuid::new_v4().to_string();
         let expires_at = (Utc::now() + duration).naive_utc();
 
@@ -88,12 +88,12 @@ impl EmailService {
             token_type,
         );
 
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         diesel::insert_into(verification_tokens::table)
             .values(&new_token)
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         let now = Utc::now().naive_utc();
         diesel::delete(verification_tokens::table)
@@ -104,7 +104,7 @@ impl EmailService {
         Ok(token)
     }
 
-    pub async fn verify_token(&self, token: &str) -> Result<i32, AuthError> {
+    pub async fn verify_token(&self, token: &str) -> Result<i32, LunarbaseError> {
         self.verify_token_with_type(token, TokenType::EmailVerification)
             .await
     }
@@ -113,14 +113,14 @@ impl EmailService {
         &self,
         token: &str,
         _expected_type: TokenType,
-    ) -> Result<i32, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<i32, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let verification_token: VerificationToken = verification_tokens::table
             .filter(verification_tokens::token.eq(token))
             .first(&mut conn)
             .map_err(|_| {
-                AuthError::ValidationError(vec!["Invalid verification token".to_string()])
+                LunarbaseError::ValidationError(vec!["Invalid verification token".to_string()])
             })?;
 
         if verification_token.expires_at <= Utc::now().naive_utc() {
@@ -128,7 +128,7 @@ impl EmailService {
                 .filter(verification_tokens::token.eq(token))
                 .execute(&mut conn)
                 .ok();
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Verification token has expired".to_string(),
             ]));
         }
@@ -138,7 +138,7 @@ impl EmailService {
         diesel::delete(verification_tokens::table)
             .filter(verification_tokens::token.eq(token))
             .execute(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         Ok(user_id)
     }
@@ -148,7 +148,7 @@ impl EmailService {
         user_id: i32,
         email: &str,
         username: &str,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         debug!(
             "EmailService: Attempting to send verification email to {} for user_id: {}",
             email, user_id
@@ -180,7 +180,7 @@ impl EmailService {
             }
             Err(e) => {
                 error!("Failed to send verification email to {}: {:?}", email, e);
-                Err(AuthError::InternalError)
+                Err(LunarbaseError::InternalError)
             }
         }
     }
@@ -190,7 +190,7 @@ impl EmailService {
         user_id: i32,
         email: &str,
         username: &str,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         debug!(
             "EmailService: Attempting to send password reset email to {} for user_id: {}",
             email, user_id
@@ -222,7 +222,7 @@ impl EmailService {
             }
             Err(e) => {
                 error!("Failed to send password reset email to {}: {:?}", email, e);
-                Err(AuthError::InternalError)
+                Err(LunarbaseError::InternalError)
             }
         }
     }

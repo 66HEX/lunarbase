@@ -41,16 +41,16 @@ impl MetricsState {
                 "http_request_duration_microseconds",
                 "HTTP request duration in microseconds"
             ).buckets(vec![
-                100.0,    // 0.1ms
-                500.0,    // 0.5ms  
-                1000.0,   // 1ms
-                5000.0,   // 5ms
-                10000.0,  // 10ms
-                50000.0,  // 50ms
-                100000.0, // 100ms
-                500000.0, // 500ms
-                1000000.0 // 1s
-            ])
+                100.0,
+                500.0,
+                1000.0,
+                5000.0,
+                10000.0,
+                50000.0,
+                100000.0,
+                500000.0,
+                1000000.0,
+            ]),
         )?;
         
         let slow_requests_counter = Counter::new(
@@ -198,11 +198,9 @@ pub async fn metrics_middleware(
     let duration_micros = duration.as_micros() as f64;
     let duration_seconds = duration.as_secs_f64();
     
-    // Zapisz w obu formatach
     app_state.metrics_state.request_duration.observe(duration_seconds);
     app_state.metrics_state.request_duration_microseconds.observe(duration_micros);
     
-    // Zlicz wolne requesty (>100ms)
     if duration_micros > 100_000.0 {
         app_state.metrics_state.slow_requests_counter.inc();
         tracing::warn!(

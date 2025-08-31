@@ -13,7 +13,7 @@ use crate::models::{
     SubscriptionData, SubscriptionError, SubscriptionRequest, UnsubscribeRequest, WebSocketMessage,
 };
 use crate::services::PermissionService;
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 
 pub type ConnectionId = Uuid;
 pub type SubscriptionId = String;
@@ -227,9 +227,9 @@ impl WebSocketService {
         &self,
         connection_id: ConnectionId,
         text: &str,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         let message: WebSocketMessage = serde_json::from_str(text)
-            .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON message".to_string()]))?;
+            .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON message".to_string()]))?;
 
         match message {
             WebSocketMessage::Subscribe(req) => {
@@ -256,7 +256,7 @@ impl WebSocketService {
         &self,
         connection_id: ConnectionId,
         req: SubscriptionRequest,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         let mut connections = self.connections.write().await;
 
         if let Some((sender, client, _)) = connections.get_mut(&connection_id) {
@@ -265,7 +265,7 @@ impl WebSocketService {
                     .permission_service
                     .pool
                     .get()
-                    .map_err(|_| AuthError::InternalError)?;
+                    .map_err(|_| LunarbaseError::InternalError)?;
 
                 use crate::models::{Collection, User};
                 use crate::schema::{collections, users};
@@ -275,18 +275,18 @@ impl WebSocketService {
                     .find(user_id)
                     .select(User::as_select())
                     .first::<User>(&mut conn)
-                    .map_err(|_| AuthError::InternalError)?;
+                    .map_err(|_| LunarbaseError::InternalError)?;
 
                 let collection = collections::table
                     .filter(collections::name.eq(&req.collection_name))
                     .first::<Collection>(&mut conn)
-                    .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+                    .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
                 let has_permission = self
                     .permission_service
                     .check_collection_permission(&user, collection.id, Permission::Read)
                     .await
-                    .map_err(|_| AuthError::InternalError)?;
+                    .map_err(|_| LunarbaseError::InternalError)?;
 
                 if !has_permission {
                     let error_msg = SubscriptionError {
@@ -294,7 +294,7 @@ impl WebSocketService {
                         error: "Insufficient permissions".to_string(),
                     };
                     let _ = sender.send(WebSocketMessage::SubscriptionError(error_msg));
-                    return Err(AuthError::Forbidden("Insufficient permissions".to_string()));
+                    return Err(LunarbaseError::Forbidden("Insufficient permissions".to_string()));
                 }
             }
 
@@ -324,7 +324,7 @@ impl WebSocketService {
         &self,
         connection_id: ConnectionId,
         req: UnsubscribeRequest,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         let mut connections = self.connections.write().await;
 
         if let Some((_sender, client, _)) = connections.get_mut(&connection_id) {
@@ -338,7 +338,7 @@ impl WebSocketService {
         Ok(())
     }
 
-    pub async fn broadcast_event(&self, event: PendingEvent) -> Result<(), AuthError> {
+    pub async fn broadcast_event(&self, event: PendingEvent) -> Result<(), LunarbaseError> {
         debug!(
             "Broadcasting event for collection: {}",
             event.collection_name
@@ -346,7 +346,7 @@ impl WebSocketService {
 
         if let Err(e) = self.event_sender.send(event) {
             error!("Failed to broadcast event: {}", e);
-            return Err(AuthError::InternalError);
+            return Err(LunarbaseError::InternalError);
         }
 
         Ok(())

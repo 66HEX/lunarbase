@@ -4,7 +4,7 @@ use diesel::r2d2::{ConnectionManager, Pool};
 use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, Validation, decode, encode};
 use serde::{Deserialize, Serialize};
 
-use super::AuthError;
+use super::LunarbaseError;
 use crate::schema::blacklisted_tokens;
 use crate::services::{ConfigurationAccess, ConfigurationManager};
 
@@ -53,7 +53,7 @@ impl JwtService {
         user_id: i32,
         email: &str,
         role: &str,
-    ) -> Result<String, AuthError> {
+    ) -> Result<String, LunarbaseError> {
         let now = Utc::now();
         let jwt_lifetime_hours = self.get_jwt_lifetime_hours().await;
         let exp = now + Duration::hours(jwt_lifetime_hours as i64);
@@ -68,10 +68,10 @@ impl JwtService {
         };
 
         encode(&Header::default(), &claims, &self.encoding_key)
-            .map_err(|_| AuthError::InternalError)
+            .map_err(|_| LunarbaseError::InternalError)
     }
 
-    pub async fn generate_refresh_token(&self, user_id: i32) -> Result<String, AuthError> {
+    pub async fn generate_refresh_token(&self, user_id: i32) -> Result<String, LunarbaseError> {
         let now = Utc::now();
         let jwt_lifetime_hours = self.get_jwt_lifetime_hours().await;
         let exp = now + Duration::hours((jwt_lifetime_hours * 7) as i64);
@@ -85,49 +85,49 @@ impl JwtService {
         };
 
         encode(&Header::default(), &claims, &self.encoding_key)
-            .map_err(|_| AuthError::InternalError)
+            .map_err(|_| LunarbaseError::InternalError)
     }
 
-    pub fn validate_access_token(&self, token: &str) -> Result<Claims, AuthError> {
+    pub fn validate_access_token(&self, token: &str) -> Result<Claims, LunarbaseError> {
         let validation = Validation::new(Algorithm::HS256);
 
         match decode::<Claims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => {
                 let now = Utc::now().timestamp();
                 if token_data.claims.exp < now {
-                    return Err(AuthError::TokenExpired);
+                    return Err(LunarbaseError::TokenExpired);
                 }
                 Ok(token_data.claims)
             }
-            Err(_) => Err(AuthError::TokenInvalid),
+            Err(_) => Err(LunarbaseError::TokenInvalid),
         }
     }
 
-    pub fn validate_refresh_token(&self, token: &str) -> Result<RefreshClaims, AuthError> {
+    pub fn validate_refresh_token(&self, token: &str) -> Result<RefreshClaims, LunarbaseError> {
         let validation = Validation::new(Algorithm::HS256);
 
         match decode::<RefreshClaims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => {
                 let now = Utc::now().timestamp();
                 if token_data.claims.exp < now {
-                    return Err(AuthError::TokenExpired);
+                    return Err(LunarbaseError::TokenExpired);
                 }
 
                 if token_data.claims.token_type != "refresh" {
-                    return Err(AuthError::TokenInvalid);
+                    return Err(LunarbaseError::TokenInvalid);
                 }
 
                 Ok(token_data.claims)
             }
-            Err(_) => Err(AuthError::TokenInvalid),
+            Err(_) => Err(LunarbaseError::TokenInvalid),
         }
     }
 
-    pub fn extract_token_from_header(auth_header: &str) -> Result<&str, AuthError> {
+    pub fn extract_token_from_header(auth_header: &str) -> Result<&str, LunarbaseError> {
         if auth_header.starts_with("Bearer ") {
             Ok(&auth_header[7..])
         } else {
-            Err(AuthError::TokenInvalid)
+            Err(LunarbaseError::TokenInvalid)
         }
     }
 
@@ -136,36 +136,36 @@ impl JwtService {
         Duration::hours(jwt_lifetime_hours as i64).num_seconds()
     }
 
-    pub fn decode_token_unsafe(&self, token: &str) -> Result<Claims, AuthError> {
+    pub fn decode_token_unsafe(&self, token: &str) -> Result<Claims, LunarbaseError> {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.validate_exp = false;
         validation.validate_nbf = false;
 
         match decode::<Claims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => Ok(token_data.claims),
-            Err(_) => Err(AuthError::TokenInvalid),
+            Err(_) => Err(LunarbaseError::TokenInvalid),
         }
     }
 
-    pub fn decode_refresh_token_unsafe(&self, token: &str) -> Result<RefreshClaims, AuthError> {
+    pub fn decode_refresh_token_unsafe(&self, token: &str) -> Result<RefreshClaims, LunarbaseError> {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.validate_exp = false;
         validation.validate_nbf = false;
 
         match decode::<RefreshClaims>(token, &self.decoding_key, &validation) {
             Ok(token_data) => Ok(token_data.claims),
-            Err(_) => Err(AuthError::TokenInvalid),
+            Err(_) => Err(LunarbaseError::TokenInvalid),
         }
     }
 
-    pub fn is_token_blacklisted(&self, jti: &str) -> Result<bool, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub fn is_token_blacklisted(&self, jti: &str) -> Result<bool, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let count: i64 = blacklisted_tokens::table
             .filter(blacklisted_tokens::jti.eq(jti))
             .count()
             .get_result(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         Ok(count > 0)
     }
@@ -220,11 +220,11 @@ impl JwtService {
         Ok(())
     }
 
-    pub fn validate_access_token_with_blacklist(&self, token: &str) -> Result<Claims, AuthError> {
+    pub fn validate_access_token_with_blacklist(&self, token: &str) -> Result<Claims, LunarbaseError> {
         let claims = self.validate_access_token(token)?;
 
         if self.is_token_blacklisted(&claims.jti)? {
-            return Err(AuthError::TokenInvalid);
+            return Err(LunarbaseError::TokenInvalid);
         }
 
         Ok(claims)
@@ -233,27 +233,27 @@ impl JwtService {
     pub fn validate_access_token_with_verification(
         &self,
         token: &str,
-    ) -> Result<Claims, AuthError> {
+    ) -> Result<Claims, LunarbaseError> {
         let claims = self.validate_access_token_with_blacklist(token)?;
 
-        let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+        let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
         if !self.is_user_verified(user_id)? {
-            return Err(AuthError::AccountNotVerified);
+            return Err(LunarbaseError::AccountNotVerified);
         }
 
         Ok(claims)
     }
 
-    pub fn is_user_verified(&self, user_id: i32) -> Result<bool, AuthError> {
+    pub fn is_user_verified(&self, user_id: i32) -> Result<bool, LunarbaseError> {
         use crate::schema::users;
 
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let is_verified: bool = users::table
             .filter(users::id.eq(user_id))
             .select(users::is_verified)
             .first(&mut conn)
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         Ok(is_verified)
     }
@@ -261,11 +261,11 @@ impl JwtService {
     pub fn validate_refresh_token_with_blacklist(
         &self,
         token: &str,
-    ) -> Result<RefreshClaims, AuthError> {
+    ) -> Result<RefreshClaims, LunarbaseError> {
         let claims = self.validate_refresh_token(token)?;
 
         if self.is_token_blacklisted(&claims.jti)? {
-            return Err(AuthError::TokenInvalid);
+            return Err(LunarbaseError::TokenInvalid);
         }
 
         Ok(claims)

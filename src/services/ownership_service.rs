@@ -4,7 +4,7 @@ use serde_json::Value;
 use tracing::debug;
 
 use crate::models::{Permission, RecordResponse, User};
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -22,7 +22,7 @@ impl OwnershipService {
         &self,
         user: &User,
         record_data: &mut Value,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         if !record_data.as_object().unwrap().contains_key("author_id") {
             if let Some(obj) = record_data.as_object_mut() {
                 obj.insert("author_id".to_string(), Value::Number(user.id.into()));
@@ -38,7 +38,7 @@ impl OwnershipService {
         Ok(())
     }
 
-    pub fn check_ownership(&self, user: &User, record: &RecordResponse) -> Result<bool, AuthError> {
+    pub fn check_ownership(&self, user: &User, record: &RecordResponse) -> Result<bool, LunarbaseError> {
         if let Some(owner_id_value) = record.data.get("owner_id") {
             if self.matches_user_id(owner_id_value, user.id) {
                 return Ok(true);
@@ -96,7 +96,7 @@ impl OwnershipService {
         &self,
         user: &User,
         record: &RecordResponse,
-    ) -> Result<OwnershipPermissions, AuthError> {
+    ) -> Result<OwnershipPermissions, LunarbaseError> {
         let is_owner = self.check_ownership(user, record)?;
 
         if is_owner {
@@ -123,12 +123,12 @@ impl OwnershipService {
         new_owner_id: i32,
         collection_name: &str,
         record_id: i32,
-    ) -> Result<(), AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let is_owner = self.check_ownership(current_user, record)?;
         if !is_owner && current_user.role != "admin" {
-            return Err(AuthError::InsufficientPermissions);
+            return Err(LunarbaseError::InsufficientPermissions);
         }
 
         use crate::schema::users;
@@ -136,7 +136,7 @@ impl OwnershipService {
             .filter(users::id.eq(new_owner_id))
             .select(User::as_select())
             .first(&mut conn)
-            .map_err(|_| AuthError::NotFound("New owner user not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("New owner user not found".to_string()))?;
 
         let table_name = format!("records_{}", collection_name);
 
@@ -148,7 +148,7 @@ impl OwnershipService {
         let owner_id_result = diesel::sql_query(&update_owner_id_sql).execute(&mut conn);
 
         if owner_id_result.is_err() {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Record does not have owner_id field for ownership transfer".to_string(),
             ]));
         }
@@ -166,7 +166,7 @@ impl OwnershipService {
         user: &User,
         record: &RecordResponse,
         permission: Permission,
-    ) -> Result<bool, AuthError> {
+    ) -> Result<bool, LunarbaseError> {
         if user.role == "admin" {
             return Ok(true);
         }
@@ -188,14 +188,14 @@ impl OwnershipService {
         collection_name: &str,
         limit: Option<i64>,
         offset: Option<i64>,
-    ) -> Result<Vec<i32>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    ) -> Result<Vec<i32>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         use crate::schema::collections;
         let _collection = collections::table
             .filter(collections::name.eq(collection_name))
             .first::<crate::models::Collection>(&mut conn)
-            .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+            .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
         let table_name = format!("records_{}", collection_name);
         let limit_clause = limit.unwrap_or(100);
@@ -251,7 +251,7 @@ impl OwnershipService {
         &self,
         conn: &mut SqliteConnection,
         query: &str,
-    ) -> Result<Vec<i32>, AuthError> {
+    ) -> Result<Vec<i32>, LunarbaseError> {
         #[derive(QueryableByName)]
         struct RecordId {
             #[diesel(sql_type = diesel::sql_types::Integer)]
@@ -264,7 +264,7 @@ impl OwnershipService {
                 diesel::result::DatabaseErrorKind::Unknown,
                 _,
             )) => Ok(vec![]),
-            Err(_) => Err(AuthError::InternalError),
+            Err(_) => Err(LunarbaseError::InternalError),
         }
     }
 
@@ -272,7 +272,7 @@ impl OwnershipService {
         &self,
         collection_name: &str,
         ownership_field: &str,
-    ) -> Result<OwnershipRule, AuthError> {
+    ) -> Result<OwnershipRule, LunarbaseError> {
         Ok(OwnershipRule {
             collection_name: collection_name.to_string(),
             ownership_field: ownership_field.to_string(),

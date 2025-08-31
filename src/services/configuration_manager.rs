@@ -8,7 +8,7 @@ use tracing::{debug, error, warn};
 
 use crate::models::system_setting::SystemSetting;
 use crate::schema::system_settings;
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -26,22 +26,22 @@ impl ConfigurationManager {
         }
     }
 
-    pub async fn initialize(&self) -> Result<(), AuthError> {
+    pub async fn initialize(&self) -> Result<(), LunarbaseError> {
         debug!("Initializing configuration manager...");
         self.reload_cache().await?;
         debug!("Configuration manager initialized successfully");
         Ok(())
     }
 
-    pub async fn reload_cache(&self) -> Result<(), AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn reload_cache(&self) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let settings = system_settings::table
             .select(SystemSetting::as_select())
             .load(&mut conn)
             .map_err(|e| {
                 error!("Failed to load system settings: {}", e);
-                AuthError::DatabaseError
+                LunarbaseError::DatabaseError
             })?;
 
         let mut cache = self.cache.write().await;

@@ -7,7 +7,7 @@ use serde_json::{Value, json};
 use std::fmt;
 
 #[derive(Debug)]
-pub enum AuthError {
+pub enum LunarbaseError {
     InvalidCredentials,
     AccountLocked,
     AccountNotVerified,
@@ -30,120 +30,120 @@ pub enum AuthError {
     WeakPassword,
 }
 
-impl fmt::Display for AuthError {
+impl fmt::Display for LunarbaseError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            AuthError::InvalidCredentials => write!(f, "Invalid credentials"),
-            AuthError::AccountLocked => write!(f, "Account temporarily locked"),
-            AuthError::AccountNotVerified => write!(f, "Account not verified"),
-            AuthError::UserAlreadyVerified => write!(f, "User already verified"),
-            AuthError::UserNotFound => write!(f, "User not found"),
-            AuthError::TokenExpired => write!(f, "Token expired"),
-            AuthError::TokenInvalid => write!(f, "Invalid token"),
-            AuthError::TokenMissing => write!(f, "Token missing"),
-            AuthError::PasswordResetTokenInvalid => write!(f, "Invalid password reset token"),
-            AuthError::PasswordResetTokenExpired => write!(f, "Password reset token expired"),
-            AuthError::WeakPassword => write!(f, "Password does not meet security requirements"),
-            AuthError::InsufficientPermissions => write!(f, "Insufficient permissions"),
-            AuthError::RateLimitExceeded => write!(f, "Rate limit exceeded"),
-            AuthError::ValidationError(errors) => {
+            LunarbaseError::InvalidCredentials => write!(f, "Invalid credentials"),
+            LunarbaseError::AccountLocked => write!(f, "Account temporarily locked"),
+            LunarbaseError::AccountNotVerified => write!(f, "Account not verified"),
+            LunarbaseError::UserAlreadyVerified => write!(f, "User already verified"),
+            LunarbaseError::UserNotFound => write!(f, "User not found"),
+            LunarbaseError::TokenExpired => write!(f, "Token expired"),
+            LunarbaseError::TokenInvalid => write!(f, "Invalid token"),
+            LunarbaseError::TokenMissing => write!(f, "Token missing"),
+            LunarbaseError::PasswordResetTokenInvalid => write!(f, "Invalid password reset token"),
+            LunarbaseError::PasswordResetTokenExpired => write!(f, "Password reset token expired"),
+            LunarbaseError::WeakPassword => write!(f, "Password does not meet security requirements"),
+            LunarbaseError::InsufficientPermissions => write!(f, "Insufficient permissions"),
+            LunarbaseError::RateLimitExceeded => write!(f, "Rate limit exceeded"),
+            LunarbaseError::ValidationError(errors) => {
                 write!(f, "Validation error: {}", errors.join(", "))
             }
-            AuthError::BadRequest(msg) => write!(f, "Bad request: {}", msg),
-            AuthError::Conflict(msg) => write!(f, "Conflict: {}", msg),
-            AuthError::DatabaseError => write!(f, "Database error"),
-            AuthError::InternalError => write!(f, "Internal server error"),
-            AuthError::NotFound(msg) => write!(f, "Not found: {}", msg),
-            AuthError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
+            LunarbaseError::BadRequest(msg) => write!(f, "Bad request: {}", msg),
+            LunarbaseError::Conflict(msg) => write!(f, "Conflict: {}", msg),
+            LunarbaseError::DatabaseError => write!(f, "Database error"),
+            LunarbaseError::InternalError => write!(f, "Internal server error"),
+            LunarbaseError::NotFound(msg) => write!(f, "Not found: {}", msg),
+            LunarbaseError::Forbidden(msg) => write!(f, "Forbidden: {}", msg),
         }
     }
 }
 
-impl std::error::Error for AuthError {}
+impl std::error::Error for LunarbaseError {}
 
-impl IntoResponse for AuthError {
+impl IntoResponse for LunarbaseError {
     fn into_response(self) -> Response {
         let (status, error_message, error_code) = match self {
-            AuthError::InvalidCredentials => (
+            LunarbaseError::InvalidCredentials => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid email or password",
                 "INVALID_CREDENTIALS",
             ),
-            AuthError::AccountLocked => (
+            LunarbaseError::AccountLocked => (
                 StatusCode::FORBIDDEN,
                 "Account temporarily locked due to multiple failed login attempts",
                 "ACCOUNT_LOCKED",
             ),
-            AuthError::AccountNotVerified => (
+            LunarbaseError::AccountNotVerified => (
                 StatusCode::FORBIDDEN,
                 "Please verify your email address to continue",
                 "ACCOUNT_NOT_VERIFIED",
             ),
-            AuthError::UserAlreadyVerified => (
+            LunarbaseError::UserAlreadyVerified => (
                 StatusCode::BAD_REQUEST,
                 "User is already verified",
                 "USER_ALREADY_VERIFIED",
             ),
-            AuthError::UserNotFound => (StatusCode::NOT_FOUND, "User not found", "USER_NOT_FOUND"),
-            AuthError::TokenExpired => (
+            LunarbaseError::UserNotFound => (StatusCode::NOT_FOUND, "User not found", "USER_NOT_FOUND"),
+            LunarbaseError::TokenExpired => (
                 StatusCode::UNAUTHORIZED,
                 "Token has expired",
                 "TOKEN_EXPIRED",
             ),
-            AuthError::TokenInvalid => (
+            LunarbaseError::TokenInvalid => (
                 StatusCode::UNAUTHORIZED,
                 "Invalid or malformed token",
                 "TOKEN_INVALID",
             ),
-            AuthError::TokenMissing => (
+            LunarbaseError::TokenMissing => (
                 StatusCode::UNAUTHORIZED,
                 "Authorization token is missing",
                 "TOKEN_MISSING",
             ),
-            AuthError::InsufficientPermissions => (
+            LunarbaseError::InsufficientPermissions => (
                 StatusCode::FORBIDDEN,
                 "You don't have permission to access this resource",
                 "INSUFFICIENT_PERMISSIONS",
             ),
-            AuthError::PasswordResetTokenInvalid => (
+            LunarbaseError::PasswordResetTokenInvalid => (
                 StatusCode::BAD_REQUEST,
                 "Invalid or expired password reset token",
                 "PASSWORD_RESET_TOKEN_INVALID",
             ),
-            AuthError::PasswordResetTokenExpired => (
+            LunarbaseError::PasswordResetTokenExpired => (
                 StatusCode::BAD_REQUEST,
                 "Password reset token has expired",
                 "PASSWORD_RESET_TOKEN_EXPIRED",
             ),
-            AuthError::WeakPassword => (
+            LunarbaseError::WeakPassword => (
                 StatusCode::BAD_REQUEST,
                 "Password does not meet security requirements",
                 "WEAK_PASSWORD",
             ),
-            AuthError::RateLimitExceeded => (
+            LunarbaseError::RateLimitExceeded => (
                 StatusCode::TOO_MANY_REQUESTS,
                 "Too many requests. Please try again later",
                 "RATE_LIMIT_EXCEEDED",
             ),
-            AuthError::ValidationError(_) => (
+            LunarbaseError::ValidationError(_) => (
                 StatusCode::BAD_REQUEST,
                 "Validation failed",
                 "VALIDATION_ERROR",
             ),
-            AuthError::BadRequest(_) => (StatusCode::BAD_REQUEST, "Bad request", "BAD_REQUEST"),
-            AuthError::Conflict(_) => (StatusCode::CONFLICT, "Resource already exists", "CONFLICT"),
-            AuthError::DatabaseError => (
+            LunarbaseError::BadRequest(_) => (StatusCode::BAD_REQUEST, "Bad request", "BAD_REQUEST"),
+            LunarbaseError::Conflict(_) => (StatusCode::CONFLICT, "Resource already exists", "CONFLICT"),
+            LunarbaseError::DatabaseError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "A database error occurred. Please try again later",
                 "DATABASE_ERROR",
             ),
-            AuthError::InternalError => (
+            LunarbaseError::InternalError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "An internal error occurred. Please try again later",
                 "INTERNAL_ERROR",
             ),
-            AuthError::NotFound(_) => (StatusCode::NOT_FOUND, "Resource not found", "NOT_FOUND"),
-            AuthError::Forbidden(_) => (StatusCode::FORBIDDEN, "Access forbidden", "FORBIDDEN"),
+            LunarbaseError::NotFound(_) => (StatusCode::NOT_FOUND, "Resource not found", "NOT_FOUND"),
+            LunarbaseError::Forbidden(_) => (StatusCode::FORBIDDEN, "Access forbidden", "FORBIDDEN"),
         };
 
         let body = Json(json!({
@@ -176,7 +176,7 @@ impl<T: serde::Serialize> ApiResponse<T> {
         }
     }
 
-    pub fn error(error: AuthError) -> Self {
+    pub fn error(error: LunarbaseError) -> Self {
         Self {
             success: false,
             data: None,

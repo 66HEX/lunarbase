@@ -87,7 +87,6 @@ export function CreateCollectionSheet({
 			prev.map((field, i) => (i === index ? { ...field, ...updates } : field)),
 		);
 
-		// Clear field errors when updating field values
 		const fieldErrorKey = `field_${index}_name`;
 		if (fieldErrors[fieldErrorKey]) {
 			setFieldErrors((prev) => ({ ...prev, [fieldErrorKey]: "" }));

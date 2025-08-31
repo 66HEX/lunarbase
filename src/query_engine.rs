@@ -1,5 +1,5 @@
 use crate::models::CollectionSchema;
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone)]
@@ -62,7 +62,7 @@ impl QueryEngine {
         search: Option<String>,
         limit: Option<i64>,
         offset: Option<i64>,
-    ) -> Result<Self, AuthError> {
+    ) -> Result<Self, LunarbaseError> {
         let mut query_engine = QueryEngine {
             sort: Vec::new(),
             filters: Vec::new(),
@@ -82,7 +82,7 @@ impl QueryEngine {
         Ok(query_engine)
     }
 
-    fn parse_sort(sort_str: &str) -> Result<Vec<SortField>, AuthError> {
+    fn parse_sort(sort_str: &str) -> Result<Vec<SortField>, LunarbaseError> {
         let mut sort_fields = Vec::new();
 
         for field_str in sort_str.split(',') {
@@ -98,7 +98,7 @@ impl QueryEngine {
             };
 
             if !Self::is_valid_field_name(field) {
-                return Err(AuthError::ValidationError(vec![format!(
+                return Err(LunarbaseError::ValidationError(vec![format!(
                     "Invalid field name for sorting: {}",
                     field
                 )]));
@@ -113,7 +113,7 @@ impl QueryEngine {
         Ok(sort_fields)
     }
 
-    fn parse_filters(filter_str: &str) -> Result<Vec<FilterCondition>, AuthError> {
+    fn parse_filters(filter_str: &str) -> Result<Vec<FilterCondition>, LunarbaseError> {
         let mut filters = Vec::new();
 
         for filter_part in filter_str.split(',') {
@@ -124,7 +124,7 @@ impl QueryEngine {
 
             let parts: Vec<&str> = filter_part.split(':').collect();
             if parts.len() < 2 {
-                return Err(AuthError::ValidationError(vec![format!(
+                return Err(LunarbaseError::ValidationError(vec![format!(
                     "Invalid filter format: {}",
                     filter_part
                 )]));
@@ -139,7 +139,7 @@ impl QueryEngine {
             };
 
             if !Self::is_valid_field_name(field) {
-                return Err(AuthError::ValidationError(vec![format!(
+                return Err(LunarbaseError::ValidationError(vec![format!(
                     "Invalid field name for filtering: {}",
                     field
                 )]));
@@ -159,7 +159,7 @@ impl QueryEngine {
         Ok(filters)
     }
 
-    fn parse_operator(op_str: &str) -> Result<FilterOperator, AuthError> {
+    fn parse_operator(op_str: &str) -> Result<FilterOperator, LunarbaseError> {
         match op_str.to_lowercase().as_str() {
             "eq" => Ok(FilterOperator::Eq),
             "ne" => Ok(FilterOperator::Ne),
@@ -173,7 +173,7 @@ impl QueryEngine {
             "notin" => Ok(FilterOperator::NotIn),
             "isnull" => Ok(FilterOperator::IsNull),
             "isnotnull" => Ok(FilterOperator::IsNotNull),
-            _ => Err(AuthError::ValidationError(vec![format!(
+            _ => Err(LunarbaseError::ValidationError(vec![format!(
                 "Unsupported filter operator: {}",
                 op_str
             )])),
@@ -183,7 +183,7 @@ impl QueryEngine {
     fn parse_filter_value(
         value_str: &str,
         operator: &FilterOperator,
-    ) -> Result<FilterValue, AuthError> {
+    ) -> Result<FilterValue, LunarbaseError> {
         match operator {
             FilterOperator::IsNull | FilterOperator::IsNotNull => Ok(FilterValue::Null),
             FilterOperator::In | FilterOperator::NotIn => {
@@ -220,7 +220,7 @@ impl QueryEngine {
                 .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
     }
 
-    pub fn build_order_by_clause(&self, schema: &CollectionSchema) -> Result<String, AuthError> {
+    pub fn build_order_by_clause(&self, schema: &CollectionSchema) -> Result<String, LunarbaseError> {
         if self.sort.is_empty() {
             return Ok("ORDER BY \"created_at\" DESC".to_string());
         }
@@ -229,7 +229,7 @@ impl QueryEngine {
 
         for sort_field in &self.sort {
             if !self.is_valid_sort_field(&sort_field.field, schema) {
-                return Err(AuthError::ValidationError(vec![format!(
+                return Err(LunarbaseError::ValidationError(vec![format!(
                     "Field '{}' does not exist or cannot be sorted",
                     sort_field.field
                 )]));
@@ -250,7 +250,7 @@ impl QueryEngine {
     pub fn build_where_clause(
         &self,
         schema: &CollectionSchema,
-    ) -> Result<(String, Vec<String>), AuthError> {
+    ) -> Result<(String, Vec<String>), LunarbaseError> {
         let mut where_parts = Vec::new();
         let mut parameters = Vec::new();
 
@@ -290,7 +290,7 @@ impl QueryEngine {
 
         for filter in &self.filters {
             if !self.is_valid_filter_field(&filter.field, schema) {
-                return Err(AuthError::ValidationError(vec![format!(
+                return Err(LunarbaseError::ValidationError(vec![format!(
                     "Field '{}' does not exist or cannot be filtered",
                     filter.field
                 )]));
@@ -312,7 +312,7 @@ impl QueryEngine {
     fn build_filter_condition(
         &self,
         filter: &FilterCondition,
-    ) -> Result<(String, Vec<String>), AuthError> {
+    ) -> Result<(String, Vec<String>), LunarbaseError> {
         let escaped_field = self.escape_field_name(&filter.field);
 
         match &filter.operator {
@@ -366,7 +366,7 @@ impl QueryEngine {
                     let params = values.iter().map(|v| v.clone()).collect();
                     Ok((format!("{} IN ({})", escaped_field, placeholders), params))
                 } else {
-                    Err(AuthError::ValidationError(vec![
+                    Err(LunarbaseError::ValidationError(vec![
                         "IN operator requires array value".to_string(),
                     ]))
                 }
@@ -380,7 +380,7 @@ impl QueryEngine {
                         params,
                     ))
                 } else {
-                    Err(AuthError::ValidationError(vec![
+                    Err(LunarbaseError::ValidationError(vec![
                         "NOT IN operator requires array value".to_string(),
                     ]))
                 }
@@ -428,7 +428,7 @@ impl QueryEngine {
         &self,
         table_name: &str,
         schema: &CollectionSchema,
-    ) -> Result<(String, Vec<String>), AuthError> {
+    ) -> Result<(String, Vec<String>), LunarbaseError> {
         let escaped_table_name = self.escape_field_name(table_name);
         let mut sql = format!("SELECT id FROM {}", escaped_table_name);
         let mut parameters = Vec::new();

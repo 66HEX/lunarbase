@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::services::{ConfigurationAccess, ConfigurationManager};
-use crate::utils::{AuthError, Claims, CookieService, JwtService};
+use crate::utils::{LunarbaseError, Claims, CookieService, JwtService};
 use diesel::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 
@@ -98,11 +98,11 @@ impl ConfigurationAccess for AuthState {
     }
 }
 
-pub fn extract_user_claims(request: &Request) -> Result<Claims, AuthError> {
+pub fn extract_user_claims(request: &Request) -> Result<Claims, LunarbaseError> {
     request
         .extensions()
         .get::<Claims>()
-        .ok_or(AuthError::TokenInvalid)
+        .ok_or(LunarbaseError::TokenInvalid)
         .map(|claims| claims.clone())
 }
 
@@ -110,7 +110,7 @@ pub async fn auth_middleware(
     State(auth_state): State<AuthState>,
     mut request: Request,
     next: Next,
-) -> Result<Response, AuthError> {
+) -> Result<Response, LunarbaseError> {
     tracing::debug!("Request headers: {:?}", request.headers());
 
     let token = if let Some(cookie_token) = CookieService::extract_access_token(request.headers()) {
@@ -128,7 +128,7 @@ pub async fn auth_middleware(
         JwtService::extract_token_from_header(auth_header)?.to_string()
     } else {
         tracing::debug!("No token found in cookies or Authorization header");
-        return Err(AuthError::TokenInvalid);
+        return Err(LunarbaseError::TokenInvalid);
     };
 
     let client_ip = request
@@ -139,7 +139,7 @@ pub async fn auth_middleware(
         .unwrap_or("unknown");
 
     if !auth_state.rate_limiter.check_rate_limit(client_ip) {
-        return Err(AuthError::RateLimitExceeded);
+        return Err(LunarbaseError::RateLimitExceeded);
     }
 
     let claims = auth_state

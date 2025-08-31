@@ -22,7 +22,7 @@ export function OwnershipBadge({
 
 	if (!ownership) {
 		return (
-			<Badge variant="outline" className="text-gray-500">
+			<Badge variant="outline" className="text-neutral-500">
 				{showIcon && (
 					<span className="mr-1">
 						<UsersIcon size={12} />

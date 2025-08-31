@@ -5,7 +5,7 @@ use tracing::{debug, warn};
 use crate::Config;
 use crate::models::{NewUser, User};
 use crate::schema::users;
-use crate::utils::AuthError;
+use crate::utils::LunarbaseError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
 
@@ -23,7 +23,7 @@ impl AdminService {
         &self,
         config: &Config,
         pepper: &str,
-    ) -> Result<(), AuthError> {
+    ) -> Result<(), LunarbaseError> {
         if !config.has_admin_config() {
             debug!("No admin configuration provided via environment variables");
             return Ok(());
@@ -33,14 +33,14 @@ impl AdminService {
         let admin_password = config.admin_password.as_ref().unwrap();
         let admin_username = config.admin_username.as_ref().unwrap();
 
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let existing_admin = users::table
             .filter(users::email.eq(admin_email))
             .select(User::as_select())
             .first(&mut conn)
             .optional()
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         if existing_admin.is_some() {
             debug!("Admin user already exists: {}", admin_email);
@@ -52,7 +52,7 @@ impl AdminService {
             .select(User::as_select())
             .first(&mut conn)
             .optional()
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         if any_admin.is_some() {
             warn!(
@@ -70,18 +70,18 @@ impl AdminService {
         )
         .map_err(|e| {
             warn!("Failed to create admin user: {}", e);
-            AuthError::InternalError
+            LunarbaseError::InternalError
         })?;
 
         diesel::insert_into(users::table)
             .values(&new_admin)
             .execute(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         diesel::update(users::table.filter(users::email.eq(admin_email)))
             .set(users::is_verified.eq(true))
             .execute(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         debug!(
             "Admin user created successfully: {} ({})",
@@ -90,20 +90,20 @@ impl AdminService {
         Ok(())
     }
 
-    pub async fn get_admin(&self) -> Result<Option<User>, AuthError> {
-        let mut conn = self.pool.get().map_err(|_| AuthError::InternalError)?;
+    pub async fn get_admin(&self) -> Result<Option<User>, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let admin = users::table
             .filter(users::role.eq("admin"))
             .select(User::as_select())
             .first(&mut conn)
             .optional()
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         Ok(admin)
     }
 
-    pub async fn has_admin(&self) -> Result<bool, AuthError> {
+    pub async fn has_admin(&self) -> Result<bool, LunarbaseError> {
         let admin = self.get_admin().await?;
         Ok(admin.is_some())
     }

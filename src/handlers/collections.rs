@@ -4,7 +4,7 @@ use crate::{
         CollectionResponse, CreateCollectionRequest, CreateRecordRequest, FileUpload,
         RecordResponse, UpdateCollectionRequest, UpdateRecordRequest,
     },
-    utils::{ApiResponse, AuthError, Claims, ErrorResponse},
+    utils::{ApiResponse, LunarbaseError, Claims, ErrorResponse},
 };
 use axum::{
     Extension,
@@ -71,9 +71,9 @@ pub async fn create_collection(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
     Json(request): Json<CreateCollectionRequest>,
-) -> Result<(StatusCode, Json<ApiResponse<CollectionResponse>>), AuthError> {
+) -> Result<(StatusCode, Json<ApiResponse<CollectionResponse>>), LunarbaseError> {
     if user.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state.collection_service.create_collection(request).await?;
@@ -90,7 +90,7 @@ pub async fn create_collection(
 )]
 pub async fn list_collections(
     State(state): State<AppState>,
-) -> Result<Json<ApiResponse<Vec<CollectionResponse>>>, AuthError> {
+) -> Result<Json<ApiResponse<Vec<CollectionResponse>>>, LunarbaseError> {
     let collections = state.collection_service.list_collections().await?;
     Ok(Json(ApiResponse::success(collections)))
 }
@@ -110,7 +110,7 @@ pub async fn list_collections(
 pub async fn get_collection(
     State(state): State<AppState>,
     Path(name): Path<String>,
-) -> Result<Json<ApiResponse<CollectionResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<CollectionResponse>>, LunarbaseError> {
     let collection = state.collection_service.get_collection(&name).await?;
     Ok(Json(ApiResponse::success(collection)))
 }
@@ -137,9 +137,9 @@ pub async fn update_collection(
     Extension(user): Extension<Claims>,
     Path(name): Path<String>,
     Json(request): Json<UpdateCollectionRequest>,
-) -> Result<Json<ApiResponse<CollectionResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<CollectionResponse>>, LunarbaseError> {
     if user.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state
@@ -169,9 +169,9 @@ pub async fn delete_collection(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
     Path(name): Path<String>,
-) -> Result<StatusCode, AuthError> {
+) -> Result<StatusCode, LunarbaseError> {
     if user.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     state.collection_service.delete_collection(&name).await?;
@@ -204,14 +204,14 @@ pub async fn create_record(
     Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
     mut multipart: Multipart,
-) -> Result<(StatusCode, Json<ApiResponse<RecordResponse>>), AuthError> {
+) -> Result<(StatusCode, Json<ApiResponse<RecordResponse>>), LunarbaseError> {
     let mut data = serde_json::Value::Object(serde_json::Map::new());
     let mut files: HashMap<String, FileUpload> = HashMap::new();
 
     while let Some(field) = multipart
         .next_field()
         .await
-        .map_err(|_| AuthError::BadRequest("Invalid multipart data".to_string()))?
+        .map_err(|_| LunarbaseError::BadRequest("Invalid multipart data".to_string()))?
     {
         let name = field.name().unwrap_or("").to_string();
 
@@ -219,11 +219,11 @@ pub async fn create_record(
             let data_bytes = field
                 .bytes()
                 .await
-                .map_err(|_| AuthError::BadRequest("Failed to read data field".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Failed to read data field".to_string()))?;
             let data_str = String::from_utf8(data_bytes.to_vec())
-                .map_err(|_| AuthError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
             data = serde_json::from_str(&data_str)
-                .map_err(|_| AuthError::BadRequest("Invalid JSON in data field".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Invalid JSON in data field".to_string()))?;
         } else if name.starts_with("file_") {
             let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
             let filename = field.file_name().unwrap_or("unknown").to_string();
@@ -235,7 +235,7 @@ pub async fn create_record(
             let file_bytes = field
                 .bytes()
                 .await
-                .map_err(|_| AuthError::BadRequest("Failed to read file".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Failed to read file".to_string()))?;
             let file_data = general_purpose::STANDARD.encode(&file_bytes);
 
             files.insert(
@@ -257,15 +257,15 @@ pub async fn create_record(
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
         .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     let collection = state
         .collection_service
@@ -278,7 +278,7 @@ pub async fn create_record(
         .await?;
 
     if !has_permission {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     state
@@ -313,7 +313,7 @@ pub async fn list_records(
     State(state): State<AppState>,
     Path(collection_name): Path<String>,
     Query(query): Query<ListRecordsQuery>,
-) -> Result<Json<ApiResponse<Vec<RecordResponse>>>, AuthError> {
+) -> Result<Json<ApiResponse<Vec<RecordResponse>>>, LunarbaseError> {
     let records = state
         .collection_service
         .list_records(
@@ -352,19 +352,19 @@ pub async fn list_all_records(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Query(query): Query<ListRecordsQuery>,
-) -> Result<Json<ApiResponse<PaginatedRecordsResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<PaginatedRecordsResponse>>, LunarbaseError> {
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
         .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     let limit = query.limit.unwrap_or(20).min(100);
     let offset = query.offset.unwrap_or(0);
@@ -482,7 +482,7 @@ pub async fn list_all_records(
 pub async fn get_record(
     State(state): State<AppState>,
     Path((collection_name, record_id)): Path<(String, i32)>,
-) -> Result<Json<ApiResponse<RecordResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<RecordResponse>>, LunarbaseError> {
     let record = state
         .collection_service
         .get_record(&collection_name, record_id)
@@ -517,14 +517,14 @@ pub async fn update_record(
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
     mut multipart: Multipart,
-) -> Result<Json<ApiResponse<RecordResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<RecordResponse>>, LunarbaseError> {
     let mut data = serde_json::Value::Object(serde_json::Map::new());
     let mut files: HashMap<String, FileUpload> = HashMap::new();
 
     while let Some(field) = multipart
         .next_field()
         .await
-        .map_err(|_| AuthError::BadRequest("Invalid multipart data".to_string()))?
+        .map_err(|_| LunarbaseError::BadRequest("Invalid multipart data".to_string()))?
     {
         let name = field.name().unwrap_or("").to_string();
 
@@ -532,11 +532,11 @@ pub async fn update_record(
             let data_bytes = field
                 .bytes()
                 .await
-                .map_err(|_| AuthError::BadRequest("Failed to read data field".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Failed to read data field".to_string()))?;
             let data_str = String::from_utf8(data_bytes.to_vec())
-                .map_err(|_| AuthError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
             data = serde_json::from_str(&data_str)
-                .map_err(|_| AuthError::BadRequest("Invalid JSON in data field".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Invalid JSON in data field".to_string()))?;
         } else if name.starts_with("file_") {
             let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
             let filename = field.file_name().unwrap_or("unknown").to_string();
@@ -548,7 +548,7 @@ pub async fn update_record(
             let file_bytes = field
                 .bytes()
                 .await
-                .map_err(|_| AuthError::BadRequest("Failed to read file".to_string()))?;
+                .map_err(|_| LunarbaseError::BadRequest("Failed to read file".to_string()))?;
             let file_data = general_purpose::STANDARD.encode(&file_bytes);
 
             files.insert(
@@ -570,15 +570,15 @@ pub async fn update_record(
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
         .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     let collection = state
         .collection_service
@@ -591,7 +591,7 @@ pub async fn update_record(
         .await?;
 
     if !has_permission {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let record = state
@@ -622,19 +622,19 @@ pub async fn delete_record(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
-) -> Result<StatusCode, AuthError> {
+) -> Result<StatusCode, LunarbaseError> {
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
         .select(crate::models::User::as_select())
         .first::<crate::models::User>(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     let collection = state
         .collection_service
@@ -647,7 +647,7 @@ pub async fn delete_record(
         .await?;
 
     if !has_permission {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     state
@@ -672,10 +672,10 @@ pub async fn delete_record(
 pub async fn get_collection_schema(
     State(state): State<AppState>,
     Path(name): Path<String>,
-) -> Result<Json<ApiResponse<serde_json::Value>>, AuthError> {
+) -> Result<Json<ApiResponse<serde_json::Value>>, LunarbaseError> {
     let collection = state.collection_service.get_collection(&name).await?;
     let schema_json =
-        serde_json::to_value(collection.schema).map_err(|_| AuthError::InternalError)?;
+        serde_json::to_value(collection.schema).map_err(|_| LunarbaseError::InternalError)?;
     Ok(Json(ApiResponse::success(schema_json)))
 }
 
@@ -706,9 +706,9 @@ pub struct CollectionStats {
 pub async fn get_collections_stats(
     State(state): State<AppState>,
     Extension(user): Extension<Claims>,
-) -> Result<Json<ApiResponse<CollectionStats>>, AuthError> {
+) -> Result<Json<ApiResponse<CollectionStats>>, LunarbaseError> {
     if user.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collections = state.collection_service.list_collections().await?;

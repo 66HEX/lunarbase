@@ -17,7 +17,7 @@ use crate::{
     models::{NewUser, UpdateUser, User},
     schema::users,
     utils::auth_error::ApiResponse,
-    utils::{AuthError, Claims, ErrorResponse},
+    utils::{LunarbaseError, Claims, ErrorResponse},
 };
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -72,15 +72,15 @@ pub async fn list_users(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Query(query): Query<ListUsersQuery>,
-) -> Result<Json<ApiResponse<PaginatedUsersResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<PaginatedUsersResponse>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let limit = query.limit.unwrap_or(10).min(100);
     let offset = query.offset.unwrap_or(0);
@@ -168,7 +168,7 @@ pub async fn list_users(
         count_query
             .count()
             .first(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?
+            .map_err(|_| LunarbaseError::DatabaseError)?
     };
 
     let users_result: Vec<User> = query_builder
@@ -176,7 +176,7 @@ pub async fn list_users(
         .limit(limit)
         .offset(offset)
         .load(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user_responses: Vec<Value> = users_result
         .into_iter()
@@ -222,21 +222,21 @@ pub async fn get_user(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     axum::extract::Path(user_id): axum::extract::Path<i32>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     Ok(Json(ApiResponse::success(
         serde_json::to_value(user.to_response()).unwrap(),
@@ -322,27 +322,27 @@ pub async fn create_user(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateUserRequest>,
-) -> Result<(StatusCode, Json<ApiResponse<Value>>), AuthError> {
+) -> Result<(StatusCode, Json<ApiResponse<Value>>), LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
-    payload.validate().map_err(AuthError::ValidationError)?;
+    payload.validate().map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let existing_email = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
         .first(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if existing_email.is_some() {
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Email already registered".to_string(),
         ]));
     }
@@ -352,10 +352,10 @@ pub async fn create_user(
         .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if existing_username.is_some() {
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Username already taken".to_string(),
         ]));
     }
@@ -367,18 +367,18 @@ pub async fn create_user(
         payload.role,
         &app_state.password_pepper,
     )
-    .map_err(|_| AuthError::InternalError)?;
+    .map_err(|_| LunarbaseError::InternalError)?;
 
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if app_state.email_service.is_configured() {
         if let Err(e) = app_state
@@ -491,23 +491,23 @@ pub async fn update_user(
     Extension(claims): Extension<Claims>,
     axum::extract::Path(user_id): axum::extract::Path<i32>,
     Json(payload): Json<UpdateUserRequest>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
-    payload.validate().map_err(AuthError::ValidationError)?;
+    payload.validate().map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let existing_user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     if let Some(new_email) = &payload.email {
         if new_email != &existing_user.email {
@@ -517,10 +517,10 @@ pub async fn update_user(
                 .select(User::as_select())
                 .first::<User>(&mut conn)
                 .optional()
-                .map_err(|_| AuthError::DatabaseError)?;
+                .map_err(|_| LunarbaseError::DatabaseError)?;
 
             if email_conflict.is_some() {
-                return Err(AuthError::ValidationError(vec![
+                return Err(LunarbaseError::ValidationError(vec![
                     "Email already registered".to_string(),
                 ]));
             }
@@ -535,10 +535,10 @@ pub async fn update_user(
                 .select(User::as_select())
                 .first(&mut conn)
                 .optional()
-                .map_err(|_| AuthError::DatabaseError)?;
+                .map_err(|_| LunarbaseError::DatabaseError)?;
 
             if username_conflict.is_some() {
-                return Err(AuthError::ValidationError(vec![
+                return Err(LunarbaseError::ValidationError(vec![
                     "Username already taken".to_string(),
                 ]));
             }
@@ -562,7 +562,7 @@ pub async fn update_user(
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
 
-        let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| AuthError::InternalError)?;
+        let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| LunarbaseError::InternalError)?;
 
         let peppered_password = format!("{}{}", new_password, &app_state.password_pepper);
 
@@ -573,7 +573,7 @@ pub async fn update_user(
         );
         let password_hash = argon2
             .hash_password(peppered_password.as_bytes(), &salt)
-            .map_err(|_| AuthError::InternalError)?
+            .map_err(|_| LunarbaseError::InternalError)?
             .to_string();
 
         update_data.password_hash = Some(password_hash);
@@ -582,13 +582,13 @@ pub async fn update_user(
     diesel::update(users::table.find(user_id))
         .set(&update_data)
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let updated_user: User = users::table
         .select(User::as_select())
         .find(user_id)
         .first(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     Ok(Json(ApiResponse::success(
         serde_json::to_value(updated_user.to_response()).unwrap(),
@@ -617,18 +617,18 @@ pub async fn delete_user(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     axum::extract::Path(user_id): axum::extract::Path<i32>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let current_user_id: i32 = claims
         .sub
         .parse()
-        .map_err(|_| AuthError::ValidationError(vec!["Invalid token".to_string()]))?;
+        .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid token".to_string()]))?;
 
     if current_user_id == user_id {
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Cannot delete yourself".to_string(),
         ]));
     }
@@ -636,20 +636,20 @@ pub async fn delete_user(
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let _existing_user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     let deleted_count = diesel::delete(users::table.find(user_id))
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if deleted_count == 0 {
-        return Err(AuthError::NotFound("User not found".to_string()));
+        return Err(LunarbaseError::NotFound("User not found".to_string()));
     }
 
     Ok(Json(ApiResponse::success(serde_json::json!({
@@ -679,24 +679,24 @@ pub async fn unlock_user(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     axum::extract::Path(user_id): axum::extract::Path<i32>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let existing_user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     if existing_user.locked_until.is_none() {
-        return Err(AuthError::BadRequest("User is not locked".to_string()));
+        return Err(LunarbaseError::BadRequest("User is not locked".to_string()));
     }
 
     let update_data = UpdateUser {
@@ -715,13 +715,13 @@ pub async fn unlock_user(
     diesel::update(users::table.find(user_id))
         .set(&update_data)
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let updated_user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     Ok(Json(ApiResponse::success(
         serde_json::to_value(updated_user.to_response()).unwrap(),

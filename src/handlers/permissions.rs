@@ -13,22 +13,22 @@ use crate::{
         CollectionPermission, CreateRoleRequest, Role, SetCollectionPermissionRequest,
         SetUserCollectionPermissionRequest, User, UserCollectionPermission,
     },
-    utils::{ApiResponse, AuthError, Claims},
+    utils::{ApiResponse, LunarbaseError, Claims},
 };
 
-async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
+async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, LunarbaseError> {
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     users::table
         .filter(users::id.eq(user_id))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))
 }
 
 #[utoipa::path(
@@ -50,14 +50,14 @@ pub async fn create_role(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Json(role_request): Json<CreateRoleRequest>,
-) -> Result<Json<ApiResponse<Role>>, AuthError> {
+) -> Result<Json<ApiResponse<Role>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     role_request
         .validate()
-        .map_err(AuthError::ValidationError)?;
+        .map_err(LunarbaseError::ValidationError)?;
 
     let role = state.permission_service.create_role(&role_request).await?;
 
@@ -80,9 +80,9 @@ pub async fn create_role(
 pub async fn list_roles(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-) -> Result<Json<ApiResponse<Vec<Role>>>, AuthError> {
+) -> Result<Json<ApiResponse<Vec<Role>>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let roles = state.permission_service.list_roles().await?;
@@ -111,9 +111,9 @@ pub async fn get_role(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path(role_name): Path<String>,
-) -> Result<Json<ApiResponse<Role>>, AuthError> {
+) -> Result<Json<ApiResponse<Role>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let role = state
@@ -146,16 +146,16 @@ pub async fn get_role_collection_permission(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path((role_name, collection_name)): Path<(String, String)>,
-) -> Result<Json<ApiResponse<CollectionPermission>>, AuthError> {
+) -> Result<Json<ApiResponse<CollectionPermission>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
-        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
     let permission = state
         .permission_service
@@ -165,7 +165,7 @@ pub async fn get_role_collection_permission(
     if let Some(permission) = permission {
         Ok(Json(ApiResponse::success(permission)))
     } else {
-        Err(AuthError::NotFound("Permission not found".to_string()))
+        Err(LunarbaseError::NotFound("Permission not found".to_string()))
     }
 }
 
@@ -192,16 +192,16 @@ pub async fn set_collection_permission(
     Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
     Json(permission_request): Json<SetCollectionPermissionRequest>,
-) -> Result<Json<ApiResponse<CollectionPermission>>, AuthError> {
+) -> Result<Json<ApiResponse<CollectionPermission>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
-        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
     let role = state
         .permission_service
@@ -239,16 +239,16 @@ pub async fn get_collection_permissions(
     Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
     Query(params): Query<HashMap<String, String>>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
-        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
     if let Some(role_name) = params.get("role_name") {
         let permission = state
@@ -270,7 +270,7 @@ pub async fn get_collection_permissions(
                 }
             }))))
         } else {
-            Err(AuthError::NotFound("Permission not found".to_string()))
+            Err(LunarbaseError::NotFound("Permission not found".to_string()))
         }
     } else {
         let user = claims_to_user(&claims, &state).await?;
@@ -318,16 +318,16 @@ pub async fn set_user_collection_permission(
     Extension(admin_claims): Extension<Claims>,
     Path((user_id, collection_name)): Path<(i32, String)>,
     Json(permission_request): Json<SetUserCollectionPermissionRequest>,
-) -> Result<Json<ApiResponse<UserCollectionPermission>>, AuthError> {
+) -> Result<Json<ApiResponse<UserCollectionPermission>>, LunarbaseError> {
     if admin_claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
-        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
     let permission = state
         .permission_service
@@ -359,21 +359,21 @@ pub async fn get_user_collection_permissions(
     State(state): State<AppState>,
     Extension(requesting_claims): Extension<Claims>,
     Path((user_id, collection_name)): Path<(i32, String)>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     let requesting_user_id: i32 = requesting_claims
         .sub
         .parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if requesting_claims.role != "admin" && requesting_user_id != user_id {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
-        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
     let requesting_user = claims_to_user(&requesting_claims, &state).await?;
 
@@ -382,13 +382,13 @@ pub async fn get_user_collection_permissions(
     } else {
         use crate::schema::users;
         use diesel::prelude::*;
-        let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+        let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         users::table
             .filter(users::id.eq(user_id))
             .select(User::as_select())
             .first(&mut conn)
-            .map_err(|_| AuthError::NotFound("Target user not found".to_string()))?
+            .map_err(|_| LunarbaseError::NotFound("Target user not found".to_string()))?
     };
 
     let permissions = state
@@ -425,7 +425,7 @@ pub async fn get_user_collection_permissions(
 pub async fn get_user_accessible_collections(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     let user = claims_to_user(&claims, &state).await?;
 
     let accessible_collection_ids = state
@@ -495,13 +495,13 @@ pub async fn check_permission(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path((collection_name, permission_type)): Path<(String, String)>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     let user = claims_to_user(&claims, &state).await?;
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
-        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
     let permission = match permission_type.as_str() {
         "create" => crate::models::Permission::Create,
@@ -510,7 +510,7 @@ pub async fn check_permission(
         "delete" => crate::models::Permission::Delete,
         "list" => crate::models::Permission::List,
         _ => {
-            return Err(AuthError::ValidationError(vec![
+            return Err(LunarbaseError::ValidationError(vec![
                 "Invalid permission type".to_string(),
             ]));
         }

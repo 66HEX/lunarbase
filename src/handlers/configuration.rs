@@ -14,38 +14,38 @@ use crate::{
     },
     services::ConfigurationService,
     utils::auth_error::ApiResponse,
-    utils::{AuthError, Claims, ErrorResponse},
+    utils::{LunarbaseError, Claims, ErrorResponse},
 };
 
-fn validate_category(category: &str) -> Result<(), AuthError> {
+fn validate_category(category: &str) -> Result<(), LunarbaseError> {
     match category {
         "database" | "auth" | "api" => Ok(()),
-        _ => Err(AuthError::ValidationError(vec![format!(
+        _ => Err(LunarbaseError::ValidationError(vec![format!(
             "Invalid category '{}'. Valid categories are: database, auth, api",
             category
         )])),
     }
 }
 
-fn validate_data_type(data_type: &str) -> Result<(), AuthError> {
+fn validate_data_type(data_type: &str) -> Result<(), LunarbaseError> {
     match data_type.to_lowercase().as_str() {
         "string" | "integer" | "boolean" | "json" | "float" => Ok(()),
-        _ => Err(AuthError::ValidationError(vec![format!(
+        _ => Err(LunarbaseError::ValidationError(vec![format!(
             "Invalid data type '{}'. Valid types are: string, integer, boolean, json, float",
             data_type
         )])),
     }
 }
 
-fn validate_setting_key(key: &str) -> Result<(), AuthError> {
+fn validate_setting_key(key: &str) -> Result<(), LunarbaseError> {
     if key.is_empty() {
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Setting key cannot be empty".to_string(),
         ]));
     }
 
     if key.len() > 100 {
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Setting key cannot exceed 100 characters".to_string(),
         ]));
     }
@@ -54,7 +54,7 @@ fn validate_setting_key(key: &str) -> Result<(), AuthError> {
         .chars()
         .all(|c| c.is_alphanumeric() || c == '_' || c == '-')
     {
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Setting key can only contain alphanumeric characters, underscores, and hyphens"
                 .to_string(),
         ]));
@@ -114,9 +114,9 @@ pub async fn get_all_settings(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Query(query): Query<ListSettingsQuery>,
-) -> Result<Json<ApiResponse<ConfigurationResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<ConfigurationResponse>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let config_service = ConfigurationService::new(app_state.db_pool.clone());
@@ -158,9 +158,9 @@ pub async fn get_settings_by_category(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path(category_str): Path<String>,
-) -> Result<Json<ApiResponse<ConfigurationResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<ConfigurationResponse>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     validate_category(&category_str)?;
@@ -199,9 +199,9 @@ pub async fn get_setting(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path((category_str, setting_key)): Path<(String, String)>,
-) -> Result<Json<ApiResponse<SystemSettingResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<SystemSettingResponse>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     validate_category(&category_str)?;
@@ -212,7 +212,7 @@ pub async fn get_setting(
         .get_setting(&category_str, &setting_key)
         .await?
         .ok_or_else(|| {
-            AuthError::NotFound(format!(
+            LunarbaseError::NotFound(format!(
                 "Setting {}:{} not found",
                 category_str, setting_key
             ))
@@ -245,9 +245,9 @@ pub async fn update_setting(
     Extension(claims): Extension<Claims>,
     Path((category_str, setting_key)): Path<(String, String)>,
     Json(payload): Json<SystemSettingRequest>,
-) -> Result<Json<ApiResponse<SystemSettingResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<SystemSettingResponse>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     validate_category(&category_str)?;
@@ -286,9 +286,9 @@ pub async fn create_setting(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Json(payload): Json<CreateSettingRequest>,
-) -> Result<(StatusCode, Json<ApiResponse<SystemSettingResponse>>), AuthError> {
+) -> Result<(StatusCode, Json<ApiResponse<SystemSettingResponse>>), LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     validate_category(&payload.category)?;
@@ -350,9 +350,9 @@ pub async fn delete_setting(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path((category_str, setting_key)): Path<(String, String)>,
-) -> Result<Json<ApiResponse<()>>, AuthError> {
+) -> Result<Json<ApiResponse<()>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     validate_category(&category_str)?;
@@ -388,9 +388,9 @@ pub async fn reset_setting(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path((category_str, setting_key)): Path<(String, String)>,
-) -> Result<Json<ApiResponse<SystemSettingResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<SystemSettingResponse>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     validate_category(&category_str)?;

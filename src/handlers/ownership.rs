@@ -11,22 +11,22 @@ use utoipa::ToSchema;
 use crate::{
     AppState,
     models::User,
-    utils::{ApiResponse, AuthError, Claims},
+    utils::{ApiResponse, LunarbaseError, Claims},
 };
 
-async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, AuthError> {
+async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, LunarbaseError> {
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     users::table
         .filter(users::id.eq(user_id))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))
 }
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -64,14 +64,14 @@ pub async fn transfer_record_ownership(
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
     Json(request): Json<TransferOwnershipRequest>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     let user = claims_to_user(&claims, &state).await?;
 
     let record = state
         .collection_service
         .get_record(&collection_name, record_id)
         .await
-        .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Record not found".to_string()))?;
 
     state
         .ownership_service
@@ -116,7 +116,7 @@ pub async fn get_my_owned_records(
     Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
     Query(params): Query<GetOwnedRecordsQuery>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     let user = claims_to_user(&claims, &state).await?;
 
     let owned_record_ids = state
@@ -168,20 +168,20 @@ pub async fn get_user_owned_records(
     Extension(requesting_claims): Extension<Claims>,
     Path((collection_name, user_id)): Path<(String, i32)>,
     Query(params): Query<GetOwnedRecordsQuery>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     if requesting_claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     use crate::schema::users;
     use diesel::prelude::*;
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     let target_user = users::table
         .filter(users::id.eq(user_id))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::NotFound("User not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
     let owned_record_ids = state
         .ownership_service
@@ -229,14 +229,14 @@ pub async fn check_record_ownership(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path((collection_name, record_id)): Path<(String, i32)>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     let user = claims_to_user(&claims, &state).await?;
 
     let record = state
         .collection_service
         .get_record(&collection_name, record_id)
         .await
-        .map_err(|_| AuthError::NotFound("Record not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Record not found".to_string()))?;
 
     let is_owner = state.ownership_service.check_ownership(&user, &record)?;
 
@@ -282,7 +282,7 @@ pub async fn set_record_ownership_on_create(
     user: &User,
     record_data: &mut Value,
     state: &AppState,
-) -> Result<(), AuthError> {
+) -> Result<(), LunarbaseError> {
     state
         .ownership_service
         .set_record_ownership(user, record_data)?;
@@ -311,19 +311,19 @@ pub async fn get_ownership_stats(
     State(state): State<AppState>,
     Extension(claims): Extension<Claims>,
     Path(collection_name): Path<String>,
-) -> Result<Json<ApiResponse<Value>>, AuthError> {
+) -> Result<Json<ApiResponse<Value>>, LunarbaseError> {
     if claims.role != "admin" {
-        return Err(AuthError::InsufficientPermissions);
+        return Err(LunarbaseError::InsufficientPermissions);
     }
 
     let collection = state
         .collection_service
         .get_collection(&collection_name)
         .await
-        .map_err(|_| AuthError::NotFound("Collection not found".to_string()))?;
+        .map_err(|_| LunarbaseError::NotFound("Collection not found".to_string()))?;
 
     use diesel::prelude::*;
-    let mut conn = state.db_pool.get().map_err(|_| AuthError::InternalError)?;
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
     let table_name = format!("records_{}", collection_name);
 
@@ -337,7 +337,7 @@ pub async fn get_ownership_stats(
 
     let total_records = diesel::sql_query(&total_records_query)
         .load::<CountResult>(&mut conn)
-        .map_err(|_| AuthError::InternalError)?
+        .map_err(|_| LunarbaseError::InternalError)?
         .into_iter()
         .next()
         .map(|r| r.count)

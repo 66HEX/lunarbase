@@ -127,13 +127,13 @@ export function TransferOwnership({
 				</DialogHeader>
 				<div className="flex-1 overflow-y-auto px-6 py-4">
 					<div className="flex flex-col space-y-2">
-						<label className="text-sm font-light text-gray-700 dark:text-gray-300">
+						<label className="text-sm font-light text-neutral-700 dark:text-neutral-300">
 							New Owner
 						</label>
 						{isLoadingUsers ? (
 							<div className="flex items-center justify-center py-4">
 								<Spinner size="sm" />
-								<span className="ml-2 text-sm text-gray-500">
+								<span className="ml-2 text-sm text-neutral-500">
 									Loading users...
 								</span>
 							</div>
@@ -184,12 +184,12 @@ export function TransferOwnership({
 															{user.username || user.email}
 														</span>
 														{user.username && (
-															<span className="text-xs text-gray-500">
+															<span className="text-xs text-neutral-500">
 																{user.email}
 															</span>
 														)}
 													</div>
-													<span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400">
+													<span className="ml-auto text-xs px-2 py-0.5 rounded-full bg-neutral-100 dark:bg-neutral-800 text-neutral-600 dark:text-neutral-400">
 														{user.role}
 													</span>
 												</div>

@@ -14,7 +14,7 @@ use crate::{
     AppState,
     middleware::extract_user_claims,
     services::WebSocketStats,
-    utils::{ApiResponse, AuthError},
+    utils::{ApiResponse, LunarbaseError},
 };
 
 #[derive(Debug, Deserialize)]
@@ -40,7 +40,7 @@ pub async fn websocket_handler(
     State(app_state): State<AppState>,
     Query(params): Query<WebSocketQuery>,
     request: Request,
-) -> Result<Response, AuthError> {
+) -> Result<Response, LunarbaseError> {
     let user_id = if let Some(token) = params.token {
         let mut headers = request.headers().clone();
         headers.insert(
@@ -83,7 +83,7 @@ pub async fn websocket_handler(
 pub async fn websocket_stats(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<Json<ApiResponse<WebSocketStats>>, AuthError> {
+) -> Result<Json<ApiResponse<WebSocketStats>>, LunarbaseError> {
     let claims = extract_user_claims(&request)?;
 
     use crate::models::User;
@@ -93,18 +93,18 @@ pub async fn websocket_stats(
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(AuthError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
     }
 
     let stats = app_state.websocket_service.get_stats().await;
@@ -126,7 +126,7 @@ pub async fn websocket_stats(
 )]
 pub async fn websocket_status(
     State(app_state): State<AppState>,
-) -> Result<Json<ApiResponse<WebSocketStatus>>, AuthError> {
+) -> Result<Json<ApiResponse<WebSocketStatus>>, LunarbaseError> {
     let connection_count = app_state.websocket_service.connection_count().await;
     let subscription_count = app_state.websocket_service.subscription_count().await;
 
@@ -155,7 +155,7 @@ pub async fn websocket_status(
 pub async fn get_connections(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<Json<ApiResponse<ConnectionsResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<ConnectionsResponse>>, LunarbaseError> {
     let claims = extract_user_claims(&request)?;
 
     use crate::models::User;
@@ -165,18 +165,18 @@ pub async fn get_connections(
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(AuthError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
     }
 
     let connections = app_state.websocket_service.get_connection_details().await;
@@ -211,7 +211,7 @@ pub async fn disconnect_connection(
     State(app_state): State<AppState>,
     Path(connection_id): Path<String>,
     request: Request,
-) -> Result<Json<ApiResponse<String>>, AuthError> {
+) -> Result<Json<ApiResponse<String>>, LunarbaseError> {
     let claims = extract_user_claims(&request)?;
 
     use crate::models::User;
@@ -221,22 +221,22 @@ pub async fn disconnect_connection(
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(AuthError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
     }
 
     let conn_uuid = Uuid::parse_str(&connection_id).map_err(|_| {
-        AuthError::ValidationError(vec!["Invalid connection ID format".to_string()])
+        LunarbaseError::ValidationError(vec!["Invalid connection ID format".to_string()])
     })?;
 
     let success = app_state
@@ -249,7 +249,7 @@ pub async fn disconnect_connection(
             "Connection disconnected successfully".to_string(),
         )))
     } else {
-        Err(AuthError::NotFound("Connection not found".to_string()))
+        Err(LunarbaseError::NotFound("Connection not found".to_string()))
     }
 }
 
@@ -271,7 +271,7 @@ pub async fn broadcast_message(
     State(app_state): State<AppState>,
     Extension(claims): Extension<crate::utils::Claims>,
     Json(broadcast_req): Json<BroadcastRequest>,
-) -> Result<Json<ApiResponse<BroadcastResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<BroadcastResponse>>, LunarbaseError> {
     use crate::models::User;
     use crate::schema::users;
     use diesel::prelude::*;
@@ -279,18 +279,18 @@ pub async fn broadcast_message(
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(AuthError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
     }
 
     let sent_count = app_state
@@ -331,7 +331,7 @@ pub async fn get_activity(
     State(app_state): State<AppState>,
     Query(params): Query<ActivityQuery>,
     request: Request,
-) -> Result<Json<ApiResponse<ActivityResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<ActivityResponse>>, LunarbaseError> {
     let claims = extract_user_claims(&request)?;
 
     use crate::models::User;
@@ -341,18 +341,18 @@ pub async fn get_activity(
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(AuthError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
     }
 
     let limit = params.limit.unwrap_or(100);

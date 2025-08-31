@@ -21,7 +21,7 @@ use crate::{
     schema::users,
     services::configuration_manager::ConfigurationAccess,
     utils::{
-        ApiResponse, AuthError, Claims, CookieService, ErrorResponse, client_ip::extract_client_ip,
+        ApiResponse, LunarbaseError, Claims, CookieService, ErrorResponse, client_ip::extract_client_ip,
     },
 };
 
@@ -40,7 +40,7 @@ use crate::{
 pub async fn register(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
     let connect_info = request
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
@@ -53,30 +53,30 @@ pub async fn register(
         .rate_limiter
         .check_rate_limit(&rate_limit_key)
     {
-        return Err(AuthError::RateLimitExceeded);
+        return Err(LunarbaseError::RateLimitExceeded);
     }
 
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await
-        .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
+        .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    payload.validate().map_err(AuthError::ValidationError)?;
+    payload.validate().map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let existing_user = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if existing_user.is_some() {
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Email already registered".to_string(),
         ]));
     }
@@ -86,11 +86,11 @@ pub async fn register(
         .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if existing_username.is_some() {
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Username already taken".to_string(),
         ]));
     }
@@ -101,18 +101,18 @@ pub async fn register(
         payload.username,
         &app_state.password_pepper,
     )
-    .map_err(|_| AuthError::InternalError)?;
+    .map_err(|_| LunarbaseError::InternalError)?;
 
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if let Err(e) = app_state
         .email_service
@@ -181,18 +181,18 @@ pub struct VerifyEmailRequest {
 pub async fn verify_email(
     State(app_state): State<AppState>,
     Json(payload): Json<VerifyEmailRequest>,
-) -> Result<Json<ApiResponse<String>>, AuthError> {
+) -> Result<Json<ApiResponse<String>>, LunarbaseError> {
     let user_id = app_state.email_service.verify_token(&payload.token).await?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     diesel::update(users::table.filter(users::id.eq(user_id)))
         .set(users::is_verified.eq(true))
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     Ok(Json(ApiResponse::success(
         "Email verified successfully".to_string(),
@@ -220,13 +220,13 @@ pub struct VerifyEmailQuery {
 pub async fn verify_email_get(
     State(app_state): State<AppState>,
     Query(query): Query<VerifyEmailQuery>,
-) -> Result<Redirect, AuthError> {
+) -> Result<Redirect, LunarbaseError> {
     match app_state.email_service.verify_token(&query.token).await {
         Ok(user_id) => {
             let mut conn = app_state
                 .db_pool
                 .get()
-                .map_err(|_| AuthError::DatabaseError)?;
+                .map_err(|_| LunarbaseError::DatabaseError)?;
 
             match diesel::update(users::table.filter(users::id.eq(user_id)))
                 .set(users::is_verified.eq(true))
@@ -284,20 +284,20 @@ pub struct ResetPasswordRequest {
 pub async fn resend_verification(
     State(app_state): State<AppState>,
     Json(payload): Json<ResendVerificationRequest>,
-) -> Result<Json<ApiResponse<String>>, AuthError> {
+) -> Result<Json<ApiResponse<String>>, LunarbaseError> {
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user: User = users::table
         .filter(users::email.eq(&payload.email))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::UserNotFound)?;
+        .map_err(|_| LunarbaseError::UserNotFound)?;
 
     if user.is_verified {
-        return Err(AuthError::UserAlreadyVerified);
+        return Err(LunarbaseError::UserAlreadyVerified);
     }
 
     app_state
@@ -324,14 +324,14 @@ pub async fn resend_verification(
 pub async fn forgot_password(
     State(app_state): State<AppState>,
     Json(payload): Json<ForgotPasswordRequest>,
-) -> Result<Json<ApiResponse<String>>, AuthError> {
+) -> Result<Json<ApiResponse<String>>, LunarbaseError> {
     let start_time = std::time::Instant::now();
     let base_delay = std::time::Duration::from_millis(500);
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user_result: Result<User, _> = users::table
         .filter(users::email.eq(&payload.email))
@@ -387,7 +387,7 @@ pub async fn forgot_password(
 pub async fn reset_password(
     State(app_state): State<AppState>,
     Json(payload): Json<ResetPasswordRequest>,
-) -> Result<Json<ApiResponse<String>>, AuthError> {
+) -> Result<Json<ApiResponse<String>>, LunarbaseError> {
     use crate::models::verification_token::TokenType;
     use argon2::password_hash::SaltString;
     use argon2::{Argon2, PasswordHasher};
@@ -395,25 +395,25 @@ pub async fn reset_password(
     use rand::rngs::OsRng;
 
     if payload.new_password.len() < 8 {
-        return Err(AuthError::WeakPassword);
+        return Err(LunarbaseError::WeakPassword);
     }
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user_id = app_state
         .email_service
         .verify_token_with_type(&payload.token, TokenType::PasswordReset)
         .await
-        .map_err(|_| AuthError::PasswordResetTokenInvalid)?;
+        .map_err(|_| LunarbaseError::PasswordResetTokenInvalid)?;
 
     let user: User = users::table
         .filter(users::id.eq(user_id))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::UserNotFound)?;
+        .map_err(|_| LunarbaseError::UserNotFound)?;
 
     let salt = SaltString::generate(&mut OsRng);
     let peppered_password = format!("{}{}", payload.new_password, app_state.password_pepper);
@@ -424,7 +424,7 @@ pub async fn reset_password(
     );
     let password_hash = argon2
         .hash_password(peppered_password.as_bytes(), &salt)
-        .map_err(|_| AuthError::InternalError)?
+        .map_err(|_| LunarbaseError::InternalError)?
         .to_string();
 
     diesel::update(users::table.filter(users::id.eq(user.id)))
@@ -435,7 +435,7 @@ pub async fn reset_password(
             users::updated_at.eq(chrono::Utc::now().naive_utc()),
         ))
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     debug!("Password reset successfully for user: {}", user.email);
 
@@ -478,13 +478,13 @@ pub struct OAuthAuthorizationResponse {
 pub async fn oauth_authorize(
     State(app_state): State<AppState>,
     axum::extract::Path(provider): axum::extract::Path<String>,
-) -> Result<Redirect, AuthError> {
+) -> Result<Redirect, LunarbaseError> {
     let oauth_service = &app_state.oauth_service;
 
     let (auth_url, _state) = oauth_service
         .get_authorization_url(&provider)
         .map_err(|_| {
-            AuthError::ValidationError(vec!["Invalid OAuth provider or configuration".to_string()])
+            LunarbaseError::ValidationError(vec!["Invalid OAuth provider or configuration".to_string()])
         })?;
 
     Ok(Redirect::temporary(&auth_url))
@@ -507,7 +507,7 @@ pub async fn oauth_callback(
     State(app_state): State<AppState>,
     axum::extract::Path(provider): axum::extract::Path<String>,
     Query(query): Query<OAuthCallbackQuery>,
-) -> Result<(HeaderMap, Redirect), AuthError> {
+) -> Result<(HeaderMap, Redirect), LunarbaseError> {
     if let Some(error) = query.error {
         let error_msg = query.error_description.unwrap_or(error);
         return Ok((
@@ -523,25 +523,25 @@ pub async fn oauth_callback(
     let oauth_service = &app_state.oauth_service;
 
     let code = query.code.ok_or_else(|| {
-        AuthError::ValidationError(vec!["Missing authorization code".to_string()])
+        LunarbaseError::ValidationError(vec!["Missing authorization code".to_string()])
     })?;
 
     let state = query
         .state
-        .ok_or_else(|| AuthError::ValidationError(vec!["Missing state parameter".to_string()]))?;
+        .ok_or_else(|| LunarbaseError::ValidationError(vec!["Missing state parameter".to_string()]))?;
 
     let access_token = oauth_service
         .exchange_code_for_token(&provider, &code, &state)
         .await
         .map_err(|e| {
-            AuthError::ValidationError(vec![format!("Failed to exchange OAuth code: {}", e)])
+            LunarbaseError::ValidationError(vec![format!("Failed to exchange OAuth code: {}", e)])
         })?;
 
     let oauth_user = oauth_service
         .get_user_info(&provider, &access_token)
         .await
         .map_err(|_| {
-            AuthError::ValidationError(vec![
+            LunarbaseError::ValidationError(vec![
                 "Failed to get user info from OAuth provider".to_string(),
             ])
         })?;
@@ -549,14 +549,14 @@ pub async fn oauth_callback(
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let existing_user = users::table
         .filter(users::email.eq(&oauth_user.email))
         .select(User::as_select())
         .first(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user = if let Some(mut user) = existing_user {
         let update_user = crate::models::user::UpdateUser {
@@ -575,7 +575,7 @@ pub async fn oauth_callback(
         diesel::update(users::table.find(user.id))
             .set(&update_user)
             .execute(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         user.last_login_at = Some(chrono::Utc::now().naive_utc());
         user
@@ -594,23 +594,23 @@ pub async fn oauth_callback(
             oauth_user.avatar_url.clone(),
             &app_state.password_pepper,
         )
-        .map_err(|e| AuthError::ValidationError(vec![e]))?;
+        .map_err(|e| LunarbaseError::ValidationError(vec![e]))?;
 
         diesel::insert_into(users::table)
             .values(&new_user)
             .execute(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         let mut created_user: User = users::table
             .filter(users::email.eq(&oauth_user.email))
             .select(User::as_select())
             .first(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         diesel::update(users::table.filter(users::id.eq(created_user.id)))
             .set(users::is_verified.eq(true))
             .execute(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         created_user.is_verified = true;
         created_user
@@ -621,14 +621,14 @@ pub async fn oauth_callback(
         .jwt_service
         .generate_access_token(user.id, &user.email, &user.role)
         .await
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     let jwt_refresh_token = app_state
         .auth_state
         .jwt_service
         .generate_refresh_token(user.id)
         .await
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     let cookie_service = CookieService::new();
     let mut headers = HeaderMap::new();
@@ -661,9 +661,9 @@ pub async fn logout(
     State(app_state): State<AppState>,
     Extension(claims): Extension<Claims>,
     request: Request,
-) -> Result<(HeaderMap, Json<ApiResponse<LogoutResponse>>), AuthError> {
+) -> Result<(HeaderMap, Json<ApiResponse<LogoutResponse>>), LunarbaseError> {
     let expires_at = crate::utils::jwt_service::JwtService::timestamp_to_naive_datetime(claims.exp);
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::InternalError)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::InternalError)?;
 
     app_state
         .auth_state
@@ -675,14 +675,14 @@ pub async fn logout(
             expires_at,
             Some("User logout".to_string()),
         )
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     if let Some(refresh_token) = CookieService::extract_refresh_token(request.headers()) {
         app_state
             .auth_state
             .jwt_service
             .blacklist_refresh_token(&refresh_token, Some("User logout".to_string()))
-            .map_err(|_| AuthError::InternalError)?;
+            .map_err(|_| LunarbaseError::InternalError)?;
     }
 
     let cookie_service = CookieService::new();
@@ -712,7 +712,7 @@ pub async fn logout(
 pub async fn login(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
     let connect_info = request
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
@@ -725,19 +725,19 @@ pub async fn login(
         .rate_limiter
         .check_rate_limit(&rate_limit_key)
     {
-        return Err(AuthError::RateLimitExceeded);
+        return Err(LunarbaseError::RateLimitExceeded);
     }
 
     let Json(payload): Json<LoginRequest> = Json::from_request(request, &app_state)
         .await
-        .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
+        .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    payload.validate().map_err(AuthError::ValidationError)?;
+    payload.validate().map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let base_delay = Duration::from_millis(100);
     let start_time = std::time::Instant::now();
@@ -747,7 +747,7 @@ pub async fn login(
         .select(User::as_select())
         .first::<User>(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user = match user {
         Some(user) => user,
@@ -756,7 +756,7 @@ pub async fn login(
             if elapsed < base_delay {
                 tokio::time::sleep(base_delay - elapsed).await;
             }
-            return Err(AuthError::InvalidCredentials);
+            return Err(LunarbaseError::InvalidCredentials);
         }
     };
 
@@ -765,7 +765,7 @@ pub async fn login(
         if elapsed < base_delay {
             tokio::time::sleep(base_delay - elapsed).await;
         }
-        return Err(AuthError::AccountLocked);
+        return Err(LunarbaseError::AccountLocked);
     }
 
     if !user.is_verified {
@@ -773,12 +773,12 @@ pub async fn login(
         if elapsed < base_delay {
             tokio::time::sleep(base_delay - elapsed).await;
         }
-        return Err(AuthError::AccountNotVerified);
+        return Err(LunarbaseError::AccountNotVerified);
     }
 
     let password_valid = user
         .verify_password(&payload.password, &app_state.password_pepper)
-        .map_err(|_| AuthError::InternalError)?;
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     if !password_valid {
         let max_login_attempts = app_state.auth_state.get_max_login_attempts().await;
@@ -800,14 +800,14 @@ pub async fn login(
                 users::locked_until.eq(locked_until),
             ))
             .execute(&mut conn)
-            .map_err(|_| AuthError::DatabaseError)?;
+            .map_err(|_| LunarbaseError::DatabaseError)?;
 
         let elapsed = start_time.elapsed();
         if elapsed < base_delay {
             tokio::time::sleep(base_delay - elapsed).await;
         }
 
-        return Err(AuthError::InvalidCredentials);
+        return Err(LunarbaseError::InvalidCredentials);
     }
 
     diesel::update(users::table.find(user.id))
@@ -817,7 +817,7 @@ pub async fn login(
             users::last_login_at.eq(Some(chrono::Utc::now().naive_utc())),
         ))
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let access_token = app_state
         .auth_state
@@ -868,9 +868,9 @@ pub async fn login(
 pub async fn refresh_token(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
     let refresh_token =
-        CookieService::extract_refresh_token(request.headers()).ok_or(AuthError::TokenInvalid)?;
+        CookieService::extract_refresh_token(request.headers()).ok_or(LunarbaseError::TokenInvalid)?;
 
     let refresh_claims = app_state
         .auth_state
@@ -880,21 +880,21 @@ pub async fn refresh_token(
     let user_id: i32 = refresh_claims
         .sub
         .parse()
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::TokenInvalid)?;
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if !user.is_active {
-        return Err(AuthError::TokenInvalid);
+        return Err(LunarbaseError::TokenInvalid);
     }
 
     let access_token = app_state
@@ -943,21 +943,21 @@ pub async fn refresh_token(
 pub async fn me(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<Json<ApiResponse<UserResponse>>, AuthError> {
+) -> Result<Json<ApiResponse<UserResponse>>, LunarbaseError> {
     let claims = extract_user_claims(&request)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| AuthError::TokenInvalid)?;
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user = users::table
         .find(user_id)
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     Ok(Json(ApiResponse::success(user.to_response())))
 }
@@ -977,7 +977,7 @@ pub async fn me(
 pub async fn register_admin(
     State(app_state): State<AppState>,
     request: Request,
-) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), AuthError> {
+) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
     let connect_info = request
         .extensions()
         .get::<ConnectInfo<SocketAddr>>()
@@ -990,29 +990,29 @@ pub async fn register_admin(
         .rate_limiter
         .check_rate_limit(&rate_limit_key)
     {
-        return Err(AuthError::RateLimitExceeded);
+        return Err(LunarbaseError::RateLimitExceeded);
     }
 
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await
-        .map_err(|_| AuthError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
+        .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    payload.validate().map_err(AuthError::ValidationError)?;
+    payload.validate().map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
         .get()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let existing_admin = users::table
         .filter(users::role.eq("admin"))
         .select(User::as_select())
         .first(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if existing_admin.is_some() {
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Admin already exists. Additional admins must be created by existing admins through the admin panel.".to_string()
         ]));
     }
@@ -1022,11 +1022,11 @@ pub async fn register_admin(
         .select(User::as_select())
         .first(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if existing_user.is_some() {
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Email already registered".to_string(),
         ]));
     }
@@ -1036,11 +1036,11 @@ pub async fn register_admin(
         .select(User::as_select())
         .first(&mut conn)
         .optional()
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if existing_username.is_some() {
         tokio::time::sleep(Duration::from_millis(100)).await;
-        return Err(AuthError::ValidationError(vec![
+        return Err(LunarbaseError::ValidationError(vec![
             "Username already taken".to_string(),
         ]));
     }
@@ -1052,18 +1052,18 @@ pub async fn register_admin(
         "admin".to_string(),
         &app_state.password_pepper,
     )
-    .map_err(|_| AuthError::InternalError)?;
+    .map_err(|_| LunarbaseError::InternalError)?;
 
     diesel::insert_into(users::table)
         .values(&new_user)
         .execute(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let user: User = users::table
         .filter(users::email.eq(&new_user.email))
         .select(User::as_select())
         .first(&mut conn)
-        .map_err(|_| AuthError::DatabaseError)?;
+        .map_err(|_| LunarbaseError::DatabaseError)?;
 
     let access_token = app_state
         .auth_state
