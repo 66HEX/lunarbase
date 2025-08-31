@@ -17,7 +17,7 @@ pub mod utils;
 #[openapi(
     info(
         title = "LunarBase API",
-        version = "0.6.0",
+        version = "0.7.0",
         description = "A powerful backend-as-a-service API built with Rust, Axum, and Diesel ORM",
         contact(
             name = "LunarBase Team",
@@ -295,7 +295,7 @@ impl AppState {
         if let Some(ref s3_service) = s3_service_option {
             collection_service = collection_service.with_s3_service(s3_service.clone());
         }
-        let oauth_config = utils::oauth_service::OAuthConfig::from_env();
+        let oauth_config = utils::oauth_service::OAuthConfig::from_env_with_frontend_url(&config.frontend_url);
         let oauth_service = utils::OAuthService::new(oauth_config);
         let email_service = EmailService::new(config, db_pool.clone());
 
