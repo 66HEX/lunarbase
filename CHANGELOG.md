@@ -3,6 +3,12 @@
 ## [Unreleased]
 
 ### Added
+- CLI-first configuration system with complete server configuration management via command-line arguments
+- Modular CLI interface using clap for argument parsing with dedicated serve command
+- Server configuration via CLI arguments: --host, --port, --tls, --tls-cert, --tls-key for exclusive server management
+- API-only mode with --api-only flag to run server without embedded frontend for headless deployments
+- CLI help documentation with --help for general CLI help and serve --help for command-specific options
+- Configuration precedence system: CLI arguments take precedence over defaults, environment variables used only for database and integrations
 - Microsecond precision latency measurements in metrics middleware
 - New Prometheus metrics: `http_request_duration_microseconds` histogram with detailed buckets (0.1ms to 1s)
 - Slow request counter (`http_slow_requests_total`) for requests exceeding 100ms
@@ -16,6 +22,15 @@
 - Static assets directory (src/assets/) with rust-embed integration for binary embedding
 - Logo embedding in verification and password reset emails using `cid:lunarbase-logo` references
 - Graceful fallback for email sending when logo assets are not available
+
+### Changed
+- Environment variable migration: SERVER_HOST, SERVER_PORT, ENABLE_TLS, TLS_CERT_PATH, and TLS_KEY_PATH are no longer supported - use CLI arguments instead
+- Application startup restructured to use CLI command parsing with dedicated serve command
+- Default server binding changed to 127.0.0.1:3000 when no CLI arguments are provided
+- Server configuration precedence now follows CLI arguments > defaults, with environment variables reserved for database, authentication, and integration settings
+
+### Removed
+- Environment variables SERVER_HOST, SERVER_PORT, ENABLE_TLS, TLS_CERT_PATH, TLS_KEY_PATH no longer supported in favor of CLI-first approach
 
 ### Fixed
 - Collection records view (/$collection) now works correctly for non-admin users by using permission-based record counts endpoint instead of admin-only stats endpoint

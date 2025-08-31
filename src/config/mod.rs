@@ -1,4 +1,5 @@
 use serde::Deserialize;
+use crate::cli::commands::serve::ServeArgs;
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Config {
@@ -30,14 +31,44 @@ pub struct Config {
 
 impl Config {
     pub fn from_env() -> Result<Self, Box<dyn std::error::Error>> {
+        Self::from_env_with_args(None)
+    }
+
+    pub fn from_env_with_args(serve_args: Option<&ServeArgs>) -> Result<Self, Box<dyn std::error::Error>> {
         dotenvy::dotenv().ok();
+
+        let (server_host, server_port) = if let Some(args) = serve_args {
+            (args.host(), args.port())
+        } else {
+            ("127.0.0.1".to_string(), 3000)
+        };
+
+        let enable_tls = if let Some(args) = serve_args {
+            if args.tls {
+                Some(true)
+            } else {
+                Some(false)
+            }
+        } else {
+            Some(false)
+        };
+
+        let tls_cert_path = if let Some(args) = serve_args {
+            args.tls_cert.as_ref().map(|p| p.to_string_lossy().to_string())
+        } else {
+            None
+        };
+
+        let tls_key_path = if let Some(args) = serve_args {
+            args.tls_key.as_ref().map(|p| p.to_string_lossy().to_string())
+        } else {
+            None
+        };
 
         let config = Config {
             database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| "db.sqlite".to_string()),
-            server_host: std::env::var("SERVER_HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
-            server_port: std::env::var("SERVER_PORT")
-                .unwrap_or_else(|_| "3000".to_string())
-                .parse()?,
+            server_host: server_host.clone(),
+            server_port,
             jwt_secret: std::env::var("JWT_SECRET")
                 .unwrap_or_else(|_| "your-secret-key".to_string()),
             password_pepper: std::env::var("PASSWORD_PEPPER")
@@ -53,18 +84,15 @@ impl Config {
             resend_api_key: std::env::var("RESEND_API_KEY").ok(),
             email_from: std::env::var("EMAIL_FROM").ok(),
             frontend_url: std::env::var("FRONTEND_URL")
-                .unwrap_or_else(|_| "http://localhost:3000".to_string()),
+                .unwrap_or_else(|_| format!("http://{}:{}", server_host, server_port)),
             s3_bucket_name: std::env::var("S3_BUCKET_NAME").ok(),
             s3_region: std::env::var("S3_REGION").ok(),
             s3_access_key_id: std::env::var("S3_ACCESS_KEY_ID").ok(),
             s3_secret_access_key: std::env::var("S3_SECRET_ACCESS_KEY").ok(),
             s3_endpoint_url: std::env::var("S3_ENDPOINT_URL").ok(),
-            tls_cert_path: std::env::var("TLS_CERT_PATH").ok(),
-            tls_key_path: std::env::var("TLS_KEY_PATH").ok(),
-            enable_tls: std::env::var("ENABLE_TLS")
-                .ok()
-                .and_then(|v| v.parse().ok())
-                .or(Some(false)),
+            tls_cert_path,
+            tls_key_path,
+            enable_tls,
         };
 
         Ok(config)

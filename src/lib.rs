@@ -1,5 +1,6 @@
 use utoipa::OpenApi;
 
+pub mod cli;
 pub mod config;
 pub mod database;
 pub mod embedded_assets;
@@ -8,6 +9,7 @@ pub mod middleware;
 pub mod models;
 pub mod query_engine;
 pub mod schema;
+pub mod server;
 pub mod services;
 pub mod utils;
 

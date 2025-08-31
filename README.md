@@ -138,16 +138,35 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 
 ## Configuration
 
-LunarBase uses environment variables for configuration. Create a `.env` file in the project root directory based on the provided `env.example` template.
+### CLI Configuration (Primary Method)
+
+Use the CLI for all server configuration:
+
+```bash
+# Show CLI help
+cargo run -- --help
+
+# Show serve command help
+cargo run serve --help
+
+# Start with defaults (127.0.0.1:3000)
+cargo run serve
+
+# Custom host and port  
+cargo run serve --host 0.0.0.0 --port 8080
+
+# Enable TLS
+cargo run serve --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+
+# API-only mode
+cargo run serve --api-only --port 9000
+```
+
+### Environment Variables (.env file)
+
+Create a `.env` file for non-server settings based on the provided `env.example` template.
 
 ### Required Configuration
-
-#### Server Settings
-```bash
-SERVER_HOST=127.0.0.1          # Server bind address
-SERVER_PORT=3000               # Server port
-FRONTEND_URL=http://localhost:3000  # Frontend URL for CORS and redirects
-```
 
 #### Database Configuration
 ```bash
@@ -172,15 +191,9 @@ LUNARBASE_ADMIN_PASSWORD=your-secure-admin-password  # Initial admin password
 
 ### Optional Configuration
 
-#### TLS/SSL Settings
+#### Frontend URL (for CORS and email links)
 ```bash
-ENABLE_TLS=false                          # Enable HTTPS with HTTP/2 (set to true for production)
-TLS_CERT_PATH=/path/to/your/certificate.pem    # SSL certificate path (PEM format)
-TLS_KEY_PATH=/path/to/your/private-key.pem     # SSL private key path (PEM format)
-
-# Examples:
-# For Let's Encrypt: /etc/letsencrypt/live/yourdomain.com/fullchain.pem
-# For self-signed: ./certs/localhost.pem
+FRONTEND_URL=http://localhost:3000  # Frontend URL for CORS and redirects
 ```
 
 #### Email Service (Resend)
@@ -211,26 +224,12 @@ S3_SECRET_ACCESS_KEY=your-secret-access-key  # AWS secret key
 
 **Note:** All S3 variables are optional. If not set, file upload functionality will be disabled.
 
-#### Logging Configuration
-```bash
-# Control logging levels (optional)
-# Default: debug level in development, info level in release builds
-RUST_LOG=lunarbase=info,tower_http=info  # Info level and above
-# RUST_LOG=lunarbase=warn,tower_http=warn  # Warning level and above
-# RUST_LOG=lunarbase=error                 # Error level only
-# RUST_LOG=debug                           # Debug level for all modules
-# RUST_LOG=lunarbase=debug,tower_http=info # Mixed levels
-# RUST_LOG=off                             # Disable all logging
-```
-
-**Note:** The application automatically uses debug-level logging in development builds and info-level logging in release builds. Use the `RUST_LOG` environment variable to override these defaults.
-
 ### Security Best Practices
 
 - **Use strong, unique passwords** for `SQLCIPHER_KEY`, `JWT_SECRET`, and `PASSWORD_PEPPER`
 - **Never commit secrets** to version control - use `.env` files locally and secure environment variable management in production
 - **Rotate secrets regularly** especially JWT secrets and database encryption keys
-- **Use HTTPS in production** by setting `ENABLE_TLS=true` and providing valid SSL certificates
+- **Use HTTPS in production** by using `--tls` flag with valid SSL certificates
 - **Restrict CORS origins** by configuring `FRONTEND_URL` to match your actual domain
 
 ## Quick Start
@@ -244,8 +243,10 @@ cargo build
 # Start LocalStack for S3 testing (required for file upload functionality)
 ./start-with-localstack.sh
 
-# Start the backend server
-cargo run
+# Start the backend server with CLI
+cargo run serve
+# OR for development with custom settings:
+cargo run serve --host localhost --port 3001
 
 # In a separate terminal, start the admin interface
 cd admin-ui
@@ -274,12 +275,12 @@ cargo fmt
 ```
 #### Access Points
 
-**With TLS enabled (ENABLE_TLS=true):**
+**CLI with TLS enabled:**
 - Backend available at `https://localhost:3000/api/` with HTTP/2 support
 - API documentation at `https://localhost:3000/docs/`
 - Admin interface at `http://localhost:5173/admin/` (proxies API calls to HTTPS backend)
 
-**With TLS disabled (ENABLE_TLS=false):**
+**CLI with TLS disabled (default):**
 - Backend available at `http://localhost:3000/api/` with HTTP/1.1
 - API documentation at `http://localhost:3000/docs/`
 - Admin interface at `http://localhost:5173/admin/`
@@ -307,20 +308,20 @@ cp env.example .env
 **Optional but recommended:**
 - `RESEND_API_KEY` - For email verification (get from https://resend.com)
 - `EMAIL_FROM` - Sender email address
+- `FRONTEND_URL` - Frontend URL for CORS and email links
 - OAuth credentials (Google/GitHub)
 - S3 configuration for file uploads
 
-**2. TLS Certificate Setup (if ENABLE_TLS=true)**
+**2. CLI Configuration**
 
-For production with TLS enabled, you need SSL certificates:
+Server settings are configured via CLI arguments:
 
 ```bash
+# Basic server setup
+lunarbase serve --host 0.0.0.0 --port 443
 
-# Option 1: Use existing certificates
-cp /path/to/your/cert.pem certs/localhost.pem
-cp /path/to/your/key.pem certs/localhost-key.pem
-
-# Option 2: Disable TLS (set ENABLE_TLS=false in .env)
+# With TLS for production
+lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
 ```
 
 #### Build and Deploy
@@ -329,20 +330,23 @@ cp /path/to/your/key.pem certs/localhost-key.pem
 # Build the application with embedded admin UI
 cargo build --release
 
-# Start the production server (serves both API and embedded admin UI)
-./target/release/lunarbase
+# Start the production server with CLI (serves both API and embedded admin UI)
+./target/release/lunarbase serve --host 0.0.0.0 --port 3000
+
+# Or with TLS for production
+./target/release/lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /etc/ssl/cert.pem --tls-key /etc/ssl/key.pem
 ```
 
 **Note:** The admin UI is automatically built and embedded into the binary during compilation. No separate frontend build step is required.
 
 #### Access Points
 
-**With TLS enabled (ENABLE_TLS=true):**
-- Backend available at `https://localhost:3000/api/` with HTTP/2 support
-- Admin interface at `https://localhost:3000/admin/`
-- API documentation at `https://localhost:3000/docs/`
+**CLI with TLS enabled:**
+- Backend available at `https://localhost:443/api/` with HTTP/2 support
+- Admin interface at `https://localhost:443/admin/`
+- API documentation at `https://localhost:443/docs/`
 
-**With TLS disabled (ENABLE_TLS=false):**
+**CLI with TLS disabled:**
 - Backend available at `http://localhost:3000/api/` with HTTP/1.1
 - Admin interface at `http://localhost:3000/admin/`
 - API documentation at `http://localhost:3000/docs/`
