@@ -1,11 +1,13 @@
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use resend_rs::{Resend, types::CreateEmailBaseOptions};
+use resend_rs::{Resend, types::CreateEmailBaseOptions, types::Attachment};
+use std::borrow::Cow;
 use tracing::{debug, error, warn};
 use uuid::Uuid;
 
 use crate::Config;
+use crate::embedded_assets::StaticAssets;
 use crate::models::{NewVerificationToken, TokenType, VerificationToken};
 use crate::schema::verification_tokens;
 use crate::utils::LunarbaseError;
@@ -18,6 +20,7 @@ pub struct EmailService {
     from_email: String,
     frontend_url: String,
     pool: DbPool,
+    logo_bytes: Option<Cow<'static, [u8]>>,
 }
 
 impl EmailService {
@@ -34,6 +37,14 @@ impl EmailService {
         };
 
         let from_email = config.email_from.clone().unwrap_or_default();
+        
+        let logo_bytes = StaticAssets::get_logo();
+        if logo_bytes.is_some() {
+            debug!("EmailService: Logo loaded successfully from embedded assets");
+        } else {
+            warn!("EmailService: Logo not found in embedded assets - emails will not include logo");
+        }
+        
         debug!(
             "EmailService: Configured with from_email: {}, frontend_url: {}",
             from_email, config.frontend_url
@@ -44,6 +55,7 @@ impl EmailService {
             from_email,
             frontend_url: config.frontend_url.clone(),
             pool,
+            logo_bytes,
         }
     }
 
@@ -169,9 +181,13 @@ impl EmailService {
         let html_content = self.create_verification_email_html(username, &verification_url);
         let text_content = self.create_verification_email_text(username, &verification_url);
 
-        let email_request = CreateEmailBaseOptions::new(&self.from_email, [email], subject)
+        let mut email_request = CreateEmailBaseOptions::new(&self.from_email, [email], subject)
             .with_html(&html_content)
             .with_text(&text_content);
+
+        if let Some(logo_attachment) = self.create_logo_attachment() {
+            email_request = email_request.with_attachment(logo_attachment);
+        }
 
         match resend_client.emails.send(email_request).await {
             Ok(_) => {
@@ -211,9 +227,14 @@ impl EmailService {
         let html_content = self.create_password_reset_email_html(username, &reset_url);
         let text_content = self.create_password_reset_email_text(username, &reset_url);
 
-        let email_request = CreateEmailBaseOptions::new(&self.from_email, [email], subject)
+        let mut email_request = CreateEmailBaseOptions::new(&self.from_email, [email], subject)
             .with_html(&html_content)
             .with_text(&text_content);
+
+        // Add logo attachment if available
+        if let Some(logo_attachment) = self.create_logo_attachment() {
+            email_request = email_request.with_attachment(logo_attachment);
+        }
 
         match resend_client.emails.send(email_request).await {
             Ok(_) => {
@@ -267,7 +288,7 @@ impl EmailService {
                                     <td align="center">
                                         <!-- Logo -->
                                         <div style="width: 64px; height: 64px; background-color: #1c1c1c; background: linear-gradient(#1c1c1c, #1c1c1c); border-radius: 16px; display: inline-block; line-height: 64px; text-align: center; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #d0d0d0;">
-                                            <img src="https://raw.githubusercontent.com/66HEX/lunarbase/master/logo.png" alt="LunarBase Logo" style="width: 64px; height: 64px; vertical-align: middle; border-radius: 4px;" />
+                                            <img src="cid:lunarbase-logo" alt="LunarBase Logo" style="width: 64px; height: 64px; vertical-align: middle; border-radius: 4px;" />
                                         </div>
                                         
                                         <!-- Brand Name -->
@@ -444,7 +465,7 @@ Need help? Contact your system administrator.
                                     <td align="center">
                                         <!-- Logo -->
                                         <div style="width: 64px; height: 64px; background-color: #1c1c1c; background: linear-gradient(#1c1c1c, #1c1c1c); border-radius: 16px; display: inline-block; line-height: 64px; text-align: center; margin-bottom: 16px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08); border: 1px solid #d0d0d0;">
-                                            <img src="https://raw.githubusercontent.com/66HEX/lunarbase/master/logo.png" alt="LunarBase Logo" style="width: 64px; height: 64px; vertical-align: middle; border-radius: 4px;" />
+                                            <img src="cid:lunarbase-logo" alt="LunarBase Logo" style="width: 64px; height: 64px; vertical-align: middle; border-radius: 4px;" />
                                         </div>
                                         
                                         <!-- Brand Name -->
@@ -589,5 +610,14 @@ Need help? Contact your system administrator.
 
     pub fn get_frontend_url(&self) -> &str {
         &self.frontend_url
+    }
+    
+    fn create_logo_attachment(&self) -> Option<Attachment> {
+        self.logo_bytes.as_ref().map(|logo_data| {
+            Attachment::from_content(logo_data.to_vec())
+                .with_filename("logo.png")
+                .with_content_id("lunarbase-logo")
+                .with_content_type("image/png")
+        })
     }
 }

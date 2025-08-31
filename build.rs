@@ -11,6 +11,7 @@ fn main() {
         println!("cargo:rerun-if-changed=admin-ui/package.json");
         println!("cargo:rerun-if-changed=admin-ui/vite.config.ts");
         println!("cargo:rerun-if-changed=admin-ui/tsconfig.json");
+        println!("cargo:rerun-if-changed=src/assets");
 
         let admin_ui_dir = Path::new("admin-ui");
 

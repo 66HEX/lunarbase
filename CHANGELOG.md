@@ -12,6 +12,10 @@
 - Admin-only access control for collection permissions button - non-admin users can no longer access collection permission settings
 - New records count endpoint that allows displaying the number of records in collections that any user has permissions to access
 - Frontend integration for permission-based record counts - non-admin users can now see record counts for collections they have access to
+- Embedded logo functionality in email templates using Resend content ID for self-contained email delivery
+- Static assets directory (src/assets/) with rust-embed integration for binary embedding
+- Logo embedding in verification and password reset emails using `cid:lunarbase-logo` references
+- Graceful fallback for email sending when logo assets are not available
 
 ### Fixed
 - Collection records view (/$collection) now works correctly for non-admin users by using permission-based record counts endpoint instead of admin-only stats endpoint
@@ -22,6 +26,8 @@
 - HTTP request duration tracking now provides both second and microsecond precision
 - Enhanced logging configuration with line numbers and file information for better debugging
 - More granular latency buckets in Prometheus metrics for better performance analysis
+- Email service upgraded to resend-rs 0.16.1 for proper content ID attachment support
+- Email templates now use embedded assets instead of hardcoded GitHub URLs for reliable logo delivery
 
 ## [0.6.0][0.6.0] - 2025-08-31
 

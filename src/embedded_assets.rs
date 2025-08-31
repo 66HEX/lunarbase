@@ -18,6 +18,15 @@ use std::collections::HashMap;
 #[exclude = "*.map"]
 pub struct AdminAssets;
 
+#[derive(RustEmbed)]
+#[folder = "src/assets/"]
+#[include = "*.png"]
+#[include = "*.jpg"]
+#[include = "*.jpeg"]
+#[include = "*.svg"]
+#[include = "*.ico"]
+pub struct StaticAssets;
+
 pub struct MimeTypeMap {
     types: HashMap<&'static str, &'static str>,
 }
@@ -98,6 +107,16 @@ impl AdminAssets {
         }
 
         None
+    }
+}
+
+impl StaticAssets {
+    pub fn get_logo() -> Option<Cow<'static, [u8]>> {
+        Self::get("logo.png").map(|asset| asset.data)
+    }
+    
+    pub fn is_logo_available() -> bool {
+        Self::get("logo.png").is_some()
     }
 }
 
