@@ -1,17 +1,18 @@
 # Changelog
 
-## [Unreleased]
+## [0.6.0][0.6.0] - 2025-08-31
 
 ### Added
 - Language syntax highlighting selector in RichTextEditor CodeBlock component for improved code editing experience
 - Language indicator badge in RichTextEditor CodeBlock showing the selected programming language in the top-right corner
 - Image upload functionality in RichTextEditor with S3 integration
 - Automatic image deletion from S3 when images are removed from RichTextEditor content
-- DELETE `/api/delete-image` endpoint for removing uploaded images from S3 storage
 - Support for both AWS S3 and LocalStack image storage and deletion
 - Real-time image tracking in RichTextEditor to detect content changes and cleanup unused files
 
 ### Fixed
+- WebSocket broadcast channel closure in production environment causing "Failed to broadcast event: channel closed" errors
+- WebSocket service now maintains a background receiver to prevent channel from closing when no active connections exist
 - Sheet close button functionality when Select components are opened and closed without making a selection in CreateUserSheet and EditUserSheet
 - Sheet close button functionality when Select components are opened and closed without making a selection in CreateCollectionSheet and EditCollectionSheet
 - Consistent allowClose state management across all sheet components to prevent UI blocking
@@ -148,6 +149,7 @@
 - Comprehensive audit logging and activity monitoring
 
 
+[0.6.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.6.0
 [0.5.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.5.0
 [0.4.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.4.0
 [0.3.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.3.0

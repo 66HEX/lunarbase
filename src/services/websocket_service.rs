@@ -48,7 +48,12 @@ pub struct ActivityLogEntry {
 
 impl WebSocketService {
     pub fn new(permission_service: Arc<PermissionService>) -> Self {
-        let (event_sender, _) = broadcast::channel(1000);
+        let (event_sender, mut event_receiver) = broadcast::channel(1000);
+
+        tokio::spawn(async move {
+            while let Ok(_event) = event_receiver.recv().await {
+            }
+        });
 
         Self {
             connections: Arc::new(RwLock::new(HashMap::new())),

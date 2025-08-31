@@ -1,6 +1,6 @@
 [package]
 name = "lunarbase"
-version = "0.5.0"
+version = "0.6.0"
 authors = ["Marek Jóźwiak <hexthecoder@gmail.com>"]
 edition = "2024"
 
