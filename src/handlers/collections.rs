@@ -186,7 +186,30 @@ pub async fn delete_collection(
     Extension(user): Extension<Claims>,
     Path(name): Path<String>,
 ) -> Result<StatusCode, LunarbaseError> {
-    if user.role != "admin" {
+    use crate::schema::users;
+    use diesel::prelude::*;
+
+    let user_id: i32 = user.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+
+    let user_model = users::table
+        .filter(users::id.eq(user_id))
+        .select(crate::models::User::as_select())
+        .first::<crate::models::User>(&mut conn)
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
+
+    let collection = state
+        .collection_service
+        .get_collection(&name)
+        .await?;
+
+    let has_permission = state
+        .permission_service
+        .check_collection_permission(&user_model, collection.id, crate::models::Permission::Delete)
+        .await?;
+
+    if !has_permission {
         return Err(LunarbaseError::InsufficientPermissions);
     }
 

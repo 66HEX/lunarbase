@@ -16,6 +16,7 @@
 ### Fixed
 - Collection records view (/$collection) now works correctly for non-admin users by using permission-based record counts endpoint instead of admin-only stats endpoint
 - Transfer ownership buttons in records views are now hidden for non-admin users, consistent with collection permissions access control
+- Collection deletion now properly checks user's delete permissions for the specific collection instead of requiring admin role
 
 ### Improved
 - HTTP request duration tracking now provides both second and microsecond precision
