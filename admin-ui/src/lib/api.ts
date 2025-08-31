@@ -4,6 +4,7 @@ import type {
 	BroadcastMessageResponse,
 	Collection,
 	CollectionPermission,
+	CollectionRecordCounts,
 	CollectionStats,
 	CreateCollectionRequest,
 	CreateRecordRequest,
@@ -276,6 +277,11 @@ export const collectionsApi = {
 			await apiRequest<ApiResponse<CollectionStats>>("/collections/stats");
 		return response.data;
 	},
+
+	getRecordCounts: async (): Promise<CollectionRecordCounts> => {
+		const response = await apiRequest<ApiResponse<CollectionRecordCounts>>('/collections/record-counts');
+		return response.data;
+	},
 };
 
 export const recordsApi = {
@@ -296,8 +302,8 @@ export const recordsApi = {
 		const response = await apiRequest<ApiResponse<Record[]>>(endpoint);
 		const records = response.data || [];
 
-		const stats = await collectionsApi.getStats();
-		const totalCount = stats.records_per_collection[collectionName] || 0;
+		const recordCounts = await collectionsApi.getRecordCounts();
+		const totalCount = recordCounts.records_per_collection[collectionName] || 0;
 
 		const limit = options?.limit || 20;
 		const offset = options?.offset || 0;

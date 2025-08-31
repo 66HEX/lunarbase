@@ -9,6 +9,9 @@
 - Enhanced TraceLayer configuration with microsecond precision logging
 - Detailed debug logging for each HTTP request showing duration in microseconds and milliseconds
 - Automatic detection and warning for slow requests with comprehensive request details
+- Admin-only access control for collection permissions button - non-admin users can no longer access collection permission settings
+- New records count endpoint that allows displaying the number of records in collections that any user has permissions to access
+- Frontend integration for permission-based record counts - non-admin users can now see record counts for collections they have access to
 
 ### Improved
 - HTTP request duration tracking now provides both second and microsecond precision

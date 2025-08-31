@@ -145,7 +145,7 @@ use lunarbase::handlers::{
     backup::{create_manual_backup, get_backup_health},
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
-        get_collection_schema, get_collections_stats, get_record, list_all_records,
+        get_collection_schema, get_collections_stats, get_collections_record_counts, get_record, list_all_records,
         list_collections, list_records, update_collection, update_record,
     },
     configuration::{
@@ -370,6 +370,7 @@ async fn create_router(app_state: AppState) -> Router {
         .route("/collections/{name}", put(update_collection))
         .route("/collections/{name}", delete(delete_collection))
         .route("/collections/stats", get(get_collections_stats))
+        .route("/collections/record-counts", get(get_collections_record_counts))
         .route("/records", get(list_all_records))
         .route("/collections/{name}/records", post(create_record))
         .route("/collections/{name}/records/{id}", put(update_record))

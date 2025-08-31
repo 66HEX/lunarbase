@@ -8,6 +8,22 @@ interface CollectionsQueryData {
 }
 
 /**
+ * Custom hook for fetching collection record counts
+ * @returns Query object containing record counts for accessible collections
+ */
+export const useCollectionRecordCounts = () => {
+	return useQuery({
+		queryKey: ["collections", "record-counts"],
+		queryFn: () => collectionsApi.getRecordCounts(),
+		staleTime: 30 * 1000,
+		gcTime: 5 * 60 * 1000,
+		refetchOnWindowFocus: false,
+		refetchInterval: 60 * 1000,
+		retry: 2,
+	});
+};
+
+/**
  * Custom hook for fetching all accessible collections with record counts
  * Replaces collections store functionality
  * @returns Query object containing collections and record counts
@@ -19,17 +35,23 @@ export const useCollections = () => {
 			const collections = await permissionsApi.getMyAccessibleCollections();
 			let recordCounts: Record<string, number> = {};
 			try {
-				const stats = await collectionsApi.getStats();
-				recordCounts = stats.records_per_collection;
+				const recordCountsData = await collectionsApi.getRecordCounts();
+				recordCounts = recordCountsData.records_per_collection;
 			} catch (error) {
-				console.warn("Failed to fetch collection stats:", error);
-				recordCounts = collections.reduce(
-					(acc, collection) => {
-						acc[collection.name] = 0;
-						return acc;
-					},
-					{} as Record<string, number>,
-				);
+				console.warn("Failed to fetch collection record counts:", error);
+				try {
+					const stats = await collectionsApi.getStats();
+					recordCounts = stats.records_per_collection;
+				} catch (statsError) {
+					console.warn("Failed to fetch collection stats:", statsError);
+					recordCounts = collections.reduce(
+						(acc, collection) => {
+							acc[collection.name] = 0;
+							return acc;
+						},
+						{} as Record<string, number>,
+					);
+				}
 			}
 
 			return {

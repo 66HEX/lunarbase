@@ -2,7 +2,7 @@ use crate::{
     AppState,
     models::{
         CollectionResponse, CreateCollectionRequest, CreateRecordRequest, FileUpload,
-        RecordResponse, UpdateCollectionRequest, UpdateRecordRequest,
+        RecordResponse, UpdateCollectionRequest, UpdateRecordRequest, User,
     },
     utils::{ApiResponse, LunarbaseError, Claims, ErrorResponse},
 };
@@ -13,7 +13,23 @@ use axum::{
     response::Json,
 };
 use base64::{Engine as _, engine::general_purpose};
+use diesel::RunQueryDsl;
 use serde::{Deserialize, Serialize};
+
+async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, LunarbaseError> {
+    use crate::schema::users;
+    use diesel::prelude::*;
+
+    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+
+    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+
+    users::table
+        .filter(users::id.eq(user_id))
+        .select(User::as_select())
+        .first(&mut conn)
+        .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))
+}
 use std::collections::HashMap;
 use utoipa::ToSchema;
 
@@ -745,4 +761,65 @@ pub async fn get_collections_stats(
     };
 
     Ok(Json(ApiResponse::success(stats)))
+}
+
+#[derive(Serialize, ToSchema)]
+pub struct CollectionRecordCounts {
+    pub records_per_collection: HashMap<String, i64>,
+}
+
+#[utoipa::path(
+    get,
+    path = "/collections/record-counts",
+    tag = "Collections",
+    responses(
+        (status = 200, description = "Collection record counts retrieved successfully", body = ApiResponse<CollectionRecordCounts>),
+        (status = 403, description = "Insufficient permissions", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn get_collections_record_counts(
+    State(state): State<AppState>,
+    Extension(user): Extension<Claims>,
+) -> Result<Json<ApiResponse<CollectionRecordCounts>>, LunarbaseError> {
+    let user_model = claims_to_user(&user, &state).await?;
+    let accessible_collection_ids = state
+        .permission_service
+        .get_user_accessible_collections(&user_model)
+        .await?;
+
+    let collections = state.collection_service.list_collections().await?;
+    let mut records_per_collection = HashMap::new();
+
+    for collection in &collections {
+        if accessible_collection_ids.contains(&collection.id) {
+            let table_name = format!("records_{}", collection.name);
+            let count_sql = format!("SELECT COUNT(*) as count FROM {}", table_name);
+
+            #[derive(diesel::QueryableByName)]
+            struct CountResult {
+                #[diesel(sql_type = diesel::sql_types::BigInt)]
+                count: i64,
+            }
+
+            let mut conn = state.collection_service.pool.get().map_err(|_| LunarbaseError::InternalError)?;
+            let count_result: Result<CountResult, _> =
+                diesel::sql_query(&count_sql).get_result(&mut conn);
+
+            let record_count = match count_result {
+                Ok(result) => result.count,
+                Err(_) => 0,
+            };
+
+            records_per_collection.insert(collection.name.clone(), record_count);
+        }
+    }
+
+    let response = CollectionRecordCounts {
+        records_per_collection,
+    };
+
+    Ok(Json(ApiResponse::success(response)))
 }

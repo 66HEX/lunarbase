@@ -364,14 +364,6 @@ export default function UsersComponent() {
 							}}
 						/>
 					</div>
-					{loading && data && (
-						<div className="flex items-center justify-center py-2">
-							<div className="flex items-center gap-2 text-sm text-nocta-500 dark:text-nocta-400">
-								<Spinner className="w-4 h-4" />
-								<span>Updating...</span>
-							</div>
-						</div>
-					)}
 				</div>
 			) : (
 				<Card>

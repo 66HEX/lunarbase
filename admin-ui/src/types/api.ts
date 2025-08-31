@@ -300,6 +300,10 @@ export interface CollectionStats {
 	smallest_collection: string | null;
 }
 
+export interface CollectionRecordCounts {
+	records_per_collection: { [key: string]: number };
+}
+
 export interface WebSocketStats {
 	total_connections: number;
 	authenticated_connections: number;

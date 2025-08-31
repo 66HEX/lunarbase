@@ -86,27 +86,30 @@ export const usePrefetch = () => {
 		await queryClient.prefetchQuery({
 			queryKey,
 			queryFn: async () => {
-				const collections = await collectionsApi.list();
-				const collectionsData = collections.data;
-
+				const collections = await permissionsApi.getMyAccessibleCollections();
 				let recordCounts: Record<string, number> = {};
 				try {
-					const stats = await collectionsApi.getStats();
-					recordCounts = stats.records_per_collection;
+					const recordCountsData = await collectionsApi.getRecordCounts();
+					recordCounts = recordCountsData.records_per_collection;
 				} catch (error) {
-					console.warn("Failed to fetch collection stats:", error);
-
-					recordCounts = collectionsData.reduce(
-						(acc, collection) => {
-							acc[collection.name] = 0;
-							return acc;
-						},
-						{} as Record<string, number>,
-					);
+					console.warn("Failed to fetch collection record counts:", error);
+					try {
+						const stats = await collectionsApi.getStats();
+						recordCounts = stats.records_per_collection;
+					} catch (fallbackError) {
+						console.warn("Failed to fetch collection stats as fallback:", fallbackError);
+						recordCounts = collections.reduce(
+							(acc, collection) => {
+								acc[collection.name] = 0;
+								return acc;
+							},
+							{} as Record<string, number>,
+						);
+					}
 				}
 
 				return {
-					collections: collectionsData,
+					collections,
 					recordCounts,
 				};
 			},
@@ -473,7 +476,14 @@ export const usePrefetch = () => {
 		if (!isDataFresh(collectionsQueryKey, collectionsStaleTime)) {
 			await queryClient.prefetchQuery({
 				queryKey: collectionsQueryKey,
-				queryFn: () => collectionsApi.getStats(),
+				queryFn: async () => {
+					try {
+						return await collectionsApi.getRecordCounts();
+					} catch (error) {
+						console.warn("Failed to fetch collection record counts for dashboard:", error);
+						return await collectionsApi.getStats();
+					}
+				},
 				staleTime: collectionsStaleTime,
 			});
 		}

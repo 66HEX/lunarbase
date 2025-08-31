@@ -48,6 +48,7 @@ pub mod utils;
         handlers::collections::delete_collection,
         handlers::collections::get_collection_schema,
         handlers::collections::get_collections_stats,
+        handlers::collections::get_collections_record_counts,
 
         handlers::collections::create_record,
         handlers::collections::list_records,

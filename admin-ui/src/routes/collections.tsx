@@ -32,6 +32,7 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import {
+	useAuth,
 	useCollections,
 	useDebounce,
 	useDeleteCollection,
@@ -42,6 +43,8 @@ import type { Collection } from "@/types/api";
 
 export default function CollectionsComponent() {
 	const { data, isLoading, error } = useCollections();
+	const authData = useAuth();
+	const user = "user" in authData ? authData.user : null;
 
 	const deleteCollectionMutation = useDeleteCollection();
 
@@ -206,17 +209,19 @@ export default function CollectionsComponent() {
 											>
 												<PencilIcon size={14} />
 											</Button>
-											<Button
-												variant="ghost"
-												size="sm"
-												className="w-7 h-7 p-0"
-												onClick={() => handleOpenPermissions(collection.name)}
-												onMouseEnter={() =>
-													prefetchPermissions(collection.name)
-												}
-											>
-												<GearIcon size={14} />
-											</Button>
+											{user?.role === "admin" && (
+												<Button
+													variant="ghost"
+													size="sm"
+													className="w-7 h-7 p-0"
+													onClick={() => handleOpenPermissions(collection.name)}
+													onMouseEnter={() =>
+														prefetchPermissions(collection.name)
+													}
+												>
+													<GearIcon size={14} />
+												</Button>
+											)}
 											<Button
 												variant="ghost"
 												size="sm"
@@ -338,14 +343,6 @@ export default function CollectionsComponent() {
 							</Card>
 						))}
 					</div>
-					{loading && data && (
-						<div className="flex items-center justify-center py-2">
-							<div className="flex items-center gap-2 text-sm text-nocta-500 dark:text-nocta-400">
-								<Spinner className="w-4 h-4" />
-								<span>Updating...</span>
-							</div>
-						</div>
-					)}
 				</div>
 			) : (
 				<Card>
