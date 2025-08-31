@@ -313,22 +313,24 @@ export default function RecordsComponent() {
 
 				return (
 					<div className="flex items-center gap-1">
-						<TransferOwnership
-							collectionName={record.collection_name}
-							recordId={record.id}
-							currentOwnerId={currentOwnerId}
-							onSuccess={() => refetch()}
-							trigger={
-								<Button
-									variant="ghost"
-									size="sm"
-									className="w-8 h-8 p-0"
-									title="Transfer ownership"
-								>
-									<UserIcon size={16} />
-								</Button>
-							}
-						/>
+						{user?.role === "admin" && (
+							<TransferOwnership
+								collectionName={record.collection_name}
+								recordId={record.id}
+								currentOwnerId={currentOwnerId}
+								onSuccess={() => refetch()}
+								trigger={
+									<Button
+										variant="ghost"
+										size="sm"
+										className="w-8 h-8 p-0"
+										title="Transfer ownership"
+									>
+										<UserIcon size={16} />
+									</Button>
+								}
+							/>
+						)}
 						<Button
 							variant="ghost"
 							size="sm"

@@ -13,6 +13,10 @@
 - New records count endpoint that allows displaying the number of records in collections that any user has permissions to access
 - Frontend integration for permission-based record counts - non-admin users can now see record counts for collections they have access to
 
+### Fixed
+- Collection records view (/$collection) now works correctly for non-admin users by using permission-based record counts endpoint instead of admin-only stats endpoint
+- Transfer ownership buttons in records views are now hidden for non-admin users, consistent with collection permissions access control
+
 ### Improved
 - HTTP request duration tracking now provides both second and microsecond precision
 - Enhanced logging configuration with line numbers and file information for better debugging
