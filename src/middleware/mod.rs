@@ -2,7 +2,8 @@ use crate::AppState;
 use crate::services::configuration_manager::ConfigurationAccess;
 use axum::{Router, extract::DefaultBodyLimit, middleware};
 use tower_http::cors::CorsLayer;
-use tower_http::trace::TraceLayer;
+use tower_http::trace::{TraceLayer, DefaultMakeSpan, DefaultOnResponse};
+use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod auth;
@@ -23,7 +24,13 @@ pub fn setup_logging() {
             tracing_subscriber::EnvFilter::try_from_default_env()
                 .unwrap_or_else(|_| default_filter.into()),
         )
-        .with(tracing_subscriber::fmt::layer())
+        .with(
+            tracing_subscriber::fmt::layer()
+                .with_target(true)
+                .with_thread_ids(true)
+                .with_line_number(true)
+                .with_file(true)
+        )
         .init();
 }
 
@@ -60,9 +67,19 @@ pub async fn setup_cors(app_state: &AppState) -> CorsLayer {
 
 pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     let cors_layer = setup_cors(&app_state).await;
+    
+    // Konfiguracja TraceLayer z większą precyzją
+    let trace_layer = TraceLayer::new_for_http()
+        .make_span_with(DefaultMakeSpan::new().level(Level::DEBUG))
+        .on_response(
+            DefaultOnResponse::new()
+                .level(Level::DEBUG)
+                .latency_unit(tower_http::LatencyUnit::Micros), // Mikrosekundy!
+        );
+    
     let mut router = app
         .layer(cors_layer)
-        .layer(TraceLayer::new_for_http())
+        .layer(trace_layer)
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024));
 
     if !cfg!(test) {

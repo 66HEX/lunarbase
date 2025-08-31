@@ -14,6 +14,8 @@ pub struct MetricsState {
     pub registry: Arc<Registry>,
     pub request_counter: Counter,
     pub request_duration: Histogram,
+    pub request_duration_microseconds: Histogram,
+    pub slow_requests_counter: Counter,
     pub active_connections: Gauge,
     pub database_connections: Gauge,
     pub http2_connections: Gauge,
@@ -33,6 +35,28 @@ impl MetricsState {
             "http_request_duration_seconds",
             "HTTP request duration in seconds",
         ))?;
+
+        let request_duration_microseconds = Histogram::with_opts(
+            HistogramOpts::new(
+                "http_request_duration_microseconds",
+                "HTTP request duration in microseconds"
+            ).buckets(vec![
+                100.0,    // 0.1ms
+                500.0,    // 0.5ms  
+                1000.0,   // 1ms
+                5000.0,   // 5ms
+                10000.0,  // 10ms
+                50000.0,  // 50ms
+                100000.0, // 100ms
+                500000.0, // 500ms
+                1000000.0 // 1s
+            ])
+        )?;
+        
+        let slow_requests_counter = Counter::new(
+            "http_slow_requests_total", 
+            "Total number of slow HTTP requests (>100ms)"
+        )?;
 
         let active_connections = Gauge::new(
             "websocket_active_connections",
@@ -60,6 +84,8 @@ impl MetricsState {
         if !cfg!(test) {
             registry.register(Box::new(request_counter.clone()))?;
             registry.register(Box::new(request_duration.clone()))?;
+            registry.register(Box::new(request_duration_microseconds.clone()))?;
+            registry.register(Box::new(slow_requests_counter.clone()))?;
             registry.register(Box::new(active_connections.clone()))?;
             registry.register(Box::new(database_connections.clone()))?;
             registry.register(Box::new(http2_connections.clone()))?;
@@ -71,6 +97,8 @@ impl MetricsState {
             registry,
             request_counter,
             request_duration,
+            request_duration_microseconds,
+            slow_requests_counter,
             active_connections,
             database_connections,
             http2_connections,
@@ -158,13 +186,35 @@ pub async fn metrics_middleware(
     next: middleware::Next,
 ) -> Response {
     let start = Instant::now();
+    let method = request.method().clone();
+    let uri = request.uri().path().to_string();
 
     app_state.metrics_state.request_counter.inc();
 
     let response = next.run(request).await;
+    let status = response.status();
 
-    let duration = start.elapsed().as_secs_f64();
-    app_state.metrics_state.request_duration.observe(duration);
+    let duration = start.elapsed();
+    let duration_micros = duration.as_micros() as f64;
+    let duration_seconds = duration.as_secs_f64();
+    
+    // Zapisz w obu formatach
+    app_state.metrics_state.request_duration.observe(duration_seconds);
+    app_state.metrics_state.request_duration_microseconds.observe(duration_micros);
+    
+    // Zlicz wolne requesty (>100ms)
+    if duration_micros > 100_000.0 {
+        app_state.metrics_state.slow_requests_counter.inc();
+        tracing::warn!(
+            "Slow request detected: {} {} - {:.2}ms (status: {})",
+            method, uri, duration_micros / 1000.0, status
+        );
+    }
+    
+    tracing::debug!(
+        "Request {} {} completed in {:.0}μs ({:.3}ms) - status: {}",
+        method, uri, duration_micros, duration_micros / 1000.0, status
+    );
 
     response
 }

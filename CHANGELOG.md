@@ -1,5 +1,20 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Microsecond precision latency measurements in metrics middleware
+- New Prometheus metrics: `http_request_duration_microseconds` histogram with detailed buckets (0.1ms to 1s)
+- Slow request counter (`http_slow_requests_total`) for requests exceeding 100ms
+- Enhanced TraceLayer configuration with microsecond precision logging
+- Detailed debug logging for each HTTP request showing duration in microseconds and milliseconds
+- Automatic detection and warning for slow requests with comprehensive request details
+
+### Improved
+- HTTP request duration tracking now provides both second and microsecond precision
+- Enhanced logging configuration with line numbers and file information for better debugging
+- More granular latency buckets in Prometheus metrics for better performance analysis
+
 ## [0.6.0][0.6.0] - 2025-08-31
 
 ### Added
