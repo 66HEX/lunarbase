@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.7.0][0.7.0] - 2025-08-31
 
 ### Added
 - CLI-first configuration system with complete server configuration management via command-line arguments
@@ -9,6 +9,7 @@
 - API-only mode with --api-only flag to run server without embedded frontend for headless deployments
 - CLI help documentation with --help for general CLI help and serve --help for command-specific options
 - Configuration precedence system: CLI arguments take precedence over defaults, environment variables used only for database and integrations
+- Frontend URL automatic generation from CLI server configuration (host, port, TLS) eliminating FRONTEND_URL environment variable dependency
 - Microsecond precision latency measurements in metrics middleware
 - New Prometheus metrics: `http_request_duration_microseconds` histogram with detailed buckets (0.1ms to 1s)
 - Slow request counter (`http_slow_requests_total`) for requests exceeding 100ms
@@ -28,9 +29,11 @@
 - Application startup restructured to use CLI command parsing with dedicated serve command
 - Default server binding changed to 127.0.0.1:3000 when no CLI arguments are provided
 - Server configuration precedence now follows CLI arguments > defaults, with environment variables reserved for database, authentication, and integration settings
+- Frontend URL configuration moved from FRONTEND_URL environment variable to automatic generation from CLI server settings
 
 ### Removed
 - Environment variables SERVER_HOST, SERVER_PORT, ENABLE_TLS, TLS_CERT_PATH, TLS_KEY_PATH no longer supported in favor of CLI-first approach
+- FRONTEND_URL environment variable removed in favor of automatic generation from CLI server configuration
 
 ### Fixed
 - Collection records view (/$collection) now works correctly for non-admin users by using permission-based record counts endpoint instead of admin-only stats endpoint
@@ -40,7 +43,6 @@
 ### Improved
 - HTTP request duration tracking now provides both second and microsecond precision
 - Enhanced logging configuration with line numbers and file information for better debugging
-- More granular latency buckets in Prometheus metrics for better performance analysis
 - Email service upgraded to resend-rs 0.16.1 for proper content ID attachment support
 - Email templates now use embedded assets instead of hardcoded GitHub URLs for reliable logo delivery
 
@@ -193,6 +195,7 @@
 - Comprehensive audit logging and activity monitoring
 
 
+[0.7.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.7.0
 [0.6.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.6.0
 [0.5.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.5.0
 [0.4.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.4.0

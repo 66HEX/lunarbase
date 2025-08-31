@@ -191,11 +191,6 @@ LUNARBASE_ADMIN_PASSWORD=your-secure-admin-password  # Initial admin password
 
 ### Optional Configuration
 
-#### Frontend URL (for CORS and email links)
-```bash
-FRONTEND_URL=http://localhost:3000  # Frontend URL for CORS and redirects
-```
-
 #### Email Service (Resend)
 ```bash
 RESEND_API_KEY=your-resend-api-key-from-resend-dashboard  # Get from https://resend.com
@@ -230,7 +225,6 @@ S3_SECRET_ACCESS_KEY=your-secret-access-key  # AWS secret key
 - **Never commit secrets** to version control - use `.env` files locally and secure environment variable management in production
 - **Rotate secrets regularly** especially JWT secrets and database encryption keys
 - **Use HTTPS in production** by using `--tls` flag with valid SSL certificates
-- **Restrict CORS origins** by configuring `FRONTEND_URL` to match your actual domain
 
 ## Quick Start
 
@@ -308,7 +302,6 @@ cp env.example .env
 **Optional but recommended:**
 - `RESEND_API_KEY` - For email verification (get from https://resend.com)
 - `EMAIL_FROM` - Sender email address
-- `FRONTEND_URL` - Frontend URL for CORS and email links
 - OAuth credentials (Google/GitHub)
 - S3 configuration for file uploads
 
@@ -318,10 +311,10 @@ Server settings are configured via CLI arguments:
 
 ```bash
 # Basic server setup
-lunarbase serve --host 0.0.0.0 --port 443
+./lunarbase serve --host 0.0.0.0 --port 443
 
 # With TLS for production
-lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+./lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
 ```
 
 #### Build and Deploy
