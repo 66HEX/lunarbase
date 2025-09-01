@@ -95,7 +95,10 @@ pub async fn websocket_stats(
         .get()
         .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
@@ -104,7 +107,9 @@ pub async fn websocket_stats(
         .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden(
+            "Admin access required".to_string(),
+        ));
     }
 
     let stats = app_state.websocket_service.get_stats().await;
@@ -167,7 +172,10 @@ pub async fn get_connections(
         .get()
         .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
@@ -176,7 +184,9 @@ pub async fn get_connections(
         .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden(
+            "Admin access required".to_string(),
+        ));
     }
 
     let connections = app_state.websocket_service.get_connection_details().await;
@@ -223,7 +233,10 @@ pub async fn disconnect_connection(
         .get()
         .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
@@ -232,7 +245,9 @@ pub async fn disconnect_connection(
         .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden(
+            "Admin access required".to_string(),
+        ));
     }
 
     let conn_uuid = Uuid::parse_str(&connection_id).map_err(|_| {
@@ -281,7 +296,10 @@ pub async fn broadcast_message(
         .get()
         .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
@@ -290,7 +308,9 @@ pub async fn broadcast_message(
         .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden(
+            "Admin access required".to_string(),
+        ));
     }
 
     let sent_count = app_state
@@ -343,7 +363,10 @@ pub async fn get_activity(
         .get()
         .map_err(|_| LunarbaseError::DatabaseError)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let user: User = users::table
         .find(user_id)
@@ -352,7 +375,9 @@ pub async fn get_activity(
         .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     if user.role != "admin" {
-        return Err(LunarbaseError::Forbidden("Admin access required".to_string()));
+        return Err(LunarbaseError::Forbidden(
+            "Admin access required".to_string(),
+        ));
     }
 
     let limit = params.limit.unwrap_or(100);

@@ -50,10 +50,7 @@ impl WebSocketService {
     pub fn new(permission_service: Arc<PermissionService>) -> Self {
         let (event_sender, mut event_receiver) = broadcast::channel(1000);
 
-        tokio::spawn(async move {
-            while let Ok(_event) = event_receiver.recv().await {
-            }
-        });
+        tokio::spawn(async move { while let Ok(_event) = event_receiver.recv().await {} });
 
         Self {
             connections: Arc::new(RwLock::new(HashMap::new())),
@@ -228,8 +225,9 @@ impl WebSocketService {
         connection_id: ConnectionId,
         text: &str,
     ) -> Result<(), LunarbaseError> {
-        let message: WebSocketMessage = serde_json::from_str(text)
-            .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON message".to_string()]))?;
+        let message: WebSocketMessage = serde_json::from_str(text).map_err(|_| {
+            LunarbaseError::ValidationError(vec!["Invalid JSON message".to_string()])
+        })?;
 
         match message {
             WebSocketMessage::Subscribe(req) => {
@@ -294,7 +292,9 @@ impl WebSocketService {
                         error: "Insufficient permissions".to_string(),
                     };
                     let _ = sender.send(WebSocketMessage::SubscriptionError(error_msg));
-                    return Err(LunarbaseError::Forbidden("Insufficient permissions".to_string()));
+                    return Err(LunarbaseError::Forbidden(
+                        "Insufficient permissions".to_string(),
+                    ));
                 }
             }
 

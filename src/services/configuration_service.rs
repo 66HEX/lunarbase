@@ -238,7 +238,11 @@ impl ConfigurationService {
         Ok(created_setting.into())
     }
 
-    pub async fn delete_setting(&self, category: &str, setting_key: &str) -> Result<(), LunarbaseError> {
+    pub async fn delete_setting(
+        &self,
+        category: &str,
+        setting_key: &str,
+    ) -> Result<(), LunarbaseError> {
         let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let deleted_count = diesel::delete(

@@ -356,30 +356,30 @@ export default function RecordComponent() {
 											getUserId(record.data.author_id);
 
 										return (
-									<div className="flex items-center gap-1">
-										{user?.role === "admin" && (
-											<TransferOwnership
-												collectionName={collectionName || ""}
-												recordId={record.id}
-												currentOwnerId={currentOwnerId}
-												onSuccess={() => {
-													queryClient.invalidateQueries({
-														queryKey: ["collectionRecords", collectionName],
-														exact: false,
-													});
-												}}
-												trigger={
-													<Button
-														variant="ghost"
-														size="sm"
-														className="w-8 h-8 p-0"
-														title="Transfer ownership"
-													>
-														<UserIcon size={16} />
-													</Button>
-												}
-											/>
-										)}
+											<div className="flex items-center gap-1">
+												{user?.role === "admin" && (
+													<TransferOwnership
+														collectionName={collectionName || ""}
+														recordId={record.id}
+														currentOwnerId={currentOwnerId}
+														onSuccess={() => {
+															queryClient.invalidateQueries({
+																queryKey: ["collectionRecords", collectionName],
+																exact: false,
+															});
+														}}
+														trigger={
+															<Button
+																variant="ghost"
+																size="sm"
+																className="w-8 h-8 p-0"
+																title="Transfer ownership"
+															>
+																<UserIcon size={16} />
+															</Button>
+														}
+													/>
+												)}
 												<Button
 													variant="ghost"
 													size="sm"

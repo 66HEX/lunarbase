@@ -98,7 +98,10 @@ export function CreateRoleSheet({
 		});
 	};
 
-	const updateFormData = (field: keyof CreateRoleRequest, value: string | number) => {
+	const updateFormData = (
+		field: keyof CreateRoleRequest,
+		value: string | number,
+	) => {
 		const newFormData = { ...formData, [field]: value };
 		setFormData(newFormData);
 
@@ -163,7 +166,9 @@ export function CreateRoleSheet({
 										placeholder="Describe what this role is for..."
 										className="w-full"
 										value={formData.description || ""}
-										onChange={(e) => updateFormData("description", e.target.value)}
+										onChange={(e) =>
+											updateFormData("description", e.target.value)
+										}
 										variant={fieldErrors.description ? "error" : "default"}
 										rows={3}
 									/>
@@ -196,7 +201,10 @@ export function CreateRoleSheet({
 										</SelectTrigger>
 										<SelectContent>
 											{rolePriorityOptions.map((option) => (
-												<SelectItem key={option.value} value={option.value.toString()}>
+												<SelectItem
+													key={option.value}
+													value={option.value.toString()}
+												>
 													{option.label}
 												</SelectItem>
 											))}

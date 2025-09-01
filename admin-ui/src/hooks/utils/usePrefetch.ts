@@ -97,7 +97,10 @@ export const usePrefetch = () => {
 						const stats = await collectionsApi.getStats();
 						recordCounts = stats.records_per_collection;
 					} catch (fallbackError) {
-						console.warn("Failed to fetch collection stats as fallback:", fallbackError);
+						console.warn(
+							"Failed to fetch collection stats as fallback:",
+							fallbackError,
+						);
 						recordCounts = collections.reduce(
 							(acc, collection) => {
 								acc[collection.name] = 0;
@@ -480,7 +483,10 @@ export const usePrefetch = () => {
 					try {
 						return await collectionsApi.getRecordCounts();
 					} catch (error) {
-						console.warn("Failed to fetch collection record counts for dashboard:", error);
+						console.warn(
+							"Failed to fetch collection record counts for dashboard:",
+							error,
+						);
 						return await collectionsApi.getStats();
 					}
 				},

@@ -147,7 +147,10 @@ impl JwtService {
         }
     }
 
-    pub fn decode_refresh_token_unsafe(&self, token: &str) -> Result<RefreshClaims, LunarbaseError> {
+    pub fn decode_refresh_token_unsafe(
+        &self,
+        token: &str,
+    ) -> Result<RefreshClaims, LunarbaseError> {
         let mut validation = Validation::new(Algorithm::HS256);
         validation.validate_exp = false;
         validation.validate_nbf = false;
@@ -220,7 +223,10 @@ impl JwtService {
         Ok(())
     }
 
-    pub fn validate_access_token_with_blacklist(&self, token: &str) -> Result<Claims, LunarbaseError> {
+    pub fn validate_access_token_with_blacklist(
+        &self,
+        token: &str,
+    ) -> Result<Claims, LunarbaseError> {
         let claims = self.validate_access_token(token)?;
 
         if self.is_token_blacklisted(&claims.jti)? {
@@ -236,7 +242,10 @@ impl JwtService {
     ) -> Result<Claims, LunarbaseError> {
         let claims = self.validate_access_token_with_blacklist(token)?;
 
-        let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+        let user_id: i32 = claims
+            .sub
+            .parse()
+            .map_err(|_| LunarbaseError::TokenInvalid)?;
         if !self.is_user_verified(user_id)? {
             return Err(LunarbaseError::AccountNotVerified);
         }

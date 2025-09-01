@@ -14,7 +14,7 @@ use crate::{
     },
     services::ConfigurationService,
     utils::auth_error::ApiResponse,
-    utils::{LunarbaseError, Claims, ErrorResponse},
+    utils::{Claims, ErrorResponse, LunarbaseError},
 };
 
 fn validate_category(category: &str) -> Result<(), LunarbaseError> {

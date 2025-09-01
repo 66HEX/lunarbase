@@ -220,7 +220,10 @@ impl QueryEngine {
                 .all(|c| c.is_alphanumeric() || c == '_' || c == '.')
     }
 
-    pub fn build_order_by_clause(&self, schema: &CollectionSchema) -> Result<String, LunarbaseError> {
+    pub fn build_order_by_clause(
+        &self,
+        schema: &CollectionSchema,
+    ) -> Result<String, LunarbaseError> {
         if self.sort.is_empty() {
             return Ok("ORDER BY \"created_at\" DESC".to_string());
         }

@@ -1,5 +1,5 @@
-import { ShieldCheckIcon, XCircleIcon, Check, X } from "@phosphor-icons/react";
-import { useEffect, useState, useMemo } from "react";
+import { Check, ShieldCheckIcon, X, XCircleIcon } from "@phosphor-icons/react";
+import { useEffect, useMemo, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -15,7 +15,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useCollections } from "@/hooks/";
 import { useRoleAllCollectionPermissions } from "@/hooks/permissions";
-import type { Role, Collection } from "@/types/api";
+import type { Collection, Role } from "@/types/api";
 
 interface PermissionDetailsSheetProps {
 	isOpen: boolean;
@@ -43,7 +43,7 @@ const formatDate = (dateString: string): string => {
 	const date = new Date(dateString);
 	return date.toLocaleDateString("en-US", {
 		year: "numeric",
-		month: "long", 
+		month: "long",
 		day: "numeric",
 		hour: "2-digit",
 		minute: "2-digit",
@@ -54,15 +54,15 @@ const getPermissionBadgeVariant = (hasPermission: boolean) => {
 	return hasPermission ? "success" : "secondary";
 };
 
-const PermissionBadge = ({ 
-	type, 
-	hasPermission 
-}: { 
-	type: string; 
-	hasPermission: boolean 
+const PermissionBadge = ({
+	type,
+	hasPermission,
+}: {
+	type: string;
+	hasPermission: boolean;
 }) => (
-	<Badge 
-		size="sm" 
+	<Badge
+		size="sm"
 		variant={getPermissionBadgeVariant(hasPermission)}
 		className="text-xs flex items-center gap-1"
 	>
@@ -84,13 +84,10 @@ export function PermissionDetailsSheet({
 		[collectionsData?.collections],
 	);
 
-	const { 
-		data: permissionsData, 
-		isLoading: permissionsLoading 
-	} = useRoleAllCollectionPermissions(
-		role?.name || "", 
-		{ enabled: !!role?.name && isOpen }
-	);
+	const { data: permissionsData, isLoading: permissionsLoading } =
+		useRoleAllCollectionPermissions(role?.name || "", {
+			enabled: !!role?.name && isOpen,
+		});
 
 	useEffect(() => {
 		if (isOpen && role) {
@@ -141,7 +138,9 @@ export function PermissionDetailsSheet({
 						<Tabs defaultValue="overview" className="w-full">
 							<TabsList className="grid w-full grid-cols-2 !bg-nocta-950/80">
 								<TabsTrigger value="overview">Overview</TabsTrigger>
-								<TabsTrigger value="permissions">Collection Permissions</TabsTrigger>
+								<TabsTrigger value="permissions">
+									Collection Permissions
+								</TabsTrigger>
 							</TabsList>
 
 							<TabsContent value="overview" className="mt-6">
@@ -149,7 +148,10 @@ export function PermissionDetailsSheet({
 									<div className="p-4 bg-nocta-100 dark:bg-nocta-800/30 rounded-lg space-y-4">
 										<div className="flex items-center gap-3 mb-4">
 											<div className="p-2 bg-nocta-200 dark:bg-nocta-700 rounded-lg">
-												<ShieldCheckIcon size={20} className="text-nocta-600 dark:text-nocta-400" />
+												<ShieldCheckIcon
+													size={20}
+													className="text-nocta-600 dark:text-nocta-400"
+												/>
 											</div>
 											<div className="flex-1">
 												<h4 className="text-lg font-light text-nocta-900 dark:text-nocta-100">
@@ -213,7 +215,8 @@ export function PermissionDetailsSheet({
 												Collection Permissions
 											</label>
 											<p className="text-sm text-nocta-900 dark:text-nocta-100 mt-1">
-												Configured for {Object.keys(rolePermissions).length} collection(s)
+												Configured for {Object.keys(rolePermissions).length}{" "}
+												collection(s)
 											</p>
 										</div>
 									</div>
@@ -226,7 +229,9 @@ export function PermissionDetailsSheet({
 										<div className="space-y-3">
 											{collections.map((collection: Collection) => {
 												const permissions = rolePermissions[collection.name];
-												const hasPermissions = permissions && Object.values(permissions).some(p => p === true);
+												const hasPermissions =
+													permissions &&
+													Object.values(permissions).some((p) => p === true);
 
 												return (
 													<div
@@ -245,19 +250,38 @@ export function PermissionDetailsSheet({
 																)}
 															</div>
 															{!hasPermissions && (
-																<Badge size="sm" variant="secondary" className="text-xs">
+																<Badge
+																	size="sm"
+																	variant="secondary"
+																	className="text-xs"
+																>
 																	No Permissions
 																</Badge>
 															)}
 														</div>
-														
+
 														{permissions ? (
 															<div className="flex flex-wrap gap-2">
-																<PermissionBadge type="Create" hasPermission={permissions.can_create} />
-																<PermissionBadge type="Read" hasPermission={permissions.can_read} />
-																<PermissionBadge type="Update" hasPermission={permissions.can_update} />
-																<PermissionBadge type="Delete" hasPermission={permissions.can_delete} />
-																<PermissionBadge type="List" hasPermission={permissions.can_list} />
+																<PermissionBadge
+																	type="Create"
+																	hasPermission={permissions.can_create}
+																/>
+																<PermissionBadge
+																	type="Read"
+																	hasPermission={permissions.can_read}
+																/>
+																<PermissionBadge
+																	type="Update"
+																	hasPermission={permissions.can_update}
+																/>
+																<PermissionBadge
+																	type="Delete"
+																	hasPermission={permissions.can_delete}
+																/>
+																<PermissionBadge
+																	type="List"
+																	hasPermission={permissions.can_list}
+																/>
 															</div>
 														) : (
 															<div className="text-sm text-nocta-500 dark:text-nocta-500">

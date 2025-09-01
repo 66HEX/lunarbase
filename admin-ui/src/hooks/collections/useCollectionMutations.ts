@@ -244,14 +244,21 @@ export const useSaveCollectionPermissions = () => {
 					can_delete: typedUserPerms.can_delete,
 					can_list: typedUserPerms.can_list,
 				};
-				await permissionsApi.setUserCollectionPermissions(userPermissionRequest);
+				await permissionsApi.setUserCollectionPermissions(
+					userPermissionRequest,
+				);
 			}
 
 			return { collectionName, permissions };
 		},
 		onSuccess: ({ collectionName }) => {
 			queryClient.invalidateQueries({
-				queryKey: ["permissions", "collection-permissions", "all", collectionName],
+				queryKey: [
+					"permissions",
+					"collection-permissions",
+					"all",
+					collectionName,
+				],
 			});
 			queryClient.invalidateQueries({
 				queryKey: ["permissions", "roles"],

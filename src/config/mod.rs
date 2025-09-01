@@ -1,5 +1,5 @@
-use serde::Deserialize;
 use crate::cli::commands::serve::ServeArgs;
+use serde::Deserialize;
 
 #[derive(Debug, Deserialize, Clone, Default)]
 pub struct Config {
@@ -34,7 +34,9 @@ impl Config {
         Self::from_env_with_args(None)
     }
 
-    pub fn from_env_with_args(serve_args: Option<&ServeArgs>) -> Result<Self, Box<dyn std::error::Error>> {
+    pub fn from_env_with_args(
+        serve_args: Option<&ServeArgs>,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
         dotenvy::dotenv().ok();
 
         let (server_host, server_port) = if let Some(args) = serve_args {
@@ -44,23 +46,23 @@ impl Config {
         };
 
         let enable_tls = if let Some(args) = serve_args {
-            if args.tls {
-                Some(true)
-            } else {
-                Some(false)
-            }
+            if args.tls { Some(true) } else { Some(false) }
         } else {
             Some(false)
         };
 
         let tls_cert_path = if let Some(args) = serve_args {
-            args.tls_cert.as_ref().map(|p| p.to_string_lossy().to_string())
+            args.tls_cert
+                .as_ref()
+                .map(|p| p.to_string_lossy().to_string())
         } else {
             None
         };
 
         let tls_key_path = if let Some(args) = serve_args {
-            args.tls_key.as_ref().map(|p| p.to_string_lossy().to_string())
+            args.tls_key
+                .as_ref()
+                .map(|p| p.to_string_lossy().to_string())
         } else {
             None
         };
@@ -83,7 +85,11 @@ impl Config {
             admin_username: std::env::var("LUNARBASE_ADMIN_USERNAME").ok(),
             resend_api_key: std::env::var("RESEND_API_KEY").ok(),
             email_from: std::env::var("EMAIL_FROM").ok(),
-            frontend_url: Self::build_frontend_url(&server_host, server_port, enable_tls.unwrap_or(false)),
+            frontend_url: Self::build_frontend_url(
+                &server_host,
+                server_port,
+                enable_tls.unwrap_or(false),
+            ),
             s3_bucket_name: std::env::var("S3_BUCKET_NAME").ok(),
             s3_region: std::env::var("S3_REGION").ok(),
             s3_access_key_id: std::env::var("S3_ACCESS_KEY_ID").ok(),

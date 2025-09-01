@@ -43,7 +43,9 @@ impl fmt::Display for LunarbaseError {
             LunarbaseError::TokenMissing => write!(f, "Token missing"),
             LunarbaseError::PasswordResetTokenInvalid => write!(f, "Invalid password reset token"),
             LunarbaseError::PasswordResetTokenExpired => write!(f, "Password reset token expired"),
-            LunarbaseError::WeakPassword => write!(f, "Password does not meet security requirements"),
+            LunarbaseError::WeakPassword => {
+                write!(f, "Password does not meet security requirements")
+            }
             LunarbaseError::InsufficientPermissions => write!(f, "Insufficient permissions"),
             LunarbaseError::RateLimitExceeded => write!(f, "Rate limit exceeded"),
             LunarbaseError::ValidationError(errors) => {
@@ -84,7 +86,9 @@ impl IntoResponse for LunarbaseError {
                 "User is already verified",
                 "USER_ALREADY_VERIFIED",
             ),
-            LunarbaseError::UserNotFound => (StatusCode::NOT_FOUND, "User not found", "USER_NOT_FOUND"),
+            LunarbaseError::UserNotFound => {
+                (StatusCode::NOT_FOUND, "User not found", "USER_NOT_FOUND")
+            }
             LunarbaseError::TokenExpired => (
                 StatusCode::UNAUTHORIZED,
                 "Token has expired",
@@ -130,8 +134,12 @@ impl IntoResponse for LunarbaseError {
                 "Validation failed",
                 "VALIDATION_ERROR",
             ),
-            LunarbaseError::BadRequest(_) => (StatusCode::BAD_REQUEST, "Bad request", "BAD_REQUEST"),
-            LunarbaseError::Conflict(_) => (StatusCode::CONFLICT, "Resource already exists", "CONFLICT"),
+            LunarbaseError::BadRequest(_) => {
+                (StatusCode::BAD_REQUEST, "Bad request", "BAD_REQUEST")
+            }
+            LunarbaseError::Conflict(_) => {
+                (StatusCode::CONFLICT, "Resource already exists", "CONFLICT")
+            }
             LunarbaseError::DatabaseError => (
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "A database error occurred. Please try again later",
@@ -142,8 +150,12 @@ impl IntoResponse for LunarbaseError {
                 "An internal error occurred. Please try again later",
                 "INTERNAL_ERROR",
             ),
-            LunarbaseError::NotFound(_) => (StatusCode::NOT_FOUND, "Resource not found", "NOT_FOUND"),
-            LunarbaseError::Forbidden(_) => (StatusCode::FORBIDDEN, "Access forbidden", "FORBIDDEN"),
+            LunarbaseError::NotFound(_) => {
+                (StatusCode::NOT_FOUND, "Resource not found", "NOT_FOUND")
+            }
+            LunarbaseError::Forbidden(_) => {
+                (StatusCode::FORBIDDEN, "Access forbidden", "FORBIDDEN")
+            }
         };
 
         let body = Json(json!({

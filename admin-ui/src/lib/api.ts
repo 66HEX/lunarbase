@@ -279,7 +279,9 @@ export const collectionsApi = {
 	},
 
 	getRecordCounts: async (): Promise<CollectionRecordCounts> => {
-		const response = await apiRequest<ApiResponse<CollectionRecordCounts>>('/collections/record-counts');
+		const response = await apiRequest<ApiResponse<CollectionRecordCounts>>(
+			"/collections/record-counts",
+		);
 		return response.data;
 	},
 };

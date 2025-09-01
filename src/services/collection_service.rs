@@ -955,7 +955,10 @@ impl CollectionService {
         CollectionResponse::from_collection(collection).map_err(|_| LunarbaseError::InternalError)
     }
 
-    pub async fn get_collection_by_id(&self, id: i32) -> Result<CollectionResponse, LunarbaseError> {
+    pub async fn get_collection_by_id(
+        &self,
+        id: i32,
+    ) -> Result<CollectionResponse, LunarbaseError> {
         let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
 
         let collection = collections::table
@@ -1901,10 +1904,12 @@ impl CollectionService {
                             match regex::Regex::new(pattern) {
                                 Ok(regex) => {
                                     if !regex.is_match(s) {
-                                        return Err(LunarbaseError::ValidationError(vec![format!(
-                                            "Field '{}' does not match required pattern: {}",
-                                            field.name, pattern
-                                        )]));
+                                        return Err(LunarbaseError::ValidationError(vec![
+                                            format!(
+                                                "Field '{}' does not match required pattern: {}",
+                                                field.name, pattern
+                                            ),
+                                        ]));
                                     }
                                 }
                                 Err(_) => {

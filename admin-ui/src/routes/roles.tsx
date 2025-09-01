@@ -1,12 +1,18 @@
 import {
 	EyeIcon,
 	PencilIcon,
-	TrashIcon,
 	ShieldIcon,
 	ShieldPlusIcon,
+	TrashIcon,
 } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
+import {
+	CreateRoleSheet,
+	EditRoleSheet,
+	PermissionDetailsSheet,
+	RolesHeader,
+} from "@/components/roles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,15 +29,8 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
-
-import {
-	CreateRoleSheet,
-	EditRoleSheet,
-	PermissionDetailsSheet,
-	RolesHeader,
-} from "@/components/roles";
 import { useDebounce } from "@/hooks/";
-import { useRoles, useDeleteRole } from "@/hooks/permissions";
+import { useDeleteRole, useRoles } from "@/hooks/permissions";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { Role } from "@/types/api";
 
@@ -61,10 +60,11 @@ export default function RolesComponent() {
 
 	const filteredRoles = useMemo(() => {
 		if (!searchTerm) return roles;
-		
-		return roles.filter((role) =>
-			role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-			role.description?.toLowerCase().includes(searchTerm.toLowerCase())
+
+		return roles.filter(
+			(role) =>
+				role.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+				role.description?.toLowerCase().includes(searchTerm.toLowerCase()),
 		);
 	}, [roles, searchTerm]);
 
@@ -85,7 +85,6 @@ export default function RolesComponent() {
 		const role = filteredRoles.find((r) => r.id === roleId);
 		if (!role) return;
 
-		// Prevent deletion of admin role
 		if (role.name === "admin") {
 			return;
 		}
@@ -236,7 +235,9 @@ export default function RolesComponent() {
 								: "text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
 						}`}
 						onClick={() => handleDeleteRole(role.id)}
-						title={role.name === "admin" ? "Cannot delete admin role" : "Delete Role"}
+						title={
+							role.name === "admin" ? "Cannot delete admin role" : "Delete Role"
+						}
 						disabled={role.name === "admin"}
 					>
 						<TrashIcon size={16} />
@@ -347,10 +348,9 @@ export default function RolesComponent() {
 
 			<PermissionDetailsSheet
 				isOpen={sheets.roleDetails}
-				onOpenChange={(open) => !open && (closeSheet("roleDetails"))}
+				onOpenChange={(open) => !open && closeSheet("roleDetails")}
 				role={roleToView}
 			/>
-          
 
 			<Dialog
 				open={modals.deleteRole}
@@ -361,7 +361,8 @@ export default function RolesComponent() {
 						<DialogTitle>Delete Role</DialogTitle>
 						<DialogDescription>
 							Are you sure you want to delete role "{roleToDelete?.name}"? This
-							action cannot be undone and will affect all users assigned to this role.
+							action cannot be undone and will affect all users assigned to this
+							role.
 						</DialogDescription>
 					</DialogHeader>
 					<DialogFooter>

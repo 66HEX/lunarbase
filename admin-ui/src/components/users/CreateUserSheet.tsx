@@ -31,10 +31,7 @@ import { toast } from "@/components/ui/toast";
 import { useCreateUser } from "@/hooks";
 import { useRoles } from "@/hooks/permissions/usePermissions";
 import type { CreateUserRequest } from "@/types/api";
-import {
-	defaultUserFormData,
-	userFieldDescriptions,
-} from "./constants";
+import { defaultUserFormData, userFieldDescriptions } from "./constants";
 import { validateCreateUserData } from "./validation";
 
 interface CreateUserSheetProps {
@@ -234,7 +231,9 @@ export function CreateUserSheet({
 													<SelectItem key={role.name} value={role.name}>
 														{role.name}
 														{role.description && (
-															<span className="text-muted-foreground ml-2">({role.description})</span>
+															<span className="text-muted-foreground ml-2">
+																({role.description})
+															</span>
 														)}
 													</SelectItem>
 												)) || []

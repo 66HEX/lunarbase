@@ -114,7 +114,7 @@ impl StaticAssets {
     pub fn get_logo() -> Option<Cow<'static, [u8]>> {
         Self::get("logo.png").map(|asset| asset.data)
     }
-    
+
     pub fn is_logo_available() -> bool {
         Self::get("logo.png").is_some()
     }

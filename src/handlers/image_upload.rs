@@ -1,6 +1,6 @@
 use crate::{
     AppState,
-    utils::{ApiResponse, LunarbaseError, Claims},
+    utils::{ApiResponse, Claims, LunarbaseError},
 };
 use axum::{
     Extension,
@@ -80,7 +80,9 @@ pub async fn upload_image(
     }
 
     let file_bytes = file_data.ok_or_else(|| {
-        LunarbaseError::BadRequest("No file found in request. Please include a file field.".to_string())
+        LunarbaseError::BadRequest(
+            "No file found in request. Please include a file field.".to_string(),
+        )
     })?;
 
     let file_name = filename.unwrap_or_else(|| "image".to_string());

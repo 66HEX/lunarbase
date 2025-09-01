@@ -2,7 +2,7 @@ use crate::AppState;
 use crate::services::configuration_manager::ConfigurationAccess;
 use axum::{Router, extract::DefaultBodyLimit, middleware};
 use tower_http::cors::CorsLayer;
-use tower_http::trace::{TraceLayer, DefaultMakeSpan, DefaultOnResponse};
+use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 use tracing::Level;
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -29,7 +29,7 @@ pub fn setup_logging() {
                 .with_target(true)
                 .with_thread_ids(true)
                 .with_line_number(true)
-                .with_file(true)
+                .with_file(true),
         )
         .init();
 }
@@ -67,7 +67,7 @@ pub async fn setup_cors(app_state: &AppState) -> CorsLayer {
 
 pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     let cors_layer = setup_cors(&app_state).await;
-    
+
     let trace_layer = TraceLayer::new_for_http()
         .make_span_with(DefaultMakeSpan::new().level(Level::DEBUG))
         .on_response(
@@ -75,7 +75,7 @@ pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
                 .level(Level::DEBUG)
                 .latency_unit(tower_http::LatencyUnit::Micros),
         );
-    
+
     let mut router = app
         .layer(cors_layer)
         .layer(trace_layer)

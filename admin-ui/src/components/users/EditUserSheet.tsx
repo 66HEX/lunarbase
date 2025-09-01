@@ -244,8 +244,11 @@ export function EditUserSheet({
 													<SelectItem key={role.name} value={role.name}>
 														{role.name}
 														{role.description && (
-															<span className="text-muted-foreground ml-2">({role.description})</span>
-														)}														</SelectItem>
+															<span className="text-muted-foreground ml-2">
+																({role.description})
+															</span>
+														)}{" "}
+													</SelectItem>
 												)) || []
 											)}
 										</SelectContent>

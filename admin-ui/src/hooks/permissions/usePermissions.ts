@@ -124,15 +124,11 @@ export const useRoleAllCollectionPermissions = (
 			return response.json();
 		},
 	});
-	
+
 	const collections = collectionsData?.collections || [];
 
 	return useQuery({
-		queryKey: [
-			...permissionKeys.collectionPermissions(),
-			"role-all",
-			roleName,
-		],
+		queryKey: [...permissionKeys.collectionPermissions(), "role-all", roleName],
 		queryFn: async () => {
 			const permissionsPromises = collections.map(
 				async (collection: { name: string }) => {

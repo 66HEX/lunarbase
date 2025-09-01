@@ -21,7 +21,8 @@ use crate::{
     schema::users,
     services::configuration_manager::ConfigurationAccess,
     utils::{
-        ApiResponse, LunarbaseError, Claims, CookieService, ErrorResponse, client_ip::extract_client_ip,
+        ApiResponse, Claims, CookieService, ErrorResponse, LunarbaseError,
+        client_ip::extract_client_ip,
     },
 };
 
@@ -60,7 +61,9 @@ pub async fn register(
         .await
         .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    payload.validate().map_err(LunarbaseError::ValidationError)?;
+    payload
+        .validate()
+        .map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
@@ -484,7 +487,9 @@ pub async fn oauth_authorize(
     let (auth_url, _state) = oauth_service
         .get_authorization_url(&provider)
         .map_err(|_| {
-            LunarbaseError::ValidationError(vec!["Invalid OAuth provider or configuration".to_string()])
+            LunarbaseError::ValidationError(vec![
+                "Invalid OAuth provider or configuration".to_string(),
+            ])
         })?;
 
     Ok(Redirect::temporary(&auth_url))
@@ -526,9 +531,9 @@ pub async fn oauth_callback(
         LunarbaseError::ValidationError(vec!["Missing authorization code".to_string()])
     })?;
 
-    let state = query
-        .state
-        .ok_or_else(|| LunarbaseError::ValidationError(vec!["Missing state parameter".to_string()]))?;
+    let state = query.state.ok_or_else(|| {
+        LunarbaseError::ValidationError(vec!["Missing state parameter".to_string()])
+    })?;
 
     let access_token = oauth_service
         .exchange_code_for_token(&provider, &code, &state)
@@ -663,7 +668,10 @@ pub async fn logout(
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<LogoutResponse>>), LunarbaseError> {
     let expires_at = crate::utils::jwt_service::JwtService::timestamp_to_naive_datetime(claims.exp);
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::InternalError)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     app_state
         .auth_state
@@ -732,7 +740,9 @@ pub async fn login(
         .await
         .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    payload.validate().map_err(LunarbaseError::ValidationError)?;
+    payload
+        .validate()
+        .map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
@@ -869,8 +879,8 @@ pub async fn refresh_token(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
-    let refresh_token =
-        CookieService::extract_refresh_token(request.headers()).ok_or(LunarbaseError::TokenInvalid)?;
+    let refresh_token = CookieService::extract_refresh_token(request.headers())
+        .ok_or(LunarbaseError::TokenInvalid)?;
 
     let refresh_claims = app_state
         .auth_state
@@ -946,7 +956,10 @@ pub async fn me(
 ) -> Result<Json<ApiResponse<UserResponse>>, LunarbaseError> {
     let claims = extract_user_claims(&request)?;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
     let mut conn = app_state
         .db_pool
@@ -997,7 +1010,9 @@ pub async fn register_admin(
         .await
         .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
 
-    payload.validate().map_err(LunarbaseError::ValidationError)?;
+    payload
+        .validate()
+        .map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool

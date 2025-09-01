@@ -83,7 +83,6 @@ export function EditRoleSheet({
 	const handleUpdateRole = async () => {
 		if (!role || !validateForm()) return;
 
-		// Prevent updating admin role name
 		if (role.name === "admin" && formData.name && formData.name !== "admin") {
 			toast({
 				title: "Cannot modify admin role",
@@ -144,10 +143,7 @@ export function EditRoleSheet({
 		<Sheet
 			open={isOpen}
 			onOpenChange={(newOpen) => {
-				if (
-					!newOpen &&
-					(!allowClose || updateRoleMutation.isPending)
-				) {
+				if (!newOpen && (!allowClose || updateRoleMutation.isPending)) {
 					return;
 				}
 
@@ -160,7 +156,9 @@ export function EditRoleSheet({
 			<SheetContent side="right" size="lg">
 				<SheetHeader>
 					<SheetTitle className="flex items-center gap-2">Edit Role</SheetTitle>
-					<SheetDescription>Update role information and priority</SheetDescription>
+					<SheetDescription>
+						Update role information and priority
+					</SheetDescription>
 				</SheetHeader>
 
 				<div className="flex-1 overflow-y-auto px-6 py-4">
@@ -198,7 +196,9 @@ export function EditRoleSheet({
 										placeholder="Describe what this role is for..."
 										className="w-full"
 										value={formData.description || ""}
-										onChange={(e) => updateFormData("description", e.target.value)}
+										onChange={(e) =>
+											updateFormData("description", e.target.value)
+										}
 										variant={fieldErrors.description ? "error" : "default"}
 										rows={3}
 									/>
@@ -232,7 +232,10 @@ export function EditRoleSheet({
 										</SelectTrigger>
 										<SelectContent>
 											{rolePriorityOptions.map((option) => (
-												<SelectItem key={option.value} value={option.value.toString()}>
+												<SelectItem
+													key={option.value}
+													value={option.value.toString()}
+												>
 													{option.label}
 												</SelectItem>
 											))}
@@ -254,7 +257,8 @@ export function EditRoleSheet({
 											Protected Role
 										</h4>
 										<p className="text-sm text-blue-700 dark:text-blue-300">
-											This is the admin role. The name cannot be changed to maintain system security.
+											This is the admin role. The name cannot be changed to
+											maintain system security.
 										</p>
 									</div>
 								</div>

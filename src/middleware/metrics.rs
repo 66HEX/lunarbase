@@ -39,23 +39,16 @@ impl MetricsState {
         let request_duration_microseconds = Histogram::with_opts(
             HistogramOpts::new(
                 "http_request_duration_microseconds",
-                "HTTP request duration in microseconds"
-            ).buckets(vec![
-                100.0,
-                500.0,
-                1000.0,
-                5000.0,
-                10000.0,
-                50000.0,
-                100000.0,
-                500000.0,
-                1000000.0,
+                "HTTP request duration in microseconds",
+            )
+            .buckets(vec![
+                100.0, 500.0, 1000.0, 5000.0, 10000.0, 50000.0, 100000.0, 500000.0, 1000000.0,
             ]),
         )?;
-        
+
         let slow_requests_counter = Counter::new(
-            "http_slow_requests_total", 
-            "Total number of slow HTTP requests (>100ms)"
+            "http_slow_requests_total",
+            "Total number of slow HTTP requests (>100ms)",
         )?;
 
         let active_connections = Gauge::new(
@@ -197,21 +190,34 @@ pub async fn metrics_middleware(
     let duration = start.elapsed();
     let duration_micros = duration.as_micros() as f64;
     let duration_seconds = duration.as_secs_f64();
-    
-    app_state.metrics_state.request_duration.observe(duration_seconds);
-    app_state.metrics_state.request_duration_microseconds.observe(duration_micros);
-    
+
+    app_state
+        .metrics_state
+        .request_duration
+        .observe(duration_seconds);
+    app_state
+        .metrics_state
+        .request_duration_microseconds
+        .observe(duration_micros);
+
     if duration_micros > 100_000.0 {
         app_state.metrics_state.slow_requests_counter.inc();
         tracing::warn!(
             "Slow request detected: {} {} - {:.2}ms (status: {})",
-            method, uri, duration_micros / 1000.0, status
+            method,
+            uri,
+            duration_micros / 1000.0,
+            status
         );
     }
-    
+
     tracing::debug!(
         "Request {} {} completed in {:.0}μs ({:.3}ms) - status: {}",
-        method, uri, duration_micros, duration_micros / 1000.0, status
+        method,
+        uri,
+        duration_micros,
+        duration_micros / 1000.0,
+        status
     );
 
     response

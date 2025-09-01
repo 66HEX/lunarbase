@@ -4,7 +4,7 @@ use crate::{
         CollectionResponse, CreateCollectionRequest, CreateRecordRequest, FileUpload,
         RecordResponse, UpdateCollectionRequest, UpdateRecordRequest, User,
     },
-    utils::{ApiResponse, LunarbaseError, Claims, ErrorResponse},
+    utils::{ApiResponse, Claims, ErrorResponse, LunarbaseError},
 };
 use axum::{
     Extension,
@@ -20,9 +20,15 @@ async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, Lunar
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+    let mut conn = state
+        .db_pool
+        .get()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     users::table
         .filter(users::id.eq(user_id))
@@ -191,7 +197,10 @@ pub async fn delete_collection(
 
     let user_id: i32 = user.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+    let mut conn = state
+        .db_pool
+        .get()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     let user_model = users::table
         .filter(users::id.eq(user_id))
@@ -199,14 +208,15 @@ pub async fn delete_collection(
         .first::<crate::models::User>(&mut conn)
         .map_err(|_| LunarbaseError::NotFound("User not found".to_string()))?;
 
-    let collection = state
-        .collection_service
-        .get_collection(&name)
-        .await?;
+    let collection = state.collection_service.get_collection(&name).await?;
 
     let has_permission = state
         .permission_service
-        .check_collection_permission(&user_model, collection.id, crate::models::Permission::Delete)
+        .check_collection_permission(
+            &user_model,
+            collection.id,
+            crate::models::Permission::Delete,
+        )
         .await?;
 
     if !has_permission {
@@ -259,10 +269,12 @@ pub async fn create_record(
                 .bytes()
                 .await
                 .map_err(|_| LunarbaseError::BadRequest("Failed to read data field".to_string()))?;
-            let data_str = String::from_utf8(data_bytes.to_vec())
-                .map_err(|_| LunarbaseError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
-            data = serde_json::from_str(&data_str)
-                .map_err(|_| LunarbaseError::BadRequest("Invalid JSON in data field".to_string()))?;
+            let data_str = String::from_utf8(data_bytes.to_vec()).map_err(|_| {
+                LunarbaseError::BadRequest("Invalid UTF-8 in data field".to_string())
+            })?;
+            data = serde_json::from_str(&data_str).map_err(|_| {
+                LunarbaseError::BadRequest("Invalid JSON in data field".to_string())
+            })?;
         } else if name.starts_with("file_") {
             let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
             let filename = field.file_name().unwrap_or("unknown").to_string();
@@ -296,9 +308,15 @@ pub async fn create_record(
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+    let mut conn = state
+        .db_pool
+        .get()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
@@ -395,9 +413,15 @@ pub async fn list_all_records(
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+    let mut conn = state
+        .db_pool
+        .get()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
@@ -572,10 +596,12 @@ pub async fn update_record(
                 .bytes()
                 .await
                 .map_err(|_| LunarbaseError::BadRequest("Failed to read data field".to_string()))?;
-            let data_str = String::from_utf8(data_bytes.to_vec())
-                .map_err(|_| LunarbaseError::BadRequest("Invalid UTF-8 in data field".to_string()))?;
-            data = serde_json::from_str(&data_str)
-                .map_err(|_| LunarbaseError::BadRequest("Invalid JSON in data field".to_string()))?;
+            let data_str = String::from_utf8(data_bytes.to_vec()).map_err(|_| {
+                LunarbaseError::BadRequest("Invalid UTF-8 in data field".to_string())
+            })?;
+            data = serde_json::from_str(&data_str).map_err(|_| {
+                LunarbaseError::BadRequest("Invalid JSON in data field".to_string())
+            })?;
         } else if name.starts_with("file_") {
             let field_name = name.strip_prefix("file_").unwrap_or(&name).to_string();
             let filename = field.file_name().unwrap_or("unknown").to_string();
@@ -609,9 +635,15 @@ pub async fn update_record(
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+    let mut conn = state
+        .db_pool
+        .get()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
@@ -665,9 +697,15 @@ pub async fn delete_record(
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+    let mut conn = state
+        .db_pool
+        .get()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     let user = users::table
         .filter(users::id.eq(user_id))
@@ -827,7 +865,11 @@ pub async fn get_collections_record_counts(
                 count: i64,
             }
 
-            let mut conn = state.collection_service.pool.get().map_err(|_| LunarbaseError::InternalError)?;
+            let mut conn = state
+                .collection_service
+                .pool
+                .get()
+                .map_err(|_| LunarbaseError::InternalError)?;
             let count_result: Result<CountResult, _> =
                 diesel::sql_query(&count_sql).get_result(&mut conn);
 

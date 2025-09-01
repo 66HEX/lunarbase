@@ -38,7 +38,11 @@ impl OwnershipService {
         Ok(())
     }
 
-    pub fn check_ownership(&self, user: &User, record: &RecordResponse) -> Result<bool, LunarbaseError> {
+    pub fn check_ownership(
+        &self,
+        user: &User,
+        record: &RecordResponse,
+    ) -> Result<bool, LunarbaseError> {
         if let Some(owner_id_value) = record.data.get("owner_id") {
             if self.matches_user_id(owner_id_value, user.id) {
                 return Ok(true);

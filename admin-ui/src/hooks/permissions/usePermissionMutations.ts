@@ -75,18 +75,15 @@ export const useSetUserCollectionPermissions = () => {
 			},
 		) => permissionsApi.setUserCollectionPermissions(data),
 		onSuccess: (_, variables) => {
-			// Invalidate specific user permission
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.userPermission(
 					variables.user_id,
 					variables.collection_name,
 				),
 			});
-			// Invalidate all user permissions
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.userPermissions(),
 			});
-			// Invalidate collection permissions for this collection
 			queryClient.invalidateQueries({
 				queryKey: [
 					...permissionKeys.collectionPermissions(),

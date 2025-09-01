@@ -158,7 +158,9 @@ impl UpdateRoleRequest {
             } else if name.len() > 50 {
                 errors.push("Role name too long (max 50 characters)".to_string());
             } else if !name.chars().all(|c| c.is_alphanumeric() || c == '_') {
-                errors.push("Role name can only contain letters, numbers, and underscores".to_string());
+                errors.push(
+                    "Role name can only contain letters, numbers, and underscores".to_string(),
+                );
             }
         }
 

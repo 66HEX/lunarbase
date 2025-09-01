@@ -14,10 +14,10 @@ use utoipa::ToSchema;
 
 use crate::{
     AppState,
-    models::{NewUser, UpdateUser, User, Role},
-    schema::{users, roles},
+    models::{NewUser, Role, UpdateUser, User},
+    schema::{roles, users},
     utils::auth_error::ApiResponse,
-    utils::{LunarbaseError, Claims, ErrorResponse},
+    utils::{Claims, ErrorResponse, LunarbaseError},
 };
 
 #[derive(Debug, Deserialize, ToSchema)]
@@ -325,7 +325,9 @@ pub async fn create_user(
         return Err(LunarbaseError::InsufficientPermissions);
     }
 
-    payload.validate().map_err(LunarbaseError::ValidationError)?;
+    payload
+        .validate()
+        .map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
@@ -339,9 +341,10 @@ pub async fn create_user(
         .map_err(|_| LunarbaseError::DatabaseError)?;
 
     if role_exists.is_none() {
-        return Err(LunarbaseError::ValidationError(vec![
-            format!("Role '{}' does not exist", payload.role),
-        ]));
+        return Err(LunarbaseError::ValidationError(vec![format!(
+            "Role '{}' does not exist",
+            payload.role
+        )]));
     }
 
     let existing_email = users::table
@@ -504,7 +507,9 @@ pub async fn update_user(
         return Err(LunarbaseError::InsufficientPermissions);
     }
 
-    payload.validate().map_err(LunarbaseError::ValidationError)?;
+    payload
+        .validate()
+        .map_err(LunarbaseError::ValidationError)?;
 
     let mut conn = app_state
         .db_pool
@@ -519,9 +524,10 @@ pub async fn update_user(
             .map_err(|_| LunarbaseError::DatabaseError)?;
 
         if role_exists.is_none() {
-            return Err(LunarbaseError::ValidationError(vec![
-                format!("Role '{}' does not exist", role),
-            ]));
+            return Err(LunarbaseError::ValidationError(vec![format!(
+                "Role '{}' does not exist",
+                role
+            )]));
         }
     }
 
@@ -584,7 +590,8 @@ pub async fn update_user(
         let mut salt_bytes = [0u8; 32];
         OsRng.fill_bytes(&mut salt_bytes);
 
-        let salt = SaltString::encode_b64(&salt_bytes).map_err(|_| LunarbaseError::InternalError)?;
+        let salt =
+            SaltString::encode_b64(&salt_bytes).map_err(|_| LunarbaseError::InternalError)?;
 
         let peppered_password = format!("{}{}", new_password, &app_state.password_pepper);
 

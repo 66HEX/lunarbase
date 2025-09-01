@@ -295,7 +295,8 @@ impl AppState {
         if let Some(ref s3_service) = s3_service_option {
             collection_service = collection_service.with_s3_service(s3_service.clone());
         }
-        let oauth_config = utils::oauth_service::OAuthConfig::from_env_with_frontend_url(&config.frontend_url);
+        let oauth_config =
+            utils::oauth_service::OAuthConfig::from_env_with_frontend_url(&config.frontend_url);
         let oauth_service = utils::OAuthService::new(oauth_config);
         let email_service = EmailService::new(config, db_pool.clone());
 

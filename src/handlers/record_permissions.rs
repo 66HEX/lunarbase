@@ -9,16 +9,22 @@ use serde_json::{Value, json};
 use crate::{
     AppState,
     models::{RecordPermission, SetRecordPermissionRequest, User},
-    utils::{ApiResponse, LunarbaseError, Claims},
+    utils::{ApiResponse, Claims, LunarbaseError},
 };
 
 async fn claims_to_user(claims: &Claims, state: &AppState) -> Result<User, LunarbaseError> {
     use crate::schema::users;
     use diesel::prelude::*;
 
-    let user_id: i32 = claims.sub.parse().map_err(|_| LunarbaseError::TokenInvalid)?;
+    let user_id: i32 = claims
+        .sub
+        .parse()
+        .map_err(|_| LunarbaseError::TokenInvalid)?;
 
-    let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+    let mut conn = state
+        .db_pool
+        .get()
+        .map_err(|_| LunarbaseError::InternalError)?;
 
     users::table
         .filter(users::id.eq(user_id))
@@ -123,7 +129,10 @@ pub async fn get_record_permissions(
     } else {
         use crate::schema::users;
         use diesel::prelude::*;
-        let mut conn = state.db_pool.get().map_err(|_| LunarbaseError::InternalError)?;
+        let mut conn = state
+            .db_pool
+            .get()
+            .map_err(|_| LunarbaseError::InternalError)?;
 
         users::table
             .filter(users::id.eq(user_id))

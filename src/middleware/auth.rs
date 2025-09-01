@@ -9,7 +9,7 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 use crate::services::{ConfigurationAccess, ConfigurationManager};
-use crate::utils::{LunarbaseError, Claims, CookieService, JwtService};
+use crate::utils::{Claims, CookieService, JwtService, LunarbaseError};
 use diesel::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 

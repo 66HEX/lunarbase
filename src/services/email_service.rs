@@ -1,7 +1,7 @@
 use chrono::{Duration, Utc};
 use diesel::prelude::*;
 use diesel::r2d2::{ConnectionManager, Pool};
-use resend_rs::{Resend, types::CreateEmailBaseOptions, types::Attachment};
+use resend_rs::{Resend, types::Attachment, types::CreateEmailBaseOptions};
 use std::borrow::Cow;
 use tracing::{debug, error, warn};
 use uuid::Uuid;
@@ -37,14 +37,14 @@ impl EmailService {
         };
 
         let from_email = config.email_from.clone().unwrap_or_default();
-        
+
         let logo_bytes = StaticAssets::get_logo();
         if logo_bytes.is_some() {
             debug!("EmailService: Logo loaded successfully from embedded assets");
         } else {
             warn!("EmailService: Logo not found in embedded assets - emails will not include logo");
         }
-        
+
         debug!(
             "EmailService: Configured with from_email: {}, frontend_url: {}",
             from_email, config.frontend_url
@@ -231,7 +231,6 @@ impl EmailService {
             .with_html(&html_content)
             .with_text(&text_content);
 
-        // Add logo attachment if available
         if let Some(logo_attachment) = self.create_logo_attachment() {
             email_request = email_request.with_attachment(logo_attachment);
         }
@@ -611,7 +610,7 @@ Need help? Contact your system administrator.
     pub fn get_frontend_url(&self) -> &str {
         &self.frontend_url
     }
-    
+
     fn create_logo_attachment(&self) -> Option<Attachment> {
         self.logo_bytes.as_ref().map(|logo_data| {
             Attachment::from_content(logo_data.to_vec())

@@ -51,7 +51,7 @@ function DashboardComponent() {
 			name: "WebSocket Monitor",
 			href: "/websocket",
 			icon: ActivityIcon,
-		}
+		},
 	];
 
 	const overviewCards = [

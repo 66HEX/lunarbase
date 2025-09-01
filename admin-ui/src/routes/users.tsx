@@ -7,6 +7,7 @@ import {
 } from "@phosphor-icons/react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useState } from "react";
+import { CreateRoleSheet } from "@/components/roles";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -24,14 +25,12 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import type { TableColumn } from "@/components/ui/table";
 import { Table } from "@/components/ui/table";
-
 import {
 	CreateUserSheet,
 	EditUserSheet,
 	UserDetailsSheet,
 	UsersHeader,
 } from "@/components/users";
-import { CreateRoleSheet } from "@/components/roles";
 import { useDebounce, useDeleteUser, useUsersWithPagination } from "@/hooks/";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { User } from "@/types/api";

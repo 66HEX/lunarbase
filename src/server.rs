@@ -26,9 +26,9 @@ use tracing::{info, warn};
 use utoipa::OpenApi;
 use utoipa_swagger_ui::SwaggerUi;
 
+use crate::cli::commands::serve::ServeArgs;
 use crate::database::{create_pool, create_pool_with_size};
 use crate::services::{ConfigurationAccess, ConfigurationManager};
-use crate::cli::commands::serve::ServeArgs;
 
 pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
 
@@ -144,8 +144,8 @@ use crate::handlers::{
     backup::{create_manual_backup, get_backup_health},
     collections::{
         create_collection, create_record, delete_collection, delete_record, get_collection,
-        get_collection_schema, get_collections_stats, get_collections_record_counts, get_record, list_all_records,
-        list_collections, list_records, update_collection, update_record,
+        get_collection_schema, get_collections_record_counts, get_collections_stats, get_record,
+        list_all_records, list_collections, list_records, update_collection, update_record,
     },
     configuration::{
         create_setting, delete_setting, get_all_settings, get_setting, get_settings_by_category,
@@ -163,9 +163,10 @@ use crate::handlers::{
         transfer_record_ownership,
     },
     permissions::{
-        create_role, delete_role, get_collection_permissions, get_role, get_role_collection_permission,
-        get_user_accessible_collections, get_user_collection_permissions, list_roles,
-        set_collection_permission, set_user_collection_permission, update_role,
+        create_role, delete_role, get_collection_permissions, get_role,
+        get_role_collection_permission, get_user_accessible_collections,
+        get_user_collection_permissions, list_roles, set_collection_permission,
+        set_user_collection_permission, update_role,
     },
     record_permissions::{
         get_record_permissions, list_record_permissions, remove_record_permission,
@@ -186,7 +187,7 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
         .map_err(|_| "Failed to install default crypto provider")?;
-    
+
     setup_logging();
     info!("Starting LunarBase server...");
 
@@ -224,7 +225,10 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     info!("Using connection pool size: {}", connection_pool_size);
 
     let pool = create_pool_with_size(&config.database_url, connection_pool_size)?;
-    info!("Final database pool created with size: {}", connection_pool_size);
+    info!(
+        "Final database pool created with size: {}",
+        connection_pool_size
+    );
 
     let app_state = AppState::new(
         pool,
@@ -369,7 +373,10 @@ async fn create_router(app_state: AppState, api_only: bool) -> Router {
         .route("/collections/{name}", put(update_collection))
         .route("/collections/{name}", delete(delete_collection))
         .route("/collections/stats", get(get_collections_stats))
-        .route("/collections/record-counts", get(get_collections_record_counts))
+        .route(
+            "/collections/record-counts",
+            get(get_collections_record_counts),
+        )
         .route("/records", get(list_all_records))
         .route("/collections/{name}/records", post(create_record))
         .route("/collections/{name}/records/{id}", put(update_record))
@@ -488,9 +495,7 @@ async fn create_router(app_state: AppState, api_only: bool) -> Router {
 
     let swagger_router = SwaggerUi::new("/docs").url("/docs/openapi.json", ApiDoc::openapi());
 
-    let mut app = Router::new()
-        .nest("/api", api_routes)
-        .merge(swagger_router);
+    let mut app = Router::new().nest("/api", api_routes).merge(swagger_router);
 
     if !api_only {
         app = app
