@@ -41,9 +41,7 @@ const createUserSchema = z.object({
 			(val) => !val || /^[a-zA-Z0-9_]+$/.test(val),
 			"Username can only contain letters, numbers, and underscores",
 		),
-	role: z.enum(["user", "admin"], {
-		message: "Role must be either user or admin",
-	}),
+	role: z.string().min(1, "Role is required"),
 });
 
 const updateUserSchema = z.object({
@@ -94,11 +92,7 @@ const updateUserSchema = z.object({
 			(val) => !val || /^[a-zA-Z0-9_]+$/.test(val),
 			"Username can only contain letters, numbers, and underscores",
 		),
-	role: z
-		.enum(["user", "admin"], {
-			message: "Role must be either user or admin",
-		})
-		.optional(),
+	role: z.string().min(1, "Role is required").optional(),
 	is_active: z.boolean().optional(),
 	is_verified: z.boolean().optional(),
 });

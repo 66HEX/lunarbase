@@ -1,5 +1,32 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- Dynamic role management system with full CRUD operations for custom roles
+- CreateRoleSheet component for creating new roles with name, description, and priority fields
+- Create Role button in users view positioned between search and Create User button
+- useRoles hook integration for loading actual roles from backend instead of hardcoded constants
+- Role validation with Zod schema supporting alphanumeric characters and underscores
+- Priority-based role system with configurable priority levels (0-100)
+- Dynamic role loading in EditUserSheet and CreateUserSheet with loading states
+- Backend role validation against database instead of hardcoded role types
+- Role existence validation in user creation and update endpoints
+- Enhanced role display with descriptions in user management dropdowns
+
+### Changed
+- User role field types updated from union types to string for dynamic role support
+- Frontend validation schemas updated to accept any valid role name instead of hardcoded enum
+- Backend CreateUserRequest and UpdateUserRequest validation updated to check role existence in database
+- Role assignment dropdowns now display actual roles from backend with descriptions
+- User management forms now support any role that exists in the database
+
+### Improved
+- Role-based access control system now fully dynamic and extensible
+- User creation and editing experience enhanced with real-time role loading
+- Type safety maintained while supporting dynamic role assignment
+- Consistent validation patterns between frontend and backend for role management
+
 ## [0.7.0][0.7.0] - 2025-08-31
 
 ### Added

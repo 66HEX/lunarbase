@@ -31,6 +31,7 @@ import {
 	UserDetailsSheet,
 	UsersHeader,
 } from "@/components/users";
+import { CreateRoleSheet } from "@/components/roles";
 import { useDebounce, useDeleteUser, useUsersWithPagination } from "@/hooks/";
 import { useUI, useUIActions } from "@/stores/client.store";
 import type { User } from "@/types/api";
@@ -345,6 +346,7 @@ export default function UsersComponent() {
 				searchTerm={localSearchTerm}
 				onSearchChange={setLocalSearchTerm}
 				onCreateUser={() => openSheet("createUser")}
+				onCreateRole={() => openSheet("createRole")}
 			/>
 
 			{extendedUsers.length > 0 || (loading && !data) ? (
@@ -398,6 +400,11 @@ export default function UsersComponent() {
 			<CreateUserSheet
 				isOpen={sheets.createUser}
 				onOpenChange={(open) => !open && closeSheet("createUser")}
+			/>
+
+			<CreateRoleSheet
+				isOpen={sheets.createRole}
+				onOpenChange={(open) => !open && closeSheet("createRole")}
 			/>
 
 			<UserDetailsSheet

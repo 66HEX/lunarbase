@@ -29,6 +29,7 @@ interface ClientState {
 			createCollection: boolean;
 			editCollection: boolean;
 			permissions: boolean;
+			createRole: boolean;
 		};
 		notifications: Array<{
 			id: string;
@@ -131,6 +132,7 @@ const initialState: ClientState = {
 			createCollection: false,
 			editCollection: false,
 			permissions: false,
+			createRole: false,
 		},
 		notifications: [],
 	},

@@ -14,8 +14,8 @@ use utoipa::ToSchema;
 
 use crate::{
     AppState,
-    models::{NewUser, UpdateUser, User},
-    schema::users,
+    models::{NewUser, UpdateUser, User, Role},
+    schema::{users, roles},
     utils::auth_error::ApiResponse,
     utils::{LunarbaseError, Claims, ErrorResponse},
 };
@@ -290,8 +290,6 @@ impl CreateUserRequest {
 
         if self.role.is_empty() {
             errors.push("Role is required".to_string());
-        } else if !matches!(self.role.as_str(), "user" | "admin") {
-            errors.push("Role must be either 'user' or 'admin'".to_string());
         }
 
         if errors.is_empty() {
@@ -333,6 +331,18 @@ pub async fn create_user(
         .db_pool
         .get()
         .map_err(|_| LunarbaseError::DatabaseError)?;
+
+    let role_exists = roles::table
+        .filter(roles::name.eq(&payload.role))
+        .first::<Role>(&mut conn)
+        .optional()
+        .map_err(|_| LunarbaseError::DatabaseError)?;
+
+    if role_exists.is_none() {
+        return Err(LunarbaseError::ValidationError(vec![
+            format!("Role '{}' does not exist", payload.role),
+        ]));
+    }
 
     let existing_email = users::table
         .filter(users::email.eq(&payload.email))
@@ -453,8 +463,6 @@ impl UpdateUserRequest {
         if let Some(role) = &self.role {
             if role.is_empty() {
                 errors.push("Role cannot be empty".to_string());
-            } else if !matches!(role.as_str(), "user" | "admin") {
-                errors.push("Role must be either 'user' or 'admin'".to_string());
             }
         }
 
@@ -502,6 +510,20 @@ pub async fn update_user(
         .db_pool
         .get()
         .map_err(|_| LunarbaseError::DatabaseError)?;
+
+    if let Some(role) = &payload.role {
+        let role_exists = roles::table
+            .filter(roles::name.eq(role))
+            .first::<Role>(&mut conn)
+            .optional()
+            .map_err(|_| LunarbaseError::DatabaseError)?;
+
+        if role_exists.is_none() {
+            return Err(LunarbaseError::ValidationError(vec![
+                format!("Role '{}' does not exist", role),
+            ]));
+        }
+    }
 
     let existing_user: User = users::table
         .find(user_id)

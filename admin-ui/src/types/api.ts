@@ -11,7 +11,7 @@ export interface User {
 	id: number;
 	email: string;
 	username?: string;
-	role: "admin" | "user" | "guest";
+	role: string;
 	is_verified: boolean;
 	is_active: boolean;
 	last_login_at?: string;
@@ -74,13 +74,13 @@ export interface CreateUserRequest {
 	email: string;
 	password: string;
 	username?: string;
-	role: "admin" | "user" | "guest";
+	role: string;
 }
 
 export interface UpdateUserRequest {
 	email?: string;
 	username?: string;
-	role?: "admin" | "user" | "guest";
+	role?: string;
 	is_active?: boolean;
 }
 

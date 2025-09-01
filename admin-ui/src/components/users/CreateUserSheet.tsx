@@ -29,11 +29,11 @@ import {
 import { Spinner } from "@/components/ui/spinner";
 import { toast } from "@/components/ui/toast";
 import { useCreateUser } from "@/hooks";
+import { useRoles } from "@/hooks/permissions/usePermissions";
 import type { CreateUserRequest } from "@/types/api";
 import {
 	defaultUserFormData,
 	userFieldDescriptions,
-	userRoleOptions,
 } from "./constants";
 import { validateCreateUserData } from "./validation";
 
@@ -47,6 +47,7 @@ export function CreateUserSheet({
 	onOpenChange,
 }: CreateUserSheetProps) {
 	const createUserMutation = useCreateUser();
+	const { data: roles, isLoading: rolesLoading } = useRoles();
 
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [allowClose, setAllowClose] = useState(true);
@@ -215,10 +216,7 @@ export function CreateUserSheet({
 										value={formData.role}
 										onValueChange={(value) => {
 											if (value) {
-												updateFormData(
-													"role",
-													value as CreateUserRequest["role"],
-												);
+												updateFormData("role", value);
 											}
 										}}
 										allowCloseRef={allowCloseRef}
@@ -227,11 +225,20 @@ export function CreateUserSheet({
 											<SelectValue placeholder="Select a role" />
 										</SelectTrigger>
 										<SelectContent>
-											{userRoleOptions.map((option) => (
-												<SelectItem key={option.value} value={option.value}>
-													{option.label}
+											{rolesLoading ? (
+												<SelectItem value="" disabled>
+													Loading roles...
 												</SelectItem>
-											))}
+											) : (
+												roles?.map((role) => (
+													<SelectItem key={role.name} value={role.name}>
+														{role.name}
+														{role.description && (
+															<span className="text-muted-foreground ml-2">({role.description})</span>
+														)}
+													</SelectItem>
+												)) || []
+											)}
 										</SelectContent>
 									</Select>
 								</FormControl>

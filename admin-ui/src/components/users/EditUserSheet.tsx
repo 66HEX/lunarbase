@@ -30,8 +30,9 @@ import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/toast";
 import { useUnlockUser, useUpdateUser } from "@/hooks";
+import { useRoles } from "@/hooks/permissions/usePermissions";
 import type { UpdateUserRequest, User } from "@/types/api";
-import { userFieldDescriptions, userRoleOptions } from "./constants";
+import { userFieldDescriptions } from "./constants";
 import { validateUpdateUserData } from "./validation";
 
 interface EditUserSheetProps {
@@ -47,6 +48,7 @@ export function EditUserSheet({
 }: EditUserSheetProps) {
 	const updateUserMutation = useUpdateUser();
 	const unlockUserMutation = useUnlockUser();
+	const { data: roles, isLoading: rolesLoading } = useRoles();
 	const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
 	const [allowClose, setAllowClose] = useState(true);
 	const allowCloseRef = useRef(setAllowClose);
@@ -224,10 +226,7 @@ export function EditUserSheet({
 										value={formData.role}
 										onValueChange={(value) => {
 											if (value) {
-												updateFormData(
-													"role",
-													value as "admin" | "user" | "guest",
-												);
+												updateFormData("role", value);
 											}
 										}}
 										allowCloseRef={allowCloseRef}
@@ -236,11 +235,19 @@ export function EditUserSheet({
 											<SelectValue placeholder="Select a role" />
 										</SelectTrigger>
 										<SelectContent>
-											{userRoleOptions.map((option) => (
-												<SelectItem key={option.value} value={option.value}>
-													{option.label}
+											{rolesLoading ? (
+												<SelectItem value="" disabled>
+													Loading roles...
 												</SelectItem>
-											))}
+											) : (
+												roles?.map((role) => (
+													<SelectItem key={role.name} value={role.name}>
+														{role.name}
+														{role.description && (
+															<span className="text-muted-foreground ml-2">({role.description})</span>
+														)}														</SelectItem>
+												)) || []
+											)}
 										</SelectContent>
 									</Select>
 								</FormControl>

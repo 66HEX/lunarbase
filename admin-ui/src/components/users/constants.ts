@@ -77,6 +77,6 @@ export const defaultUserFormData = {
 	email: "",
 	password: "",
 	username: "",
-	role: "user" as const,
+	role: "user",
 	is_active: true,
 };

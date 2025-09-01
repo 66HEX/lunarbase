@@ -1,4 +1,4 @@
-import { MagnifyingGlassIcon, UserPlusIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, UserPlusIcon, ShieldIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ interface UsersHeaderProps {
 	searchTerm: string;
 	onSearchChange: (value: string) => void;
 	onCreateUser: () => void;
+	onCreateRole: () => void;
 }
 
 export function UsersHeader({
@@ -15,6 +16,7 @@ export function UsersHeader({
 	searchTerm,
 	onSearchChange,
 	onCreateUser,
+	onCreateRole,
 }: UsersHeaderProps) {
 	return (
 		<div className="users-header">
@@ -47,10 +49,16 @@ export function UsersHeader({
 							className="pl-10 w-full md:w-auto !bg-nocta-900"
 						/>
 					</div>
-					<Button onClick={onCreateUser} className="w-full sm:w-auto">
-						<UserPlusIcon size={16} />
-						<span className="ml-2 whitespace-nowrap">Create User</span>
-					</Button>
+					<div className="flex gap-2">
+						<Button onClick={onCreateRole} variant="secondary" className="w-full sm:w-auto">
+							<ShieldIcon size={16} />
+							<span className="ml-2 whitespace-nowrap">Create Role</span>
+						</Button>
+						<Button onClick={onCreateUser} className="w-full sm:w-auto">
+							<UserPlusIcon size={16} />
+							<span className="ml-2 whitespace-nowrap">Create User</span>
+						</Button>
+					</div>
 				</div>
 			</div>
 		</div>
