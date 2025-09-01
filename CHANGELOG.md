@@ -14,6 +14,16 @@
 - Role existence validation in user creation and update endpoints
 - Enhanced role display with descriptions in user management dropdowns
 - Create Role quick action in dashboard positioned as third option
+- Roles management view (/roles) with comprehensive role administration interface
+- EditRoleSheet component for editing existing roles with validation and error handling
+- PermissionDetailsSheet component for viewing role permissions across all collections with Phosphor icons
+- Role management table with View, Edit, and Delete actions for comprehensive role administration
+- Backend PUT and DELETE handlers for role updates and deletions in permissions.rs
+- Role update and deletion services in permission_service.rs with proper validation and error handling
+- useRoleAllCollectionPermissions hook for fetching role permissions across all collections
+- Role details state management in client store for sheet operations
+- Sidebar navigation integration for roles management with admin-only access control
+- Roles data prefetching when hovering over Roles navigation item for improved performance
 
 ### Changed
 - User role field types updated from union types to string for dynamic role support

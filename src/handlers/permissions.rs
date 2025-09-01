@@ -11,7 +11,7 @@ use crate::{
     AppState,
     models::{
         CollectionPermission, CreateRoleRequest, Role, SetCollectionPermissionRequest,
-        SetUserCollectionPermissionRequest, User, UserCollectionPermission,
+        SetUserCollectionPermissionRequest, UpdateRoleRequest, User, UserCollectionPermission,
     },
     utils::{ApiResponse, LunarbaseError, Claims},
 };
@@ -122,6 +122,83 @@ pub async fn get_role(
         .await?;
 
     Ok(Json(ApiResponse::success(role)))
+}
+
+#[utoipa::path(
+    delete,
+    path = "/permissions/roles/{role_name}",
+    tag = "Permissions",
+    params(
+        ("role_name" = String, Path, description = "Role name")
+    ),
+    responses(
+        (status = 200, description = "Role deleted successfully", body = ApiResponse<String>),
+        (status = 400, description = "Validation error - Role cannot be deleted", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions - Admin only", body = ErrorResponse),
+        (status = 404, description = "Role not found", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn delete_role(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(role_name): Path<String>,
+) -> Result<Json<ApiResponse<String>>, LunarbaseError> {
+    if claims.role != "admin" {
+        return Err(LunarbaseError::InsufficientPermissions);
+    }
+
+    state.permission_service.delete_role(&role_name).await?;
+
+    Ok(Json(ApiResponse::success(format!(
+        "Role '{}' deleted successfully",
+        role_name
+    ))))
+}
+
+#[utoipa::path(
+    put,
+    path = "/permissions/roles/{role_name}",
+    tag = "Permissions",
+    params(
+        ("role_name" = String, Path, description = "Role name")
+    ),
+    request_body = UpdateRoleRequest,
+    responses(
+        (status = 200, description = "Role updated successfully", body = ApiResponse<Role>),
+        (status = 400, description = "Validation error", body = ErrorResponse),
+        (status = 401, description = "Unauthorized", body = ErrorResponse),
+        (status = 403, description = "Insufficient permissions - Admin only", body = ErrorResponse),
+        (status = 404, description = "Role not found", body = ErrorResponse),
+        (status = 409, description = "Role name already exists", body = ErrorResponse)
+    ),
+    security(
+        ("bearer_auth" = [])
+    )
+)]
+pub async fn update_role(
+    State(state): State<AppState>,
+    Extension(claims): Extension<Claims>,
+    Path(role_name): Path<String>,
+    Json(update_request): Json<UpdateRoleRequest>,
+) -> Result<Json<ApiResponse<Role>>, LunarbaseError> {
+    if claims.role != "admin" {
+        return Err(LunarbaseError::InsufficientPermissions);
+    }
+
+    update_request
+        .validate()
+        .map_err(LunarbaseError::ValidationError)?;
+
+    let updated_role = state
+        .permission_service
+        .update_role(&role_name, &update_request)
+        .await?;
+
+    Ok(Json(ApiResponse::success(updated_role)))
 }
 
 #[utoipa::path(

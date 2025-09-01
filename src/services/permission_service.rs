@@ -7,7 +7,7 @@ use crate::models::{
     UserCollectionPermission,
 };
 use crate::schema::{
-    collection_permissions, collections, record_permissions, roles, user_collection_permissions,
+    collection_permissions, collections, record_permissions, roles, user_collection_permissions, users,
 };
 use crate::utils::LunarbaseError;
 
@@ -101,6 +101,140 @@ impl PermissionService {
         roles::table
             .order(roles::priority.desc())
             .load(&mut conn)
+            .map_err(|_| LunarbaseError::InternalError)
+    }
+
+    pub async fn delete_role(&self, role_name: &str) -> Result<(), LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
+
+        // First, get the role to ensure it exists
+        let role = roles::table
+            .filter(roles::name.eq(role_name))
+            .first::<Role>(&mut conn)
+            .optional()
+            .map_err(|_| LunarbaseError::InternalError)?;
+
+        let role = role.ok_or_else(|| {
+            LunarbaseError::NotFound(format!("Role '{}' not found", role_name))
+        })?;
+
+        // Prevent deletion of admin role
+        if role.name == "admin" {
+            return Err(LunarbaseError::ValidationError(vec![
+                "Cannot delete admin role".to_string(),
+            ]));
+        }
+
+        // Check if any users have this role
+        let users_with_role: Vec<i32> = users::table
+            .filter(users::role.eq(&role.name))
+            .select(users::id)
+            .load(&mut conn)
+            .map_err(|_| LunarbaseError::InternalError)?;
+
+        if !users_with_role.is_empty() {
+            return Err(LunarbaseError::ValidationError(vec![
+                format!(
+                    "Cannot delete role '{}' because {} user(s) are assigned to it",
+                    role_name,
+                    users_with_role.len()
+                ),
+            ]));
+        }
+
+        // Delete related collection permissions
+        diesel::delete(
+            collection_permissions::table
+                .filter(collection_permissions::role_id.eq(role.id)),
+        )
+        .execute(&mut conn)
+        .map_err(|_| LunarbaseError::InternalError)?;
+
+        // Delete the role
+        diesel::delete(roles::table.filter(roles::id.eq(role.id)))
+            .execute(&mut conn)
+            .map_err(|_| LunarbaseError::InternalError)?;
+
+        Ok(())
+    }
+
+    pub async fn update_role(
+        &self,
+        role_name: &str,
+        update_request: &crate::models::UpdateRoleRequest,
+    ) -> Result<Role, LunarbaseError> {
+        let mut conn = self.pool.get().map_err(|_| LunarbaseError::InternalError)?;
+
+        // First, get the role to ensure it exists
+        let role = roles::table
+            .filter(roles::name.eq(role_name))
+            .first::<Role>(&mut conn)
+            .optional()
+            .map_err(|_| LunarbaseError::InternalError)?;
+
+        let role = role.ok_or_else(|| {
+            LunarbaseError::NotFound(format!("Role '{}' not found", role_name))
+        })?;
+
+        // Prevent renaming admin role
+        if role.name == "admin" && update_request.name.is_some() && update_request.name.as_ref().unwrap() != "admin" {
+            return Err(LunarbaseError::ValidationError(vec![
+                "Cannot change admin role name".to_string(),
+            ]));
+        }
+
+        // Check if new name already exists (if name is being changed)
+        if let Some(new_name) = &update_request.name {
+            if new_name != &role.name {
+                let existing_role = roles::table
+                    .filter(roles::name.eq(new_name))
+                    .filter(roles::id.ne(role.id))
+                    .first::<Role>(&mut conn)
+                    .optional()
+                    .map_err(|_| LunarbaseError::InternalError)?;
+
+                if existing_role.is_some() {
+                    return Err(LunarbaseError::ValidationError(vec![format!(
+                        "Role '{}' already exists",
+                        new_name
+                    )]));
+                }
+            }
+        }
+
+        // Update the role fields individually
+        if let Some(description) = &update_request.description {
+            diesel::update(roles::table.find(role.id))
+                .set(roles::description.eq(Some(description)))
+                .execute(&mut conn)
+                .map_err(|_| LunarbaseError::InternalError)?;
+        }
+
+        if let Some(priority) = update_request.priority {
+            diesel::update(roles::table.find(role.id))
+                .set(roles::priority.eq(priority))
+                .execute(&mut conn)
+                .map_err(|_| LunarbaseError::InternalError)?;
+        }
+
+        if let Some(name) = &update_request.name {
+            // Update role name and also update all users with this role
+            diesel::update(roles::table.find(role.id))
+                .set(roles::name.eq(name))
+                .execute(&mut conn)
+                .map_err(|_| LunarbaseError::InternalError)?;
+
+            // Update all users that have this role
+            diesel::update(users::table.filter(users::role.eq(&role.name)))
+                .set(users::role.eq(name))
+                .execute(&mut conn)
+                .map_err(|_| LunarbaseError::InternalError)?;
+        }
+
+        // Return the updated role
+        roles::table
+            .find(role.id)
+            .first(&mut conn)
             .map_err(|_| LunarbaseError::InternalError)
     }
 

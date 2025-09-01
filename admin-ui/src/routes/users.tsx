@@ -346,7 +346,6 @@ export default function UsersComponent() {
 				searchTerm={localSearchTerm}
 				onSearchChange={setLocalSearchTerm}
 				onCreateUser={() => openSheet("createUser")}
-				onCreateRole={() => openSheet("createRole")}
 			/>
 
 			{extendedUsers.length > 0 || (loading && !data) ? (

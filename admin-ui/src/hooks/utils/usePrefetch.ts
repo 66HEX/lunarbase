@@ -505,6 +505,24 @@ export const usePrefetch = () => {
 		}
 	}, [queryClient, isDataFresh]);
 
+	/**
+	 * Prefetch roles data
+	 */
+	const prefetchRoles = useCallback(async () => {
+		const queryKey = ["permissions", "roles"];
+		const staleTime = 10 * 60 * 1000;
+
+		if (isDataFresh(queryKey, staleTime)) {
+			return;
+		}
+
+		await queryClient.prefetchQuery({
+			queryKey,
+			queryFn: () => rolesApi.list(),
+			staleTime,
+		});
+	}, [queryClient, isDataFresh]);
+
 	return {
 		prefetchUsers,
 		prefetchUsersForOwnership,
@@ -517,5 +535,6 @@ export const usePrefetch = () => {
 		prefetchSettings,
 		prefetchDashboard,
 		prefetchPermissions,
+		prefetchRoles,
 	};
 };

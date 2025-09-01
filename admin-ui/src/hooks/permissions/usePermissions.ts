@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { permissionsApi, rolesApi } from "@/lib/api";
+import type { CollectionPermission } from "@/types/api";
 
 export const permissionKeys = {
 	all: ["permissions"] as const,
@@ -106,6 +107,71 @@ export const useAllRoleCollectionPermissions = (
 			return permissionsMap;
 		},
 		enabled: !!collectionName && roles.length > 0 && options?.enabled !== false,
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
+	});
+};
+
+export const useRoleAllCollectionPermissions = (
+	roleName: string,
+	options?: { enabled?: boolean },
+) => {
+	const { data: collectionsData } = useQuery({
+		queryKey: ["collections"],
+		queryFn: async () => {
+			const response = await fetch("/api/collections");
+			if (!response.ok) throw new Error("Failed to fetch collections");
+			return response.json();
+		},
+	});
+	
+	const collections = collectionsData?.collections || [];
+
+	return useQuery({
+		queryKey: [
+			...permissionKeys.collectionPermissions(),
+			"role-all",
+			roleName,
+		],
+		queryFn: async () => {
+			const permissionsPromises = collections.map(
+				async (collection: { name: string }) => {
+					try {
+						const permissions = await permissionsApi.getCollectionPermissions(
+							roleName,
+							collection.name,
+						);
+						return { collectionName: collection.name, permissions };
+					} catch (error) {
+						return {
+							collectionName: collection.name,
+							permissions: {
+								id: 0,
+								role_id: 0,
+								collection_name: collection.name,
+								can_create: false,
+								can_read: false,
+								can_update: false,
+								can_delete: false,
+								can_list: false,
+								created_at: new Date().toISOString(),
+								updated_at: new Date().toISOString(),
+							},
+						};
+					}
+				},
+			);
+
+			const results = await Promise.all(permissionsPromises);
+			const permissionsMap: Record<string, CollectionPermission> = {};
+
+			results.forEach(({ collectionName, permissions }) => {
+				permissionsMap[collectionName] = permissions;
+			});
+
+			return permissionsMap;
+		},
+		enabled: !!roleName && collections.length > 0 && options?.enabled !== false,
 		staleTime: 5 * 60 * 1000,
 		gcTime: 10 * 60 * 1000,
 	});

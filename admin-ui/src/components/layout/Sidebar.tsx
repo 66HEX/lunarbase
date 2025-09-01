@@ -4,6 +4,7 @@ import {
 	DatabaseIcon,
 	FileTextIcon,
 	GearIcon,
+	ShieldIcon,
 	SignOutIcon,
 	SquaresFourIcon,
 	UsersIcon,
@@ -33,6 +34,7 @@ const navigation = [
 	},
 	{ name: "Records", href: "/records", icon: FileTextIcon, adminOnly: false },
 	{ name: "Users", href: "/users", icon: UsersIcon, adminOnly: true },
+	{ name: "Roles", href: "/roles", icon: ShieldIcon, adminOnly: true },
 	{
 		name: "WebSocket",
 		href: "/websocket",
@@ -74,6 +76,7 @@ export function Sidebar() {
 		prefetchMetrics,
 		prefetchSettings,
 		prefetchDashboard,
+		prefetchRoles,
 	} = usePrefetch();
 
 	const setSidebarOpenStable = useCallback(
@@ -255,6 +258,9 @@ export function Sidebar() {
 											break;
 										case "/users":
 											prefetchUsers();
+											break;
+										case "/roles":
+											prefetchRoles();
 											break;
 										case "/collections":
 											prefetchCollections();

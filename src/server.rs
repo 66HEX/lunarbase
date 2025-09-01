@@ -163,9 +163,9 @@ use crate::handlers::{
         transfer_record_ownership,
     },
     permissions::{
-        create_role, get_collection_permissions, get_role, get_role_collection_permission,
+        create_role, delete_role, get_collection_permissions, get_role, get_role_collection_permission,
         get_user_accessible_collections, get_user_collection_permissions, list_roles,
-        set_collection_permission, set_user_collection_permission,
+        set_collection_permission, set_user_collection_permission, update_role,
     },
     record_permissions::{
         get_record_permissions, list_record_permissions, remove_record_permission,
@@ -377,6 +377,8 @@ async fn create_router(app_state: AppState, api_only: bool) -> Router {
         .route("/permissions/roles", post(create_role))
         .route("/permissions/roles", get(list_roles))
         .route("/permissions/roles/{role_name}", get(get_role))
+        .route("/permissions/roles/{role_name}", put(update_role))
+        .route("/permissions/roles/{role_name}", delete(delete_role))
         .route(
             "/permissions/roles/{role_name}/collections/{collection_name}",
             get(get_role_collection_permission),

@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as WebsocketRouteImport } from './routes/websocket'
 import { Route as UsersRouteImport } from './routes/users'
 import { Route as SettingsRouteImport } from './routes/settings'
+import { Route as RolesRouteImport } from './routes/roles'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as MetricsRouteImport } from './routes/metrics'
@@ -38,6 +39,11 @@ const UsersRoute = UsersRouteImport.update({
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RolesRoute = RolesRouteImport.update({
+  id: '/roles',
+  path: '/roles',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ResetPasswordRoute = ResetPasswordRouteImport.update({
@@ -110,6 +116,7 @@ export interface FileRoutesByFullPath {
   '/metrics': typeof MetricsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/roles': typeof RolesRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
@@ -127,6 +134,7 @@ export interface FileRoutesByTo {
   '/metrics': typeof MetricsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/roles': typeof RolesRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
@@ -145,6 +153,7 @@ export interface FileRoutesById {
   '/metrics': typeof MetricsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
+  '/roles': typeof RolesRoute
   '/settings': typeof SettingsRoute
   '/users': typeof UsersRoute
   '/websocket': typeof WebsocketRoute
@@ -164,6 +173,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/register'
     | '/reset-password'
+    | '/roles'
     | '/settings'
     | '/users'
     | '/websocket'
@@ -181,6 +191,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/register'
     | '/reset-password'
+    | '/roles'
     | '/settings'
     | '/users'
     | '/websocket'
@@ -198,6 +209,7 @@ export interface FileRouteTypes {
     | '/metrics'
     | '/register'
     | '/reset-password'
+    | '/roles'
     | '/settings'
     | '/users'
     | '/websocket'
@@ -216,6 +228,7 @@ export interface RootRouteChildren {
   MetricsRoute: typeof MetricsRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
+  RolesRoute: typeof RolesRoute
   SettingsRoute: typeof SettingsRoute
   UsersRoute: typeof UsersRoute
   WebsocketRoute: typeof WebsocketRoute
@@ -246,6 +259,13 @@ declare module '@tanstack/react-router' {
       path: '/settings'
       fullPath: '/settings'
       preLoaderRoute: typeof SettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/roles': {
+      id: '/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof RolesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/reset-password': {
@@ -344,6 +364,7 @@ const rootRouteChildren: RootRouteChildren = {
   MetricsRoute: MetricsRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
+  RolesRoute: RolesRoute,
   SettingsRoute: SettingsRoute,
   UsersRoute: UsersRoute,
   WebsocketRoute: WebsocketRoute,

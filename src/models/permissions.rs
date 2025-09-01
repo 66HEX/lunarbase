@@ -141,10 +141,45 @@ impl CreateRoleRequest {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, ToSchema)]
 pub struct UpdateRoleRequest {
+    pub name: Option<String>,
     pub description: Option<String>,
     pub priority: Option<i32>,
+}
+
+impl UpdateRoleRequest {
+    pub fn validate(&self) -> Result<(), Vec<String>> {
+        let mut errors = Vec::new();
+
+        if let Some(name) = &self.name {
+            if name.is_empty() {
+                errors.push("Role name is required".to_string());
+            } else if name.len() > 50 {
+                errors.push("Role name too long (max 50 characters)".to_string());
+            } else if !name.chars().all(|c| c.is_alphanumeric() || c == '_') {
+                errors.push("Role name can only contain letters, numbers, and underscores".to_string());
+            }
+        }
+
+        if let Some(desc) = &self.description {
+            if desc.len() > 255 {
+                errors.push("Role description too long (max 255 characters)".to_string());
+            }
+        }
+
+        if let Some(priority) = self.priority {
+            if priority < 0 || priority > 100 {
+                errors.push("Role priority must be between 0 and 100".to_string());
+            }
+        }
+
+        if errors.is_empty() {
+            Ok(())
+        } else {
+            Err(errors)
+        }
+    }
 }
 
 #[derive(Debug, Serialize, Deserialize, ToSchema)]

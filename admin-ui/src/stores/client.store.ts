@@ -15,6 +15,7 @@ interface ClientState {
 			userProfile: boolean;
 			broadcast: boolean;
 			deleteUser: boolean;
+			deleteRole: boolean;
 		};
 		sheets: {
 			recordDetails: boolean;
@@ -30,6 +31,8 @@ interface ClientState {
 			editCollection: boolean;
 			permissions: boolean;
 			createRole: boolean;
+			editRole: boolean;
+			roleDetails: boolean;
 		};
 		notifications: Array<{
 			id: string;
@@ -118,6 +121,7 @@ const initialState: ClientState = {
 			userProfile: false,
 			broadcast: false,
 			deleteUser: false,
+			deleteRole: false,
 		},
 		sheets: {
 			recordDetails: false,
@@ -133,6 +137,8 @@ const initialState: ClientState = {
 			editCollection: false,
 			permissions: false,
 			createRole: false,
+			editRole: false,
+			roleDetails: false,
 		},
 		notifications: [],
 	},

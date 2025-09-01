@@ -1,42 +1,42 @@
-import { MagnifyingGlassIcon, UserPlusIcon } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon, ShieldPlusIcon } from "@phosphor-icons/react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-interface UsersHeaderProps {
-	usersCount: number;
+interface RolesHeaderProps {
+	rolesCount: number;
 	searchTerm: string;
 	onSearchChange: (value: string) => void;
-	onCreateUser: () => void;
+	onCreateRole: () => void;
 }
 
-export function UsersHeader({
-	usersCount,
+export function RolesHeader({
+	rolesCount,
 	searchTerm,
 	onSearchChange,
-	onCreateUser,
-}: UsersHeaderProps) {
+	onCreateRole,
+}: RolesHeaderProps) {
 	return (
-		<div className="users-header">
+		<div className="roles-header">
 			<div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
 				<div className="space-y-1">
 					<div className="flex items-center gap-3">
 						<h1 className="text-2xl sm:text-3xl font-light text-nocta-900 dark:text-nocta-100">
-							Users
+							Roles
 						</h1>
 						<Badge
 							size="sm"
 							variant="secondary"
 							className="px-2 py-0.5 text-xs font-light"
 						>
-							{usersCount} total
+							{rolesCount} total
 						</Badge>
 					</div>
 				</div>
 				<div className="flex flex-col gap-3 sm:flex-row sm:items-center">
 					<div className="relative w-full sm:max-w-md">
 						<Input
-							placeholder="Search users..."
+							placeholder="Search roles..."
 							leftIcon={
 								<span className="w-4 h-4 text-nocta-400 dark:text-nocta-500">
 									<MagnifyingGlassIcon size={16} />
@@ -47,12 +47,10 @@ export function UsersHeader({
 							className="pl-10 w-full md:w-auto !bg-nocta-900"
 						/>
 					</div>
-					<div className="flex gap-2">
-						<Button onClick={onCreateUser} className="w-full sm:w-auto">
-							<UserPlusIcon size={16} />
-							<span className="ml-2 whitespace-nowrap">Create User</span>
-						</Button>
-					</div>
+					<Button onClick={onCreateRole} className="w-full sm:w-auto">
+						<ShieldPlusIcon size={16} />
+						<span className="ml-2 whitespace-nowrap">Create Role</span>
+					</Button>
 				</div>
 			</div>
 		</div>
