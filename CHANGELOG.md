@@ -13,6 +13,7 @@
 - Backend role validation against database instead of hardcoded role types
 - Role existence validation in user creation and update endpoints
 - Enhanced role display with descriptions in user management dropdowns
+- Create Role quick action in dashboard positioned as third option
 
 ### Changed
 - User role field types updated from union types to string for dynamic role support

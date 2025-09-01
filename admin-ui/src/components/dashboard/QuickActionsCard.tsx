@@ -2,6 +2,7 @@ import { ArrowUpRightIcon, LightningIcon } from "@phosphor-icons/react";
 import { Link } from "@tanstack/react-router";
 import { CreateCollectionSheet } from "@/components/collections";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateRoleSheet } from "@/components/roles";
 import { CreateUserSheet } from "@/components/users";
 import { usePrefetch } from "@/hooks";
 import { useClientStore } from "@/stores/client.store";
@@ -42,6 +43,8 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 			openSheet("createCollection");
 		} else if (action.action === "create-user") {
 			openSheet("createUser");
+		} else if (action.action === "create-role") {
+			openSheet("createRole");
 		}
 	};
 
@@ -118,6 +121,12 @@ export function QuickActionsCard({ actions }: QuickActionsCardProps) {
 				isOpen={sheets.createUser || false}
 				onOpenChange={(open) =>
 					open ? openSheet("createUser") : closeSheet("createUser")
+				}
+			/>
+			<CreateRoleSheet
+				isOpen={sheets.createRole || false}
+				onOpenChange={(open) =>
+					open ? openSheet("createRole") : closeSheet("createRole")
 				}
 			/>
 		</Card>

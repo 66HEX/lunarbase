@@ -3,6 +3,7 @@ import {
 	DatabaseIcon,
 	FileTextIcon,
 	GlobeIcon,
+	ShieldIcon,
 	UsersIcon,
 	WarningIcon,
 } from "@phosphor-icons/react";
@@ -42,15 +43,15 @@ function DashboardComponent() {
 			icon: UsersIcon,
 		},
 		{
-			name: "View Records",
-			href: "/records",
-			icon: FileTextIcon,
+			name: "Create Role",
+			action: "create-role",
+			icon: ShieldIcon,
 		},
 		{
 			name: "WebSocket Monitor",
 			href: "/websocket",
 			icon: ActivityIcon,
-		},
+		}
 	];
 
 	const overviewCards = [
