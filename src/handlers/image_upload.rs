@@ -86,7 +86,7 @@ pub async fn upload_image(
     let file_name = filename.unwrap_or_else(|| "image".to_string());
     let file_content_type = content_type.unwrap_or_else(|| "application/octet-stream".to_string());
 
-    const MAX_FILE_SIZE: usize = 10 * 1024 * 1024; // 10MB
+    const MAX_FILE_SIZE: usize = 10 * 1024 * 1024;
     if file_bytes.len() > MAX_FILE_SIZE {
         return Err(LunarbaseError::BadRequest(
             "File too large. Maximum size is 10MB.".to_string(),

@@ -76,7 +76,7 @@ export const useAllRoleCollectionPermissions = (
 							collectionName,
 						);
 						return { roleName: role.name, permissions };
-					} catch {
+					} catch (error) {
 						return {
 							roleName: role.name,
 							permissions: {

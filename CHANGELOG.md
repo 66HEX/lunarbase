@@ -22,11 +22,15 @@
 - Role assignment dropdowns now display actual roles from backend with descriptions
 - User management forms now support any role that exists in the database
 
+### Fixed
+- Collection permissions race condition causing 500 errors when updating multiple role permissions simultaneously due to SQLite database locking conflicts
+
 ### Improved
 - Role-based access control system now fully dynamic and extensible
 - User creation and editing experience enhanced with real-time role loading
 - Type safety maintained while supporting dynamic role assignment
 - Consistent validation patterns between frontend and backend for role management
+- Collection permissions processing changed from parallel to sequential execution to prevent database locking issues
 
 ## [0.7.0][0.7.0] - 2025-08-31
 

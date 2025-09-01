@@ -25,12 +25,23 @@ export const useSetCollectionPermission = () => {
 	return useMutation({
 		mutationFn: (data: SetCollectionPermissionRequest) =>
 			permissionsApi.setCollectionPermission(data),
-		onSuccess: () => {
+		onSuccess: (_, variables) => {
 			queryClient.invalidateQueries({
-				queryKey: permissionKeys.collectionPermissions(),
+				queryKey: [
+					...permissionKeys.collectionPermissions(),
+					"all",
+					variables.collection_name,
+				],
 			});
 			queryClient.invalidateQueries({
-				queryKey: permissionKeys.userPermissions(),
+				queryKey: [
+					...permissionKeys.collectionPermissions(),
+					variables.role_name,
+					variables.collection_name,
+				],
+			});
+			queryClient.invalidateQueries({
+				queryKey: permissionKeys.roles(),
 			});
 
 			toast({
@@ -64,14 +75,24 @@ export const useSetUserCollectionPermissions = () => {
 			},
 		) => permissionsApi.setUserCollectionPermissions(data),
 		onSuccess: (_, variables) => {
+			// Invalidate specific user permission
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.userPermission(
 					variables.user_id,
 					variables.collection_name,
 				),
 			});
+			// Invalidate all user permissions
 			queryClient.invalidateQueries({
 				queryKey: permissionKeys.userPermissions(),
+			});
+			// Invalidate collection permissions for this collection
+			queryClient.invalidateQueries({
+				queryKey: [
+					...permissionKeys.collectionPermissions(),
+					"all",
+					variables.collection_name,
+				],
 			});
 
 			toast({

@@ -209,8 +209,6 @@ export const useSaveCollectionPermissions = () => {
 			collectionName: string;
 			permissions: CollectionPermissions;
 		}) => {
-			const promises: Promise<void>[] = [];
-
 			for (const [roleName, rolePerms] of Object.entries(
 				permissions.role_permissions,
 			)) {
@@ -224,9 +222,7 @@ export const useSaveCollectionPermissions = () => {
 					can_delete: typedRolePerms.can_delete,
 					can_list: typedRolePerms.can_list,
 				};
-				promises.push(
-					permissionsApi.setCollectionPermission(rolePermissionRequest),
-				);
+				await permissionsApi.setCollectionPermission(rolePermissionRequest);
 			}
 
 			for (const [userId, userPerms] of Object.entries(
@@ -248,16 +244,18 @@ export const useSaveCollectionPermissions = () => {
 					can_delete: typedUserPerms.can_delete,
 					can_list: typedUserPerms.can_list,
 				};
-				promises.push(
-					permissionsApi.setUserCollectionPermissions(userPermissionRequest),
-				);
+				await permissionsApi.setUserCollectionPermissions(userPermissionRequest);
 			}
 
-			await Promise.all(promises);
 			return { collectionName, permissions };
 		},
 		onSuccess: ({ collectionName }) => {
-			queryClient.invalidateQueries({ queryKey: ["permissions"] });
+			queryClient.invalidateQueries({
+				queryKey: ["permissions", "collection-permissions", "all", collectionName],
+			});
+			queryClient.invalidateQueries({
+				queryKey: ["permissions", "roles"],
+			});
 			queryClient.invalidateQueries({
 				queryKey: ["collections", collectionName],
 			});

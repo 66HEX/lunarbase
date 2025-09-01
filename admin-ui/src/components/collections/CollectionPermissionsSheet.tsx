@@ -119,13 +119,16 @@ export function CollectionPermissionsSheet({
 		permission: PermissionType,
 		value: boolean,
 	) => {
-		setRolePermissions((prev) => ({
-			...prev,
-			[role]: {
-				...prev[role],
-				[permission]: value,
-			},
-		}));
+		setRolePermissions((prev) => {
+			const updated = {
+				...prev,
+				[role]: {
+					...prev[role],
+					[permission]: value,
+				},
+			};
+			return updated;
+		});
 	};
 
 	const handleUserPermissionChange = (
@@ -133,13 +136,16 @@ export function CollectionPermissionsSheet({
 		permission: PermissionType,
 		value: boolean | null,
 	) => {
-		setUserPermissions((prev) => ({
-			...prev,
-			[userId.toString()]: {
-				...prev[userId.toString()],
-				[permission]: value,
-			},
-		}));
+		setUserPermissions((prev) => {
+			const updated = {
+				...prev,
+				[userId.toString()]: {
+					...prev[userId.toString()],
+					[permission]: value,
+				},
+			};
+			return updated;
+		});
 	};
 
 	const handleSavePermissions = async () => {
