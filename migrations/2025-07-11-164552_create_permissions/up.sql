@@ -59,8 +59,8 @@ CREATE TABLE record_permissions (
 
 -- Insert default roles
 INSERT INTO roles (name, description, priority) VALUES 
-    ('admin', 'Full system administrator with all permissions', 1000),
-    ('user', 'Regular user with limited permissions', 100),
+    ('admin', 'Full system administrator with all permissions', 100),
+    ('user', 'Regular user with limited permissions', 50),
     ('guest', 'Guest user with read-only access', 10);
 
 -- Create indexes for performance

@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## [0.8.0][0.8.0] - 2025-09-02
 
 ### Added
 - Dynamic role management system with full CRUD operations for custom roles

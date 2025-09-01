@@ -17,7 +17,7 @@ pub mod utils;
 #[openapi(
     info(
         title = "LunarBase API",
-        version = "0.7.0",
+        version = "0.8.0",
         description = "A powerful backend-as-a-service API built with Rust, Axum, and Diesel ORM",
         contact(
             name = "LunarBase Team",
