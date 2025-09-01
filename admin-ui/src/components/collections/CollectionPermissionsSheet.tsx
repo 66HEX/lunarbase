@@ -255,6 +255,7 @@ export function CollectionPermissionsSheet({
 					onCheckedChange={(checked: boolean) =>
 						updateRolePermission(row.role, perm, checked)
 					}
+					disabled={row.role === "admin"}
 					aria-label={`${row.role} ${perm}`}
 				/>
 			),
@@ -309,6 +310,7 @@ export function CollectionPermissionsSheet({
 						onCheckedChange={(checked: boolean) =>
 							handleUserPermissionChange(u.id, perm, checked)
 						}
+						disabled={u.role === "admin"}
 						aria-label={`${u.email} ${perm}`}
 					/>
 				);

@@ -24,6 +24,7 @@
 
 ### Fixed
 - Collection permissions race condition causing 500 errors when updating multiple role permissions simultaneously due to SQLite database locking conflicts
+- Admin role and admin user permission switches in CollectionPermissionsSheet are now disabled to prevent accidental modification of administrator privileges
 
 ### Improved
 - Role-based access control system now fully dynamic and extensible
