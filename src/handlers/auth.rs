@@ -19,9 +19,7 @@ use crate::{
     },
     schema::users,
     services::configuration_manager::ConfigurationAccess,
-    utils::{
-        ApiResponse, Claims, CookieService, ErrorResponse, LunarbaseError,
-    },
+    utils::{ApiResponse, Claims, CookieService, ErrorResponse, LunarbaseError},
 };
 
 #[utoipa::path(
@@ -40,7 +38,6 @@ pub async fn register(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
-
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await
         .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
@@ -705,7 +702,6 @@ pub async fn login(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
-
     let Json(payload): Json<LoginRequest> = Json::from_request(request, &app_state)
         .await
         .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;
@@ -961,7 +957,6 @@ pub async fn register_admin(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
-
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await
         .map_err(|_| LunarbaseError::ValidationError(vec!["Invalid JSON payload".to_string()]))?;

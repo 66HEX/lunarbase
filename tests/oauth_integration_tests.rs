@@ -6,9 +6,9 @@ use axum::{
 };
 use tower::ServiceExt;
 
+use lunarbase::AppState;
 use lunarbase::database::create_pool;
 use lunarbase::handlers::auth::*;
-use lunarbase::{AppState};
 
 mod common;
 

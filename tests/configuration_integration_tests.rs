@@ -11,11 +11,11 @@ use tower::ServiceExt;
 use uuid;
 
 use axum::middleware;
+use lunarbase::AppState;
 use lunarbase::database::create_pool;
 use lunarbase::handlers::auth::*;
 use lunarbase::handlers::configuration::*;
 use lunarbase::middleware::auth_middleware;
-use lunarbase::{AppState};
 
 mod common;
 
@@ -83,9 +83,9 @@ async fn create_admin_token(app: &Router) -> (i32, String) {
 
 async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     use diesel::prelude::*;
+    use lunarbase::database::create_pool;
     use lunarbase::models::NewUser;
     use lunarbase::schema::users;
-    use lunarbase::database::create_pool;
 
     let unique_username = format!(
         "test_{}",
@@ -155,9 +155,9 @@ fn create_token_for_user(user_id: i32, email: &str, role: &str) -> String {
 
 async fn create_test_setting(category: &str, key: &str, value: &str) -> String {
     use diesel::prelude::*;
+    use lunarbase::database::create_pool;
     use lunarbase::models::system_setting::NewSystemSetting;
     use lunarbase::schema::system_settings;
-    use lunarbase::database::create_pool;
 
     let config = common::create_test_config().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
@@ -185,8 +185,8 @@ async fn create_test_setting(category: &str, key: &str, value: &str) -> String {
 
 async fn cleanup_test_setting(category: &str, key: &str) {
     use diesel::prelude::*;
-    use lunarbase::schema::system_settings;
     use lunarbase::database::create_pool;
+    use lunarbase::schema::system_settings;
 
     let config = common::create_test_config().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");

@@ -13,6 +13,7 @@ use tower::ServiceExt;
 use uuid;
 
 use axum::middleware;
+use lunarbase::AppState;
 use lunarbase::database::create_pool;
 use lunarbase::handlers::auth::*;
 use lunarbase::handlers::collections::*;
@@ -21,7 +22,6 @@ use lunarbase::models::{
     CollectionSchema, FieldDefinition, FieldType, NewUser, User, ValidationRules,
 };
 use lunarbase::schema::users;
-use lunarbase::{AppState};
 
 mod common;
 

@@ -27,6 +27,11 @@ pub struct Config {
     pub tls_cert_path: Option<String>,
     pub tls_key_path: Option<String>,
     pub enable_tls: Option<bool>,
+    pub acme_enabled: Option<bool>,
+    pub acme_domains: Vec<String>,
+    pub acme_email: Option<String>,
+    pub acme_cache_dir: Option<String>,
+    pub acme_production: Option<bool>,
 }
 
 impl Config {
@@ -98,6 +103,40 @@ impl Config {
             tls_cert_path,
             tls_key_path,
             enable_tls,
+
+            // ACME configuration from CLI args or env vars
+            acme_enabled: if let Some(args) = serve_args {
+                if args.acme { Some(true) } else { Some(false) }
+            } else {
+                std::env::var("ACME_ENABLED")
+                    .ok()
+                    .and_then(|v| v.parse().ok())
+            },
+            acme_domains: if let Some(args) = serve_args {
+                args.acme_domain.clone()
+            } else {
+                std::env::var("ACME_DOMAINS")
+                    .ok()
+                    .map(|domains| domains.split(',').map(|s| s.trim().to_string()).collect())
+                    .unwrap_or_default()
+            },
+            acme_email: if let Some(args) = serve_args {
+                args.acme_email.clone()
+            } else {
+                std::env::var("ACME_EMAIL").ok()
+            },
+            acme_cache_dir: if let Some(args) = serve_args {
+                Some(args.acme_cache_dir.clone())
+            } else {
+                std::env::var("ACME_CACHE_DIR").ok()
+            },
+            acme_production: if let Some(args) = serve_args {
+                Some(args.acme_production)
+            } else {
+                std::env::var("ACME_PRODUCTION")
+                    .ok()
+                    .and_then(|v| v.parse().ok())
+            },
         };
 
         Ok(config)

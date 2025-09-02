@@ -201,13 +201,11 @@ pub async fn metrics_middleware(
 
     if let Some(content_encoding) = response.headers().get("content-encoding") {
         if let Ok(encoding) = content_encoding.to_str() {
-            if encoding.contains("gzip") || encoding.contains("br") || encoding.contains("deflate") {
+            if encoding.contains("gzip") || encoding.contains("br") || encoding.contains("deflate")
+            {
                 app_state.metrics_state.compression_requests_total.inc();
-                
-                tracing::debug!(
-                    "Compression applied: encoding={}, path={}",
-                    encoding, uri
-                );
+
+                tracing::debug!("Compression applied: encoding={}, path={}", encoding, uri);
             }
         }
     }

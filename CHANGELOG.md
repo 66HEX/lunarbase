@@ -3,10 +3,16 @@
 ## [Unreleased]
 
 ### Added
+- **Automatic SSL/TLS certificate management** with ACME/Let's Encrypt integration using rustls-acme
+- **Zero-configuration HTTPS** with automatic certificate provisioning, renewal, and caching
+- **ACME CLI arguments** including `--acme`, `--acme-domain`, `--acme-email`, `--acme-cache-dir`, and `--acme-production` for Let's Encrypt integration
+- **Dual certificate support** allowing both manual TLS certificates and automatic ACME certificates with ACME taking priority
+- **Production and staging ACME environments** with `--acme-production` flag for Let's Encrypt production vs staging
+- **Automatic certificate caching** with configurable cache directory for certificate persistence across restarts
 - **Self-contained server solution** with native TLS support eliminating the need for external reverse proxies like Nginx
 - **HTTP to HTTPS redirect server** with automatic redirection from HTTP to HTTPS for improved security
 - **Dual server architecture** supporting simultaneous HTTPS and HTTP redirect servers with independent port configuration
-- **Enhanced CLI arguments** for server configuration including `--enable-redirect`and `--redirect-port`
+- **Enhanced CLI arguments** for server configuration including `--enable-redirect`, `--redirect-port` and `--redirect-target-port`
 - **Production deployment guide** for EC2 instances without Nginx dependency
 - **Native TLS/SSL support** with HTTP/2 protocol support and certificate management
 - **Security headers middleware** with configurable HSTS, CSP, and X-Frame-Options

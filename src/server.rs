@@ -9,6 +9,7 @@ use axum::{
 use axum_server::tls_rustls::RustlsConfig;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use rustls::ServerConfig;
+use rustls_acme::{AcmeConfig, axum::AxumAcceptor, caches::DirCache};
 use rustls_pemfile::{certs, pkcs8_private_keys};
 use std::convert::Infallible;
 use std::fs::File;
@@ -20,6 +21,7 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::task::{Context, Poll};
 use tokio::signal;
+use tokio_stream::StreamExt;
 use tower::Service;
 use tower::layer::Layer;
 use tracing::{info, warn};
@@ -189,11 +191,11 @@ async fn create_redirect_server(
     target_host: &str,
 ) -> Result<(), Box<dyn std::error::Error>> {
     use axum::{
+        Router,
+        extract::Request,
         http::{StatusCode, header::HOST},
         response::Redirect,
         routing::any,
-        Router,
-        extract::Request,
     };
 
     async fn redirect_to_https(
@@ -208,7 +210,11 @@ async fn create_redirect_server(
             .unwrap_or("localhost");
 
         let host = if target_port == 443 {
-            host_header.split(':').next().unwrap_or(host_header).to_string()
+            host_header
+                .split(':')
+                .next()
+                .unwrap_or(host_header)
+                .to_string()
         } else {
             format!(
                 "{}:{}",
@@ -217,7 +223,11 @@ async fn create_redirect_server(
             )
         };
 
-        let redirect_url = format!("https://{}{}", host, uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/"));
+        let redirect_url = format!(
+            "https://{}{}",
+            host,
+            uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/")
+        );
         Ok(Redirect::permanent(&redirect_url))
     }
 
@@ -228,9 +238,9 @@ async fn create_redirect_server(
 
     let addr = format!("{}:{}", target_host, redirect_port).parse::<SocketAddr>()?;
     let listener = tokio::net::TcpListener::bind(addr).await?;
-    
+
     info!("HTTP redirect server listening on {}", addr);
-    
+
     axum::serve(listener, app.into_make_service())
         .with_graceful_shutdown(shutdown_signal())
         .await?;
@@ -309,52 +319,122 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     info!("Server will listen on {}", addr);
 
     if config.enable_tls.unwrap_or(false) {
-        let tls_config = create_tls_config(&config).await?;
-        info!("TLS enabled - starting HTTPS server with HTTP/2 support");
-
-        let https_url = format!("https://{}:{}", serve_args.host(), serve_args.port());
-        info!("API: {}/api", https_url);
-        info!("API Docs: {}/docs", https_url);
-        if !serve_args.api_only {
-            info!("Admin panel: {}/admin", https_url);
-        }
-
         let connection_tracker = ConnectionTracker::new(metrics_state_clone);
         let tracking_layer = ConnectionTrackingLayer::new(connection_tracker);
         let tracked_app = app.layer(tracking_layer);
 
-        if serve_args.enable_redirect {
-            let redirect_target_port = serve_args.redirect_target_port.unwrap_or(serve_args.port());
-            let redirect_host = serve_args.host().to_string();
-            let redirect_port = serve_args.redirect_port;
-            
-            info!("Starting HTTP redirect server on port {}", redirect_port);
-            
-            let redirect_handle = tokio::spawn(async move {
-                if let Err(e) = create_redirect_server(redirect_port, redirect_target_port, &redirect_host).await {
-                    tracing::error!("HTTP redirect server error: {}", e);
+        if config.acme_enabled.unwrap_or(false) {
+            info!("ACME enabled - starting HTTPS server with automatic certificate management");
+
+            let (acceptor, acme_handle) = create_acme_config(&config).await?;
+
+            let https_url = format!("https://{}:{}", serve_args.host(), serve_args.port());
+            info!("API: {}/api", https_url);
+            info!("API Docs: {}/docs", https_url);
+            if !serve_args.api_only {
+                info!("Admin panel: {}/admin", https_url);
+            }
+
+            if serve_args.enable_redirect {
+                let redirect_target_port =
+                    serve_args.redirect_target_port.unwrap_or(serve_args.port());
+                let redirect_host = serve_args.host().to_string();
+                let redirect_port = serve_args.redirect_port;
+
+                info!("Starting HTTP redirect server on port {}", redirect_port);
+
+                let redirect_handle = tokio::spawn(async move {
+                    if let Err(e) =
+                        create_redirect_server(redirect_port, redirect_target_port, &redirect_host)
+                            .await
+                    {
+                        tracing::error!("HTTP redirect server error: {}", e);
+                    }
+                });
+
+                let https_handle = tokio::spawn(async move {
+                    if let Err(e) = axum_server::bind(addr)
+                        .acceptor(acceptor)
+                        .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
+                        .await
+                    {
+                        tracing::error!("HTTPS server error: {}", e);
+                    }
+                });
+
+                tokio::select! {
+                    _ = redirect_handle => {},
+                    _ = https_handle => {},
+                    _ = acme_handle => {},
+                    _ = shutdown_signal() => {
+                        info!("Shutdown signal received, stopping servers...");
+                    }
                 }
-            });
-            
-            let https_handle = tokio::spawn(async move {
-                if let Err(e) = axum_server::bind_rustls(addr, tls_config)
-                    .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
-                    .await {
-                    tracing::error!("HTTPS server error: {}", e);
-                }
-            });
-            
-            tokio::select! {
-                _ = redirect_handle => {},
-                _ = https_handle => {},
-                _ = shutdown_signal() => {
-                    info!("Shutdown signal received, stopping servers...");
+            } else {
+                tokio::select! {
+                    result = axum_server::bind(addr)
+                        .acceptor(acceptor)
+                        .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>()) => {
+                        if let Err(e) = result {
+                            tracing::error!("HTTPS server error: {}", e);
+                        }
+                    },
+                    _ = acme_handle => {},
+                    _ = shutdown_signal() => {
+                        info!("Shutdown signal received, stopping servers...");
+                    }
                 }
             }
         } else {
-            axum_server::bind_rustls(addr, tls_config)
-                .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
-                .await?;
+            info!("TLS enabled - starting HTTPS server with HTTP/2 support");
+
+            let tls_config = create_tls_config(&config).await?;
+
+            let https_url = format!("https://{}:{}", serve_args.host(), serve_args.port());
+            info!("API: {}/api", https_url);
+            info!("API Docs: {}/docs", https_url);
+            if !serve_args.api_only {
+                info!("Admin panel: {}/admin", https_url);
+            }
+
+            if serve_args.enable_redirect {
+                let redirect_target_port =
+                    serve_args.redirect_target_port.unwrap_or(serve_args.port());
+                let redirect_host = serve_args.host().to_string();
+                let redirect_port = serve_args.redirect_port;
+
+                info!("Starting HTTP redirect server on port {}", redirect_port);
+
+                let redirect_handle = tokio::spawn(async move {
+                    if let Err(e) =
+                        create_redirect_server(redirect_port, redirect_target_port, &redirect_host)
+                            .await
+                    {
+                        tracing::error!("HTTP redirect server error: {}", e);
+                    }
+                });
+
+                let https_handle = tokio::spawn(async move {
+                    if let Err(e) = axum_server::bind_rustls(addr, tls_config)
+                        .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
+                        .await
+                    {
+                        tracing::error!("HTTPS server error: {}", e);
+                    }
+                });
+
+                tokio::select! {
+                    _ = redirect_handle => {},
+                    _ = https_handle => {},
+                    _ = shutdown_signal() => {
+                        info!("Shutdown signal received, stopping servers...");
+                    }
+                }
+            } else {
+                axum_server::bind_rustls(addr, tls_config)
+                    .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
+                    .await?;
+            }
         }
     } else {
         info!("TLS disabled - starting HTTP server (HTTP/1.1 only)");
@@ -368,9 +448,12 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
-        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
-            .with_graceful_shutdown(shutdown_signal())
-            .await?;
+        axum::serve(
+            listener,
+            app.into_make_service_with_connect_info::<SocketAddr>(),
+        )
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
     }
 
     info!("Server started successfully");
@@ -422,6 +505,50 @@ async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std:
 
     info!("TLS configuration created successfully with HTTP/2 support");
     Ok(RustlsConfig::from_config(Arc::new(tls_config)))
+}
+
+async fn create_acme_config(
+    config: &Config,
+) -> Result<(AxumAcceptor, tokio::task::JoinHandle<()>), Box<dyn std::error::Error>> {
+    let domains = config.acme_domains.clone();
+    if domains.is_empty() {
+        return Err("At least one domain must be specified for ACME".into());
+    }
+
+    info!("Setting up ACME for domains: {:?}", domains);
+
+    let cache_dir = config
+        .acme_cache_dir
+        .as_ref()
+        .map(|dir| dir.clone())
+        .unwrap_or_else(|| "./acme_cache".to_string());
+
+    let mut acme_config = AcmeConfig::new(domains)
+        .cache(DirCache::new(cache_dir))
+        .directory_lets_encrypt(config.acme_production.unwrap_or(false));
+
+    if let Some(email) = &config.acme_email {
+        let email_contact = format!("mailto:{}", email);
+        acme_config = acme_config.contact_push(email_contact);
+        info!("ACME contact email: {}", email);
+    }
+
+    let mut state = acme_config.state();
+    let acceptor = state.axum_acceptor(state.default_rustls_config());
+
+    // Spawn task to handle ACME events
+    let handle = tokio::spawn(async move {
+        loop {
+            match state.next().await {
+                Some(Ok(ok)) => info!("ACME event: {:?}", ok),
+                Some(Err(err)) => warn!("ACME error: {:?}", err),
+                None => break,
+            }
+        }
+    });
+
+    info!("ACME configuration created successfully");
+    Ok((acceptor, handle))
 }
 
 async fn create_router(app_state: AppState, serve_args: &ServeArgs) -> Router {

@@ -70,8 +70,40 @@ pub struct ServeArgs {
     #[arg(long, default_value = "80", help = "Port for HTTP redirect server")]
     pub redirect_port: u16,
 
-    #[arg(long, help = "Target HTTPS port for redirects (defaults to main server port)")]
-    pub redirect_target_port: Option<u16>
+    #[arg(
+        long,
+        help = "Target HTTPS port for redirects (defaults to main server port)"
+    )]
+    pub redirect_target_port: Option<u16>,
+
+    // ACME/Let's Encrypt options
+    #[arg(
+        long,
+        help = "Enable ACME/Let's Encrypt automatic certificate management"
+    )]
+    pub acme: bool,
+
+    #[arg(
+        long,
+        help = "Domains for ACME certificate (can be specified multiple times)"
+    )]
+    pub acme_domain: Vec<String>,
+
+    #[arg(long, help = "Contact email for ACME registration")]
+    pub acme_email: Option<String>,
+
+    #[arg(
+        long,
+        help = "Directory for ACME certificate cache",
+        default_value = "./acme_cache"
+    )]
+    pub acme_cache_dir: String,
+
+    #[arg(
+        long,
+        help = "Use Let's Encrypt production environment (default: staging)"
+    )]
+    pub acme_production: bool,
 }
 
 impl ServeArgs {

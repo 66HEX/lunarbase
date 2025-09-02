@@ -1,5 +1,5 @@
+use lunarbase::Config;
 use lunarbase::cli::commands::serve::ServeArgs;
-use lunarbase::{Config};
 
 pub fn create_test_serve_args() -> ServeArgs {
     ServeArgs {
@@ -26,6 +26,11 @@ pub fn create_test_serve_args() -> ServeArgs {
         enable_redirect: false,
         redirect_port: 80,
         redirect_target_port: None,
+        acme: false,
+        acme_domain: vec![],
+        acme_email: None,
+        acme_cache_dir: "./test_acme_cache".to_string(),
+        acme_production: false,
     }
 }
 

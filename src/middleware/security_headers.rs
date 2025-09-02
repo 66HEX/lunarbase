@@ -1,9 +1,9 @@
-use serde::{Deserialize, Serialize};
 use axum::{
-    http::{Request, Response, HeaderMap, HeaderName, HeaderValue},
-    middleware::Next,
     body::Body,
+    http::{HeaderMap, HeaderName, HeaderValue, Request, Response},
+    middleware::Next,
 };
+use serde::{Deserialize, Serialize};
 use tracing::{debug, warn};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -255,7 +255,7 @@ pub async fn security_headers_middleware(
     let headers = response.headers_mut();
 
     add_security_headers(headers, &config);
-    
+
     response
 }
 
@@ -268,7 +268,7 @@ fn add_security_headers(headers: &mut HeaderMap, config: &SecurityHeadersConfig)
         if config.hsts.preload {
             hsts_value.push_str("; preload");
         }
-        
+
         if let Ok(value) = HeaderValue::from_str(&hsts_value) {
             headers.insert("strict-transport-security", value);
             debug!("Added HSTS header: {}", hsts_value);
@@ -289,7 +289,10 @@ fn add_security_headers(headers: &mut HeaderMap, config: &SecurityHeadersConfig)
             headers.insert("x-frame-options", value);
             debug!("Added X-Frame-Options: {}", frame_options_value);
         } else {
-            warn!("Failed to create X-Frame-Options header value: {}", frame_options_value);
+            warn!(
+                "Failed to create X-Frame-Options header value: {}",
+                frame_options_value
+            );
         }
     }
 
@@ -305,7 +308,7 @@ fn add_security_headers(headers: &mut HeaderMap, config: &SecurityHeadersConfig)
         } else {
             "content-security-policy"
         };
-        
+
         if let Ok(value) = HeaderValue::from_str(&config.csp.policy) {
             let name = HeaderName::from_static(header_name);
             headers.insert(name, value);
@@ -325,9 +328,15 @@ fn add_security_headers(headers: &mut HeaderMap, config: &SecurityHeadersConfig)
     if config.permissions_policy.enabled && !config.permissions_policy.policy.is_empty() {
         if let Ok(value) = HeaderValue::from_str(&config.permissions_policy.policy) {
             headers.insert("permissions-policy", value);
-            debug!("Added Permissions-Policy: {}", config.permissions_policy.policy);
+            debug!(
+                "Added Permissions-Policy: {}",
+                config.permissions_policy.policy
+            );
         } else {
-            warn!("Failed to create Permissions-Policy header value: {}", config.permissions_policy.policy);
+            warn!(
+                "Failed to create Permissions-Policy header value: {}",
+                config.permissions_policy.policy
+            );
         }
     }
 }
@@ -354,7 +363,10 @@ mod tests {
     #[test]
     fn test_frame_options_policy() {
         assert_eq!(FrameOptionsPolicy::Deny.to_header_value(), "DENY");
-        assert_eq!(FrameOptionsPolicy::SameOrigin.to_header_value(), "SAMEORIGIN");
+        assert_eq!(
+            FrameOptionsPolicy::SameOrigin.to_header_value(),
+            "SAMEORIGIN"
+        );
         assert_eq!(
             FrameOptionsPolicy::AllowFrom("https://example.com".to_string()).to_header_value(),
             "ALLOW-FROM https://example.com"
@@ -364,7 +376,10 @@ mod tests {
     #[test]
     fn test_referrer_policy_values() {
         assert_eq!(ReferrerPolicy::NoReferrer.to_header_value(), "no-referrer");
-        assert_eq!(ReferrerPolicy::StrictOriginWhenCrossOrigin.to_header_value(), "strict-origin-when-cross-origin");
+        assert_eq!(
+            ReferrerPolicy::StrictOriginWhenCrossOrigin.to_header_value(),
+            "strict-origin-when-cross-origin"
+        );
     }
 
     #[test]

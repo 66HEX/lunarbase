@@ -26,6 +26,8 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter"] }
 uuid = { version = "1.18.0", features = ["v4"] }
 rustls = { version = "0.23.0", features = ["aws-lc-rs"] }
 rustls-pemfile = "2.1.0"
+rustls-acme = { version = "0.14.0", features = ["axum"] }
+tokio-stream = "0.1"
 axum-server = { version = "0.7", features = ["tls-rustls"] }
 utoipa = { version = "5.4.0", features = ["axum_extras", "uuid", "chrono"] }
 utoipa-swagger-ui = { version = "9.0.2", features = ["axum"] }

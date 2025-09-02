@@ -250,8 +250,8 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, BackupService, CollectionService, ConfigurationAccess, ConfigurationManager, EmailService,
-    OwnershipService, PermissionService, S3Service, WebSocketService,
+    AdminService, BackupService, CollectionService, ConfigurationAccess, ConfigurationManager,
+    EmailService, OwnershipService, PermissionService, S3Service, WebSocketService,
     create_backup_service_from_config, create_s3_service_from_config,
 };
 use std::sync::Arc;

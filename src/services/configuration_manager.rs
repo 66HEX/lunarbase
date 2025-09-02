@@ -475,7 +475,11 @@ pub trait ConfigurationAccess: Sync {
     fn get_referrer_policy(&self) -> impl std::future::Future<Output = String> + Send {
         async {
             self.config_manager()
-                .get_string_or_default("security_headers", "referrer_policy", "strict-origin-when-cross-origin")
+                .get_string_or_default(
+                    "security_headers",
+                    "referrer_policy",
+                    "strict-origin-when-cross-origin",
+                )
                 .await
         }
     }
@@ -491,7 +495,11 @@ pub trait ConfigurationAccess: Sync {
     fn get_permissions_policy(&self) -> impl std::future::Future<Output = String> + Send {
         async {
             self.config_manager()
-                .get_string_or_default("security_headers", "permissions_policy", "camera=(), microphone=(), geolocation=(), payment=()")
+                .get_string_or_default(
+                    "security_headers",
+                    "permissions_policy",
+                    "camera=(), microphone=(), geolocation=(), payment=()",
+                )
                 .await
         }
     }

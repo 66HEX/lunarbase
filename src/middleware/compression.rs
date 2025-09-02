@@ -204,4 +204,3 @@ mod tests {
         assert!(!dev_config.algorithms.brotli);
     }
 }
-

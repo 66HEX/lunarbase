@@ -10,8 +10,8 @@ use tower::ServiceExt;
 use uuid;
 
 use axum::middleware;
-use lunarbase::database::create_pool;
 use lunarbase::AppState;
+use lunarbase::database::create_pool;
 use lunarbase::handlers::auth::*;
 use lunarbase::handlers::collections::*;
 use lunarbase::middleware::auth_middleware;
@@ -22,10 +22,10 @@ mod common;
 async fn create_test_router() -> Router {
     let test_jwt_secret = "test_secret".to_string();
     let test_password_pepper = "test_pepper".to_string();
-    
+
     let config = common::create_test_config().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
-    
+
     let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
         .await
         .expect("Failed to create AppState");

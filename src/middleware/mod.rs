@@ -1,11 +1,11 @@
 use crate::AppState;
-use crate::services::configuration_manager::ConfigurationAccess;
 use crate::cli::commands::serve::ServeArgs;
+use crate::services::configuration_manager::ConfigurationAccess;
 use axum::{Router, extract::DefaultBodyLimit, middleware};
+use tower_governor::key_extractor::SmartIpKeyExtractor;
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
-use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
-use tower_governor::key_extractor::SmartIpKeyExtractor;
 use tracing::{Level, debug};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -76,7 +76,11 @@ pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     add_middleware_with_args(app, app_state, None).await
 }
 
-pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_args: Option<&ServeArgs>) -> Router {
+pub async fn add_middleware_with_args(
+    app: Router,
+    app_state: AppState,
+    serve_args: Option<&ServeArgs>,
+) -> Router {
     let cors_layer = setup_cors(&app_state).await;
 
     let trace_layer = TraceLayer::new_for_http()
@@ -89,11 +93,11 @@ pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_ar
 
     let governor_conf = std::sync::Arc::new(
         GovernorConfigBuilder::default()
-            .per_second(50)  
-            .burst_size(50)   
+            .per_second(50)
+            .burst_size(50)
             .key_extractor(SmartIpKeyExtractor)
             .finish()
-            .unwrap()
+            .unwrap(),
     );
     let governor_layer = GovernorLayer::new(governor_conf);
 
@@ -107,7 +111,7 @@ pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_ar
                 router = router.layer(compression_layer);
             }
         }
-        
+
         if args.security_headers || app_state.get_security_headers_enabled().await {
             let security_config = build_security_headers_config(&app_state, args).await;
             debug!("Adding security headers middleware");
@@ -124,7 +128,7 @@ pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_ar
                 router = router.layer(compression_layer);
             }
         }
-        
+
         if app_state.get_security_headers_enabled().await {
             let security_config = build_security_headers_config_from_db(&app_state).await;
             debug!("Adding security headers middleware from database config");
@@ -155,13 +159,17 @@ pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_ar
 
 async fn build_compression_config(app_state: &AppState, args: &ServeArgs) -> CompressionConfig {
     let enabled = args.compression || app_state.get_compression_enabled().await;
-    let level = if args.compression_level > 0 { args.compression_level } else { app_state.get_compression_level().await };
+    let level = if args.compression_level > 0 {
+        args.compression_level
+    } else {
+        app_state.get_compression_level().await
+    };
     let min_size = app_state.get_compression_min_size().await;
-    
+
     let gzip = !args.no_gzip && app_state.get_compression_gzip().await;
     let brotli = !args.no_brotli && app_state.get_compression_brotli().await;
     let deflate = !args.no_deflate && app_state.get_compression_deflate().await;
-    
+
     CompressionConfig {
         enabled,
         level,
@@ -187,27 +195,36 @@ async fn build_compression_config_from_db(app_state: &AppState) -> CompressionCo
     }
 }
 
-async fn build_security_headers_config(app_state: &AppState, args: &ServeArgs) -> SecurityHeadersConfig {
+async fn build_security_headers_config(
+    app_state: &AppState,
+    args: &ServeArgs,
+) -> SecurityHeadersConfig {
     let enabled = args.security_headers || app_state.get_security_headers_enabled().await;
     let strict_mode = args.security_headers_strict;
-    
+
     if strict_mode {
         return SecurityHeadersConfig::production();
     }
-    
+
     let hsts_enabled = !args.no_hsts && app_state.get_hsts_enabled().await;
-    let hsts_max_age = if args.hsts_max_age > 0 { args.hsts_max_age } else { app_state.get_hsts_max_age().await };
-    
-    let frame_policy = args.frame_options.as_ref()
-        .map(|policy| match policy.to_lowercase().as_str() {
-            "deny" => FrameOptionsPolicy::Deny,
-            "sameorigin" => FrameOptionsPolicy::SameOrigin,
-            uri if uri.starts_with("allow-from:") => {
-                FrameOptionsPolicy::AllowFrom(uri.strip_prefix("allow-from:").unwrap_or("").to_string())
-            }
-            _ => FrameOptionsPolicy::Deny,
-        });
-    
+    let hsts_max_age = if args.hsts_max_age > 0 {
+        args.hsts_max_age
+    } else {
+        app_state.get_hsts_max_age().await
+    };
+
+    let frame_policy =
+        args.frame_options
+            .as_ref()
+            .map(|policy| match policy.to_lowercase().as_str() {
+                "deny" => FrameOptionsPolicy::Deny,
+                "sameorigin" => FrameOptionsPolicy::SameOrigin,
+                uri if uri.starts_with("allow-from:") => FrameOptionsPolicy::AllowFrom(
+                    uri.strip_prefix("allow-from:").unwrap_or("").to_string(),
+                ),
+                _ => FrameOptionsPolicy::Deny,
+            });
+
     let frame_policy = if let Some(policy) = frame_policy {
         policy
     } else {
@@ -215,19 +232,19 @@ async fn build_security_headers_config(app_state: &AppState, args: &ServeArgs) -
         match db_policy.to_uppercase().as_str() {
             "SAMEORIGIN" => FrameOptionsPolicy::SameOrigin,
             "DENY" => FrameOptionsPolicy::Deny,
-            uri if uri.starts_with("ALLOW-FROM ") => {
-                FrameOptionsPolicy::AllowFrom(uri.strip_prefix("ALLOW-FROM ").unwrap_or("").to_string())
-            }
+            uri if uri.starts_with("ALLOW-FROM ") => FrameOptionsPolicy::AllowFrom(
+                uri.strip_prefix("ALLOW-FROM ").unwrap_or("").to_string(),
+            ),
             _ => FrameOptionsPolicy::Deny,
         }
     };
-    
+
     let csp_policy = if let Some(policy) = args.csp_policy.clone() {
         policy
     } else {
         app_state.get_csp_policy().await
     };
-    
+
     SecurityHeadersConfig {
         enabled,
         hsts: HstsConfig {
@@ -268,7 +285,7 @@ async fn build_security_headers_config_from_db(app_state: &AppState) -> Security
         }
         _ => FrameOptionsPolicy::Deny,
     };
-    
+
     SecurityHeadersConfig {
         enabled: app_state.get_security_headers_enabled().await,
         hsts: HstsConfig {

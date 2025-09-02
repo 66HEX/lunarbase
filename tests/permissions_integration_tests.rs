@@ -10,13 +10,13 @@ use tower::ServiceExt;
 use uuid;
 
 use axum::middleware;
+use lunarbase::AppState;
 use lunarbase::database::create_pool;
 use lunarbase::handlers::{
     auth::*, collections::*, ownership::*, permissions::*, record_permissions::*,
 };
 use lunarbase::middleware::auth_middleware;
 use lunarbase::models::{CollectionSchema, FieldDefinition, FieldType, ValidationRules};
-use lunarbase::{AppState};
 
 mod common;
 
@@ -196,9 +196,9 @@ async fn create_admin_token(app: &Router) -> (i32, String) {
 
 async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     use diesel::prelude::*;
+    use lunarbase::database::create_pool;
     use lunarbase::models::NewUser;
     use lunarbase::schema::users;
-    use lunarbase::database::create_pool;
 
     let unique_email = format!("test_{}@example.com", uuid::Uuid::new_v4());
     let unique_username = format!(

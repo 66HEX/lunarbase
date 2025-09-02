@@ -114,6 +114,9 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 
 ### Self-Contained Server Architecture
 - **Native TLS/SSL support** with HTTP/2 protocol and certificate management
+- **Automatic HTTPS with ACME/Let's Encrypt** - zero-configuration SSL certificate provisioning and renewal
+- **Dual certificate support** - manual certificates or automatic ACME with ACME taking priority
+- **Production and staging ACME environments** with automatic certificate caching and renewal
 - **Automatic HTTP→HTTPS redirect** server for seamless security enforcement
 - **Dual server architecture** supporting simultaneous HTTPS and HTTP redirect servers
 - **Zero external dependencies** - no need for Nginx or other reverse proxies
@@ -166,7 +169,13 @@ cargo run serve --host 0.0.0.0 --port 8080
 # Enable TLS with HTTP/2 support
 cargo run serve --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
 
-# Self-contained HTTPS server with HTTP→HTTPS redirect
+# Automatic HTTPS with Let's Encrypt (ACME)
+cargo run serve --host 0.0.0.0 --port 443 --acme --acme-domain yourdomain.com --acme-email admin@yourdomain.com --enable-redirect --redirect-port 80
+
+# ACME with custom cache directory and production environment
+cargo run serve --host 0.0.0.0 --port 443 --acme --acme-domain yourdomain.com --acme-email admin@yourdomain.com --acme-cache-dir /etc/lunarbase/acme --acme-production --enable-redirect --redirect-port 80
+
+# Self-contained HTTPS server with HTTP→HTTPS redirect (manual certificates)
 cargo run serve --host 0.0.0.0 --port 8443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem --enable-redirect --redirect-port 8080 --redirect-target-port 8443
 
 # Production setup with security features
@@ -238,7 +247,45 @@ S3_SECRET_ACCESS_KEY=your-secret-access-key  # AWS secret key
 - **Use strong, unique passwords** for `SQLCIPHER_KEY`, `JWT_SECRET`, and `PASSWORD_PEPPER`
 - **Never commit secrets** to version control - use `.env` files locally and secure environment variable management in production
 - **Rotate secrets regularly** especially JWT secrets and database encryption keys
-- **Use HTTPS in production** by using `--tls` flag with valid SSL certificates
+- **Use HTTPS in production** by using `--tls` flag with valid SSL certificates or `--acme` for automatic Let's Encrypt certificates
+
+### ACME/Let's Encrypt Integration
+
+LunarBase includes built-in support for automatic SSL/TLS certificate management through ACME (Automatic Certificate Management Environment) and Let's Encrypt integration.
+
+#### Key Features
+- **Zero-configuration HTTPS** - automatic certificate provisioning and renewal
+- **Production and staging environments** - use `--acme-production` for Let's Encrypt production or omit for staging
+- **Automatic certificate caching** - certificates are cached and reused across server restarts
+- **Domain validation** - automatic domain ownership verification through HTTP-01 challenge
+- **Certificate renewal** - automatic renewal before expiration
+
+#### ACME CLI Arguments
+- `--acme` - Enable ACME/Let's Encrypt integration
+- `--acme-domain <DOMAIN>` - Domain name for certificate (required)
+- `--acme-email <EMAIL>` - Contact email for Let's Encrypt (required)
+- `--acme-cache-dir <DIR>` - Certificate cache directory (default: `./acme_cache`)
+- `--acme-production` - Use Let's Encrypt production environment (omit for staging)
+
+#### Usage Examples
+```bash
+# Basic ACME setup (staging environment)
+cargo run serve --acme --acme-domain example.com --acme-email admin@example.com
+
+# Production ACME with custom cache directory
+cargo run serve --acme --acme-domain example.com --acme-email admin@example.com --acme-cache-dir /etc/lunarbase/acme --acme-production
+
+# Full production setup with ACME
+cargo run serve --host 0.0.0.0 --port 443 --acme --acme-domain example.com --acme-email admin@example.com --acme-production --enable-redirect --redirect-port 80 --security-headers --compression
+```
+
+#### Certificate Priority
+When both ACME and manual TLS certificates are configured, ACME takes priority. This allows for easy migration from manual certificates to automatic certificate management.
+
+#### Requirements
+- Domain must point to the server's IP address
+- Port 80 must be accessible for HTTP-01 challenge validation
+- Valid email address for Let's Encrypt account registration
 
 ## Quick Start
 
@@ -327,10 +374,13 @@ Server settings are configured via CLI arguments:
 # Basic server setup
 ./lunarbase serve --host 0.0.0.0 --port 443
 
-# Self-contained HTTPS server with automatic HTTP→HTTPS redirect
+# Automatic HTTPS with Let's Encrypt (recommended for production)
+./lunarbase serve --host 0.0.0.0 --port 443 --acme --acme-domain yourdomain.com --acme-email admin@yourdomain.com --acme-production --enable-redirect --redirect-port 80 --security-headers --compression
+
+# Self-contained HTTPS server with manual certificates
 ./lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem --enable-redirect --redirect-port 80
 
-# Production setup with all security features
+# Production setup with manual certificates and all security features
 ./lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /etc/ssl/cert.pem --tls-key /etc/ssl/key.pem --enable-redirect --redirect-port 80 --security-headers --compression
 ```
 
@@ -340,7 +390,10 @@ Server settings are configured via CLI arguments:
 # Build the application with embedded admin UI
 cargo build --release
 
-# Self-contained production server (no Nginx required)
+# Self-contained production server with automatic HTTPS (recommended)
+./target/release/lunarbase serve --host 0.0.0.0 --port 443 --acme --acme-domain yourdomain.com --acme-email admin@yourdomain.com --acme-production --enable-redirect --redirect-port 80 --security-headers --compression
+
+# Self-contained production server with manual certificates
 ./target/release/lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /etc/ssl/cert.pem --tls-key /etc/ssl/key.pem --enable-redirect --redirect-port 80 --security-headers --compression
 
 # Development server
