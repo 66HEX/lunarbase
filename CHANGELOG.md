@@ -1,5 +1,18 @@
 # Changelog
 
+## [Unreleased]
+
+### Added
+- **Self-contained server solution** with native TLS support eliminating the need for external reverse proxies like Nginx
+- **HTTP to HTTPS redirect server** with automatic redirection from HTTP to HTTPS for improved security
+- **Dual server architecture** supporting simultaneous HTTPS and HTTP redirect servers with independent port configuration
+- **Enhanced CLI arguments** for server configuration including `--enable-redirect`, `--redirect-port`, and `--redirect-target-port`
+- **Production deployment guide** for EC2 instances without Nginx dependency
+- **Native TLS/SSL support** with HTTP/2 protocol support and certificate management
+- **Security headers middleware** with configurable HSTS, CSP, and X-Frame-Options
+- **Compression middleware** supporting gzip, brotli, and deflate algorithms
+- **Host header validation** for enhanced security in production environments
+
 ## [0.8.0][0.8.0] - 2025-09-02
 
 ### Added

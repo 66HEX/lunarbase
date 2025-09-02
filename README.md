@@ -112,6 +112,14 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 - **Configurable backup settings** including schedule, retention days, compression, and file naming
 - **Health monitoring** with backup service status checks and S3 connectivity validation
 
+### Self-Contained Server Architecture
+- **Native TLS/SSL support** with HTTP/2 protocol and certificate management
+- **Automatic HTTP→HTTPS redirect** server for seamless security enforcement
+- **Dual server architecture** supporting simultaneous HTTPS and HTTP redirect servers
+- **Zero external dependencies** - no need for Nginx or other reverse proxies
+- **Production-ready deployment** with comprehensive security headers and compression
+- **Enhanced CLI configuration** with granular control over server behavior
+
 ### External Integrations
 - **OAuth Authentication** with Google and GitHub providers for seamless social login
 - **Resend Email Service** for reliable verification email delivery
@@ -155,8 +163,14 @@ cargo run serve
 # Custom host and port  
 cargo run serve --host 0.0.0.0 --port 8080
 
-# Enable TLS
+# Enable TLS with HTTP/2 support
 cargo run serve --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+
+# Self-contained HTTPS server with HTTP→HTTPS redirect
+cargo run serve --host 0.0.0.0 --port 8443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem --enable-redirect --redirect-port 8080 --redirect-target-port 8443
+
+# Production setup with security features
+cargo run serve --host 0.0.0.0 --port 443 --tls --tls-cert /etc/ssl/cert.pem --tls-key /etc/ssl/key.pem --enable-redirect --redirect-port 80 --security-headers --compression
 
 # API-only mode
 cargo run serve --api-only --port 9000
@@ -313,8 +327,11 @@ Server settings are configured via CLI arguments:
 # Basic server setup
 ./lunarbase serve --host 0.0.0.0 --port 443
 
-# With TLS for production
-./lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem
+# Self-contained HTTPS server with automatic HTTP→HTTPS redirect
+./lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /path/to/cert.pem --tls-key /path/to/key.pem --enable-redirect --redirect-port 80
+
+# Production setup with all security features
+./lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /etc/ssl/cert.pem --tls-key /etc/ssl/key.pem --enable-redirect --redirect-port 80 --security-headers --compression
 ```
 
 #### Build and Deploy
@@ -323,26 +340,38 @@ Server settings are configured via CLI arguments:
 # Build the application with embedded admin UI
 cargo build --release
 
-# Start the production server with CLI (serves both API and embedded admin UI)
-./target/release/lunarbase serve --host 0.0.0.0 --port 3000
+# Self-contained production server (no Nginx required)
+./target/release/lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /etc/ssl/cert.pem --tls-key /etc/ssl/key.pem --enable-redirect --redirect-port 80 --security-headers --compression
 
-# Or with TLS for production
-./target/release/lunarbase serve --host 0.0.0.0 --port 443 --tls --tls-cert /etc/ssl/cert.pem --tls-key /etc/ssl/key.pem
+# Development server
+./target/release/lunarbase serve --host 0.0.0.0 --port 3000
 ```
+
+**Note:** LunarBase now includes a self-contained server solution with native TLS support, eliminating the need for external reverse proxies like Nginx. The server supports HTTP/2, automatic HTTP→HTTPS redirects, security headers, and compression out of the box.
 
 **Note:** The admin UI is automatically built and embedded into the binary during compilation. No separate frontend build step is required.
 
 #### Access Points
 
-**CLI with TLS enabled:**
-- Backend available at `https://localhost:443/api/` with HTTP/2 support
-- Admin interface at `https://localhost:443/admin/`
-- API documentation at `https://localhost:443/docs/`
+**Self-contained HTTPS server with redirect:**
+- HTTPS server: `https://localhost:443/` with HTTP/2 support
+- HTTP redirect: `http://localhost:80/` (automatically redirects to HTTPS)
+- Backend API: `https://localhost:443/api/`
+- Admin interface: `https://localhost:443/admin/`
+- API documentation: `https://localhost:443/docs/`
 
-**CLI with TLS disabled:**
+**Development server (TLS disabled):**
 - Backend available at `http://localhost:3000/api/` with HTTP/1.1
 - Admin interface at `http://localhost:3000/admin/`
 - API documentation at `http://localhost:3000/docs/`
+
+**Production Benefits:**
+- ✅ No Nginx configuration required
+- ✅ Automatic SSL/TLS termination
+- ✅ HTTP/2 support out of the box
+- ✅ Security headers automatically applied
+- ✅ Gzip/Brotli compression enabled
+- ✅ Single binary deployment
 
 ## Architecture Highlights
 

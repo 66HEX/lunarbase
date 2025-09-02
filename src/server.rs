@@ -183,6 +183,61 @@ use crate::handlers::{
 use crate::middleware::{add_middleware_with_args, auth_middleware, setup_logging};
 use crate::{ApiDoc, AppState, Config};
 
+async fn create_redirect_server(
+    redirect_port: u16,
+    target_port: u16,
+    target_host: &str,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use axum::{
+        http::{StatusCode, header::HOST},
+        response::Redirect,
+        routing::any,
+        Router,
+        extract::Request,
+    };
+
+    async fn redirect_to_https(
+        request: Request<Body>,
+        target_port: u16,
+    ) -> Result<Redirect, StatusCode> {
+        let uri = request.uri();
+        let host_header = request
+            .headers()
+            .get(HOST)
+            .and_then(|h| h.to_str().ok())
+            .unwrap_or("localhost");
+
+        let host = if target_port == 443 {
+            host_header.split(':').next().unwrap_or(host_header).to_string()
+        } else {
+            format!(
+                "{}:{}",
+                host_header.split(':').next().unwrap_or(host_header),
+                target_port
+            )
+        };
+
+        let redirect_url = format!("https://{}{}", host, uri.path_and_query().map(|pq| pq.as_str()).unwrap_or("/"));
+        Ok(Redirect::permanent(&redirect_url))
+    }
+
+    let app = Router::new().route(
+        "/{*path}",
+        any(move |request| redirect_to_https(request, target_port)),
+    );
+
+    let addr = format!("{}:{}", target_host, redirect_port).parse::<SocketAddr>()?;
+    let listener = tokio::net::TcpListener::bind(addr).await?;
+    
+    info!("HTTP redirect server listening on {}", addr);
+    
+    axum::serve(listener, app.into_make_service())
+        .with_graceful_shutdown(shutdown_signal())
+        .await?;
+
+    Ok(())
+}
+
 pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error::Error>> {
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
@@ -268,9 +323,39 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
         let tracking_layer = ConnectionTrackingLayer::new(connection_tracker);
         let tracked_app = app.layer(tracking_layer);
 
-        axum_server::bind_rustls(addr, tls_config)
-            .serve(tracked_app.into_make_service())
-            .await?;
+        if serve_args.enable_redirect {
+            let redirect_target_port = serve_args.redirect_target_port.unwrap_or(serve_args.port());
+            let redirect_host = serve_args.host().to_string();
+            let redirect_port = serve_args.redirect_port;
+            
+            info!("Starting HTTP redirect server on port {}", redirect_port);
+            
+            let redirect_handle = tokio::spawn(async move {
+                if let Err(e) = create_redirect_server(redirect_port, redirect_target_port, &redirect_host).await {
+                    tracing::error!("HTTP redirect server error: {}", e);
+                }
+            });
+            
+            let https_handle = tokio::spawn(async move {
+                if let Err(e) = axum_server::bind_rustls(addr, tls_config)
+                    .serve(tracked_app.into_make_service())
+                    .await {
+                    tracing::error!("HTTPS server error: {}", e);
+                }
+            });
+            
+            tokio::select! {
+                _ = redirect_handle => {},
+                _ = https_handle => {},
+                _ = shutdown_signal() => {
+                    info!("Shutdown signal received, stopping servers...");
+                }
+            }
+        } else {
+            axum_server::bind_rustls(addr, tls_config)
+                .serve(tracked_app.into_make_service())
+                .await?;
+        }
     } else {
         info!("TLS disabled - starting HTTP server (HTTP/1.1 only)");
 

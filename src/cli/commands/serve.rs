@@ -60,6 +60,18 @@ pub struct ServeArgs {
 
     #[arg(long, help = "X-Frame-Options policy (deny, sameorigin, allow-from)")]
     pub frame_options: Option<String>,
+
+    #[arg(long, help = "Enable X-Frame-Options header")]
+    pub x_frame_options: Option<String>,
+
+    #[arg(long, help = "Enable HTTP to HTTPS redirect server")]
+    pub enable_redirect: bool,
+
+    #[arg(long, default_value = "80", help = "Port for HTTP redirect server")]
+    pub redirect_port: u16,
+
+    #[arg(long, help = "Target HTTPS port for redirects (defaults to main server port)")]
+    pub redirect_target_port: Option<u16>
 }
 
 impl ServeArgs {

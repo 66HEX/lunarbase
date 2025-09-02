@@ -22,6 +22,10 @@ pub fn create_test_serve_args() -> ServeArgs {
         csp_policy: None,
         csp_report_only: false,
         frame_options: None,
+        x_frame_options: None,
+        enable_redirect: false,
+        redirect_port: 80,
+        redirect_target_port: None,
     }
 }
 
