@@ -24,6 +24,21 @@ pub struct ServeArgs {
 
     #[arg(long, help = "Run API-only mode without frontend")]
     pub api_only: bool,
+
+    #[arg(long, help = "Enable HTTP compression")]
+    pub compression: bool,
+
+    #[arg(long, help = "Compression level (1-9)", default_value = "6")]
+    pub compression_level: u8,
+
+    #[arg(long, help = "Disable gzip compression")]
+    pub no_gzip: bool,
+
+    #[arg(long, help = "Disable brotli compression")]
+    pub no_brotli: bool,
+
+    #[arg(long, help = "Disable deflate compression")]
+    pub no_deflate: bool,
 }
 
 impl ServeArgs {

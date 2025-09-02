@@ -20,6 +20,7 @@ pub struct MetricsState {
     pub database_connections: Gauge,
     pub http2_connections: Gauge,
     pub tls_connections: Gauge,
+    pub compression_requests_total: Counter,
     pub custom_metrics: Arc<RwLock<HashMap<String, Counter>>>,
     pub cpu_cache_hundredths: Arc<AtomicU64>,
     pub cpu_usage_gauge: Gauge,
@@ -74,6 +75,11 @@ impl MetricsState {
             "Estimated system CPU usage percentage (0-100)",
         )?;
 
+        let compression_requests_total = Counter::new(
+            "http_compression_requests_total",
+            "Total number of HTTP requests with compression applied",
+        )?;
+
         if !cfg!(test) {
             registry.register(Box::new(request_counter.clone()))?;
             registry.register(Box::new(request_duration.clone()))?;
@@ -84,6 +90,7 @@ impl MetricsState {
             registry.register(Box::new(http2_connections.clone()))?;
             registry.register(Box::new(tls_connections.clone()))?;
             registry.register(Box::new(cpu_usage_gauge.clone()))?;
+            registry.register(Box::new(compression_requests_total.clone()))?;
         }
 
         Ok(MetricsState {
@@ -96,6 +103,7 @@ impl MetricsState {
             database_connections,
             http2_connections,
             tls_connections,
+            compression_requests_total,
             custom_metrics: Arc::new(RwLock::new(HashMap::new())),
             cpu_cache_hundredths: Arc::new(AtomicU64::new(0)),
             cpu_usage_gauge,
@@ -166,6 +174,10 @@ impl MetricsState {
 
         Ok(())
     }
+
+    pub fn record_compression(&self) {
+        self.compression_requests_total.inc();
+    }
 }
 
 pub fn setup_metrics_layer() -> PrometheusMetricLayer<'static> {
@@ -186,6 +198,19 @@ pub async fn metrics_middleware(
 
     let response = next.run(request).await;
     let status = response.status();
+
+    if let Some(content_encoding) = response.headers().get("content-encoding") {
+        if let Ok(encoding) = content_encoding.to_str() {
+            if encoding.contains("gzip") || encoding.contains("br") || encoding.contains("deflate") {
+                app_state.metrics_state.compression_requests_total.inc();
+                
+                tracing::debug!(
+                    "Compression applied: encoding={}, path={}",
+                    encoding, uri
+                );
+            }
+        }
+    }
 
     let duration = start.elapsed();
     let duration_micros = duration.as_micros() as f64;

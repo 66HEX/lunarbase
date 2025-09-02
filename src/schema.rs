@@ -1,3 +1,5 @@
+// @generated automatically by Diesel CLI.
+
 diesel::table! {
     blacklisted_tokens (id) {
         id -> Integer,

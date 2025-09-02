@@ -318,4 +318,52 @@ pub trait ConfigurationAccess: Sync {
                 .await as u64
         }
     }
+
+    fn get_compression_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("web_server", "compression_enabled", true)
+                .await
+        }
+    }
+
+    fn get_compression_level(&self) -> impl std::future::Future<Output = u8> + Send {
+        async {
+            self.config_manager()
+                .get_u32_or_default("web_server", "compression_level", 6)
+                .await as u8
+        }
+    }
+
+    fn get_compression_min_size(&self) -> impl std::future::Future<Output = usize> + Send {
+        async {
+            self.config_manager()
+                .get_u32_or_default("web_server", "compression_min_size", 1024)
+                .await as usize
+        }
+    }
+
+    fn get_compression_gzip(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("web_server", "compression_gzip", true)
+                .await
+        }
+    }
+
+    fn get_compression_brotli(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("web_server", "compression_brotli", true)
+                .await
+        }
+    }
+
+    fn get_compression_deflate(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("web_server", "compression_deflate", true)
+                .await
+        }
+    }
 }

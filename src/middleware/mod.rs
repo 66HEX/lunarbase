@@ -1,15 +1,18 @@
 use crate::AppState;
 use crate::services::configuration_manager::ConfigurationAccess;
+use crate::cli::commands::serve::ServeArgs;
 use axum::{Router, extract::DefaultBodyLimit, middleware};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
-use tracing::Level;
+use tracing::{Level, debug};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 pub mod auth;
+pub mod compression;
 pub mod metrics;
 
 pub use auth::*;
+pub use compression::*;
 pub use metrics::*;
 
 pub fn setup_logging() {
@@ -66,6 +69,10 @@ pub async fn setup_cors(app_state: &AppState) -> CorsLayer {
 }
 
 pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
+    add_middleware_with_args(app, app_state, None).await
+}
+
+pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_args: Option<&ServeArgs>) -> Router {
     let cors_layer = setup_cors(&app_state).await;
 
     let trace_layer = TraceLayer::new_for_http()
@@ -76,7 +83,27 @@ pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
                 .latency_unit(tower_http::LatencyUnit::Micros),
         );
 
-    let mut router = app
+    let mut router = app;
+
+    if let Some(args) = serve_args {
+        if args.compression || app_state.get_compression_enabled().await {
+            let compression_config = build_compression_config(&app_state, args).await;
+            if let Ok(compression_layer) = create_compression_layer(&compression_config) {
+                debug!("Adding compression layer");
+                router = router.layer(compression_layer);
+            }
+        }
+    } else {
+        if app_state.get_compression_enabled().await {
+            let compression_config = build_compression_config_from_db(&app_state).await;
+            if let Ok(compression_layer) = create_compression_layer(&compression_config) {
+                debug!("Adding compression layer from database config");
+                router = router.layer(compression_layer);
+            }
+        }
+    }
+
+    router = router
         .layer(cors_layer)
         .layer(trace_layer)
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024));
@@ -91,4 +118,38 @@ pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     }
 
     router
+}
+
+async fn build_compression_config(app_state: &AppState, args: &ServeArgs) -> CompressionConfig {
+    let enabled = args.compression || app_state.get_compression_enabled().await;
+    let level = if args.compression_level > 0 { args.compression_level } else { app_state.get_compression_level().await };
+    let min_size = app_state.get_compression_min_size().await;
+    
+    let gzip = !args.no_gzip && app_state.get_compression_gzip().await;
+    let brotli = !args.no_brotli && app_state.get_compression_brotli().await;
+    let deflate = !args.no_deflate && app_state.get_compression_deflate().await;
+    
+    CompressionConfig {
+        enabled,
+        level,
+        min_size,
+        algorithms: CompressionAlgorithms {
+            gzip,
+            brotli,
+            deflate,
+        },
+    }
+}
+
+async fn build_compression_config_from_db(app_state: &AppState) -> CompressionConfig {
+    CompressionConfig {
+        enabled: app_state.get_compression_enabled().await,
+        level: app_state.get_compression_level().await,
+        min_size: app_state.get_compression_min_size().await,
+        algorithms: CompressionAlgorithms {
+            gzip: app_state.get_compression_gzip().await,
+            brotli: app_state.get_compression_brotli().await,
+            deflate: app_state.get_compression_deflate().await,
+        },
+    }
 }

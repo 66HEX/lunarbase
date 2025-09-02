@@ -180,7 +180,7 @@ use crate::handlers::{
         websocket_stats, websocket_status,
     },
 };
-use crate::middleware::{add_middleware, auth_middleware, setup_logging};
+use crate::middleware::{add_middleware_with_args, auth_middleware, setup_logging};
 use crate::{ApiDoc, AppState, Config};
 
 pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error::Error>> {
@@ -248,7 +248,7 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
 
     let metrics_state_clone = app_state.metrics_state.clone();
 
-    let app = create_router(app_state, serve_args.api_only).await;
+    let app = create_router(app_state, serve_args).await;
 
     let addr = serve_args.server_address().parse::<SocketAddr>()?;
     info!("Server will listen on {}", addr);
@@ -339,7 +339,7 @@ async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std:
     Ok(RustlsConfig::from_config(Arc::new(tls_config)))
 }
 
-async fn create_router(app_state: AppState, api_only: bool) -> Router {
+async fn create_router(app_state: AppState, serve_args: &ServeArgs) -> Router {
     let public_routes = Router::new()
         .route("/health", get(public_health_check))
         .route("/health/simple", get(simple_health_check))
@@ -497,7 +497,7 @@ async fn create_router(app_state: AppState, api_only: bool) -> Router {
 
     let mut app = Router::new().nest("/api", api_routes).merge(swagger_router);
 
-    if !api_only {
+    if !serve_args.api_only {
         app = app
             .route("/admin", get(serve_embedded_admin_html))
             .route("/admin/", get(serve_embedded_admin_html))
@@ -509,7 +509,7 @@ async fn create_router(app_state: AppState, api_only: bool) -> Router {
         .route("/metrics/summary", get(get_metrics_summary))
         .with_state(app_state.clone());
 
-    add_middleware(app, app_state).await
+    add_middleware_with_args(app, app_state, Some(serve_args)).await
 }
 
 async fn shutdown_signal() {

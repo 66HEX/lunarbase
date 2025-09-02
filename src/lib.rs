@@ -250,7 +250,7 @@ impl utoipa::Modify for SecurityAddon {
 pub use config::Config;
 pub use database::DatabasePool;
 use services::{
-    AdminService, BackupService, CollectionService, ConfigurationManager, EmailService,
+    AdminService, BackupService, CollectionService, ConfigurationAccess, ConfigurationManager, EmailService,
     OwnershipService, PermissionService, S3Service, WebSocketService,
     create_backup_service_from_config, create_s3_service_from_config,
 };
@@ -355,5 +355,11 @@ impl Clone for AppState {
             s3_service: self.s3_service.clone(),
             password_pepper: self.password_pepper.clone(),
         }
+    }
+}
+
+impl ConfigurationAccess for AppState {
+    fn config_manager(&self) -> &ConfigurationManager {
+        &self.configuration_manager
     }
 }
