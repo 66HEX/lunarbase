@@ -6,12 +6,25 @@
 - **Self-contained server solution** with native TLS support eliminating the need for external reverse proxies like Nginx
 - **HTTP to HTTPS redirect server** with automatic redirection from HTTP to HTTPS for improved security
 - **Dual server architecture** supporting simultaneous HTTPS and HTTP redirect servers with independent port configuration
-- **Enhanced CLI arguments** for server configuration including `--enable-redirect`, `--redirect-port`, and `--redirect-target-port`
+- **Enhanced CLI arguments** for server configuration including `--enable-redirect`and `--redirect-port`
 - **Production deployment guide** for EC2 instances without Nginx dependency
 - **Native TLS/SSL support** with HTTP/2 protocol support and certificate management
 - **Security headers middleware** with configurable HSTS, CSP, and X-Frame-Options
 - **Compression middleware** supporting gzip, brotli, and deflate algorithms
 - **Host header validation** for enhanced security in production environments
+
+### Changed
+- **Rate limiting system** migrated from dynamic database-driven configuration to static `tower-governor` middleware with GCRA algorithm
+- **Rate limiting configuration** now uses compile-time settings (50 requests/second with burst of 50) instead of runtime database configuration
+- **Rate limiting performance** significantly improved with lower memory usage and better integration with Tower/Axum ecosystem
+
+### Fixed
+- Added `tracked_app.into_make_service_with_connect_info::<SocketAddr>()` to server configuration for proper connection info passing
+
+### Removed
+- **Dynamic rate limiting configuration** from admin panel API settings (rate limiting is now statically configured)
+- **Database rate limiting settings** including `rate_limit_requests_per_minute` system setting
+- **Client IP extraction utilities** replaced by `tower-governor`'s built-in `SmartIpKeyExtractor`
 
 ## [0.8.0][0.8.0] - 2025-09-02
 

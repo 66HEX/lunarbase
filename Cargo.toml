@@ -44,6 +44,7 @@ tokio-cron-scheduler = "0.14.0"
 flate2 = "1.1.2"
 rust-embed = { version = "8.7.2", features = ["debug-embed", "include-exclude"] }
 clap = { version = "4.5", features = ["derive", "env"] }
+tower_governor = "0.8.0"
 
 [dev-dependencies]
 tower = { version = "0.5.2", features = ["util"] }

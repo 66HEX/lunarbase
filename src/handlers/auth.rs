@@ -1,12 +1,11 @@
 use axum::{
     Extension,
-    extract::{ConnectInfo, FromRequest, Query, Request, State},
+    extract::{FromRequest, Query, Request, State},
     http::{HeaderMap, StatusCode},
     response::{Json, Redirect},
 };
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
-use std::net::SocketAddr;
 use std::time::Duration;
 use tracing::debug;
 use utoipa::ToSchema;
@@ -22,7 +21,6 @@ use crate::{
     services::configuration_manager::ConfigurationAccess,
     utils::{
         ApiResponse, Claims, CookieService, ErrorResponse, LunarbaseError,
-        client_ip::extract_client_ip,
     },
 };
 
@@ -42,20 +40,6 @@ pub async fn register(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
-    let connect_info = request
-        .extensions()
-        .get::<ConnectInfo<SocketAddr>>()
-        .copied();
-    let client_ip = extract_client_ip(request.headers(), connect_info);
-    let rate_limit_key = format!("register:{}", client_ip);
-
-    if !app_state
-        .auth_state
-        .rate_limiter
-        .check_rate_limit(&rate_limit_key)
-    {
-        return Err(LunarbaseError::RateLimitExceeded);
-    }
 
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await
@@ -721,20 +705,6 @@ pub async fn login(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
-    let connect_info = request
-        .extensions()
-        .get::<ConnectInfo<SocketAddr>>()
-        .copied();
-    let client_ip = extract_client_ip(request.headers(), connect_info);
-    let rate_limit_key = format!("login:{}", client_ip);
-
-    if !app_state
-        .auth_state
-        .rate_limiter
-        .check_rate_limit(&rate_limit_key)
-    {
-        return Err(LunarbaseError::RateLimitExceeded);
-    }
 
     let Json(payload): Json<LoginRequest> = Json::from_request(request, &app_state)
         .await
@@ -991,20 +961,6 @@ pub async fn register_admin(
     State(app_state): State<AppState>,
     request: Request,
 ) -> Result<(StatusCode, HeaderMap, Json<ApiResponse<AuthResponse>>), LunarbaseError> {
-    let connect_info = request
-        .extensions()
-        .get::<ConnectInfo<SocketAddr>>()
-        .copied();
-    let client_ip = extract_client_ip(request.headers(), connect_info);
-    let rate_limit_key = format!("register_admin:{}", client_ip);
-
-    if !app_state
-        .auth_state
-        .rate_limiter
-        .check_rate_limit(&rate_limit_key)
-    {
-        return Err(LunarbaseError::RateLimitExceeded);
-    }
 
     let Json(payload): Json<RegisterRequest> = Json::from_request(request, &app_state)
         .await

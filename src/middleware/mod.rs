@@ -4,6 +4,8 @@ use crate::cli::commands::serve::ServeArgs;
 use axum::{Router, extract::DefaultBodyLimit, middleware};
 use tower_http::cors::CorsLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
+use tower_governor::{GovernorLayer, governor::GovernorConfigBuilder};
+use tower_governor::key_extractor::SmartIpKeyExtractor;
 use tracing::{Level, debug};
 use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
@@ -85,6 +87,16 @@ pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_ar
                 .latency_unit(tower_http::LatencyUnit::Micros),
         );
 
+    let governor_conf = std::sync::Arc::new(
+        GovernorConfigBuilder::default()
+            .per_second(50)  
+            .burst_size(50)   
+            .key_extractor(SmartIpKeyExtractor)
+            .finish()
+            .unwrap()
+    );
+    let governor_layer = GovernorLayer::new(governor_conf);
+
     let mut router = app;
 
     if let Some(args) = serve_args {
@@ -124,6 +136,7 @@ pub async fn add_middleware_with_args(app: Router, app_state: AppState, serve_ar
     }
 
     router = router
+        .layer(governor_layer)
         .layer(cors_layer)
         .layer(trace_layer)
         .layer(DefaultBodyLimit::max(50 * 1024 * 1024));

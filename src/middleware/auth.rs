@@ -4,61 +4,16 @@ use axum::{
     middleware::Next,
     response::Response,
 };
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
-use std::time::{Duration, Instant};
+use std::sync::Arc;
 
 use crate::services::{ConfigurationAccess, ConfigurationManager};
 use crate::utils::{Claims, CookieService, JwtService, LunarbaseError};
 use diesel::SqliteConnection;
 use diesel::r2d2::{ConnectionManager, Pool};
 
-/// TODO: Rate limiting storage (in production, use Redis)
-#[derive(Clone)]
-pub struct RateLimiter {
-    requests: Arc<Mutex<HashMap<String, Vec<Instant>>>>,
-    max_requests: usize,
-    window: Duration,
-}
-
-impl RateLimiter {
-    pub fn new(max_requests: usize, window_seconds: u64) -> Self {
-        Self {
-            requests: Arc::new(Mutex::new(HashMap::new())),
-            max_requests,
-            window: Duration::from_secs(window_seconds),
-        }
-    }
-
-    pub fn update_limits(&mut self, max_requests: usize, window_seconds: u64) {
-        self.max_requests = max_requests;
-        self.window = Duration::from_secs(window_seconds);
-    }
-
-    pub fn check_rate_limit(&self, identifier: &str) -> bool {
-        let mut requests = self.requests.lock().unwrap();
-        let now = Instant::now();
-
-        let window_start = now - self.window;
-
-        let user_requests = requests
-            .entry(identifier.to_string())
-            .or_insert_with(Vec::new);
-        user_requests.retain(|&timestamp| timestamp > window_start);
-
-        if user_requests.len() >= self.max_requests {
-            false
-        } else {
-            user_requests.push(now);
-            true
-        }
-    }
-}
-
 #[derive(Clone)]
 pub struct AuthState {
     pub jwt_service: Arc<JwtService>,
-    pub rate_limiter: RateLimiter,
     pub config_manager: ConfigurationManager,
 }
 
@@ -68,27 +23,14 @@ impl AuthState {
         pool: Pool<ConnectionManager<SqliteConnection>>,
         config_manager: ConfigurationManager,
     ) -> Self {
-        let requests_per_minute = config_manager
-            .get_u32_or_default("api", "rate_limit_requests_per_minute", 100)
-            .await;
-        let window_seconds = 60;
-
         Self {
             jwt_service: Arc::new(JwtService::new(
                 jwt_secret,
                 pool.clone(),
                 config_manager.clone(),
             )),
-            rate_limiter: RateLimiter::new(requests_per_minute as usize, window_seconds),
             config_manager,
         }
-    }
-
-    pub async fn update_rate_limiter(&mut self) {
-        let requests_per_minute = self.get_rate_limit_requests_per_minute().await;
-        let window_seconds = 60;
-        self.rate_limiter
-            .update_limits(requests_per_minute as usize, window_seconds);
     }
 }
 
@@ -130,17 +72,6 @@ pub async fn auth_middleware(
         tracing::debug!("No token found in cookies or Authorization header");
         return Err(LunarbaseError::TokenInvalid);
     };
-
-    let client_ip = request
-        .headers()
-        .get("x-forwarded-for")
-        .or_else(|| request.headers().get("x-real-ip"))
-        .and_then(|header| header.to_str().ok())
-        .unwrap_or("unknown");
-
-    if !auth_state.rate_limiter.check_rate_limit(client_ip) {
-        return Err(LunarbaseError::RateLimitExceeded);
-    }
 
     let claims = auth_state
         .jwt_service

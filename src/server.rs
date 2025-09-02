@@ -338,7 +338,7 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
             
             let https_handle = tokio::spawn(async move {
                 if let Err(e) = axum_server::bind_rustls(addr, tls_config)
-                    .serve(tracked_app.into_make_service())
+                    .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
                     .await {
                     tracing::error!("HTTPS server error: {}", e);
                 }
@@ -353,7 +353,7 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
             }
         } else {
             axum_server::bind_rustls(addr, tls_config)
-                .serve(tracked_app.into_make_service())
+                .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
                 .await?;
         }
     } else {
@@ -368,7 +368,7 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
 
         let listener = tokio::net::TcpListener::bind(addr).await?;
 
-        axum::serve(listener, app.into_make_service())
+        axum::serve(listener, app.into_make_service_with_connect_info::<SocketAddr>())
             .with_graceful_shutdown(shutdown_signal())
             .await?;
     }

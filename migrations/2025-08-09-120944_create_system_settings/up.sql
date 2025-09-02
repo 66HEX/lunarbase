@@ -33,7 +33,6 @@ INSERT INTO system_settings (category, setting_key, setting_value, data_type, de
 ('auth', 'max_login_attempts', '5', 'integer', 'Maximum login attempts before lockout', '5', FALSE, FALSE),
 
 -- API settings
-('api', 'rate_limit_requests_per_minute', '100', 'integer', 'Rate limit requests per minute per IP', '100', FALSE, FALSE),
 ('api', 'cors_allowed_origins', '["http://localhost:3000", "http://localhost:5173", "https://lh3.googleusercontent.com", "https://avatars.githubusercontent.com"]', 'json', 'CORS allowed origins', '["http://localhost:3000", "http://localhost:5173"]', FALSE, TRUE);
 
 -- Trigger to update updated_at timestamp

@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
 	Form,
-	FormControl,
 	FormDescription,
 	FormField,
 	FormLabel,
@@ -71,18 +70,9 @@ export function ApiSettingsPanel() {
 			: undefined;
 	};
 
-	const getSettingValue = (key: string): string => {
-		return localSettings[key] || "";
-	};
-
 	const requiresRestart = (key: string): boolean => {
 		const setting = getSetting(key);
 		return setting?.requires_restart || false;
-	};
-
-	const handleInputChange = (key: string, value: string) => {
-		setLocalSettings((prev) => ({ ...prev, [key]: value }));
-		setHasChanges(true);
 	};
 
 	const addCorsOrigin = () => {
@@ -194,30 +184,6 @@ export function ApiSettingsPanel() {
 					}}
 				>
 					<div className="space-y-6">
-						<FormField name="rate_limit_requests_per_minute">
-							<FormLabel>Rate Limit (requests per minute)</FormLabel>
-							<FormControl>
-								<Input
-									type="number"
-									min="1"
-									max="10000"
-									value={getSettingValue("rate_limit_requests_per_minute")}
-									onChange={(e) =>
-										handleInputChange(
-											"rate_limit_requests_per_minute",
-											e.target.value,
-										)
-									}
-									placeholder="100"
-									className="w-48"
-								/>
-							</FormControl>
-							<FormDescription>
-								{getSetting("rate_limit_requests_per_minute")?.description ||
-									"Rate limit requests per minute per IP"}
-							</FormDescription>
-						</FormField>
-
 						<FormField name="cors_allowed_origins">
 							<div className="flex items-center gap-2">
 								<FormLabel>CORS Allowed Origins</FormLabel>

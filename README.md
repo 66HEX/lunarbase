@@ -19,7 +19,7 @@ Security isn't an afterthought in LunarBase—it's the foundation. Our multi-lay
 - **HttpOnly cookies** with secure, SameSite=Lax configuration and path restrictions
 - **Comprehensive token blacklisting** for immediate session revocation
 - **Configurable brute force protection** with customizable lockout duration and maximum login attempts
-- **Dynamic rate limiting** with configurable request limits per IP
+- **Static rate limiting** with tower-governor middleware using GCRA algorithm for optimal performance
 - **Timing attack protection** with consistent response delays
 - **Real-time configuration management** allowing administrators to adjust security settings without server restart
 
@@ -95,7 +95,7 @@ The LunarBase admin panel showcases **Nocta UI**, our proprietary component libr
 - **Real-time settings management** with immediate effect without server restart
 - **Database-backed configuration** with automatic caching and cache invalidation
 - **Authentication settings control** including JWT lifetime (1-168 hours), lockout duration (1-1440 minutes), and max login attempts (1-20)
-- **API rate limiting configuration** with customizable requests per minute per IP
+- **Static rate limiting** with 100 requests/second limit and burst capacity of 10 requests per IP
 - **CORS settings management** with dynamic allowed origins configuration
 - **Admin interface integration** providing intuitive controls for all configurable parameters
 - **Fallback to secure defaults** ensuring system stability even with missing configuration

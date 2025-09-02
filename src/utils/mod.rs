@@ -2,13 +2,11 @@ use serde::Serialize;
 use utoipa::ToSchema;
 
 pub mod auth_error;
-pub mod client_ip;
 pub mod cookie_service;
 pub mod jwt_service;
 pub mod oauth_service;
 
 pub use auth_error::LunarbaseError;
-pub use client_ip::{extract_client_ip, get_rate_limit_key};
 pub use cookie_service::CookieService;
 pub use jwt_service::{Claims, JwtService};
 pub use oauth_service::{OAuthConfig, OAuthService, OAuthUserInfo};
