@@ -39,6 +39,27 @@ pub struct ServeArgs {
 
     #[arg(long, help = "Disable deflate compression")]
     pub no_deflate: bool,
+
+    #[arg(long, help = "Enable security headers")]
+    pub security_headers: bool,
+
+    #[arg(long, help = "Enable strict security headers (production mode)")]
+    pub security_headers_strict: bool,
+
+    #[arg(long, help = "Disable HSTS header")]
+    pub no_hsts: bool,
+
+    #[arg(long, help = "HSTS max age in seconds", default_value = "31536000")]
+    pub hsts_max_age: u32,
+
+    #[arg(long, help = "Custom Content Security Policy")]
+    pub csp_policy: Option<String>,
+
+    #[arg(long, help = "Enable CSP report-only mode")]
+    pub csp_report_only: bool,
+
+    #[arg(long, help = "X-Frame-Options policy (deny, sameorigin, allow-from)")]
+    pub frame_options: Option<String>,
 }
 
 impl ServeArgs {

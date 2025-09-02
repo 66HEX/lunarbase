@@ -15,6 +15,13 @@ pub fn create_test_serve_args() -> ServeArgs {
         no_gzip: false,
         no_brotli: false,
         no_deflate: false,
+        security_headers: false,
+        security_headers_strict: false,
+        no_hsts: false,
+        hsts_max_age: 31536000,
+        csp_policy: None,
+        csp_report_only: false,
+        frame_options: None,
     }
 }
 

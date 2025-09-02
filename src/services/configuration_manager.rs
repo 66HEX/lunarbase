@@ -366,4 +366,133 @@ pub trait ConfigurationAccess: Sync {
                 .await
         }
     }
+
+    // Security Headers Configuration Methods
+    fn get_security_headers_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "enabled", true)
+                .await
+        }
+    }
+
+    fn get_hsts_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "hsts_enabled", true)
+                .await
+        }
+    }
+
+    fn get_hsts_max_age(&self) -> impl std::future::Future<Output = u32> + Send {
+        async {
+            self.config_manager()
+                .get_u32_or_default("security_headers", "hsts_max_age", 31536000)
+                .await
+        }
+    }
+
+    fn get_hsts_include_subdomains(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "hsts_include_subdomains", true)
+                .await
+        }
+    }
+
+    fn get_hsts_preload(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "hsts_preload", false)
+                .await
+        }
+    }
+
+    fn get_csp_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "csp_enabled", true)
+                .await
+        }
+    }
+
+    fn get_csp_policy(&self) -> impl std::future::Future<Output = String> + Send {
+        async {
+            self.config_manager()
+                .get_string_or_default("security_headers", "csp_policy", "default-src 'self'")
+                .await
+        }
+    }
+
+    fn get_csp_report_only(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "csp_report_only", false)
+                .await
+        }
+    }
+
+    fn get_frame_options_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "frame_options_enabled", true)
+                .await
+        }
+    }
+
+    fn get_frame_options_policy(&self) -> impl std::future::Future<Output = String> + Send {
+        async {
+            self.config_manager()
+                .get_string_or_default("security_headers", "frame_options_policy", "DENY")
+                .await
+        }
+    }
+
+    fn get_content_type_options(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "content_type_options", true)
+                .await
+        }
+    }
+
+    fn get_xss_protection(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "xss_protection", true)
+                .await
+        }
+    }
+
+    fn get_referrer_policy_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "referrer_policy_enabled", true)
+                .await
+        }
+    }
+
+    fn get_referrer_policy(&self) -> impl std::future::Future<Output = String> + Send {
+        async {
+            self.config_manager()
+                .get_string_or_default("security_headers", "referrer_policy", "strict-origin-when-cross-origin")
+                .await
+        }
+    }
+
+    fn get_permissions_policy_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
+        async {
+            self.config_manager()
+                .get_bool_or_default("security_headers", "permissions_policy_enabled", true)
+                .await
+        }
+    }
+
+    fn get_permissions_policy(&self) -> impl std::future::Future<Output = String> + Send {
+        async {
+            self.config_manager()
+                .get_string_or_default("security_headers", "permissions_policy", "camera=(), microphone=(), geolocation=(), payment=()")
+                .await
+        }
+    }
 }
