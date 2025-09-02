@@ -13,12 +13,14 @@ use lunarbase::handlers::collections::*;
 use lunarbase::handlers::websocket::*;
 use lunarbase::handlers::{health_check, login, me, refresh_token, register};
 use lunarbase::middleware::auth_middleware;
-use lunarbase::{AppState, Config};
+use lunarbase::{AppState};
+
+mod common;
 
 async fn create_test_router() -> Router {
     let test_jwt_secret = "test_secret".to_string();
 
-    let config = Config::from_env().expect("Failed to load config");
+    let config = common::create_test_config().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let test_password_pepper = "test_pepper".to_string();
     let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
@@ -64,7 +66,7 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     use diesel::prelude::*;
     use lunarbase::models::NewUser;
     use lunarbase::schema::users;
-    use lunarbase::{Config, database::create_pool};
+    use lunarbase::database::create_pool;
 
     let unique_username = format!(
         "test_{}",
@@ -72,7 +74,7 @@ async fn create_test_user(_app: &Router, role: &str) -> (i32, String) {
     );
     let unique_email = format!("{}@test.com", unique_username);
 
-    let config = Config::from_env().expect("Failed to load config");
+    let config = common::create_test_config().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
     let mut conn = db_pool.get().expect("Failed to get database connection");
     let test_password_pepper = "test_pepper".to_string();
