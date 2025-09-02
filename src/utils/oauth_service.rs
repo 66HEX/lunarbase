@@ -7,6 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 
+use crate::services::ConfigurationManager;
+
 #[derive(Debug, Clone)]
 pub struct OAuthConfig {
     pub google: Option<OAuthProviderConfig>,
@@ -63,10 +65,11 @@ pub struct OAuthService {
     config: OAuthConfig,
     http_client: HttpClient,
     pkce_verifiers: Arc<Mutex<HashMap<String, PkceCodeVerifier>>>,
+    config_manager: ConfigurationManager,
 }
 
 impl OAuthService {
-    pub fn new(config: OAuthConfig) -> Self {
+    pub fn new(config: OAuthConfig, config_manager: ConfigurationManager) -> Self {
         let http_client = HttpClient::builder()
             .redirect(reqwest::redirect::Policy::none())
             .build()
@@ -76,13 +79,23 @@ impl OAuthService {
             config,
             http_client,
             pkce_verifiers: Arc::new(Mutex::new(HashMap::new())),
+            config_manager,
         }
     }
 
-    pub fn get_authorization_url(
+    pub async fn get_authorization_url(
         &self,
         provider: &str,
     ) -> Result<(String, String), Box<dyn std::error::Error>> {
+        let oauth_enabled = self.config_manager
+            .get_bool("oauth", "oauth_enabled")
+            .await
+            .unwrap_or(false);
+
+        if !oauth_enabled {
+            return Err("OAuth is disabled".into());
+        }
+
         let provider_config = match provider {
             "google" => self.config.google.as_ref(),
             "github" => self.config.github.as_ref(),
@@ -130,6 +143,15 @@ impl OAuthService {
         code: &str,
         state: &str,
     ) -> Result<String, Box<dyn std::error::Error>> {
+        let oauth_enabled = self.config_manager
+            .get_bool("oauth", "oauth_enabled")
+            .await
+            .unwrap_or(false);
+
+        if !oauth_enabled {
+            return Err("OAuth is disabled".into());
+        }
+
         let provider_config = match provider {
             "google" => self.config.google.as_ref(),
             "github" => self.config.github.as_ref(),

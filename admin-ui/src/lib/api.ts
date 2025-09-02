@@ -703,7 +703,7 @@ export const configurationApi = {
 	},
 
 	getSettingsByCategory: async (
-		category: "database" | "auth" | "api",
+		category: "database" | "auth" | "api" | "email" | "oauth" | "storage",
 	): Promise<SystemSetting[]> => {
 		const response = await apiRequest<
 			ApiResponse<{ settings: SystemSetting[] }>
@@ -712,7 +712,7 @@ export const configurationApi = {
 	},
 
 	getSetting: async (
-		category: "database" | "auth" | "api",
+		category: "database" | "auth" | "api" | "email" | "oauth" | "storage",
 		settingKey: string,
 	): Promise<SystemSetting> => {
 		const response = await apiRequest<ApiResponse<SystemSetting>>(
@@ -735,7 +735,7 @@ export const configurationApi = {
 	},
 
 	updateSetting: async (
-		category: "database" | "auth" | "api",
+		category: "database" | "auth" | "api" | "email" | "oauth" | "storage",
 		settingKey: string,
 		data: UpdateSystemSettingRequest,
 	): Promise<SystemSetting> => {
@@ -750,7 +750,7 @@ export const configurationApi = {
 	},
 
 	deleteSetting: async (
-		category: "database" | "auth" | "api",
+		category: "database" | "auth" | "api" | "email" | "oauth" | "storage",
 		settingKey: string,
 	): Promise<void> => {
 		await apiRequest<void>(`/admin/configuration/${category}/${settingKey}`, {
@@ -759,7 +759,7 @@ export const configurationApi = {
 	},
 
 	resetSetting: async (
-		category: "database" | "auth" | "api",
+		category: "database" | "auth" | "api" | "email" | "oauth" | "storage",
 		settingKey: string,
 	): Promise<SystemSetting> => {
 		const response = await apiRequest<ApiResponse<SystemSetting>>(

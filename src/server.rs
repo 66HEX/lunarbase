@@ -273,6 +273,11 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     let config_manager = ConfigurationManager::new(initial_pool.clone());
     config_manager.initialize().await?;
 
+    let mut config = config;
+    let configuration_service = crate::services::configuration_service::ConfigurationService::new(initial_pool.clone());
+    config.load_dynamic_settings(&configuration_service).await?;
+    info!("Dynamic settings loaded from database");
+
     struct TempConfigAccess {
         config_manager: ConfigurationManager,
     }

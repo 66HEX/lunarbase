@@ -285,9 +285,12 @@ impl AppState {
         let admin_service = AdminService::new(db_pool.clone());
         let metrics_state = middleware::MetricsState::new()?;
         metrics_state.start_cpu_sampler();
+        let configuration_manager = ConfigurationManager::new(db_pool.clone());
+        configuration_manager.initialize().await?;
+        
         let websocket_service =
             Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
-        let mut collection_service = CollectionService::new(db_pool.clone())
+        let mut collection_service = CollectionService::new(db_pool.clone(), configuration_manager.clone())
             .with_websocket_service(websocket_service.clone())
             .with_permission_service(permission_service.clone());
 
@@ -295,13 +298,12 @@ impl AppState {
         if let Some(ref s3_service) = s3_service_option {
             collection_service = collection_service.with_s3_service(s3_service.clone());
         }
+        
         let oauth_config =
             utils::oauth_service::OAuthConfig::from_env_with_frontend_url(&config.frontend_url);
-        let oauth_service = utils::OAuthService::new(oauth_config);
-        let email_service = EmailService::new(config, db_pool.clone());
-
-        let configuration_manager = ConfigurationManager::new(db_pool.clone());
-        configuration_manager.initialize().await?;
+        let oauth_service = utils::OAuthService::new(oauth_config, configuration_manager.clone());
+        
+        let email_service = EmailService::new(config, db_pool.clone(), configuration_manager.clone());
 
         let backup_service = create_backup_service_from_config(
             db_pool.clone(),

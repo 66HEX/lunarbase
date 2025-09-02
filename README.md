@@ -212,36 +212,6 @@ LUNARBASE_ADMIN_PASSWORD=your-secure-admin-password  # Initial admin password
 
 **Note:** These variables automatically create an admin user on first startup. Only the first admin can be created this way - subsequent admins must be created through the admin panel.
 
-### Optional Configuration
-
-#### Email Service (Resend)
-```bash
-RESEND_API_KEY=your-resend-api-key-from-resend-dashboard  # Get from https://resend.com
-EMAIL_FROM=onboarding@resend.dev                          # Sender email address
-```
-
-#### OAuth Authentication
-```bash
-# Google OAuth (from Google Cloud Console)
-GOOGLE_CLIENT_ID=your-google-client-id-from-google-cloud-console
-GOOGLE_CLIENT_SECRET=your-google-client-secret-from-google-cloud-console
-
-# GitHub OAuth (from GitHub Developer Settings)
-GITHUB_CLIENT_ID=your-github-client-id-from-github-developer-settings
-GITHUB_CLIENT_SECRET=your-github-client-secret-from-github-developer-settings
-```
-
-#### S3 File Storage
-```bash
-S3_BUCKET_NAME=your-bucket-name           # S3 bucket for file uploads
-S3_REGION=us-east-1                       # AWS region
-S3_ACCESS_KEY_ID=your-access-key-id       # AWS access key
-S3_SECRET_ACCESS_KEY=your-secret-access-key  # AWS secret key
-# S3_ENDPOINT_URL=http://localhost:4566   # Optional: Custom endpoint (LocalStack)
-```
-
-**Note:** All S3 variables are optional. If not set, file upload functionality will be disabled.
-
 ### Security Best Practices
 
 - **Use strong, unique passwords** for `SQLCIPHER_KEY`, `JWT_SECRET`, and `PASSWORD_PEPPER`
@@ -359,12 +329,6 @@ cp env.example .env
 - `LUNARBASE_ADMIN_EMAIL` - Initial admin user email
 - `LUNARBASE_ADMIN_USERNAME` - Initial admin username
 - `LUNARBASE_ADMIN_PASSWORD` - Initial admin password
-
-**Optional but recommended:**
-- `RESEND_API_KEY` - For email verification (get from https://resend.com)
-- `EMAIL_FROM` - Sender email address
-- OAuth credentials (Google/GitHub)
-- S3 configuration for file uploads
 
 **2. CLI Configuration**
 

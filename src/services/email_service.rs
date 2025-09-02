@@ -10,6 +10,7 @@ use crate::Config;
 use crate::embedded_assets::StaticAssets;
 use crate::models::{NewVerificationToken, TokenType, VerificationToken};
 use crate::schema::verification_tokens;
+use crate::services::ConfigurationManager;
 use crate::utils::LunarbaseError;
 
 type DbPool = Pool<ConnectionManager<SqliteConnection>>;
@@ -21,10 +22,11 @@ pub struct EmailService {
     frontend_url: String,
     pool: DbPool,
     logo_bytes: Option<Cow<'static, [u8]>>,
+    config_manager: ConfigurationManager,
 }
 
 impl EmailService {
-    pub fn new(config: &Config, pool: DbPool) -> Self {
+    pub fn new(config: &Config, pool: DbPool, config_manager: ConfigurationManager) -> Self {
         let resend_client = if let Some(api_key) = &config.resend_api_key {
             debug!(
                 "EmailService: Initializing with Resend API key: {}...",
@@ -56,6 +58,7 @@ impl EmailService {
             frontend_url: config.frontend_url.clone(),
             pool,
             logo_bytes,
+            config_manager,
         }
     }
 
@@ -166,6 +169,16 @@ impl EmailService {
             email, user_id
         );
 
+        let email_enabled = self.config_manager
+            .get_bool("email", "email_enabled")
+            .await
+            .unwrap_or(false);
+
+        if !email_enabled {
+            debug!("Email service is disabled, skipping verification email");
+            return Ok(());
+        }
+
         let Some(ref resend_client) = self.resend_client else {
             warn!("Resend client not configured, skipping email verification");
             return Ok(());
@@ -211,6 +224,16 @@ impl EmailService {
             "EmailService: Attempting to send password reset email to {} for user_id: {}",
             email, user_id
         );
+
+        let email_enabled = self.config_manager
+            .get_bool("email", "email_enabled")
+            .await
+            .unwrap_or(false);
+
+        if !email_enabled {
+            debug!("Email service is disabled, skipping password reset email");
+            return Ok(());
+        }
 
         let Some(ref resend_client) = self.resend_client else {
             warn!("Resend client not configured, skipping password reset email");

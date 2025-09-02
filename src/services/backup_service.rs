@@ -193,6 +193,15 @@ impl BackupService {
             return Err(BackupError::BackupDisabled);
         }
 
+        let s3_enabled = self.config_manager
+            .get_bool("storage", "s3_enabled")
+            .await
+            .unwrap_or(false);
+        
+        if !s3_enabled && self.s3_service.is_some() {
+            warn!("S3 is disabled but S3 service is available, backup will not be uploaded to S3");
+        }
+
         let backup_id = Uuid::new_v4().to_string();
         let timestamp = Utc::now();
         let backup_prefix = self.get_backup_prefix().await;
@@ -222,7 +231,7 @@ impl BackupService {
 
         let file_size = final_data.len() as u64;
 
-        let s3_url = if let Some(s3_service) = &self.s3_service {
+        let s3_url = if let Some(s3_service) = &self.s3_service && s3_enabled {
             let s3_key = format!("backups/{}", filename);
             match s3_service
                 .upload_file_with_key(
@@ -319,6 +328,16 @@ impl BackupService {
     }
 
     async fn cleanup_old_backups(&self, new_backup_size: u64) {
+        let s3_enabled = self.config_manager
+            .get_bool("storage", "s3_enabled")
+            .await
+            .unwrap_or(false);
+        
+        if !s3_enabled {
+            debug!("S3 is disabled, skipping backup cleanup");
+            return;
+        }
+
         let s3_service = match &self.s3_service {
             Some(service) => service,
             None => {
@@ -435,6 +454,15 @@ impl BackupService {
             return true;
         }
 
+        let s3_enabled = self.config_manager
+            .get_bool("storage", "s3_enabled")
+            .await
+            .unwrap_or(false);
+        
+        if !s3_enabled {
+            return true;
+        }
+
         if let Some(s3_service) = &self.s3_service {
             s3_service.health_check().await.is_ok()
         } else {
@@ -469,6 +497,17 @@ pub async fn create_backup_service_from_config(
     let backup_enabled = temp_service.get_backup_enabled().await;
     if !backup_enabled {
         debug!("Backup service is disabled");
+        return Ok(None);
+    }
+
+    // Check if S3 is enabled
+    let s3_enabled = temp_service.config_manager
+        .get_bool("storage", "s3_enabled")
+        .await
+        .unwrap_or(false);
+    
+    if !s3_enabled {
+        debug!("S3 is disabled, backup service will be disabled");
         return Ok(None);
     }
 

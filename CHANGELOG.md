@@ -18,11 +18,16 @@
 - **Security headers middleware** with configurable HSTS, CSP, and X-Frame-Options
 - **Compression middleware** supporting gzip, brotli, and deflate algorithms
 - **Host header validation** for enhanced security in production environments
+- **Dynamic configuration system** for OAuth, S3 storage, and email settings with runtime management through admin UI
+- **Settings panels migration** from static environment variables to dynamic database-driven configuration for OAuth providers, S3 storage, and Resend email service
 
 ### Changed
 - **Rate limiting system** migrated from dynamic database-driven configuration to static `tower-governor` middleware with GCRA algorithm
 - **Rate limiting configuration** now uses compile-time settings (50 requests/second with burst of 50) instead of runtime database configuration
 - **Rate limiting performance** significantly improved with lower memory usage and better integration with Tower/Axum ecosystem
+- **OAuth configuration** migrated from environment variables (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET) to dynamic settings management
+- **S3 storage configuration** migrated from environment variables (S3_BUCKET_NAME, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_ENDPOINT_URL) to dynamic settings management
+- **Email service configuration** migrated from environment variables (RESEND_API_KEY, EMAIL_FROM) to dynamic settings management with runtime toggle support
 
 ### Fixed
 - Added `tracked_app.into_make_service_with_connect_info::<SocketAddr>()` to server configuration for proper connection info passing

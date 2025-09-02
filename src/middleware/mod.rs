@@ -93,8 +93,8 @@ pub async fn add_middleware_with_args(
 
     let governor_conf = std::sync::Arc::new(
         GovernorConfigBuilder::default()
-            .per_second(50)
-            .burst_size(50)
+            .per_second(100)
+            .burst_size(100)
             .key_extractor(SmartIpKeyExtractor)
             .finish()
             .unwrap(),

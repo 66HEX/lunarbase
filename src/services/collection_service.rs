@@ -5,7 +5,7 @@ use crate::models::{
 };
 use crate::query_engine::QueryEngine;
 use crate::schema::{collections, roles};
-use crate::services::PermissionService;
+use crate::services::{ConfigurationManager, PermissionService};
 use crate::services::S3Service;
 use crate::utils::LunarbaseError;
 use base64::Engine;
@@ -22,15 +22,17 @@ pub struct CollectionService {
     pub websocket_service: Option<std::sync::Arc<crate::services::WebSocketService>>,
     pub permission_service: Option<PermissionService>,
     pub s3_service: Option<S3Service>,
+    pub config_manager: ConfigurationManager,
 }
 
 impl CollectionService {
-    pub fn new(pool: DbPool) -> Self {
+    pub fn new(pool: DbPool, config_manager: ConfigurationManager) -> Self {
         Self {
             pool,
             websocket_service: None,
             permission_service: None,
             s3_service: None,
+            config_manager,
         }
     }
 
@@ -1761,6 +1763,14 @@ impl CollectionService {
         schema: &CollectionSchema,
         files: &std::collections::HashMap<String, FileUpload>,
     ) -> Result<std::collections::HashMap<String, String>, LunarbaseError> {
+        // Check if S3 is enabled
+        let s3_enabled = self.config_manager.get_bool("storage", "s3_enabled").await.unwrap_or(false);
+        if !s3_enabled {
+            return Err(LunarbaseError::ValidationError(vec![
+                "File upload is disabled. S3 service is not enabled.".to_string(),
+            ]));
+        }
+
         let mut file_urls = std::collections::HashMap::new();
         let mut uploaded_files = Vec::new();
 

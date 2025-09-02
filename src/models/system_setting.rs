@@ -144,6 +144,12 @@ pub enum SettingCategory {
     Auth,
     #[serde(rename = "api")]
     Api,
+    #[serde(rename = "email")]
+    Email,
+    #[serde(rename = "oauth")]
+    OAuth,
+    #[serde(rename = "storage")]
+    Storage,
 }
 
 impl ToString for SettingCategory {
@@ -152,6 +158,9 @@ impl ToString for SettingCategory {
             SettingCategory::Database => "database".to_string(),
             SettingCategory::Auth => "auth".to_string(),
             SettingCategory::Api => "api".to_string(),
+            SettingCategory::Email => "email".to_string(),
+            SettingCategory::OAuth => "oauth".to_string(),
+            SettingCategory::Storage => "storage".to_string(),
         }
     }
 }

@@ -467,6 +467,7 @@ pub async fn oauth_authorize(
 
     let (auth_url, _state) = oauth_service
         .get_authorization_url(&provider)
+        .await
         .map_err(|_| {
             LunarbaseError::ValidationError(vec![
                 "Invalid OAuth provider or configuration".to_string(),

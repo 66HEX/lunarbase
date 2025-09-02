@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 const validateCategory = (category: string) => {
-	const validCategories = ["database", "auth", "api"];
+	const validCategories = ["database", "auth", "api", "email", "oauth", "storage"];
 	return validCategories.includes(category.toLowerCase());
 };
 
@@ -72,7 +72,7 @@ export const createSettingSchema = z
 			.string()
 			.refine(
 				validateCategory,
-				"Invalid category. Must be one of: database, auth, api",
+				"Invalid category. Must be one of: database, auth, api, email, oauth, storage",
 			),
 		setting_key: z
 			.string()

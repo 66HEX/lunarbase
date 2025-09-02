@@ -76,7 +76,6 @@ pub struct ServeArgs {
     )]
     pub redirect_target_port: Option<u16>,
 
-    // ACME/Let's Encrypt options
     #[arg(
         long,
         help = "Enable ACME/Let's Encrypt automatic certificate management"
