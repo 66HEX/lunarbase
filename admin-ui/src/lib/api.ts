@@ -18,6 +18,7 @@ import type {
 	MetricsSummary,
 	OAuthAuthorizationResponse,
 	OAuthProvider,
+	OAuthStatusResponse,
 	OwnedRecordsResponse,
 	OwnershipCheckResponse,
 	OwnershipStatsResponse,
@@ -181,6 +182,11 @@ export const authApi = {
 		{ name: "google", display_name: "Google", icon: "🔍" },
 		{ name: "github", display_name: "GitHub", icon: "🐙" },
 	],
+
+	getOAuthStatus: (): Promise<ApiResponse<OAuthStatusResponse>> =>
+		apiRequest<ApiResponse<OAuthStatusResponse>>("/auth/oauth/status", {
+			method: "GET",
+		}),
 
 	refresh: async (): Promise<LoginResponse> => {
 		const response = await apiRequest<ApiResponse<LoginResponse>>(
@@ -703,7 +709,14 @@ export const configurationApi = {
 	},
 
 	getSettingsByCategory: async (
-		category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers",
+		category:
+			| "database"
+			| "auth"
+			| "api"
+			| "email"
+			| "oauth"
+			| "storage"
+			| "security_headers",
 	): Promise<SystemSetting[]> => {
 		const response = await apiRequest<
 			ApiResponse<{ settings: SystemSetting[] }>
@@ -712,7 +725,14 @@ export const configurationApi = {
 	},
 
 	getSetting: async (
-		category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers",
+		category:
+			| "database"
+			| "auth"
+			| "api"
+			| "email"
+			| "oauth"
+			| "storage"
+			| "security_headers",
 		settingKey: string,
 	): Promise<SystemSetting> => {
 		const response = await apiRequest<ApiResponse<SystemSetting>>(
@@ -735,7 +755,14 @@ export const configurationApi = {
 	},
 
 	updateSetting: async (
-		category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers",
+		category:
+			| "database"
+			| "auth"
+			| "api"
+			| "email"
+			| "oauth"
+			| "storage"
+			| "security_headers",
 		settingKey: string,
 		data: UpdateSystemSettingRequest,
 	): Promise<SystemSetting> => {
@@ -750,7 +777,14 @@ export const configurationApi = {
 	},
 
 	deleteSetting: async (
-		category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers",
+		category:
+			| "database"
+			| "auth"
+			| "api"
+			| "email"
+			| "oauth"
+			| "storage"
+			| "security_headers",
 		settingKey: string,
 	): Promise<void> => {
 		await apiRequest<void>(`/admin/configuration/${category}/${settingKey}`, {
@@ -759,7 +793,14 @@ export const configurationApi = {
 	},
 
 	resetSetting: async (
-		category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers",
+		category:
+			| "database"
+			| "auth"
+			| "api"
+			| "email"
+			| "oauth"
+			| "storage"
+			| "security_headers",
 		settingKey: string,
 	): Promise<SystemSetting> => {
 		const response = await apiRequest<ApiResponse<SystemSetting>>(

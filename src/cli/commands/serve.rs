@@ -51,11 +51,7 @@ impl ServeArgs {
     }
 
     pub fn port(&self) -> u16 {
-        if self.acme {
-            443
-        } else {
-            3000
-        }
+        if self.acme { 443 } else { 3000 }
     }
 
     pub fn redirect_port(&self) -> u16 {

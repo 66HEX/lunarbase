@@ -446,6 +446,14 @@ pub struct OAuthAuthorizationResponse {
     pub state: String,
 }
 
+#[derive(Debug, Serialize, ToSchema)]
+pub struct OAuthStatusResponse {
+    #[schema(example = true)]
+    pub oauth_enabled: bool,
+    #[schema(example = "[\"google\", \"github\"]")]
+    pub available_providers: Vec<String>,
+}
+
 #[utoipa::path(
     get,
     path = "/auth/oauth/{provider}",
@@ -629,6 +637,70 @@ pub async fn oauth_callback(
             app_state.email_service.get_frontend_url()
         )),
     ))
+}
+
+#[utoipa::path(
+    get,
+    path = "/auth/oauth/status",
+    tag = "Authentication",
+    responses(
+        (status = 200, description = "OAuth status retrieved successfully", body = ApiResponse<OAuthStatusResponse>),
+        (status = 500, description = "Internal server error", body = ErrorResponse)
+    )
+)]
+pub async fn oauth_status(
+    State(app_state): State<AppState>,
+) -> Result<Json<ApiResponse<OAuthStatusResponse>>, LunarbaseError> {
+    let oauth_enabled = app_state
+        .config_manager()
+        .get_bool("oauth", "oauth_enabled")
+        .await
+        .unwrap_or(false);
+
+    let mut available_providers = Vec::new();
+
+    if oauth_enabled {
+        let google_client_id = app_state
+            .config_manager()
+            .get_string("oauth", "google_client_id")
+            .await
+            .unwrap_or_default();
+        let google_client_secret = app_state
+            .config_manager()
+            .get_string("oauth", "google_client_secret")
+            .await
+            .unwrap_or_default();
+
+        if !google_client_id.is_empty() && !google_client_secret.is_empty() {
+            available_providers.push("google".to_string());
+        }
+
+        let github_client_id = app_state
+            .config_manager()
+            .get_string("oauth", "github_client_id")
+            .await
+            .unwrap_or_default();
+        let github_client_secret = app_state
+            .config_manager()
+            .get_string("oauth", "github_client_secret")
+            .await
+            .unwrap_or_default();
+
+        if !github_client_id.is_empty() && !github_client_secret.is_empty() {
+            available_providers.push("github".to_string());
+        }
+    }
+
+    let response = OAuthStatusResponse {
+        oauth_enabled,
+        available_providers,
+    };
+
+    Ok(Json(ApiResponse {
+        success: true,
+        data: response,
+        message: Some("OAuth status retrieved successfully".to_string()),
+    }))
 }
 
 #[utoipa::path(

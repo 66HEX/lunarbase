@@ -89,7 +89,7 @@ impl Default for HstsConfig {
     fn default() -> Self {
         Self {
             enabled: true,
-            max_age: 31536000, // 1 year
+            max_age: 31536000,
             include_subdomains: true,
             preload: false,
         }
@@ -143,7 +143,7 @@ impl SecurityHeadersConfig {
             enabled: true,
             hsts: HstsConfig {
                 enabled: true,
-                max_age: 63072000, // 2 years
+                max_age: 63072000,
                 include_subdomains: true,
                 preload: true,
             },
@@ -173,7 +173,7 @@ impl SecurityHeadersConfig {
         Self {
             enabled: true,
             hsts: HstsConfig {
-                enabled: false, // Disable HSTS in development
+                enabled: false,
                 max_age: 0,
                 include_subdomains: false,
                 preload: false,
@@ -194,7 +194,7 @@ impl SecurityHeadersConfig {
                 policy: ReferrerPolicy::NoReferrerWhenDowngrade,
             },
             permissions_policy: PermissionsPolicyConfig {
-                enabled: false, // More permissive in development
+                enabled: false,
                 policy: String::new(),
             },
         }

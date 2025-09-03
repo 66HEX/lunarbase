@@ -40,6 +40,7 @@ pub mod utils;
         handlers::auth::logout,
         handlers::auth::oauth_authorize,
         handlers::auth::oauth_callback,
+        handlers::auth::oauth_status,
         handlers::auth::verify_email,
         handlers::auth::resend_verification,
 
@@ -135,6 +136,7 @@ pub mod utils;
             models::blacklisted_token::LogoutResponse,
             handlers::auth::OAuthCallbackQuery,
             handlers::auth::OAuthAuthorizationResponse,
+            handlers::auth::OAuthStatusResponse,
             handlers::auth::VerifyEmailRequest,
             handlers::auth::ResendVerificationRequest,
 
@@ -287,22 +289,28 @@ impl AppState {
         metrics_state.start_cpu_sampler();
         let configuration_manager = ConfigurationManager::new(db_pool.clone());
         configuration_manager.initialize().await?;
-        
+
         let websocket_service =
             Arc::new(WebSocketService::new(Arc::new(permission_service.clone())));
-        let mut collection_service = CollectionService::new(db_pool.clone(), configuration_manager.clone())
-            .with_websocket_service(websocket_service.clone())
-            .with_permission_service(permission_service.clone());
+        let mut collection_service =
+            CollectionService::new(db_pool.clone(), configuration_manager.clone())
+                .with_websocket_service(websocket_service.clone())
+                .with_permission_service(permission_service.clone());
 
         let s3_service_option = create_s3_service_from_config(config).await.ok().flatten();
         if let Some(ref s3_service) = s3_service_option {
             collection_service = collection_service.with_s3_service(s3_service.clone());
         }
-        
-        let oauth_config = utils::oauth_service::OAuthConfig::from_database(&configuration_manager, &config.frontend_url).await?;
+
+        let oauth_config = utils::oauth_service::OAuthConfig::from_database(
+            &configuration_manager,
+            &config.frontend_url,
+        )
+        .await?;
         let oauth_service = utils::OAuthService::new(oauth_config, configuration_manager.clone());
-        
-        let email_service = EmailService::new(config, db_pool.clone(), configuration_manager.clone());
+
+        let email_service =
+            EmailService::new(config, db_pool.clone(), configuration_manager.clone());
 
         let backup_service = create_backup_service_from_config(
             db_pool.clone(),

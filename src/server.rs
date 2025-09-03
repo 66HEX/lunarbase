@@ -154,7 +154,7 @@ use crate::handlers::{
     image_upload::{delete_image, upload_image},
     login, logout, me,
     metrics::{get_metrics, get_metrics_summary},
-    oauth_authorize, oauth_callback,
+    oauth_authorize, oauth_callback, oauth_status,
     ownership::{
         check_record_ownership, get_my_owned_records, get_ownership_stats, get_user_owned_records,
         transfer_record_ownership,
@@ -269,7 +269,8 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     config_manager.initialize().await?;
 
     let mut config = config;
-    let configuration_service = crate::services::configuration_service::ConfigurationService::new(initial_pool.clone());
+    let configuration_service =
+        crate::services::configuration_service::ConfigurationService::new(initial_pool.clone());
     config.load_dynamic_settings(&configuration_service).await?;
     info!("Dynamic settings loaded from database");
 
@@ -408,8 +409,6 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
-
-
 async fn create_acme_config(
     config: &Config,
 ) -> Result<(AxumAcceptor, tokio::task::JoinHandle<()>), Box<dyn std::error::Error>> {
@@ -439,7 +438,6 @@ async fn create_acme_config(
     let mut state = acme_config.state();
     let acceptor = state.axum_acceptor(state.default_rustls_config());
 
-    // Spawn task to handle ACME events
     let handle = tokio::spawn(async move {
         loop {
             match state.next().await {
@@ -469,6 +467,7 @@ async fn create_router(app_state: AppState, serve_args: &ServeArgs) -> Router {
         .route("/auth/reset-password", post(reset_password))
         .route("/auth/oauth/{provider}", get(oauth_authorize))
         .route("/auth/oauth/{provider}/callback", get(oauth_callback))
+        .route("/auth/oauth/status", get(oauth_status))
         .route("/avatar-proxy", get(proxy_avatar))
         .route("/metrics", get(get_metrics))
         .route("/metrics/summary", get(get_metrics_summary))

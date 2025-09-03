@@ -1,7 +1,14 @@
 import { z } from "zod";
 
 const validateCategory = (category: string) => {
-	const validCategories = ["database", "auth", "api", "email", "oauth", "storage"];
+	const validCategories = [
+		"database",
+		"auth",
+		"api",
+		"email",
+		"oauth",
+		"storage",
+	];
 	return validCategories.includes(category.toLowerCase());
 };
 

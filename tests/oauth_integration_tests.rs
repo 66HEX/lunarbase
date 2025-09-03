@@ -4,8 +4,8 @@ use axum::{
     http::{Request, StatusCode},
     routing::get,
 };
-use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use diesel::RunQueryDsl;
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
 use tower::ServiceExt;
 
 use lunarbase::AppState;
@@ -26,24 +26,23 @@ async fn create_test_router() -> Router {
         let mut conn = db_pool.get().expect("Failed to get database connection");
         conn.run_pending_migrations(MIGRATIONS)
             .expect("Failed to run migrations");
-        
-        // Insert test OAuth configuration
+
         diesel::sql_query(
             "UPDATE system_settings SET setting_value = 'test_google_client_id' WHERE category = 'oauth' AND setting_key = 'google_client_id'"
         ).execute(&mut conn).expect("Failed to set test Google client ID");
-        
+
         diesel::sql_query(
             "UPDATE system_settings SET setting_value = 'test_google_client_secret' WHERE category = 'oauth' AND setting_key = 'google_client_secret'"
         ).execute(&mut conn).expect("Failed to set test Google client secret");
-        
+
         diesel::sql_query(
             "UPDATE system_settings SET setting_value = 'test_github_client_id' WHERE category = 'oauth' AND setting_key = 'github_client_id'"
         ).execute(&mut conn).expect("Failed to set test GitHub client ID");
-        
+
         diesel::sql_query(
             "UPDATE system_settings SET setting_value = 'test_github_client_secret' WHERE category = 'oauth' AND setting_key = 'github_client_secret'"
         ).execute(&mut conn).expect("Failed to set test GitHub client secret");
-        
+
         diesel::sql_query(
             "UPDATE system_settings SET setting_value = 'true' WHERE category = 'oauth' AND setting_key = 'oauth_enabled'"
         ).execute(&mut conn).expect("Failed to enable OAuth");

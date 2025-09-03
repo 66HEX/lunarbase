@@ -69,14 +69,13 @@ impl Config {
             frontend_url: Self::build_frontend_url(
                 &server_host,
                 server_port,
-                server_port == 443,  // Use HTTPS if port is 443
+                server_port == 443, // Use HTTPS if port is 443
             ),
             s3_bucket_name: None,
             s3_region: None,
             s3_access_key_id: None,
             s3_secret_access_key: None,
             s3_endpoint_url: None,
-
 
             acme_enabled: if let Some(args) = serve_args {
                 if args.acme { Some(true) } else { Some(false) }
@@ -121,7 +120,6 @@ impl Config {
 
     fn build_frontend_url(host: &str, port: u16, is_https: bool) -> String {
         let scheme = if is_https { "https" } else { "http" };
-        // Don't show port in URL for standard ports (80 for HTTP, 443 for HTTPS)
         if (is_https && port == 443) || (!is_https && port == 80) {
             format!("{}://{}", scheme, host)
         } else {
@@ -133,61 +131,96 @@ impl Config {
         self.admin_email.is_some() && self.admin_password.is_some() && self.admin_username.is_some()
     }
 
-    pub async fn load_dynamic_settings(&mut self, config_service: &ConfigurationService) -> Result<(), Box<dyn std::error::Error>> {
-        // Load OAuth settings
-        if let Ok(Some(google_client_id)) = config_service.get_setting_value("oauth", "google_client_id").await {
+    pub async fn load_dynamic_settings(
+        &mut self,
+        config_service: &ConfigurationService,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        if let Ok(Some(google_client_id)) = config_service
+            .get_setting_value("oauth", "google_client_id")
+            .await
+        {
             if !google_client_id.is_empty() {
                 self.google_client_id = Some(google_client_id);
             }
         }
-        if let Ok(Some(google_client_secret)) = config_service.get_setting_value("oauth", "google_client_secret").await {
+        if let Ok(Some(google_client_secret)) = config_service
+            .get_setting_value("oauth", "google_client_secret")
+            .await
+        {
             if !google_client_secret.is_empty() {
                 self.google_client_secret = Some(google_client_secret);
             }
         }
-        if let Ok(Some(github_client_id)) = config_service.get_setting_value("oauth", "github_client_id").await {
+        if let Ok(Some(github_client_id)) = config_service
+            .get_setting_value("oauth", "github_client_id")
+            .await
+        {
             if !github_client_id.is_empty() {
                 self.github_client_id = Some(github_client_id);
             }
         }
-        if let Ok(Some(github_client_secret)) = config_service.get_setting_value("oauth", "github_client_secret").await {
+        if let Ok(Some(github_client_secret)) = config_service
+            .get_setting_value("oauth", "github_client_secret")
+            .await
+        {
             if !github_client_secret.is_empty() {
                 self.github_client_secret = Some(github_client_secret);
             }
         }
 
-        if let Ok(Some(resend_api_key)) = config_service.get_setting_value("email", "resend_api_key").await {
+        if let Ok(Some(resend_api_key)) = config_service
+            .get_setting_value("email", "resend_api_key")
+            .await
+        {
             if !resend_api_key.is_empty() {
                 self.resend_api_key = Some(resend_api_key);
             }
         }
-        if let Ok(Some(email_from)) = config_service.get_setting_value("email", "email_from").await {
+        if let Ok(Some(email_from)) = config_service
+            .get_setting_value("email", "email_from")
+            .await
+        {
             if !email_from.is_empty() {
                 self.email_from = Some(email_from);
             }
         }
 
-        if let Ok(Some(s3_bucket_name)) = config_service.get_setting_value("storage", "s3_bucket_name").await {
+        if let Ok(Some(s3_bucket_name)) = config_service
+            .get_setting_value("storage", "s3_bucket_name")
+            .await
+        {
             if !s3_bucket_name.is_empty() {
                 self.s3_bucket_name = Some(s3_bucket_name);
             }
         }
-        if let Ok(Some(s3_region)) = config_service.get_setting_value("storage", "s3_region").await {
+        if let Ok(Some(s3_region)) = config_service
+            .get_setting_value("storage", "s3_region")
+            .await
+        {
             if !s3_region.is_empty() {
                 self.s3_region = Some(s3_region);
             }
         }
-        if let Ok(Some(s3_access_key_id)) = config_service.get_setting_value("storage", "s3_access_key_id").await {
+        if let Ok(Some(s3_access_key_id)) = config_service
+            .get_setting_value("storage", "s3_access_key_id")
+            .await
+        {
             if !s3_access_key_id.is_empty() {
                 self.s3_access_key_id = Some(s3_access_key_id);
             }
         }
-        if let Ok(Some(s3_secret_access_key)) = config_service.get_setting_value("storage", "s3_secret_access_key").await {
+        if let Ok(Some(s3_secret_access_key)) = config_service
+            .get_setting_value("storage", "s3_secret_access_key")
+            .await
+        {
             if !s3_secret_access_key.is_empty() {
                 self.s3_secret_access_key = Some(s3_secret_access_key);
             }
         }
-        if let Ok(Some(s3_endpoint_url)) = config_service.get_setting_value("storage", "s3_endpoint_url").await {
+        if let Ok(Some(s3_endpoint_url)) = config_service
+            .get_setting_value("storage", "s3_endpoint_url")
+            .await
+        {
             if !s3_endpoint_url.is_empty() {
                 self.s3_endpoint_url = Some(s3_endpoint_url);
             }

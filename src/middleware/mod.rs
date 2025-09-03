@@ -129,8 +129,6 @@ pub async fn add_middleware(app: Router, app_state: AppState) -> Router {
     router
 }
 
-
-
 async fn build_compression_config_from_db(app_state: &AppState) -> CompressionConfig {
     CompressionConfig {
         enabled: app_state.get_compression_enabled().await,
@@ -144,16 +142,14 @@ async fn build_compression_config_from_db(app_state: &AppState) -> CompressionCo
     }
 }
 
-async fn build_security_headers_config_from_db(
-    app_state: &AppState,
-) -> SecurityHeadersConfig {
+async fn build_security_headers_config_from_db(app_state: &AppState) -> SecurityHeadersConfig {
     let db_policy = app_state.get_frame_options_policy().await;
     let frame_policy = match db_policy.to_uppercase().as_str() {
         "SAMEORIGIN" => FrameOptionsPolicy::SameOrigin,
         "DENY" => FrameOptionsPolicy::Deny,
-        uri if uri.starts_with("ALLOW-FROM ") => FrameOptionsPolicy::AllowFrom(
-            uri.strip_prefix("ALLOW-FROM ").unwrap_or("").to_string(),
-        ),
+        uri if uri.starts_with("ALLOW-FROM ") => {
+            FrameOptionsPolicy::AllowFrom(uri.strip_prefix("ALLOW-FROM ").unwrap_or("").to_string())
+        }
         _ => FrameOptionsPolicy::Deny,
     };
 
@@ -186,8 +182,6 @@ async fn build_security_headers_config_from_db(
         },
     }
 }
-
-
 
 fn parse_referrer_policy(policy_str: &str) -> ReferrerPolicy {
     match policy_str {

@@ -169,7 +169,8 @@ impl EmailService {
             email, user_id
         );
 
-        let email_enabled = self.config_manager
+        let email_enabled = self
+            .config_manager
             .get_bool("email", "email_enabled")
             .await
             .unwrap_or(false);
@@ -225,7 +226,8 @@ impl EmailService {
             email, user_id
         );
 
-        let email_enabled = self.config_manager
+        let email_enabled = self
+            .config_manager
             .get_bool("email", "email_enabled")
             .await
             .unwrap_or(false);

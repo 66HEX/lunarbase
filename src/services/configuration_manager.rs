@@ -367,7 +367,6 @@ pub trait ConfigurationAccess: Sync {
         }
     }
 
-    // Security Headers Configuration Methods
     fn get_security_headers_enabled(&self) -> impl std::future::Future<Output = bool> + Send {
         async {
             self.config_manager()

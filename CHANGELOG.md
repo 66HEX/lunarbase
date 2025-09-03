@@ -1,8 +1,11 @@
 # Changelog
 
-## [Unreleased]
+## [0.9.0][0.9.0] - 2025-09-04
 
 ### Added
+- **OAuth status endpoint** `/api/auth/oauth/status` providing public access to OAuth configuration status and available providers without authentication
+- **Conditional OAuth form elements** in login interface that dynamically show/hide based on OAuth configuration status
+- **Dynamic OAuth provider buttons** that display only available providers from API configuration
 - **Automatic SSL/TLS certificate management** with ACME/Let's Encrypt integration using rustls-acme
 - **Zero-configuration HTTPS** with automatic certificate provisioning, renewal, and caching
 - **ACME CLI arguments** including `--acme`, `--acme-domain`, `--acme-email`, `--acme-cache-dir`, and `--acme-production` for Let's Encrypt integration
@@ -273,6 +276,7 @@
 - Comprehensive audit logging and activity monitoring
 
 
+[0.8.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.8.0
 [0.7.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.7.0
 [0.6.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.6.0
 [0.5.0]: https://github.com/66HEX/lunarbase/releases/tag/v0.5.0

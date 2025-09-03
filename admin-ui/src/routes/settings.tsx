@@ -6,8 +6,8 @@ import { DatabaseSettingsPanel } from "@/components/settings/DatabaseSettingsPan
 import { EmailSettingsPanel } from "@/components/settings/EmailSettingsPanel";
 import { OAuthSettingsPanel } from "@/components/settings/OAuthSettingsPanel";
 import { SecuritySettingsPanel } from "@/components/settings/SecuritySettingsPanel";
-import { StorageSettingsPanel } from "@/components/settings/StorageSettingsPanel";
 import { SettingsHeader } from "@/components/settings/SettingsHeader";
+import { StorageSettingsPanel } from "@/components/settings/StorageSettingsPanel";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAllSettings } from "@/hooks/";
 

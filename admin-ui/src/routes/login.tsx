@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
+import { useOAuthStatus } from "@/hooks/configuration/useConfiguration";
 import { CustomApiError } from "@/lib/api";
 import { useAuthStore } from "@/stores/auth-persist.store";
 import type { LoginRequest } from "@/types/api";
@@ -64,9 +65,18 @@ export default function LoginComponent() {
 	const [generalError, setGeneralError] = useState("");
 	const navigate = useNavigate();
 	const search = useSearch({ from: "/login" }) as { redirect?: string };
-	const { login, loginWithOAuth, getOAuthProviders, loading, error } =
-		useAuthStore();
-	const oauthProviders = getOAuthProviders();
+	const { login, loginWithOAuth, loading, error } = useAuthStore();
+
+	const { data: oauthStatus, isLoading: isOAuthStatusLoading } =
+		useOAuthStatus();
+
+	const isOAuthEnabled =
+		oauthStatus?.oauth_enabled && oauthStatus?.available_providers.length > 0;
+
+	const oauthProviders = oauthStatus?.available_providers?.map((provider) => ({
+		name: provider,
+		display_name: provider.charAt(0).toUpperCase() + provider.slice(1),
+	})) || [];
 
 	const handleInputChange = (field: keyof LoginRequest, value: string) => {
 		setFormData((prev) => ({ ...prev, [field]: value }));
@@ -226,38 +236,42 @@ export default function LoginComponent() {
 								</Button>
 							</FormActions>
 
-							<div className="relative my-6">
-								<div className="relative flex justify-center text-xs uppercase">
-									<span className="bg-background px-2 text-nocta-300 dark:text-nocta-700">
-										Or continue with
-									</span>
-								</div>
-							</div>
+							{!isOAuthStatusLoading && isOAuthEnabled && (
+								<>
+									<div className="relative my-6">
+										<div className="relative flex justify-center text-xs uppercase">
+											<span className="bg-background px-2 text-nocta-300 dark:text-nocta-700">
+												Or continue with
+											</span>
+										</div>
+									</div>
 
-							<div className="space-y-3">
-								{oauthProviders.map((provider) => {
-									const getProviderIcon = () => {
-										switch (provider.name) {
-											case "google":
-												return <FaGoogle className="w-4 h-4 mr-2" />;
-											case "github":
-												return <GitHubLogoIcon className="w-4 h-4 mr-2" />;
-											default:
-												return null;
-										}
-									};
+									<div className="space-y-3">
+										{oauthProviders.map((provider) => {
+											const getProviderIcon = () => {
+												switch (provider.name) {
+													case "google":
+														return <FaGoogle className="w-4 h-4 mr-2" />;
+													case "github":
+														return <GitHubLogoIcon className="w-4 h-4 mr-2" />;
+													default:
+														return null;
+												}
+											};
 
-									return (
-										<OAuthButton
-											key={provider.name}
-											provider={provider.display_name}
-											icon={getProviderIcon()}
-											onClick={() => handleOAuthLogin(provider.name)}
-											disabled={loading}
-										/>
-									);
-								})}
-							</div>
+											return (
+												<OAuthButton
+													key={provider.name}
+													provider={provider.display_name}
+													icon={getProviderIcon()}
+													onClick={() => handleOAuthLogin(provider.name)}
+													disabled={loading}
+												/>
+											);
+										})}
+									</div>
+								</>
+							)}
 
 							<div className="mt-6 text-center">
 								<p className="text-sm text-nocta-600 dark:text-nocta-400">

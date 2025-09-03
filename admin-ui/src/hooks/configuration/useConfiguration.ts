@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
-import { configurationApi } from "@/lib/api";
-import type { SystemSetting } from "@/types/api";
+import { authApi, configurationApi } from "@/lib/api";
+import type { OAuthStatusResponse, SystemSetting } from "@/types/api";
 
 /**
  * Hook for fetching all system settings
@@ -19,10 +19,34 @@ export const useAllSettings = () => {
 };
 
 /**
+ * Hook for fetching OAuth status (public endpoint)
+ */
+export const useOAuthStatus = () => {
+	return useQuery({
+		queryKey: ["oauth-status"],
+		queryFn: async (): Promise<OAuthStatusResponse> => {
+			const response = await authApi.getOAuthStatus();
+			return response.data;
+		},
+		staleTime: 5 * 60 * 1000,
+		gcTime: 10 * 60 * 1000,
+		refetchOnWindowFocus: false,
+		retry: 2,
+	});
+};
+
+/**
  * Hook for fetching settings by category
  */
 export const useSettingsByCategory = (
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers"
+	category:
+		| "database"
+		| "auth"
+		| "api"
+		| "email"
+		| "oauth"
+		| "storage"
+		| "security_headers",
 ) => {
 	return useQuery({
 		queryKey: ["settings", category],
@@ -40,7 +64,14 @@ export const useSettingsByCategory = (
  * Hook for fetching a specific setting
  */
 export const useSetting = (
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers",
+	category:
+		| "database"
+		| "auth"
+		| "api"
+		| "email"
+		| "oauth"
+		| "storage"
+		| "security_headers",
 	settingKey: string,
 	enabled: boolean = true,
 ) => {

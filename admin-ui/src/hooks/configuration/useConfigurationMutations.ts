@@ -51,14 +51,21 @@ export const useUpdateSetting = () => {
 
 	return useMutation({
 		mutationFn: async ({
-				category,
-				settingKey,
-				data,
-			}: {
-				category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
-				settingKey: string;
-				data: UpdateSystemSettingRequest;
-			}): Promise<SystemSetting> => {
+			category,
+			settingKey,
+			data,
+		}: {
+			category:
+				| "database"
+				| "auth"
+				| "api"
+				| "email"
+				| "oauth"
+				| "storage"
+				| "security_headers";
+			settingKey: string;
+			data: UpdateSystemSettingRequest;
+		}): Promise<SystemSetting> => {
 			return await configurationApi.updateSetting(category, settingKey, data);
 		},
 		onSuccess: (_, variables) => {
@@ -101,7 +108,14 @@ export const useDeleteSetting = () => {
 			category,
 			settingKey,
 		}: {
-			category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
+			category:
+				| "database"
+				| "auth"
+				| "api"
+				| "email"
+				| "oauth"
+				| "storage"
+				| "security_headers";
 			settingKey: string;
 		}): Promise<void> => {
 			return await configurationApi.deleteSetting(category, settingKey);

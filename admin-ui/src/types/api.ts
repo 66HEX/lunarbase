@@ -70,6 +70,11 @@ export interface OAuthProvider {
 	icon?: string;
 }
 
+export interface OAuthStatusResponse {
+	oauth_enabled: boolean;
+	available_providers: string[];
+}
+
 export interface CreateUserRequest {
 	email: string;
 	password: string;
@@ -448,7 +453,14 @@ export interface MetricsSummary {
 
 export interface SystemSetting {
 	id: number;
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
+	category:
+		| "database"
+		| "auth"
+		| "api"
+		| "email"
+		| "oauth"
+		| "storage"
+		| "security_headers";
 	setting_key: string;
 	setting_value: string;
 	data_type: "string" | "integer" | "boolean" | "json" | "float";
@@ -462,7 +474,14 @@ export interface SystemSetting {
 }
 
 export interface CreateSystemSettingRequest {
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
+	category:
+		| "database"
+		| "auth"
+		| "api"
+		| "email"
+		| "oauth"
+		| "storage"
+		| "security_headers";
 	setting_key: string;
 	setting_value: string;
 	data_type: "string" | "integer" | "boolean" | "json" | "float";

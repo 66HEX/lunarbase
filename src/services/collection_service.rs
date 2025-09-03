@@ -5,8 +5,8 @@ use crate::models::{
 };
 use crate::query_engine::QueryEngine;
 use crate::schema::{collections, roles};
-use crate::services::{ConfigurationManager, PermissionService};
 use crate::services::S3Service;
+use crate::services::{ConfigurationManager, PermissionService};
 use crate::utils::LunarbaseError;
 use base64::Engine;
 use diesel::prelude::*;
@@ -1763,8 +1763,11 @@ impl CollectionService {
         schema: &CollectionSchema,
         files: &std::collections::HashMap<String, FileUpload>,
     ) -> Result<std::collections::HashMap<String, String>, LunarbaseError> {
-        // Check if S3 is enabled
-        let s3_enabled = self.config_manager.get_bool("storage", "s3_enabled").await.unwrap_or(false);
+        let s3_enabled = self
+            .config_manager
+            .get_bool("storage", "s3_enabled")
+            .await
+            .unwrap_or(false);
         if !s3_enabled {
             return Err(LunarbaseError::ValidationError(vec![
                 "File upload is disabled. S3 service is not enabled.".to_string(),

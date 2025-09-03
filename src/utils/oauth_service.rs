@@ -87,7 +87,8 @@ impl OAuthService {
         &self,
         provider: &str,
     ) -> Result<(String, String), Box<dyn std::error::Error>> {
-        let oauth_enabled = self.config_manager
+        let oauth_enabled = self
+            .config_manager
             .get_bool("oauth", "oauth_enabled")
             .await
             .unwrap_or(false);
@@ -143,7 +144,8 @@ impl OAuthService {
         code: &str,
         state: &str,
     ) -> Result<String, Box<dyn std::error::Error>> {
-        let oauth_enabled = self.config_manager
+        let oauth_enabled = self
+            .config_manager
             .get_bool("oauth", "oauth_enabled")
             .await
             .unwrap_or(false);

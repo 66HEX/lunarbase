@@ -18,10 +18,13 @@ import { useSettingsByCategory, useUpdateSetting } from "@/hooks";
 import { createUpdateSettingSchema } from "./validation";
 
 export function SecuritySettingsPanel() {
-	const { data: settings, isLoading } = useSettingsByCategory("security_headers");
+	const { data: settings, isLoading } =
+		useSettingsByCategory("security_headers");
 	const updateSettingMutation = useUpdateSetting();
 
-	const [localSettings, setLocalSettings] = useState<Record<string, string>>({});
+	const [localSettings, setLocalSettings] = useState<Record<string, string>>(
+		{},
+	);
 	const [hasChanges, setHasChanges] = useState(false);
 
 	useEffect(() => {
@@ -173,7 +176,9 @@ export function SecuritySettingsPanel() {
 								<Input
 									type="number"
 									value={getSettingValue("hsts_max_age")}
-									onChange={(e) => handleInputChange("hsts_max_age", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("hsts_max_age", e.target.value)
+									}
 									placeholder="31536000"
 									className="w-72"
 								/>
@@ -193,7 +198,9 @@ export function SecuritySettingsPanel() {
 								</div>
 								<FormControl>
 									<Switch
-										checked={getSettingValue("hsts_include_subdomains") === "true"}
+										checked={
+											getSettingValue("hsts_include_subdomains") === "true"
+										}
 										onCheckedChange={(checked) =>
 											handleSwitchChange("hsts_include_subdomains", checked)
 										}
@@ -246,7 +253,9 @@ export function SecuritySettingsPanel() {
 							<FormControl>
 								<Textarea
 									value={getSettingValue("csp_policy")}
-									onChange={(e) => handleInputChange("csp_policy", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("csp_policy", e.target.value)
+									}
 									placeholder="default-src 'self'; img-src 'self' data:"
 									rows={3}
 									className="w-72"
@@ -281,9 +290,7 @@ export function SecuritySettingsPanel() {
 							<div className="flex items-center justify-between">
 								<div className="space-y-0.5">
 									<FormLabel>X-Content-Type-Options</FormLabel>
-									<FormDescription>
-										Prevent MIME type sniffing
-									</FormDescription>
+									<FormDescription>Prevent MIME type sniffing</FormDescription>
 								</div>
 								<FormControl>
 									<Switch
@@ -325,7 +332,9 @@ export function SecuritySettingsPanel() {
 								</div>
 								<FormControl>
 									<Switch
-										checked={getSettingValue("frame_options_enabled") === "true"}
+										checked={
+											getSettingValue("frame_options_enabled") === "true"
+										}
 										onCheckedChange={(checked) =>
 											handleSwitchChange("frame_options_enabled", checked)
 										}
@@ -339,7 +348,9 @@ export function SecuritySettingsPanel() {
 							<FormControl>
 								<Input
 									value={getSettingValue("frame_options_policy")}
-									onChange={(e) => handleInputChange("frame_options_policy", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("frame_options_policy", e.target.value)
+									}
 									placeholder="DENY"
 									className="w-72"
 								/>
@@ -359,7 +370,9 @@ export function SecuritySettingsPanel() {
 								</div>
 								<FormControl>
 									<Switch
-										checked={getSettingValue("referrer_policy_enabled") === "true"}
+										checked={
+											getSettingValue("referrer_policy_enabled") === "true"
+										}
 										onCheckedChange={(checked) =>
 											handleSwitchChange("referrer_policy_enabled", checked)
 										}
@@ -373,14 +386,14 @@ export function SecuritySettingsPanel() {
 							<FormControl>
 								<Input
 									value={getSettingValue("referrer_policy")}
-									onChange={(e) => handleInputChange("referrer_policy", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("referrer_policy", e.target.value)
+									}
 									placeholder="strict-origin-when-cross-origin"
 									className="w-72"
 								/>
 							</FormControl>
-							<FormDescription>
-								Referrer policy value
-							</FormDescription>
+							<FormDescription>Referrer policy value</FormDescription>
 						</FormField>
 
 						<FormField className="w-96" name="permissions_policy_enabled">
@@ -393,7 +406,9 @@ export function SecuritySettingsPanel() {
 								</div>
 								<FormControl>
 									<Switch
-										checked={getSettingValue("permissions_policy_enabled") === "true"}
+										checked={
+											getSettingValue("permissions_policy_enabled") === "true"
+										}
 										onCheckedChange={(checked) =>
 											handleSwitchChange("permissions_policy_enabled", checked)
 										}
@@ -407,15 +422,15 @@ export function SecuritySettingsPanel() {
 							<FormControl>
 								<Textarea
 									value={getSettingValue("permissions_policy")}
-									onChange={(e) => handleInputChange("permissions_policy", e.target.value)}
+									onChange={(e) =>
+										handleInputChange("permissions_policy", e.target.value)
+									}
 									placeholder="geolocation=(), microphone=(), camera=()"
 									rows={2}
 									className="w-72"
 								/>
 							</FormControl>
-							<FormDescription>
-								Permissions policy directives
-							</FormDescription>
+							<FormDescription>Permissions policy directives</FormDescription>
 						</FormField>
 					</div>
 
