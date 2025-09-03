@@ -25,9 +25,7 @@ pub struct Config {
     pub s3_access_key_id: Option<String>,
     pub s3_secret_access_key: Option<String>,
     pub s3_endpoint_url: Option<String>,
-    pub tls_cert_path: Option<String>,
-    pub tls_key_path: Option<String>,
-    pub enable_tls: Option<bool>,
+
     pub acme_enabled: Option<bool>,
     pub acme_domains: Vec<String>,
     pub acme_email: Option<String>,
@@ -51,27 +49,7 @@ impl Config {
             ("127.0.0.1".to_string(), 3000)
         };
 
-        let enable_tls = if let Some(args) = serve_args {
-            if args.tls { Some(true) } else { Some(false) }
-        } else {
-            Some(false)
-        };
 
-        let tls_cert_path = if let Some(args) = serve_args {
-            args.tls_cert
-                .as_ref()
-                .map(|p| p.to_string_lossy().to_string())
-        } else {
-            None
-        };
-
-        let tls_key_path = if let Some(args) = serve_args {
-            args.tls_key
-                .as_ref()
-                .map(|p| p.to_string_lossy().to_string())
-        } else {
-            None
-        };
 
         let config = Config {
             database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| "db.sqlite".to_string()),
@@ -94,16 +72,14 @@ impl Config {
             frontend_url: Self::build_frontend_url(
                 &server_host,
                 server_port,
-                enable_tls.unwrap_or(false),
+                false,
             ),
             s3_bucket_name: None,
             s3_region: None,
             s3_access_key_id: None,
             s3_secret_access_key: None,
             s3_endpoint_url: None,
-            tls_cert_path,
-            tls_key_path,
-            enable_tls,
+
 
             acme_enabled: if let Some(args) = serve_args {
                 if args.acme { Some(true) } else { Some(false) }

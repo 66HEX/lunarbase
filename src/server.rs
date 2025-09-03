@@ -6,15 +6,10 @@ use axum::{
     body::Body,
     http::{Request, Response},
 };
-use axum_server::tls_rustls::RustlsConfig;
 use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
-use rustls::ServerConfig;
 use rustls_acme::{AcmeConfig, axum::AxumAcceptor, caches::DirCache};
-use rustls_pemfile::{certs, pkcs8_private_keys};
 use std::convert::Infallible;
-use std::fs::File;
 use std::future::Future;
-use std::io::BufReader;
 use std::net::SocketAddr;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -323,122 +318,70 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     let addr = serve_args.server_address().parse::<SocketAddr>()?;
     info!("Server will listen on {}", addr);
 
-    if config.enable_tls.unwrap_or(false) {
+    if config.acme_enabled.unwrap_or(false) {
+        info!("ACME enabled - starting HTTPS server with automatic certificate management");
+
         let connection_tracker = ConnectionTracker::new(metrics_state_clone);
         let tracking_layer = ConnectionTrackingLayer::new(connection_tracker);
         let tracked_app = app.layer(tracking_layer);
 
-        if config.acme_enabled.unwrap_or(false) {
-            info!("ACME enabled - starting HTTPS server with automatic certificate management");
+        let (acceptor, acme_handle) = create_acme_config(&config).await?;
 
-            let (acceptor, acme_handle) = create_acme_config(&config).await?;
+        let https_url = format!("https://{}:{}", serve_args.host(), serve_args.port());
+        info!("API: {}/api", https_url);
+        info!("API Docs: {}/docs", https_url);
+        if !serve_args.api_only {
+            info!("Admin panel: {}/admin", https_url);
+        }
 
-            let https_url = format!("https://{}:{}", serve_args.host(), serve_args.port());
-            info!("API: {}/api", https_url);
-            info!("API Docs: {}/docs", https_url);
-            if !serve_args.api_only {
-                info!("Admin panel: {}/admin", https_url);
-            }
+        if serve_args.enable_redirect {
+            let redirect_target_port =
+                serve_args.redirect_target_port.unwrap_or(serve_args.port());
+            let redirect_host = serve_args.host().to_string();
+            let redirect_port = serve_args.redirect_port;
 
-            if serve_args.enable_redirect {
-                let redirect_target_port =
-                    serve_args.redirect_target_port.unwrap_or(serve_args.port());
-                let redirect_host = serve_args.host().to_string();
-                let redirect_port = serve_args.redirect_port;
+            info!("Starting HTTP redirect server on port {}", redirect_port);
 
-                info!("Starting HTTP redirect server on port {}", redirect_port);
-
-                let redirect_handle = tokio::spawn(async move {
-                    if let Err(e) =
-                        create_redirect_server(redirect_port, redirect_target_port, &redirect_host)
-                            .await
-                    {
-                        tracing::error!("HTTP redirect server error: {}", e);
-                    }
-                });
-
-                let https_handle = tokio::spawn(async move {
-                    if let Err(e) = axum_server::bind(addr)
-                        .acceptor(acceptor)
-                        .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
+            let redirect_handle = tokio::spawn(async move {
+                if let Err(e) =
+                    create_redirect_server(redirect_port, redirect_target_port, &redirect_host)
                         .await
-                    {
-                        tracing::error!("HTTPS server error: {}", e);
-                    }
-                });
-
-                tokio::select! {
-                    _ = redirect_handle => {},
-                    _ = https_handle => {},
-                    _ = acme_handle => {},
-                    _ = shutdown_signal() => {
-                        info!("Shutdown signal received, stopping servers...");
-                    }
+                {
+                    tracing::error!("HTTP redirect server error: {}", e);
                 }
-            } else {
-                tokio::select! {
-                    result = axum_server::bind(addr)
-                        .acceptor(acceptor)
-                        .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>()) => {
-                        if let Err(e) = result {
-                            tracing::error!("HTTPS server error: {}", e);
-                        }
-                    },
-                    _ = acme_handle => {},
-                    _ = shutdown_signal() => {
-                        info!("Shutdown signal received, stopping servers...");
-                    }
+            });
+
+            let https_handle = tokio::spawn(async move {
+                if let Err(e) = axum_server::bind(addr)
+                    .acceptor(acceptor)
+                    .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
+                    .await
+                {
+                    tracing::error!("HTTPS server error: {}", e);
+                }
+            });
+
+            tokio::select! {
+                _ = redirect_handle => {},
+                _ = https_handle => {},
+                _ = acme_handle => {},
+                _ = shutdown_signal() => {
+                    info!("Shutdown signal received, stopping servers...");
                 }
             }
         } else {
-            info!("TLS enabled - starting HTTPS server with HTTP/2 support");
-
-            let tls_config = create_tls_config(&config).await?;
-
-            let https_url = format!("https://{}:{}", serve_args.host(), serve_args.port());
-            info!("API: {}/api", https_url);
-            info!("API Docs: {}/docs", https_url);
-            if !serve_args.api_only {
-                info!("Admin panel: {}/admin", https_url);
-            }
-
-            if serve_args.enable_redirect {
-                let redirect_target_port =
-                    serve_args.redirect_target_port.unwrap_or(serve_args.port());
-                let redirect_host = serve_args.host().to_string();
-                let redirect_port = serve_args.redirect_port;
-
-                info!("Starting HTTP redirect server on port {}", redirect_port);
-
-                let redirect_handle = tokio::spawn(async move {
-                    if let Err(e) =
-                        create_redirect_server(redirect_port, redirect_target_port, &redirect_host)
-                            .await
-                    {
-                        tracing::error!("HTTP redirect server error: {}", e);
-                    }
-                });
-
-                let https_handle = tokio::spawn(async move {
-                    if let Err(e) = axum_server::bind_rustls(addr, tls_config)
-                        .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
-                        .await
-                    {
+            tokio::select! {
+                result = axum_server::bind(addr)
+                    .acceptor(acceptor)
+                    .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>()) => {
+                    if let Err(e) = result {
                         tracing::error!("HTTPS server error: {}", e);
                     }
-                });
-
-                tokio::select! {
-                    _ = redirect_handle => {},
-                    _ = https_handle => {},
-                    _ = shutdown_signal() => {
-                        info!("Shutdown signal received, stopping servers...");
-                    }
+                },
+                _ = acme_handle => {},
+                _ = shutdown_signal() => {
+                    info!("Shutdown signal received, stopping servers...");
                 }
-            } else {
-                axum_server::bind_rustls(addr, tls_config)
-                    .serve(tracked_app.into_make_service_with_connect_info::<SocketAddr>())
-                    .await?;
             }
         }
     } else {
@@ -466,51 +409,7 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
     Ok(())
 }
 
-async fn create_tls_config(config: &Config) -> Result<RustlsConfig, Box<dyn std::error::Error>> {
-    let cert_path = config
-        .tls_cert_path
-        .as_ref()
-        .ok_or("TLS_CERT_PATH is required when TLS is enabled")?;
-    let key_path = config
-        .tls_key_path
-        .as_ref()
-        .ok_or("TLS_KEY_PATH is required when TLS is enabled")?;
 
-    info!("Loading TLS certificate from: {}", cert_path);
-    info!("Loading TLS private key from: {}", key_path);
-
-    let cert_file = File::open(cert_path)
-        .map_err(|e| format!("Failed to open certificate file {}: {}", cert_path, e))?;
-    let mut cert_reader = BufReader::new(cert_file);
-    let cert_chain = certs(&mut cert_reader)
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to parse certificate: {}", e))?;
-
-    if cert_chain.is_empty() {
-        return Err("No certificates found in certificate file".into());
-    }
-
-    let key_file = File::open(key_path)
-        .map_err(|e| format!("Failed to open private key file {}: {}", key_path, e))?;
-    let mut key_reader = BufReader::new(key_file);
-    let mut keys = pkcs8_private_keys(&mut key_reader)
-        .collect::<Result<Vec<_>, _>>()
-        .map_err(|e| format!("Failed to parse private key: {}", e))?;
-
-    if keys.is_empty() {
-        return Err("No private keys found in key file".into());
-    }
-
-    let private_key = keys.remove(0);
-
-    let tls_config = ServerConfig::builder()
-        .with_no_client_auth()
-        .with_single_cert(cert_chain, private_key.into())
-        .map_err(|e| format!("Failed to create TLS config: {}", e))?;
-
-    info!("TLS configuration created successfully with HTTP/2 support");
-    Ok(RustlsConfig::from_config(Arc::new(tls_config)))
-}
 
 async fn create_acme_config(
     config: &Config,

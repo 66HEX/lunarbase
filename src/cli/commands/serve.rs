@@ -13,14 +13,7 @@ pub struct ServeArgs {
     #[arg(short, long, help = "Path to configuration file")]
     pub config: Option<PathBuf>,
 
-    #[arg(long, help = "Force TLS/HTTPS mode")]
-    pub tls: bool,
 
-    #[arg(long, help = "Path to TLS certificate file (PEM format)")]
-    pub tls_cert: Option<PathBuf>,
-
-    #[arg(long, help = "Path to TLS private key file (PEM format)")]
-    pub tls_key: Option<PathBuf>,
 
     #[arg(long, help = "Run API-only mode without frontend")]
     pub api_only: bool,
@@ -39,8 +32,6 @@ pub struct ServeArgs {
 
     #[arg(long, help = "Disable deflate compression")]
     pub no_deflate: bool,
-
-
 
     #[arg(long, help = "Enable HTTP to HTTPS redirect server")]
     pub enable_redirect: bool,

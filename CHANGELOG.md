@@ -37,6 +37,7 @@
 - **Database rate limiting settings** including `rate_limit_requests_per_minute` system setting
 - **Client IP extraction utilities** replaced by `tower-governor`'s built-in `SmartIpKeyExtractor`
 - **Security headers CLI arguments** including `--security-headers` and `--security-headers-strict` - security headers are now configured exclusively through database settings with production defaults
+- **Manual TLS certificate configuration** including CLI arguments `--tls`, `--tls-cert`, and `--tls-key` - certificate management is now exclusively handled through ACME/Let's Encrypt automatic provisioning
 
 ## [0.8.0][0.8.0] - 2025-09-02
 
