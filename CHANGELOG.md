@@ -36,6 +36,7 @@
 - **Dynamic rate limiting configuration** from admin panel API settings (rate limiting is now statically configured)
 - **Database rate limiting settings** including `rate_limit_requests_per_minute` system setting
 - **Client IP extraction utilities** replaced by `tower-governor`'s built-in `SmartIpKeyExtractor`
+- **Security headers CLI arguments** including `--security-headers` and `--security-headers-strict` - security headers are now configured exclusively through database settings with production defaults
 
 ## [0.8.0][0.8.0] - 2025-09-02
 

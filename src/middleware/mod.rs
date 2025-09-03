@@ -112,8 +112,8 @@ pub async fn add_middleware_with_args(
             }
         }
 
-        if args.security_headers || app_state.get_security_headers_enabled().await {
-            let security_config = build_security_headers_config(&app_state, args).await;
+        if app_state.get_security_headers_enabled().await {
+            let security_config = build_security_headers_config_from_db(&app_state).await;
             debug!("Adding security headers middleware");
             router = router.layer(middleware::from_fn(move |req, next| {
                 let config = security_config.clone();
@@ -195,94 +195,16 @@ async fn build_compression_config_from_db(app_state: &AppState) -> CompressionCo
     }
 }
 
-async fn build_security_headers_config(
+async fn build_security_headers_config_from_db(
     app_state: &AppState,
-    args: &ServeArgs,
 ) -> SecurityHeadersConfig {
-    let enabled = args.security_headers || app_state.get_security_headers_enabled().await;
-    let strict_mode = args.security_headers_strict;
-
-    if strict_mode {
-        return SecurityHeadersConfig::production();
-    }
-
-    let hsts_enabled = !args.no_hsts && app_state.get_hsts_enabled().await;
-    let hsts_max_age = if args.hsts_max_age > 0 {
-        args.hsts_max_age
-    } else {
-        app_state.get_hsts_max_age().await
-    };
-
-    let frame_policy =
-        args.frame_options
-            .as_ref()
-            .map(|policy| match policy.to_lowercase().as_str() {
-                "deny" => FrameOptionsPolicy::Deny,
-                "sameorigin" => FrameOptionsPolicy::SameOrigin,
-                uri if uri.starts_with("allow-from:") => FrameOptionsPolicy::AllowFrom(
-                    uri.strip_prefix("allow-from:").unwrap_or("").to_string(),
-                ),
-                _ => FrameOptionsPolicy::Deny,
-            });
-
-    let frame_policy = if let Some(policy) = frame_policy {
-        policy
-    } else {
-        let db_policy = app_state.get_frame_options_policy().await;
-        match db_policy.to_uppercase().as_str() {
-            "SAMEORIGIN" => FrameOptionsPolicy::SameOrigin,
-            "DENY" => FrameOptionsPolicy::Deny,
-            uri if uri.starts_with("ALLOW-FROM ") => FrameOptionsPolicy::AllowFrom(
-                uri.strip_prefix("ALLOW-FROM ").unwrap_or("").to_string(),
-            ),
-            _ => FrameOptionsPolicy::Deny,
-        }
-    };
-
-    let csp_policy = if let Some(policy) = args.csp_policy.clone() {
-        policy
-    } else {
-        app_state.get_csp_policy().await
-    };
-
-    SecurityHeadersConfig {
-        enabled,
-        hsts: HstsConfig {
-            enabled: hsts_enabled,
-            max_age: hsts_max_age,
-            include_subdomains: app_state.get_hsts_include_subdomains().await,
-            preload: app_state.get_hsts_preload().await,
-        },
-        content_type_options: app_state.get_content_type_options().await,
-        frame_options: FrameOptionsConfig {
-            enabled: app_state.get_frame_options_enabled().await,
-            policy: frame_policy,
-        },
-        xss_protection: app_state.get_xss_protection().await,
-        csp: CspConfig {
-            enabled: app_state.get_csp_enabled().await,
-            policy: csp_policy,
-            report_only: args.csp_report_only || app_state.get_csp_report_only().await,
-        },
-        referrer_policy: ReferrerPolicyConfig {
-            enabled: app_state.get_referrer_policy_enabled().await,
-            policy: parse_referrer_policy(&app_state.get_referrer_policy().await),
-        },
-        permissions_policy: PermissionsPolicyConfig {
-            enabled: app_state.get_permissions_policy_enabled().await,
-            policy: app_state.get_permissions_policy().await,
-        },
-    }
-}
-
-async fn build_security_headers_config_from_db(app_state: &AppState) -> SecurityHeadersConfig {
     let db_policy = app_state.get_frame_options_policy().await;
     let frame_policy = match db_policy.to_uppercase().as_str() {
         "SAMEORIGIN" => FrameOptionsPolicy::SameOrigin,
         "DENY" => FrameOptionsPolicy::Deny,
-        uri if uri.starts_with("ALLOW-FROM ") => {
-            FrameOptionsPolicy::AllowFrom(uri.strip_prefix("ALLOW-FROM ").unwrap_or("").to_string())
-        }
+        uri if uri.starts_with("ALLOW-FROM ") => FrameOptionsPolicy::AllowFrom(
+            uri.strip_prefix("ALLOW-FROM ").unwrap_or("").to_string(),
+        ),
         _ => FrameOptionsPolicy::Deny,
     };
 
@@ -315,6 +237,8 @@ async fn build_security_headers_config_from_db(app_state: &AppState) -> Security
         },
     }
 }
+
+
 
 fn parse_referrer_policy(policy_str: &str) -> ReferrerPolicy {
     match policy_str {
