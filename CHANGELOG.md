@@ -15,7 +15,6 @@
 - **HTTP to HTTPS redirect server** with automatic redirection from HTTP to HTTPS for improved security
 - **Automatic port configuration** based on ACME enablement (443/80 for production with ACME, 3000 for development)
 - **Simplified CLI interface** with `--enable-redirect` flag for HTTP to HTTPS redirection control
-- **Production deployment guide** for EC2 instances without Nginx dependency
 - **Native TLS/SSL support** with HTTP/2 protocol support and certificate management
 - **Security headers middleware** with configurable HSTS, CSP, and X-Frame-Options
 - **Compression middleware** supporting gzip, brotli, and deflate algorithms
