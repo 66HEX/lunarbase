@@ -267,14 +267,32 @@ impl OAuthService {
 }
 
 impl OAuthConfig {
-    pub fn from_env_with_frontend_url(frontend_url: &str) -> Self {
-        let google = if let (Ok(client_id), Ok(client_secret)) = (
-            std::env::var("GOOGLE_CLIENT_ID"),
-            std::env::var("GOOGLE_CLIENT_SECRET"),
-        ) {
+    pub async fn from_database(
+        config_manager: &ConfigurationManager,
+        frontend_url: &str,
+    ) -> Result<Self, Box<dyn std::error::Error>> {
+        let google_client_id = config_manager
+            .get_string("oauth", "google_client_id")
+            .await
+            .unwrap_or_default();
+        let google_client_secret = config_manager
+            .get_string("oauth", "google_client_secret")
+            .await
+            .unwrap_or_default();
+
+        let github_client_id = config_manager
+            .get_string("oauth", "github_client_id")
+            .await
+            .unwrap_or_default();
+        let github_client_secret = config_manager
+            .get_string("oauth", "github_client_secret")
+            .await
+            .unwrap_or_default();
+
+        let google = if !google_client_id.is_empty() && !google_client_secret.is_empty() {
             Some(OAuthProviderConfig {
-                client_id,
-                client_secret,
+                client_id: google_client_id,
+                client_secret: google_client_secret,
                 auth_url: "https://accounts.google.com/o/oauth2/v2/auth".to_string(),
                 token_url: "https://www.googleapis.com/oauth2/v3/token".to_string(),
                 scopes: vec![
@@ -286,13 +304,10 @@ impl OAuthConfig {
             None
         };
 
-        let github = if let (Ok(client_id), Ok(client_secret)) = (
-            std::env::var("GITHUB_CLIENT_ID"),
-            std::env::var("GITHUB_CLIENT_SECRET"),
-        ) {
+        let github = if !github_client_id.is_empty() && !github_client_secret.is_empty() {
             Some(OAuthProviderConfig {
-                client_id,
-                client_secret,
+                client_id: github_client_id,
+                client_secret: github_client_secret,
                 auth_url: "https://github.com/login/oauth/authorize".to_string(),
                 token_url: "https://github.com/login/oauth/access_token".to_string(),
                 scopes: vec!["user:email".to_string()],
@@ -303,10 +318,10 @@ impl OAuthConfig {
 
         let redirect_base_url = frontend_url.to_string();
 
-        Self {
+        Ok(Self {
             google,
             github,
             redirect_base_url,
-        }
+        })
     }
 }
