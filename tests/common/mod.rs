@@ -4,7 +4,6 @@ use lunarbase::cli::commands::serve::ServeArgs;
 pub fn create_test_serve_args() -> ServeArgs {
     ServeArgs {
         host: Some("127.0.0.1".to_string()),
-        port: Some(3000),
         config: None,
         api_only: false,
         compression: false,
@@ -13,8 +12,6 @@ pub fn create_test_serve_args() -> ServeArgs {
         no_brotli: false,
         no_deflate: false,
         enable_redirect: false,
-        redirect_port: 80,
-        redirect_target_port: None,
         acme: false,
         acme_domain: vec![],
         acme_email: None,

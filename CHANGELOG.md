@@ -38,6 +38,7 @@
 - **Client IP extraction utilities** replaced by `tower-governor`'s built-in `SmartIpKeyExtractor`
 - **Security headers CLI arguments** including `--security-headers` and `--security-headers-strict` - security headers are now configured exclusively through database settings with production defaults
 - **Manual TLS certificate configuration** including CLI arguments `--tls`, `--tls-cert`, and `--tls-key` - certificate management is now exclusively handled through ACME/Let's Encrypt automatic provisioning
+- **Manual port configuration** including CLI arguments `--port`, `--redirect-port`, and `--redirect-target-port` - ports are now automatically configured based on ACME enablement (443/80 for production with ACME, 3000 for development)
 
 ## [0.8.0][0.8.0] - 2025-09-02
 

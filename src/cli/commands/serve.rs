@@ -7,13 +7,8 @@ pub struct ServeArgs {
     #[arg(short = 'H', long, help = "Host to bind the server to")]
     pub host: Option<String>,
 
-    #[arg(short, long, help = "Port to bind the server to")]
-    pub port: Option<u16>,
-
     #[arg(short, long, help = "Path to configuration file")]
     pub config: Option<PathBuf>,
-
-
 
     #[arg(long, help = "Run API-only mode without frontend")]
     pub api_only: bool,
@@ -36,14 +31,7 @@ pub struct ServeArgs {
     #[arg(long, help = "Enable HTTP to HTTPS redirect server")]
     pub enable_redirect: bool,
 
-    #[arg(long, default_value = "80", help = "Port for HTTP redirect server")]
-    pub redirect_port: u16,
 
-    #[arg(
-        long,
-        help = "Target HTTPS port for redirects (defaults to main server port)"
-    )]
-    pub redirect_target_port: Option<u16>,
 
     #[arg(
         long,
@@ -80,7 +68,19 @@ impl ServeArgs {
     }
 
     pub fn port(&self) -> u16 {
-        self.port.unwrap_or(3000)
+        if self.acme {
+            443
+        } else {
+            3000
+        }
+    }
+
+    pub fn redirect_port(&self) -> u16 {
+        80
+    }
+
+    pub fn redirect_target_port(&self) -> u16 {
+        self.port()
     }
 
     pub fn server_address(&self) -> String {

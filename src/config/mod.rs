@@ -25,7 +25,6 @@ pub struct Config {
     pub s3_access_key_id: Option<String>,
     pub s3_secret_access_key: Option<String>,
     pub s3_endpoint_url: Option<String>,
-
     pub acme_enabled: Option<bool>,
     pub acme_domains: Vec<String>,
     pub acme_email: Option<String>,
@@ -49,8 +48,6 @@ impl Config {
             ("127.0.0.1".to_string(), 3000)
         };
 
-
-
         let config = Config {
             database_url: std::env::var("DATABASE_URL").unwrap_or_else(|_| "db.sqlite".to_string()),
             server_host: server_host.clone(),
@@ -72,7 +69,7 @@ impl Config {
             frontend_url: Self::build_frontend_url(
                 &server_host,
                 server_port,
-                false,
+                server_port == 443,  // Use HTTPS if port is 443
             ),
             s3_bucket_name: None,
             s3_region: None,
@@ -122,9 +119,14 @@ impl Config {
         format!("{}:{}", self.server_host, self.server_port)
     }
 
-    fn build_frontend_url(host: &str, port: u16, tls_enabled: bool) -> String {
-        let scheme = if tls_enabled { "https" } else { "http" };
-        format!("{}://{}:{}", scheme, host, port)
+    fn build_frontend_url(host: &str, port: u16, is_https: bool) -> String {
+        let scheme = if is_https { "https" } else { "http" };
+        // Don't show port in URL for standard ports (80 for HTTP, 443 for HTTPS)
+        if (is_https && port == 443) || (!is_https && port == 80) {
+            format!("{}://{}", scheme, host)
+        } else {
+            format!("{}://{}:{}", scheme, host, port)
+        }
     }
 
     pub fn has_admin_config(&self) -> bool {

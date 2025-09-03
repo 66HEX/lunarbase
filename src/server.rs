@@ -335,10 +335,9 @@ pub async fn run_server(serve_args: &ServeArgs) -> Result<(), Box<dyn std::error
         }
 
         if serve_args.enable_redirect {
-            let redirect_target_port =
-                serve_args.redirect_target_port.unwrap_or(serve_args.port());
+            let redirect_target_port = serve_args.redirect_target_port();
             let redirect_host = serve_args.host().to_string();
-            let redirect_port = serve_args.redirect_port;
+            let redirect_port = serve_args.redirect_port();
 
             info!("Starting HTTP redirect server on port {}", redirect_port);
 
