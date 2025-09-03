@@ -150,6 +150,8 @@ pub enum SettingCategory {
     OAuth,
     #[serde(rename = "storage")]
     Storage,
+    #[serde(rename = "security_headers")]
+    SecurityHeaders,
 }
 
 impl ToString for SettingCategory {
@@ -161,6 +163,7 @@ impl ToString for SettingCategory {
             SettingCategory::Email => "email".to_string(),
             SettingCategory::OAuth => "oauth".to_string(),
             SettingCategory::Storage => "storage".to_string(),
+            SettingCategory::SecurityHeaders => "security_headers".to_string(),
         }
     }
 }

@@ -5,6 +5,7 @@ import { AuthSettingsPanel } from "@/components/settings/AuthSettingsPanel";
 import { DatabaseSettingsPanel } from "@/components/settings/DatabaseSettingsPanel";
 import { EmailSettingsPanel } from "@/components/settings/EmailSettingsPanel";
 import { OAuthSettingsPanel } from "@/components/settings/OAuthSettingsPanel";
+import { SecuritySettingsPanel } from "@/components/settings/SecuritySettingsPanel";
 import { StorageSettingsPanel } from "@/components/settings/StorageSettingsPanel";
 import { SettingsHeader } from "@/components/settings/SettingsHeader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -21,13 +22,14 @@ function SettingsPage() {
 			<SettingsHeader totalSettings={totalSettings} />
 
 			<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-				<TabsList className="grid w-full grid-cols-6">
+				<TabsList className="grid w-full grid-cols-7">
 					<TabsTrigger value="database">Database</TabsTrigger>
 					<TabsTrigger value="auth">Authentication</TabsTrigger>
 					<TabsTrigger value="api">API</TabsTrigger>
 					<TabsTrigger value="email">Email</TabsTrigger>
 					<TabsTrigger value="oauth">OAuth</TabsTrigger>
 					<TabsTrigger value="storage">Storage</TabsTrigger>
+					<TabsTrigger value="security">Security</TabsTrigger>
 				</TabsList>
 
 				<TabsContent value="database" className="mt-6">
@@ -52,6 +54,10 @@ function SettingsPage() {
 
 				<TabsContent value="storage" className="mt-6">
 					<StorageSettingsPanel />
+				</TabsContent>
+
+				<TabsContent value="security" className="mt-6">
+					<SecuritySettingsPanel />
 				</TabsContent>
 			</Tabs>
 		</div>

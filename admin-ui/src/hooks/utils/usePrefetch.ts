@@ -370,7 +370,7 @@ export const usePrefetch = () => {
 			});
 		}
 
-		const categories = ["database", "auth", "api", "email", "oauth", "storage"] as const;
+		const categories = ["database", "auth", "api", "email", "oauth", "storage", "security_headers"] as const;
 		const categoryPromises = categories
 			.filter((category) => {
 				const categoryQueryKey = ["settings", category];

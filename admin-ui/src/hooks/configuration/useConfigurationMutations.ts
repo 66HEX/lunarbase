@@ -55,7 +55,7 @@ export const useUpdateSetting = () => {
 				settingKey,
 				data,
 			}: {
-				category: "database" | "auth" | "api" | "email" | "oauth" | "storage";
+				category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
 				settingKey: string;
 				data: UpdateSystemSettingRequest;
 			}): Promise<SystemSetting> => {
@@ -101,7 +101,7 @@ export const useDeleteSetting = () => {
 			category,
 			settingKey,
 		}: {
-			category: "database" | "auth" | "api";
+			category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
 			settingKey: string;
 		}): Promise<void> => {
 			return await configurationApi.deleteSetting(category, settingKey);

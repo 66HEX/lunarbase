@@ -19,9 +19,9 @@ use crate::{
 
 fn validate_category(category: &str) -> Result<(), LunarbaseError> {
     match category {
-        "database" | "auth" | "api" | "email" | "oauth" | "storage" => Ok(()),
+        "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers" => Ok(()),
         _ => Err(LunarbaseError::ValidationError(vec![format!(
-            "Invalid category '{}'. Valid categories are: database, auth, api, email, oauth, storage",
+            "Invalid category '{}'. Valid categories are: database, auth, api, email, oauth, storage, security_headers",
             category
         )])),
     }

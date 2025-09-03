@@ -448,7 +448,7 @@ export interface MetricsSummary {
 
 export interface SystemSetting {
 	id: number;
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage";
+	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
 	setting_key: string;
 	setting_value: string;
 	data_type: "string" | "integer" | "boolean" | "json" | "float";
@@ -462,7 +462,7 @@ export interface SystemSetting {
 }
 
 export interface CreateSystemSettingRequest {
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage";
+	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers";
 	setting_key: string;
 	setting_value: string;
 	data_type: "string" | "integer" | "boolean" | "json" | "float";

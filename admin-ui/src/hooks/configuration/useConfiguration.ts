@@ -22,7 +22,7 @@ export const useAllSettings = () => {
  * Hook for fetching settings by category
  */
 export const useSettingsByCategory = (
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage",
+	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers"
 ) => {
 	return useQuery({
 		queryKey: ["settings", category],
@@ -40,7 +40,7 @@ export const useSettingsByCategory = (
  * Hook for fetching a specific setting
  */
 export const useSetting = (
-	category: "database" | "auth" | "api" | "email" | "oauth" | "storage",
+	category: "database" | "auth" | "api" | "email" | "oauth" | "storage" | "security_headers",
 	settingKey: string,
 	enabled: boolean = true,
 ) => {
