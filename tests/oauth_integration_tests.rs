@@ -4,6 +4,8 @@ use axum::{
     http::{Request, StatusCode},
     routing::get,
 };
+use diesel_migrations::{EmbeddedMigrations, MigrationHarness, embed_migrations};
+use diesel::RunQueryDsl;
 use tower::ServiceExt;
 
 use lunarbase::AppState;
@@ -12,11 +14,41 @@ use lunarbase::handlers::auth::*;
 
 mod common;
 
+pub const MIGRATIONS: EmbeddedMigrations = embed_migrations!("migrations/");
+
 async fn create_test_router() -> Router {
     let test_jwt_secret = "test_secret".to_string();
 
     let config = common::create_test_config().expect("Failed to load config");
     let db_pool = create_pool(&config.database_url).expect("Failed to create database pool");
+
+    {
+        let mut conn = db_pool.get().expect("Failed to get database connection");
+        conn.run_pending_migrations(MIGRATIONS)
+            .expect("Failed to run migrations");
+        
+        // Insert test OAuth configuration
+        diesel::sql_query(
+            "UPDATE system_settings SET setting_value = 'test_google_client_id' WHERE category = 'oauth' AND setting_key = 'google_client_id'"
+        ).execute(&mut conn).expect("Failed to set test Google client ID");
+        
+        diesel::sql_query(
+            "UPDATE system_settings SET setting_value = 'test_google_client_secret' WHERE category = 'oauth' AND setting_key = 'google_client_secret'"
+        ).execute(&mut conn).expect("Failed to set test Google client secret");
+        
+        diesel::sql_query(
+            "UPDATE system_settings SET setting_value = 'test_github_client_id' WHERE category = 'oauth' AND setting_key = 'github_client_id'"
+        ).execute(&mut conn).expect("Failed to set test GitHub client ID");
+        
+        diesel::sql_query(
+            "UPDATE system_settings SET setting_value = 'test_github_client_secret' WHERE category = 'oauth' AND setting_key = 'github_client_secret'"
+        ).execute(&mut conn).expect("Failed to set test GitHub client secret");
+        
+        diesel::sql_query(
+            "UPDATE system_settings SET setting_value = 'true' WHERE category = 'oauth' AND setting_key = 'oauth_enabled'"
+        ).execute(&mut conn).expect("Failed to enable OAuth");
+    }
+
     let test_password_pepper = "test_pepper".to_string();
     let app_state = AppState::new(db_pool, &test_jwt_secret, test_password_pepper, &config)
         .await
