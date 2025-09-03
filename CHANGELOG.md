@@ -6,13 +6,12 @@
 - **Automatic SSL/TLS certificate management** with ACME/Let's Encrypt integration using rustls-acme
 - **Zero-configuration HTTPS** with automatic certificate provisioning, renewal, and caching
 - **ACME CLI arguments** including `--acme`, `--acme-domain`, `--acme-email`, `--acme-cache-dir`, and `--acme-production` for Let's Encrypt integration
-- **Dual certificate support** allowing both manual TLS certificates and automatic ACME certificates with ACME taking priority
 - **Production and staging ACME environments** with `--acme-production` flag for Let's Encrypt production vs staging
 - **Automatic certificate caching** with configurable cache directory for certificate persistence across restarts
 - **Self-contained server solution** with native TLS support eliminating the need for external reverse proxies like Nginx
 - **HTTP to HTTPS redirect server** with automatic redirection from HTTP to HTTPS for improved security
-- **Dual server architecture** supporting simultaneous HTTPS and HTTP redirect servers with independent port configuration
-- **Enhanced CLI arguments** for server configuration including `--enable-redirect`, `--redirect-port` and `--redirect-target-port`
+- **Automatic port configuration** based on ACME enablement (443/80 for production with ACME, 3000 for development)
+- **Simplified CLI interface** with `--enable-redirect` flag for HTTP to HTTPS redirection control
 - **Production deployment guide** for EC2 instances without Nginx dependency
 - **Native TLS/SSL support** with HTTP/2 protocol support and certificate management
 - **Security headers middleware** with configurable HSTS, CSP, and X-Frame-Options
@@ -23,7 +22,7 @@
 
 ### Changed
 - **Rate limiting system** migrated from dynamic database-driven configuration to static `tower-governor` middleware with GCRA algorithm
-- **Rate limiting configuration** now uses compile-time settings (50 requests/second with burst of 50) instead of runtime database configuration
+- **Rate limiting configuration** now uses compile-time settings instead of runtime database configuration
 - **Rate limiting performance** significantly improved with lower memory usage and better integration with Tower/Axum ecosystem
 - **OAuth configuration** migrated from environment variables (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GITHUB_CLIENT_ID, GITHUB_CLIENT_SECRET) to dynamic settings management
 - **S3 storage configuration** migrated from environment variables (S3_BUCKET_NAME, S3_REGION, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY, S3_ENDPOINT_URL) to dynamic settings management
@@ -34,11 +33,7 @@
 
 ### Removed
 - **Dynamic rate limiting configuration** from admin panel API settings (rate limiting is now statically configured)
-- **Database rate limiting settings** including `rate_limit_requests_per_minute` system setting
-- **Client IP extraction utilities** replaced by `tower-governor`'s built-in `SmartIpKeyExtractor`
-- **Security headers CLI arguments** including `--security-headers` and `--security-headers-strict` - security headers are now configured exclusively through database settings with production defaults
 - **Manual TLS certificate configuration** including CLI arguments `--tls`, `--tls-cert`, and `--tls-key` - certificate management is now exclusively handled through ACME/Let's Encrypt automatic provisioning
-- **Manual port configuration** including CLI arguments `--port`, `--redirect-port`, and `--redirect-target-port` - ports are now automatically configured based on ACME enablement (443/80 for production with ACME, 3000 for development)
 
 ## [0.8.0][0.8.0] - 2025-09-02
 

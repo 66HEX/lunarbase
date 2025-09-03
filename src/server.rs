@@ -177,7 +177,7 @@ use crate::handlers::{
         websocket_stats, websocket_status,
     },
 };
-use crate::middleware::{add_middleware_with_args, auth_middleware, setup_logging};
+use crate::middleware::{add_middleware, auth_middleware, setup_logging};
 use crate::{ApiDoc, AppState, Config};
 
 async fn create_redirect_server(
@@ -624,7 +624,7 @@ async fn create_router(app_state: AppState, serve_args: &ServeArgs) -> Router {
         .route("/metrics/summary", get(get_metrics_summary))
         .with_state(app_state.clone());
 
-    add_middleware_with_args(app, app_state, Some(serve_args)).await
+    add_middleware(app, app_state).await
 }
 
 async fn shutdown_signal() {
